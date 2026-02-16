@@ -27,7 +27,12 @@ docs/design-system/design-tokens.css
 docs/design-system/components.md
 docs/design-system/layout-grid.md
 docs/blueprints/overview.md
-docs/blueprints/database-design.md
+docs/database/database-design.md
+docs/database/naming-rules.md
+docs/database/migration/
+docs/tests/test-strategy.md
+docs/tests/test-cases/
+docs/tests/test-reports/
 docs/prompts/sprint-*.md
 ```
 
@@ -43,11 +48,23 @@ CLAUDE.md에서 다음을 점검합니다:
 
 ### 3. DB 설계 문서 정합성
 
-`docs/blueprints/database-design.md`에서:
+`docs/database/database-design.md`에서:
 - 테이블 접두사 규칙 준수 (TB_, TC_, TH_, TL_, TR_)
 - 공통 감사 컬럼 정의 여부
 - ERD 섹션 존재 여부
 - FK 관계 요약 존재 여부
+
+`docs/database/naming-rules.md`에서:
+- 테이블 접두사 규칙 정의 여부
+- 컬럼 접미사 규칙 정의 여부
+- 표준 용어 매핑 존재 여부
+
+### 3.5. 테스트 전략 문서
+
+`docs/tests/test-strategy.md`에서:
+- 테스트 레벨 정의 여부 (단위/통합/E2E)
+- 커버리지 목표 정의 여부
+- 테스트 네이밍 규칙 정의 여부
 
 ### 4. 디자인 시스템 완성도
 

@@ -54,6 +54,7 @@ Code Review:
 
 ```
 Step R.1: 시스템 통합 테스트
+  /astra-integration-test     서버 실행 + Chrome MCP 통합 테스트
   - API 연동 테스트
   - DB 데이터 정합성 확인
   - 성능 프로파일링
@@ -95,6 +96,7 @@ ASTRA 도구:
   /astra-init [프로젝트 정보] Sprint 0 초기 세팅
   /astra-global-setup         전역 개발환경 설정
   /astra-sprint [번호]        스프린트 초기화
+  /astra-integration-test [URL/시나리오] 서버 실행 + Chrome MCP 통합 테스트
   /astra-checklist            Sprint 0 완료 검증
   /astra-guide [섹션]         빠른 참조 가이드
 ```

@@ -19,6 +19,9 @@ directories=(
     ".claude"
     "docs/design-system/references"
     "docs/blueprints"
+    "docs/database/migration"
+    "docs/tests/test-cases"
+    "docs/tests/test-reports"
     "docs/prompts"
     "docs/retrospectives"
     "docs/delivery"
@@ -38,6 +41,9 @@ done
 # 빈 디렉토리에 .gitkeep 추가
 gitkeep_dirs=(
     "docs/design-system/references"
+    "docs/database/migration"
+    "docs/tests/test-cases"
+    "docs/tests/test-reports"
     "docs/retrospectives"
     "docs/delivery"
     "src"

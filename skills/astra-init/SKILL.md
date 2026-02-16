@@ -45,8 +45,20 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 │   │       └── .gitkeep
 │   │
 │   ├── blueprints/
-│   │   ├── overview.md
-│   │   └── database-design.md
+│   │   └── overview.md
+│   │
+│   ├── database/
+│   │   ├── database-design.md
+│   │   ├── naming-rules.md
+│   │   └── migration/
+│   │       └── .gitkeep
+│   │
+│   ├── tests/
+│   │   ├── test-strategy.md
+│   │   ├── test-cases/
+│   │   │   └── .gitkeep
+│   │   └── test-reports/
+│   │       └── .gitkeep
 │   │
 │   ├── prompts/
 │   │   └── sprint-1.md
@@ -80,7 +92,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 
 ## 코딩 규칙
 - 모든 API 엔드포인트에 인증 미들웨어 필수
-- DB 스키마는 docs/blueprints/database-design.md를 Single Source of Truth로 관리
+- DB 스키마는 docs/database/database-design.md를 Single Source of Truth로 관리
 - DB 엔티티는 공공 데이터 표준 용어 사전 준수 (/lookup-term 활용)
 - 테이블명 접두사: TB_(일반), TC_(코드), TH_(이력), TL_(로그), TR_(관계)
 - REST API 응답 형식: { success: boolean, data: T, error?: string }
@@ -108,7 +120,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 
 ## 설계 문서 규칙
 - 기능별 설계 문서는 docs/blueprints/ 디렉토리에 작성
-- DB 설계는 docs/blueprints/database-design.md에 통합 관리
+- DB 설계는 docs/database/database-design.md에 통합 관리
 - 기능 구현 전 반드시 설계 문서 작성 및 승인 필요
 ```
 
@@ -135,17 +147,25 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 
 **docs/blueprints/overview.md**: 프로젝트 개요 문서 (비전, 목표, 모듈 구조, 기술 스택 결정 근거)
 
-**docs/blueprints/database-design.md**: 중앙 DB 설계 문서 템플릿 (전체 ERD, 공통 규칙, 모듈별 테이블, FK 관계 요약)
+### 6단계: 데이터베이스 문서 템플릿 생성
 
-### 6단계: 스프린트 템플릿 생성
+**docs/database/database-design.md**: 중앙 DB 설계 문서 템플릿 (전체 ERD, 공통 규칙, 모듈별 테이블, FK 관계 요약)
+
+**docs/database/naming-rules.md**: DB 네이밍 규칙 및 표준 용어 매핑 문서 (테이블 접두사, 컬럼 네이밍, 표준 용어 사전 연동)
+
+### 7단계: 테스트 문서 템플릿 생성
+
+**docs/tests/test-strategy.md**: 테스트 전략 문서 (테스트 레벨 정의, 커버리지 목표, 테스트 환경, 네이밍 규칙, 자동화 범위)
+
+### 8단계: 스프린트 템플릿 생성
 
 **docs/prompts/sprint-1.md**: 첫 번째 스프린트 프롬프트 맵 템플릿
 
-### 7단계: 프로젝트 설정 파일 생성
+### 9단계: 프로젝트 설정 파일 생성
 
 **.claude/settings.json**: 프로젝트별 Claude Code 설정
 
-### 8단계: 결과 요약 출력
+### 10단계: 결과 요약 출력
 
 모든 파일 생성 후 다음을 출력합니다:
 
@@ -157,6 +177,8 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 - .claude/settings.json (프로젝트 설정)
 - docs/design-system/ (디자인 시스템 템플릿)
 - docs/blueprints/ (설계 문서 템플릿)
+- docs/database/ (DB 설계 문서, 네이밍 규칙, 마이그레이션)
+- docs/tests/ (테스트 전략, 테스트 케이스, 테스트 리포트)
 - docs/prompts/ (스프린트 프롬프트 맵)
 - docs/retrospectives/ (회고 기록용)
 - docs/delivery/ (릴리스 산출물용)
@@ -166,9 +188,11 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 2. [ ] DSA와 docs/design-system/ 파일 정의
 3. [ ] /astra-global-setup 으로 전역 개발환경 확인
 4. [ ] /feature-dev 로 핵심 기능 설계 문서 생성
-5. [ ] docs/blueprints/database-design.md 작성
-6. [ ] hookify 규칙 설정
-7. [ ] /astra-checklist 로 Sprint 0 완료 확인
+5. [ ] docs/database/database-design.md 작성
+6. [ ] docs/database/naming-rules.md 검토
+7. [ ] docs/tests/test-strategy.md 작성
+8. [ ] hookify 규칙 설정
+9. [ ] /astra-checklist 로 Sprint 0 완료 확인
 ```
 
 ## 주의사항

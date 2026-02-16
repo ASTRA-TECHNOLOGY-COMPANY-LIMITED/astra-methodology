@@ -22,7 +22,9 @@ allowed-tools: Read, Bash, Glob, Grep
 | `docs/design-system/components.md` | 필수 | 컴포넌트 가이드 |
 | `docs/design-system/layout-grid.md` | 필수 | 레이아웃 그리드 |
 | `docs/blueprints/overview.md` | 필수 | 프로젝트 개요 |
-| `docs/blueprints/database-design.md` | 필수 | 중앙 DB 설계 문서 |
+| `docs/database/database-design.md` | 필수 | 중앙 DB 설계 문서 |
+| `docs/database/naming-rules.md` | 필수 | DB 네이밍 규칙 |
+| `docs/tests/test-strategy.md` | 필수 | 테스트 전략 문서 |
 | `docs/prompts/sprint-1.md` | 필수 | 첫 스프린트 프롬프트 맵 |
 
 ### B. CLAUDE.md 내용 검증
@@ -48,19 +50,34 @@ CLAUDE.md에 다음 섹션이 포함되어 있는지 확인합니다:
 
 ### D. DB 설계 문서 검증
 
-`docs/blueprints/database-design.md`에 다음 섹션이 포함되어 있는지 확인:
+`docs/database/database-design.md`에 다음 섹션이 포함되어 있는지 확인:
 
 - [ ] 전체 ERD 섹션
 - [ ] 공통 규칙 (테이블 접두사, 감사 컬럼, 네이밍)
 - [ ] 모듈별 테이블 섹션
 - [ ] FK 관계 요약 섹션
 
-### E. 전역 설정 검증
+`docs/database/naming-rules.md`에 다음이 포함되어 있는지 확인:
+
+- [ ] 테이블 접두사 규칙
+- [ ] 컬럼 네이밍 규칙
+- [ ] 표준 용어 사전 연동 방법
+
+### E. 테스트 전략 문서 검증
+
+`docs/tests/test-strategy.md`에 다음 섹션이 포함되어 있는지 확인:
+
+- [ ] 테스트 레벨 정의 (단위/통합/E2E)
+- [ ] 테스트 커버리지 목표
+- [ ] 테스트 네이밍 규칙
+- [ ] 테스트 데이터 관리 전략
+
+### F. 전역 설정 검증
 
 - [ ] `~/.claude/settings.json` 에 Agent Teams 환경변수
 - [ ] `~/.claude/.mcp.json` 에 MCP 서버 3개 (chrome-devtools, postgres, context7)
 
-### F. 품질 게이트 검증
+### G. 품질 게이트 검증
 
 hookify 규칙이 설정되어 있는지 확인:
 - `.claude/` 디렉토리에 `hookify.*.local.md` 파일 존재 여부
