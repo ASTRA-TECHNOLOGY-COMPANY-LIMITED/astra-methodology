@@ -80,17 +80,16 @@ Check the result of each command and skip items that are already installed.
 # Register marketplace
 claude plugin marketplace add anthropics/claude-plugins-official
 
-# Install required plugins (10)
+# Install required plugins (9)
+claude plugin install claude-code-setup@claude-plugins-official
 claude plugin install code-review@claude-plugins-official
+claude plugin install code-simplifier@claude-plugins-official
 claude plugin install commit-commands@claude-plugins-official
 claude plugin install feature-dev@claude-plugins-official
 claude plugin install frontend-design@claude-plugins-official
 claude plugin install hookify@claude-plugins-official
 claude plugin install security-guidance@claude-plugins-official
 claude plugin install context7@claude-plugins-official
-claude plugin install session-logger@claude-plugins-official
-claude plugin install codebase-visualizer@claude-plugins-official
-claude plugin install architect@claude-plugins-official
 ```
 
 ### Step 6: Output Setup Results
@@ -115,16 +114,15 @@ claude plugin install architect@claude-plugins-official
 - [ ] GitHub CLI: {version or not installed}
 
 ### Plugins (auto-installed)
+- [ ] claude-code-setup: {status}
 - [ ] code-review: {status}
+- [ ] code-simplifier: {status}
 - [ ] commit-commands: {status}
 - [ ] feature-dev: {status}
 - [ ] frontend-design: {status}
 - [ ] hookify: {status}
 - [ ] security-guidance: {status}
 - [ ] context7: {status}
-- [ ] session-logger: {status}
-- [ ] codebase-visualizer: {status}
-- [ ] architect: {status}
 ```
 
 ## Notes
