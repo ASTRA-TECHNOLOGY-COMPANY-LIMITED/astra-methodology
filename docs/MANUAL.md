@@ -481,12 +481,10 @@ docs/design-system/
 ISO 3166-1/2, E.164 표준에 맞게 추가해줘.
 아직 코드는 수정하지 마."
 
-# 국제 코드 컴포넌트 생성 (구현 시)
-/generate-intl-component 국가 선택기
-/generate-intl-component 전화번호 입력
 ```
 
 > **`code-standard` 스킬은 전화번호 입력, 국가/지역 선택기, 주소 양식 작업 시 자동 감지되어 적용됩니다.**
+> 국제 코드 컴포넌트(국가 선택기, 전화번호 입력 등)는 `/feature-dev`로 구현 요청 시 `code-standard` 스킬이 자동으로 ISO 3166-1/2, E.164 표준 데이터를 제공합니다.
 
 #### D. 테스트 전략 문서 작성
 
@@ -609,6 +607,7 @@ ISO 3166-1/2, E.164 표준에 맞게 추가해줘.
 |------|----------|----------|
 | Java | Google Java Style Guide | 2-space 들여쓰기, 100자 제한, K&R 브레이스, 와일드카드 import 금지, `UpperCamelCase` 클래스, `UPPER_SNAKE_CASE` 상수 |
 | TypeScript | Google TypeScript Style Guide | Prettier 포맷팅, `export default` 금지, `any` 금지, `var` 금지, `.forEach()` 금지, `===`/`!==` 필수 |
+| React Native | Airbnb React/JSX + Obytes RN Starter | TypeScript 컨벤션 + `kebab-case` 파일, 함수형 컴포넌트 전용, `PascalCase` 컴포넌트, `StyleSheet.create()` 또는 NativeWind, 함수당 최대 3파라미터/110줄 |
 | Python | PEP 8 | 4-space 들여쓰기, 79자 제한, `snake_case` 함수, `CapWords` 클래스, `is None` 필수, bare `except:` 금지 |
 | CSS/SCSS | CSS Guidelines + Sass Guidelines | 2-space 들여쓰기, 80자 제한, BEM 네이밍, ID 선택자 금지, 최대 3단계 중첩, 모바일 우선 미디어 쿼리 |
 
@@ -812,10 +811,10 @@ docs/database/database-design.md의 내용을 엄격히 준수해서
 /lookup-code US-CA           # → US-CA, California, ISO 3166-2
 /lookup-code +82             # → +82, 대한민국, E.164
 
-# 국제 코드 컴포넌트 자동 생성
-/generate-intl-component 국가 선택기     # → ISO 3166-1 기반 국가 드롭다운
-/generate-intl-component 전화번호 입력   # → E.164 기반 국제 전화번호 입력 필드
-/generate-intl-component 지역 선택기     # → ISO 3166-2 기반 지역 드롭다운 (국가 연동)
+# 국제 코드 컴포넌트 구현 (code-standard 스킬 자동 감지)
+/feature-dev "ISO 3166-1 기반 국가 선택기 컴포넌트를 만들어줘"
+/feature-dev "E.164 기반 국제 전화번호 입력 컴포넌트를 만들어줘"
+/feature-dev "ISO 3166-2 기반 지역 선택기 컴포넌트를 만들어줘 (국가 연동)"
 
 # DB 엔티티에 국제 코드 컬럼 포함 시 자동 검증
 # → code-standard 스킬이 자동 감지되어 NATN_CD, RGN_CD, INTL_TELNO 규칙 적용
@@ -1235,17 +1234,23 @@ docs/design-system/design-tokens.css의 토큰 시스템을 반드시 사용할 
 
 | 상황 | 사용 커맨드/도구 | 비고 |
 |------|-----------------|------|
+| 전역 개발환경 설정 | `/astra-setup` | 전역 설정, MCP, 플러그인 자동 구성 |
+| 빠른 참조 가이드 | `/astra-guide` | 워크플로우, 커맨드, 품질 게이트 요약 |
+| 프로젝트 초기 셋업 | `/project-init [프로젝트명]` | Sprint 0 디렉토리 구조 + 템플릿 생성 |
+| Sprint 0 체크리스트 | `/project-checklist` | Sprint 0 완료 여부 검증 |
+| 스프린트 초기화 | `/sprint-plan [N]` | 프롬프트 맵, 진행 추적, 회고 템플릿 생성 |
 | 기능 설계 시작 | `/feature-dev [설명]` | 7단계 자동 워크플로우 |
 | 표준 용어 확인 | `/lookup-term [한글 용어]` | 영문 약어/도메인/타입 |
 | 국제 코드 조회 | `/lookup-code [코드]` | ISO 3166-1/2, E.164 (국가/지역/전화번호) |
-| 국제 코드 컴포넌트 생성 | `/generate-intl-component [유형]` | 국가 선택기, 전화번호 입력, 지역 선택기 |
+| 국제 코드 컴포넌트 생성 | `/feature-dev` + `code-standard` 스킬 | 국가 선택기, 전화번호 입력, 지역 선택기 (자동 감지) |
 | DB 엔티티 생성 | `/generate-entity [한글 정의]` | DB 설계 문서 기반, Java/TypeScript/SQL |
 | DB 설계 문서 갱신 | `/feature-dev` | `docs/database/database-design.md` 테이블 추가/변경 |
 | DB 마이그레이션 생성 | `/feature-dev` | `docs/database/migration/` DDL 생성 |
 | 테스트 케이스 작성 | `/feature-dev` | `docs/tests/test-cases/` 기능별 테스트 명세 |
 | 테스트 결과 보고 | `/feature-dev` | `docs/tests/test-reports/` 스프린트별 보고서 |
+| E2E 테스트 시나리오 생성 | `/test-scenario` | 블루프린트, DB, 라우트 기반 E2E 시나리오 |
 | 통합 테스트 실행 | `/test-run` | 서버 실행 + Chrome MCP 자동 검증 |
-| 코딩 표준 검사 | `/check-convention [대상]` | Java/TS/Python/CSS/SCSS |
+| 코딩 표준 검사 | `/check-convention [대상]` | Java/TS/RN/Python/CSS/SCSS |
 | DB 네이밍 검사 | `/check-naming [대상]` | 표준 용어 사전 기반 |
 | 커밋 | `/commit` | 자동 메시지 생성 |
 | PR 생성 | `/commit-push-pr` | 커밋+푸시+PR 일괄 |
