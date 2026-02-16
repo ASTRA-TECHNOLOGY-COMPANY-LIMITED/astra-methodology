@@ -98,7 +98,7 @@ claude plugins install standard-enforcer@standard-enforcer
 ```
 ## ASTRA 전역 개발환경 설정 결과
 
-### 전역 설정 (~/. claude/settings.json)
+### 전역 설정 (~/.claude/settings.json)
 - [ ] Agent Teams 환경변수: {상태}
 - [ ] 권한 모드 (bypassPermissions): {상태}
 - [ ] Always Thinking: {상태}
