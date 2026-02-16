@@ -1,0 +1,20 @@
+{
+  "name": "astra-init",
+  "version": "1.0.0",
+  "description": "ASTRA(AI-augmented Sprint Through Rapid Assembly) methodology Sprint 0 project initializer. Sets up project structure, CLAUDE.md, design system templates, blueprints, and quality gates according to the ASTRA methodology.",
+  "author": {
+    "name": "ZeanX AI",
+    "email": "contact@zeanx.ai"
+  },
+  "repository": "https://github.com/ASTRA-TECHNOLOGY-COMPANY-LIMITED/astra-init",
+  "license": "MIT",
+  "keywords": [
+    "astra",
+    "spi",
+    "scrum",
+    "ai-enhanced",
+    "sprint-0",
+    "project-setup",
+    "methodology"
+  ]
+}
