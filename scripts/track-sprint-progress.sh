@@ -104,11 +104,11 @@ if [ -f "$TRACKER_FILE" ]; then
   REL_PATH=$(echo "$FILE_PATH" | sed "s|^$PROJECT_ROOT/||")
   LOG_ENTRY="| $TIMESTAMP | $EVENT | $REL_PATH | $DETAIL |"
 
-  # Insert before <!-- ACTIVITY_LOG_END --> marker using temp file
+  # Insert before <!-- ACTIVITY_LOG_END --> marker using temp file (awk for macOS/Linux portability)
   if grep -q '<!-- ACTIVITY_LOG_END -->' "$TRACKER_FILE"; then
     TMPFILE=$(mktemp)
-    sed "/<!-- ACTIVITY_LOG_END -->/i\\
-$LOG_ENTRY" "$TRACKER_FILE" > "$TMPFILE" && mv "$TMPFILE" "$TRACKER_FILE"
+    awk -v entry="$LOG_ENTRY" '/<!-- ACTIVITY_LOG_END -->/ { print entry } { print }' \
+      "$TRACKER_FILE" > "$TMPFILE" && mv "$TMPFILE" "$TRACKER_FILE"
   fi
 fi
 

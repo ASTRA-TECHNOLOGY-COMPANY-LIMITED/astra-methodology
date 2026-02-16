@@ -77,6 +77,11 @@ Checks whether `docs/tests/test-strategy.md` contains the following sections:
 - [ ] Agent Teams environment variable in `~/.claude/settings.json`
 - [ ] 3 MCP servers in `~/.claude/.mcp.json` (chrome-devtools, postgres, context7)
 
+### G. Quality Gate Verification
+
+Checks whether hookify rules are configured:
+- Existence of `hookify.*.local.md` files in the `.claude/` directory
+
 ### H. Sprint Progress Tracking Verification
 
 Checks whether sprint progress tracking is configured:
@@ -89,11 +94,6 @@ If `docs/prompts/sprint-1-progress.md` exists, verify it contains:
 - [ ] Progress table section (`<!-- PROGRESS_TABLE_START -->` ... `<!-- PROGRESS_TABLE_END -->`)
 - [ ] Activity log section (`<!-- ACTIVITY_LOG_START -->` ... `<!-- ACTIVITY_LOG_END -->`)
 - [ ] Summary section (`<!-- SUMMARY_START -->` ... `<!-- SUMMARY_END -->`)
-
-### G. Quality Gate Verification
-
-Checks whether hookify rules are configured:
-- Existence of `hookify.*.local.md` files in the `.claude/` directory
 
 ## Result Output
 
