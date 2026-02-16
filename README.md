@@ -74,7 +74,6 @@ claude plugin install astra-methodology@astra
 | `/generate-entity` | Korean definition -> Entity code generation | `/generate-entity 고객 테이블: 고객명, 고객번호, 생년월일` |
 | `/check-naming` | DB naming standard compliance check | `/check-naming src/entity/Customer.java` |
 | `/check-convention` | Coding convention compliance check | `/check-convention src/` |
-| `/generate-intl-component` | International code component generation | `/generate-intl-component country-selector` |
 
 ### `/lookup-term` Example
 
@@ -270,8 +269,7 @@ astra-methodology/
 │   ├── check-naming.md            #   /check-naming
 │   ├── check-convention.md        #   /check-convention
 │   ├── lookup-term.md             #   /lookup-term
-│   ├── lookup-code.md             #   /lookup-code
-│   └── generate-intl-component.md #   /generate-intl-component
+│   └── lookup-code.md             #   /lookup-code
 ├── hooks/                         # PostToolUse hooks
 │   └── hooks.json
 ├── scripts/                       # Shell scripts

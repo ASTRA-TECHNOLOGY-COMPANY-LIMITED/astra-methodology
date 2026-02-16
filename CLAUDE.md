@@ -38,8 +38,7 @@ astra-methodology/
 │   ├── check-naming.md          # /check-naming — DB naming standard compliance check
 │   ├── check-convention.md      # /check-convention — coding convention compliance check
 │   ├── lookup-term.md           # /lookup-term — standard term dictionary lookup
-│   ├── lookup-code.md           # /lookup-code — international code lookup (ISO/ITU)
-│   └── generate-intl-component.md # /generate-intl-component — international code component generation
+│   └── lookup-code.md           # /lookup-code — international code lookup (ISO/ITU)
 ├── hooks/               # PostToolUse hooks (hooks.json)
 ├── scripts/             # Shell scripts for hooks and verification
 ├── data/                # Standard dictionary and international code JSON files

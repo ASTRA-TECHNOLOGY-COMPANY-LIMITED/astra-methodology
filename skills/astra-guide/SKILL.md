@@ -110,7 +110,7 @@ ASTRA Tools:
 ```
 Gate 1: WRITE-TIME (at write time, automatic)
   ├─ security-guidance: 9 security pattern blocks
-  ├─ standard-enforcer: Forbidden word + naming check
+  ├─ astra-methodology: Forbidden word + naming check
   ├─ hookify: Project-specific custom rules
   └─ coding-convention: Convention auto-application
 

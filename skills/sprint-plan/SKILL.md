@@ -191,7 +191,7 @@ Create the `docs/sprints/sprint-{N}/retrospective.md` file:
 ## AI Analysis Data
 - code-review recurring issues: [auto-collected]
 - security-guidance blocked count: [auto-collected]
-- standard-enforcer violation frequency: [auto-collected]
+- astra-methodology violation frequency: [auto-collected]
 
 ## Team Discussion (areas AI cannot catch)
 
