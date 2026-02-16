@@ -55,8 +55,7 @@ check "docs/database/migration/" "[ -d '${PROJECT_ROOT}/docs/database/migration'
 check "docs/tests/" "[ -d '${PROJECT_ROOT}/docs/tests' ]"
 check "docs/tests/test-cases/" "[ -d '${PROJECT_ROOT}/docs/tests/test-cases' ]"
 check "docs/tests/test-reports/" "[ -d '${PROJECT_ROOT}/docs/tests/test-reports' ]"
-check "docs/prompts/" "[ -d '${PROJECT_ROOT}/docs/prompts' ]"
-check "docs/retrospectives/" "[ -d '${PROJECT_ROOT}/docs/retrospectives' ]"
+check "docs/sprints/" "[ -d '${PROJECT_ROOT}/docs/sprints' ]"
 check "docs/delivery/" "[ -d '${PROJECT_ROOT}/docs/delivery' ]"
 check "src/" "[ -d '${PROJECT_ROOT}/src' ]"
 echo ""
@@ -70,7 +69,7 @@ check "overview.md" "[ -f '${PROJECT_ROOT}/docs/blueprints/overview.md' ]"
 check "database-design.md" "[ -f '${PROJECT_ROOT}/docs/database/database-design.md' ]"
 check "naming-rules.md" "[ -f '${PROJECT_ROOT}/docs/database/naming-rules.md' ]"
 check "test-strategy.md" "[ -f '${PROJECT_ROOT}/docs/tests/test-strategy.md' ]"
-check "sprint-1.md (prompt map)" "[ -f '${PROJECT_ROOT}/docs/prompts/sprint-1.md' ]"
+check "sprint-1/prompt-map.md" "[ -f '${PROJECT_ROOT}/docs/sprints/sprint-1/prompt-map.md' ]"
 echo ""
 
 # 4. CLAUDE.md content verification

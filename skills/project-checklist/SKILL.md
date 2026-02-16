@@ -25,7 +25,7 @@ Checks the existence of the following files/directories:
 | `docs/database/database-design.md` | Required | Central DB design document |
 | `docs/database/naming-rules.md` | Required | DB naming rules |
 | `docs/tests/test-strategy.md` | Required | Test strategy document |
-| `docs/prompts/sprint-1.md` | Required | First sprint prompt map |
+| `docs/sprints/sprint-1/prompt-map.md` | Required | First sprint prompt map |
 
 ### B. CLAUDE.md Content Verification
 
@@ -88,9 +88,9 @@ Checks whether sprint progress tracking is configured:
 
 | Path | Required | Description |
 |------|----------|-------------|
-| `docs/prompts/sprint-1-progress.md` | Optional | Sprint 1 progress tracker |
+| `docs/sprints/sprint-1/progress.md` | Optional | Sprint 1 progress tracker |
 
-If `docs/prompts/sprint-1-progress.md` exists, verify it contains:
+If `docs/sprints/sprint-1/progress.md` exists, verify it contains:
 - [ ] Progress table section (`<!-- PROGRESS_TABLE_START -->` ... `<!-- PROGRESS_TABLE_END -->`)
 - [ ] Activity log section (`<!-- ACTIVITY_LOG_START -->` ... `<!-- ACTIVITY_LOG_END -->`)
 - [ ] Summary section (`<!-- SUMMARY_START -->` ... `<!-- SUMMARY_END -->`)

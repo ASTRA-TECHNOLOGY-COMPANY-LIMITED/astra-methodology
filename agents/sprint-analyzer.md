@@ -2,7 +2,7 @@
 name: sprint-analyzer
 description: >
   Analyzes sprint progress and automatically generates retrospective data.
-  Used for async Daily Scrum reporting and Sprint Retrospective AI analysis.
+  Used for async Daily Scrum reporting, Sprint Retrospective AI analysis, and next sprint planning support.
 tools: Read, Grep, Glob, Bash
 disallowedTools: Write, Edit
 model: sonnet
@@ -82,7 +82,7 @@ Comprehensively analyzes data for the entire sprint period.
 - **Recurring issues**: Repeated modifications to the same file/module (signal of insufficient design)
 
 #### E. Sprint Progress Tracker
-- Read `docs/prompts/sprint-{N}-progress.md` (if it exists)
+- Read `docs/sprints/sprint-{N}/progress.md` (if it exists)
 - Compare tracker data with git history for consistency
 - Include feature-level completion data in report
 - Flag discrepancies between tracker status and actual file existence

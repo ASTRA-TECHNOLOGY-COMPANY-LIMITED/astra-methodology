@@ -22,8 +22,7 @@ directories=(
     "docs/database/migration"
     "docs/tests/test-cases"
     "docs/tests/test-reports"
-    "docs/prompts"
-    "docs/retrospectives"
+    "docs/sprints"
     "docs/delivery"
     "src"
 )
@@ -44,7 +43,6 @@ gitkeep_dirs=(
     "docs/database/migration"
     "docs/tests/test-cases"
     "docs/tests/test-reports"
-    "docs/retrospectives"
     "docs/delivery"
     "src"
 )

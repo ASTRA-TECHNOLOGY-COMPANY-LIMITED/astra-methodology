@@ -1,6 +1,8 @@
 ---
 name: astra-verifier
-description: "Agent that verifies ASTRA methodology compliance. Inspects project structure, CLAUDE.md, design documents, and quality gate settings."
+description: >
+  Verifies ASTRA methodology compliance by inspecting project structure, CLAUDE.md, design documents, and quality gate settings.
+  Used proactively when checking project setup completeness or before sprint start.
 tools: Read, Grep, Glob, Bash
 disallowedTools: Write, Edit
 model: haiku
@@ -33,7 +35,7 @@ docs/database/migration/
 docs/tests/test-strategy.md
 docs/tests/test-cases/
 docs/tests/test-reports/
-docs/prompts/sprint-*.md
+docs/sprints/sprint-*/prompt-map.md
 ```
 
 ### 2. CLAUDE.md Quality
