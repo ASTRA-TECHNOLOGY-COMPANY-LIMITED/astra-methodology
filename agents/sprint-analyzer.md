@@ -81,6 +81,13 @@ Comprehensively analyzes data for the entire sprint period.
 - **Negative patterns**: Large commits, Friday-concentrated work, missing tests, outdated documentation
 - **Recurring issues**: Repeated modifications to the same file/module (signal of insufficient design)
 
+#### E. Sprint Progress Tracker
+- Read `docs/prompts/sprint-{N}-progress.md` (if it exists)
+- Compare tracker data with git history for consistency
+- Include feature-level completion data in report
+- Flag discrepancies between tracker status and actual file existence
+- Report features that appear complete in code but not marked in tracker
+
 **Output Format:**
 ```
 ## Sprint {N} Retrospective Analysis Report

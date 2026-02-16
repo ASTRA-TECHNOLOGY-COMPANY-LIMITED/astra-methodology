@@ -1,5 +1,5 @@
 ---
-name: project-test-scenario
+name: test-scenario
 description: "Creates E2E test scenarios based on the project's existing work context. Analyzes blueprints, DB design, routes, and API endpoints to generate comprehensive test scenarios for integration testing."
 argument-hint: "[feature-name or 'all']"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
@@ -258,7 +258,7 @@ After user confirmation, output a final summary:
 - docs/tests/test-cases/cross-feature-e2e-scenarios.md
 
 ### Next Steps
-1. Run `/project-test-run` to execute the generated scenarios in a real browser
+1. Run `/test-run` to execute the generated scenarios in a real browser
 2. Run test-coverage-analyzer agent to verify test coverage against test-strategy.md
 3. Iterate: add missing scenarios as new edge cases are discovered during testing
 ```
@@ -267,19 +267,19 @@ After user confirmation, output a final summary:
 
 ```
 # Generate E2E scenarios for a specific feature
-/project-test-scenario auth
+/test-scenario auth
 
 # Generate E2E scenarios for all discovered features
-/project-test-scenario all
+/test-scenario all
 
 # Interactive mode — discover features and let user choose
-/project-test-scenario
+/test-scenario
 ```
 
 ## Notes
 
 - Scenario files are additive — running again for the same feature updates existing files rather than overwriting
-- Scenarios are designed to be directly executable by the `/project-test-run` skill
+- Scenarios are designed to be directly executable by the `/test-run` skill
 - The scenario format is compatible with the test-coverage-analyzer agent for coverage verification
 - Cross-feature scenarios are only generated when multiple features are selected
 - Priority levels follow the criteria defined in `e2e-scenario-guide.md`

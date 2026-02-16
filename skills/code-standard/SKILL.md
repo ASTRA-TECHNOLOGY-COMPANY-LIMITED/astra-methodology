@@ -1,5 +1,5 @@
 ---
-name: international-code
+name: code-standard
 description: >
   Automatically provides support for writing code based on ISO 3166-1/3166-2 and
   ITU-T E.164 standard data when implementing components that handle international
@@ -9,7 +9,7 @@ description: >
 # International Standard Code Application Skill
 
 When implementing phone number, country code, and region code related components, you must follow the standards below.
-For the detailed guide, refer to international-code-reference.md in this directory.
+For the detailed guide, refer to code-standard-reference.md in this directory.
 
 ## Application Targets
 

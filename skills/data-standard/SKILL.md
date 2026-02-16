@@ -1,5 +1,5 @@
 ---
-name: project-standard
+name: data-standard
 description: >
   Automatically applies the public data standard terminology dictionary when writing
   database tables, entity classes, SQL, and migration files. Uses standard English

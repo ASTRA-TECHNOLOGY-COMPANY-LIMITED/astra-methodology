@@ -1,5 +1,5 @@
 ---
-name: project-test-run
+name: test-run
 description: "Launches the server and performs integration testing with Chrome MCP. Automatically conducts server log monitoring, page verification, API behavior checks, and performance measurement."
 argument-hint: "[target URL or scenario]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__fill_form, mcp__chrome-devtools__press_key, mcp__chrome-devtools__hover, mcp__chrome-devtools__list_console_messages, mcp__chrome-devtools__get_console_message, mcp__chrome-devtools__list_network_requests, mcp__chrome-devtools__get_network_request, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__emulate, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__new_page, mcp__chrome-devtools__handle_dialog, mcp__chrome-devtools__performance_start_trace, mcp__chrome-devtools__performance_stop_trace, mcp__chrome-devtools__performance_analyze_insight
@@ -273,13 +273,13 @@ Confirm with the user before shutting down the server.
 
 ```
 # Test specific URL (analyze the page → write test cases → execute)
-/project-test-run http://localhost:3000
+/test-run http://localhost:3000
 
 # Test specific scenario (write test cases based on scenario → execute)
-/project-test-run login flow
+/test-run login flow
 
 # Full integration test (analyze project → write test cases → execute)
-/project-test-run
+/test-run
 ```
 
 ## Notes

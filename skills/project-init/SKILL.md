@@ -161,6 +161,8 @@ Create the following files under `docs/design-system/`.
 
 **docs/prompts/sprint-1.md**: First sprint prompt map template
 
+**docs/prompts/sprint-1-progress.md**: First sprint progress tracker (template format with placeholder features — features will be populated when the sprint is actually planned)
+
 ### Step 9: Create Project Configuration File
 
 **.claude/settings.json**: Project-specific Claude Code settings

@@ -30,6 +30,12 @@
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/validate-naming.sh",
             "timeout": 30,
             "statusMessage": "네이밍 규칙 검사 중..."
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/track-sprint-progress.sh",
+            "timeout": 15,
+            "statusMessage": "스프린트 진행 추적 중..."
           }
         ]
       }

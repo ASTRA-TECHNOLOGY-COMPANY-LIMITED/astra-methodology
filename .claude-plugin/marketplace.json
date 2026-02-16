@@ -13,7 +13,7 @@
     {
       "name": "astra-methodology",
       "description": "ASTRA methodology plugin with coding convention enforcement (Java/TypeScript/React Native/Python/CSS/SCSS), data standard, international code standards, naming validation, and quality gates",
-      "version": "2.2.1",
+      "version": "2.3.0",
       "author": {
         "name": "Zeans.L",
         "email": "zeans@astravision.co.kr"

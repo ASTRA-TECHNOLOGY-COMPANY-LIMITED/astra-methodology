@@ -484,7 +484,7 @@ ISO 3166-1/2, E.164 표준에 맞게 추가해줘.
 /generate-intl-component 전화번호 입력
 ```
 
-> **`international-code` 스킬은 전화번호 입력, 국가/지역 선택기, 주소 양식 작업 시 자동 감지되어 적용됩니다.**
+> **`code-standard` 스킬은 전화번호 입력, 국가/지역 선택기, 주소 양식 작업 시 자동 감지되어 적용됩니다.**
 
 #### D. 테스트 전략 문서 작성
 
@@ -599,7 +599,7 @@ ISO 3166-1/2, E.164 표준에 맞게 추가해줘.
 | `hookify` | 프로젝트별 커스텀 규칙 | PreToolUse/PostToolUse 훅 |
 | `coding-convention` 스킬 | Java/TS/Python/CSS/SCSS 컨벤션 자동 적용 | Skill (자동 감지) |
 | `data-standard` 스킬 | 공공 데이터 표준 용어 사전 적용 | Skill (DB 코드 시 자동 감지) |
-| `international-code` 스킬 | ISO 3166-1/2, ITU-T E.164 표준 적용 | Skill (전화번호/국가/주소 코드 시 자동 감지) |
+| `code-standard` 스킬 | ISO 3166-1/2, ITU-T E.164 표준 적용 | Skill (전화번호/국가/주소 코드 시 자동 감지) |
 
 **코딩 컨벤션 상세 (언어별 자동 적용 규칙):**
 
@@ -816,7 +816,7 @@ docs/database/database-design.md의 내용을 엄격히 준수해서
 /generate-intl-component 지역 선택기     # → ISO 3166-2 기반 지역 드롭다운 (국가 연동)
 
 # DB 엔티티에 국제 코드 컬럼 포함 시 자동 검증
-# → international-code 스킬이 자동 감지되어 NATN_CD, RGN_CD, INTL_TELNO 규칙 적용
+# → code-standard 스킬이 자동 감지되어 NATN_CD, RGN_CD, INTL_TELNO 규칙 적용
 ```
 
 #### E. 실시간 검증 (chrome-devtools MCP)

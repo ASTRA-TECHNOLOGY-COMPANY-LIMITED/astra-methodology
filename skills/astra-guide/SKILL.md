@@ -54,7 +54,7 @@ Code Review:
 
 ```
 Step R.1: System Integration Testing
-  /project-test-run               Server launch + Chrome MCP integration testing
+  /test-run                       Server launch + Chrome MCP integration testing
   - API integration testing
   - DB data consistency verification
   - Performance profiling
@@ -92,11 +92,15 @@ Quality Rules:
   /hookify [description]         Create behavior prevention rule
   /hookify:list                  List current rules
 
+Sprint Progress:
+  (automatic)                    Sprint progress auto-tracking on file events
+  /sprint-plan [number]           Sprint plan init (includes progress tracker)
+
 ASTRA Tools:
   /project-init [project info]   Sprint 0 initial setup
   /astra-setup                   Global dev environment setup
-  /project-sprint [number]       Sprint initialization
-  /project-test-run [URL/scenario]   Server launch + Chrome MCP integration testing
+  /sprint-plan [number]           Sprint planning & initialization
+  /test-run [URL/scenario]         Server launch + Chrome MCP integration testing
   /project-checklist             Sprint 0 completion verification
   /astra-guide [section]         Quick reference guide
 ```

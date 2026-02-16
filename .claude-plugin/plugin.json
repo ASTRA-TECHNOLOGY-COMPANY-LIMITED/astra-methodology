@@ -1,6 +1,6 @@
 {
   "name": "astra-methodology",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "description": "ASTRA(AI-augmented Sprint Through Rapid Assembly) methodology plugin. Sprint 0 project initialization, coding convention enforcement (Java/TypeScript/React Native/Python/CSS/SCSS), Korean public data standard, international code standards (ISO 3166-1/2, ITU-T E.164), naming validation, and quality gates.",
   "author": {
     "name": "Zeans.L",
@@ -28,6 +28,6 @@
     "react-native",
     "expo",
     "iso-3166",
-    "international-code"
+    "code-standard"
   ]
 }

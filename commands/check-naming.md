@@ -18,7 +18,7 @@ Check whether DB-related naming in $ARGUMENTS complies with standards.
 | `data/standard_words.json` | 3,284 standard words | Forbidden word detection, word combination check |
 | `data/standard_domains.json` | 123 standard domains | Data type/length check |
 
-Detailed guide: `skills/project-standard/data-standard-terminology-guide.md`
+Detailed guide: `skills/data-standard/data-standard-terminology-guide.md`
 
 ## Check Targets
 
