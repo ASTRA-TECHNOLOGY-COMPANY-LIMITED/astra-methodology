@@ -8,7 +8,7 @@ allowed-tools: Read, Glob, Grep
 
 Check coding convention compliance for $ARGUMENTS.
 
-> For in-depth analysis, the `convention-checker` agent can be used.
+> For in-depth analysis, the `convention-validator` agent can be used.
 
 ## Check Procedure
 

@@ -60,11 +60,9 @@ Create the following structure in the current working directory (CWD):
 │   │   └── test-reports/
 │   │       └── .gitkeep
 │   │
-│   ├── prompts/
-│   │   └── sprint-1.md
-│   │
-│   ├── retrospectives/
-│   │   └── .gitkeep
+│   ├── sprints/
+│   │   └── sprint-1/
+│   │       └── .gitkeep
 │   │
 │   └── delivery/
 │       └── .gitkeep
@@ -159,9 +157,9 @@ Create the following files under `docs/design-system/`.
 
 ### Step 8: Create Sprint Template
 
-**docs/prompts/sprint-1.md**: First sprint prompt map template
+**docs/sprints/sprint-1/prompt-map.md**: First sprint prompt map template
 
-**docs/prompts/sprint-1-progress.md**: First sprint progress tracker (template format with placeholder features — features will be populated when the sprint is actually planned)
+**docs/sprints/sprint-1/progress.md**: First sprint progress tracker (template format with placeholder features — features will be populated when the sprint is actually planned)
 
 ### Step 9: Create Project Configuration File
 
@@ -181,8 +179,7 @@ After all files are created, output the following:
 - docs/blueprints/ (design document templates)
 - docs/database/ (DB design documents, naming rules, migrations)
 - docs/tests/ (test strategy, test cases, test reports)
-- docs/prompts/ (sprint prompt maps)
-- docs/retrospectives/ (for retrospective records)
+- docs/sprints/ (sprint prompt maps, progress trackers, retrospectives)
 - docs/delivery/ (for release artifacts)
 
 ### Next Steps (Sprint 0 progress)

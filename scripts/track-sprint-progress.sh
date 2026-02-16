@@ -18,7 +18,7 @@ fi
 
 # Skip self-referential writes to prevent loops
 BASENAME=$(basename "$FILE_PATH")
-if echo "$BASENAME" | grep -qE '^sprint-[0-9]+-progress\.md$'; then
+if [ "$BASENAME" = "progress.md" ] && echo "$FILE_PATH" | grep -q '/docs/sprints/sprint-[0-9]*/'; then
   exit 0
 fi
 
@@ -73,18 +73,18 @@ if [ -z "$PROJECT_ROOT" ]; then
   exit 0
 fi
 
-PROMPTS_DIR="$PROJECT_ROOT/docs/prompts"
+SPRINTS_DIR="$PROJECT_ROOT/docs/sprints"
 
-# Exit if prompts directory doesn't exist
-if [ ! -d "$PROMPTS_DIR" ]; then
+# Exit if sprints directory doesn't exist
+if [ ! -d "$SPRINTS_DIR" ]; then
   exit 0
 fi
 
-# Detect current sprint number (highest sprint-{N}.md in docs/prompts/)
+# Detect current sprint number (highest sprint-{N} directory in docs/sprints/)
 SPRINT_NUM=""
-for f in "$PROMPTS_DIR"/sprint-*.md; do
-  [ -f "$f" ] || continue
-  NUM=$(basename "$f" | sed -n 's/^sprint-\([0-9]*\)\.md$/\1/p')
+for d in "$SPRINTS_DIR"/sprint-*/; do
+  [ -d "$d" ] || continue
+  NUM=$(basename "$d" | sed -n 's/^sprint-\([0-9]*\)$/\1/p')
   if [ -n "$NUM" ]; then
     if [ -z "$SPRINT_NUM" ] || [ "$NUM" -gt "$SPRINT_NUM" ]; then
       SPRINT_NUM="$NUM"
@@ -96,7 +96,7 @@ if [ -z "$SPRINT_NUM" ]; then
   exit 0
 fi
 
-TRACKER_FILE="$PROMPTS_DIR/sprint-${SPRINT_NUM}-progress.md"
+TRACKER_FILE="$SPRINTS_DIR/sprint-${SPRINT_NUM}/progress.md"
 
 # If tracker file exists, append activity log entry
 if [ -f "$TRACKER_FILE" ]; then
@@ -113,6 +113,6 @@ if [ -f "$TRACKER_FILE" ]; then
 fi
 
 # Output message for the LLM
-echo "[ASTRA] Sprint progress: ${EVENT} detected for '${DETAIL}'. Update the progress table in sprint-${SPRINT_NUM}-progress.md."
+echo "[ASTRA] Sprint progress: ${EVENT} detected for '${DETAIL}'. Update the progress table in docs/sprints/sprint-${SPRINT_NUM}/progress.md."
 
 exit 0

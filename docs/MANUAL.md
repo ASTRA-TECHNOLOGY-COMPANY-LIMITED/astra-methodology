@@ -143,7 +143,7 @@ ASTRA:
 
 | 스크럼 아티팩트 | ASTRA 진화 형태 |
 |-------------|---------------|
-| Product Backlog | + `docs/prompts/` 프롬프트 맵 연결 |
+| Product Backlog | + `docs/sprints/` 프롬프트 맵 연결 |
 | Sprint Backlog | + 기능별 프롬프트 + 설계 문서(MD) |
 | Increment | + 자동 품질 리포트 + Living Document |
 | Definition of Done (수동 체크) | + AI 품질 게이트 자동 검증 (Gate 1-3) |
@@ -620,7 +620,7 @@ PR 생성/기능 완료 시 실행합니다.
 | `/code-review` | CLAUDE.md 준수, 버그, 이력 분석 | 5개 에이전트 병렬, 80점+ 필터링 |
 | `blueprint-reviewer` 에이전트 | 설계 문서 품질/일관성 검증 | Sonnet, 읽기 전용 |
 | `test-coverage-analyzer` 에이전트 | 테스트 전략/커버리지 분석 | Haiku, 읽기 전용 |
-| `convention-checker` 에이전트 | 코딩 컨벤션 심층 분석 | Haiku, 읽기 전용 |
+| `convention-validator` 에이전트 | 코딩 컨벤션 검증 | Haiku, 읽기 전용 |
 
 ### Gate 2.5: DESIGN-TIME (디자인 검수 시점)
 
@@ -1103,12 +1103,13 @@ project-root/
 │   │   └── test-reports/        # 스프린트별 테스트 결과 보고서
 │   │       └── sprint-1-report.md
 │   │
-│   ├── prompts/                 # 스프린트별 프롬프트 맵
-│   │   ├── sprint-1.md
-│   │   └── sprint-2.md
-│   │
-│   ├── retrospectives/          # 스프린트 회고 기록
-│   │   └── sprint-1-retro.md
+│   ├── sprints/                 # 스프린트 문서 (프롬프트 맵, 진행 추적, 회고)
+│   │   ├── sprint-1/
+│   │   │   ├── prompt-map.md
+│   │   │   ├── progress.md
+│   │   │   └── retrospective.md
+│   │   └── sprint-2/
+│   │       └── prompt-map.md
 │   │
 │   └── delivery/                # Release Sprint 산출물
 │       ├── operation-manual.md
@@ -1259,7 +1260,7 @@ docs/design-system/design-tokens.css의 토큰 시스템을 반드시 사용할 
 |----------|------|--------|------|
 | `astra-verifier` | Haiku | - | ASTRA 방법론 준수 여부 점검 |
 | `naming-validator` | Haiku | Gate 1 | DB 네이밍 표준 검증 |
-| `convention-checker` | Haiku | Gate 1/2 | 코딩 컨벤션 심층 분석 (Java/TS/Python/CSS/SCSS) |
+| `convention-validator` | Haiku | Gate 1/2 | 코딩 컨벤션 검증 (Java/TS/RN/Python/CSS/SCSS) |
 | `blueprint-reviewer` | Sonnet | Gate 2 | 설계 문서 품질/일관성 검증 |
 | `test-coverage-analyzer` | Haiku | Gate 2 | 테스트 전략/커버리지 분석 |
 | `design-token-validator` | Haiku | Gate 2.5 | 디자인 토큰 시스템 준수 자동 검증 |

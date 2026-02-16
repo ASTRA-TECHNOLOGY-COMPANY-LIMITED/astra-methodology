@@ -2,7 +2,7 @@
 name: naming-validator
 description: >
   Validates that naming in DB entities, SQL, and DTOs complies with the public data standard terminology dictionary.
-  Used during data modeling, entity creation, SQL writing, and DTO design.
+  Used during data modeling, entity creation, SQL writing, and DTO design. Corresponds to Gate 1 DB naming standard verification.
 tools: Read, Grep, Glob, Bash
 disallowedTools: Write, Edit
 model: haiku

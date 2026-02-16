@@ -121,7 +121,7 @@ public class TbCstmr {
 |----------|------|------|
 | `naming-validator` | haiku | DB entity naming standard validation — column names, suffix patterns, domain rules, forbidden word detection |
 | `astra-verifier` | haiku | ASTRA methodology compliance verification (read-only) — project structure, CLAUDE.md, design document checks |
-| `convention-checker` | haiku | Coding convention deep analysis (Java/TS/RN/Python/CSS/SCSS) |
+| `convention-validator` | haiku | Coding convention validation (Java/TS/RN/Python/CSS/SCSS) — Gate 1/2 |
 | `blueprint-reviewer` | sonnet | Design document quality & consistency — Gate 2 |
 | `design-token-validator` | haiku | Design token system compliance — Gate 2.5 |
 | `sprint-analyzer` | sonnet | Sprint progress & retrospective analysis |
@@ -205,8 +205,7 @@ Structure generated in the target project when `/project-init` is executed:
 │   ├── tests/                             # Test strategy, cases, reports
 │   │   ├── test-cases/
 │   │   └── test-reports/
-│   ├── prompts/                           # Sprint prompt maps
-│   ├── retrospectives/                    # Sprint retrospectives
+│   ├── sprints/                           # Sprint documents (prompt maps, progress, retrospectives)
 │   └── delivery/                          # Release artifacts
 └── src/                                   # Source code
 ```
@@ -260,7 +259,7 @@ astra-methodology/
 ├── agents/                        # 8 specialized agents
 │   ├── astra-verifier.md          #   ASTRA compliance verification
 │   ├── naming-validator.md        #   DB naming standard validation
-│   ├── convention-checker.md      #   Coding convention deep analysis
+│   ├── convention-validator.md     #   Coding convention validation
 │   ├── blueprint-reviewer.md      #   Design document quality & consistency
 │   ├── design-token-validator.md  #   Design token system compliance
 │   ├── sprint-analyzer.md         #   Sprint progress & retrospective analysis

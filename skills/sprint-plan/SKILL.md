@@ -13,7 +13,7 @@ Creates prompt maps and retrospective templates for a new sprint.
 
 ### Step 1: Confirm Sprint Number
 
-Parse the sprint number from `$ARGUMENTS`. If not provided, check existing files in the `docs/prompts/` directory to automatically determine the next number.
+Parse the sprint number from `$ARGUMENTS`. If not provided, check existing directories in the `docs/sprints/` directory (e.g., `sprint-1/`, `sprint-2/`) to automatically determine the next number.
 
 ### Step 1.5: Analyze Previous Sprint (skip if N = 1)
 
@@ -21,7 +21,7 @@ If this is Sprint 2 or later, analyze the previous sprint's results before creat
 
 #### A. Read Previous Sprint Progress Tracker
 
-Read `docs/prompts/sprint-{N-1}-progress.md` and extract:
+Read `docs/sprints/sprint-{N-1}/progress.md` and extract:
 
 1. **Incomplete features**: rows where Status ≠ `Completed` — these are carryover candidates
 2. **Partially completed features**: rows where some columns are `Done` but Status ≠ `Completed` — identify exactly which pipeline stages remain (e.g., "Blueprint Done, Implementation WIP, Test Report missing")
@@ -29,7 +29,7 @@ Read `docs/prompts/sprint-{N-1}-progress.md` and extract:
 
 #### B. Read Previous Sprint Retrospective
 
-Read `docs/retrospectives/sprint-{N-1}-retro.md` and extract:
+Read `docs/sprints/sprint-{N-1}/retrospective.md` and extract:
 
 1. **Improvement actions** from the "What to try (Try)" section
 2. **Automated improvement actions** (hookify rules, CLAUDE.md updates)
@@ -72,7 +72,7 @@ Ask the user (VA/PE) to confirm which carryover items to include in this sprint 
 
 ### Step 2: Create Sprint Prompt Map
 
-Create the `docs/prompts/sprint-{N}.md` file.
+Create the `docs/sprints/sprint-{N}/prompt-map.md` file.
 
 If there are carryover items from Step 1.5, list them first as `(Carryover)` features before new features. Carryover features that already have blueprints should skip the Design Prompt (1.1) and note the existing blueprint path instead. Similarly, skip any pipeline stage that is already `Done` from the previous sprint.
 
@@ -134,9 +134,9 @@ report results to docs/tests/test-reports/."
 
 ### Step 2.5: Create Sprint Progress Tracker
 
-Read the prompt map created in Step 2 (`docs/prompts/sprint-{N}.md`) and extract feature names from `## Feature {N}: {name}` headers.
+Read the prompt map created in Step 2 (`docs/sprints/sprint-{N}/prompt-map.md`) and extract feature names from `## Feature {N}: {name}` headers.
 
-Create the `docs/prompts/sprint-{N}-progress.md` file:
+Create the `docs/sprints/sprint-{N}/progress.md` file:
 
 ```markdown
 # Sprint {N} Progress Tracker
@@ -181,7 +181,7 @@ Create the `docs/prompts/sprint-{N}-progress.md` file:
 
 ### Step 3: Create Retrospective Template
 
-Create the `docs/retrospectives/sprint-{N}-retro.md` file:
+Create the `docs/sprints/sprint-{N}/retrospective.md` file:
 
 ```markdown
 # Sprint {N} Retrospective
@@ -215,9 +215,9 @@ Create the `docs/retrospectives/sprint-{N}-retro.md` file:
 ## Sprint {N} Initialization Complete
 
 ### Generated Files
-- docs/prompts/sprint-{N}.md (prompt map)
-- docs/prompts/sprint-{N}-progress.md (progress tracker)
-- docs/retrospectives/sprint-{N}-retro.md (retrospective template)
+- docs/sprints/sprint-{N}/prompt-map.md (prompt map)
+- docs/sprints/sprint-{N}/progress.md (progress tracker)
+- docs/sprints/sprint-{N}/retrospective.md (retrospective template)
 
 ### Sprint Planning Procedure (1 hour)
 1. (10 min) Review previous sprint analysis & AI analysis report

@@ -4,7 +4,7 @@ description: >
   Automatically updates sprint progress tracking when blueprint, database design,
   test case, implementation, or test report files are created or modified.
   Used when writing files under docs/blueprints/, docs/database/, docs/tests/,
-  docs/prompts/, or src/ directories.
+  docs/sprints/, or src/ directories.
 ---
 
 # Sprint Progress Auto-Tracking Skill
@@ -23,9 +23,9 @@ This skill applies when writing or editing files matching these patterns:
 
 ## Current Sprint Detection
 
-1. Look in `docs/prompts/` for files matching `sprint-{N}.md`
+1. Look in `docs/sprints/` for directories matching `sprint-{N}/`
 2. The highest `{N}` is the current sprint number
-3. The tracker file is `docs/prompts/sprint-{N}-progress.md`
+3. The tracker file is `docs/sprints/sprint-{N}/progress.md`
 
 ## Update Procedures
 
@@ -33,7 +33,7 @@ This skill applies when writing or editing files matching these patterns:
 
 When a file under `docs/blueprints/` (excluding `overview.md`) is written:
 
-1. Open `docs/prompts/sprint-{N}-progress.md`
+1. Open `docs/sprints/sprint-{N}/progress.md`
 2. Find the feature row that matches the blueprint filename
 3. Set the **Blueprint** column to `Done`
 4. If no matching feature row exists (ad-hoc feature), add a new row with the feature name derived from the filename
@@ -83,9 +83,9 @@ When a file under `docs/tests/test-reports/` is written:
 
 ## Tracker File Auto-Creation
 
-If the tracker file `docs/prompts/sprint-{N}-progress.md` does not exist when an event occurs:
+If the tracker file `docs/sprints/sprint-{N}/progress.md` does not exist when an event occurs:
 
-1. Read the sprint prompt map `docs/prompts/sprint-{N}.md`
+1. Read the sprint prompt map `docs/sprints/sprint-{N}/prompt-map.md`
 2. Extract feature names from `## Feature {N}: {name}` headers
 3. Create the tracker file using the template below
 4. Then apply the appropriate update procedure
