@@ -13,6 +13,7 @@
 1. [방법론 개요](#1-방법론-개요)
 2. [스크럼에서 ASTRA로의 진화](#2-스크럼에서-astra로의-진화)
 3. [역할 정의](#3-역할-정의)
+- [개발 워크플로우](#개발-워크플로우)
 4. [디자인 시스템 작성](#4-디자인-시스템-작성)
 5. [블루프린트 작성](#5-블루프린트-작성)
 6. [데이터베이스 설계](#6-데이터베이스-설계)
@@ -25,6 +26,15 @@
 13. [사용자 테스트](#13-사용자-테스트)
 14. [메인 브랜치 머지](#14-메인-브랜치-머지)
 - [부록](#부록)
+  - [A: Claude Code 도구 빠른 참조](#부록-a-claude-code-도구-빠른-참조)
+  - [A-2: 에이전트 빠른 참조](#부록-a-2-에이전트-빠른-참조)
+  - [B: 프롬프트 작성 가이드](#부록-b-프롬프트-작성-가이드)
+  - [C: 위험 관리](#부록-c-위험-관리)
+  - [D: AI 에이전트 작업 시간 추정 근거](#부록-d-ai-에이전트-작업-시간-추정-근거)
+  - [E: Sprint 0 프로젝트 셋업](#부록-e-sprint-0-프로젝트-셋업)
+  - [F: 프로젝트 템플릿](#부록-f-프로젝트-템플릿)
+  - [G: 기대 효과](#부록-g-기대-효과)
+  - [H: 비용 효과](#부록-h-비용-효과)
 
 ---
 
@@ -111,7 +121,7 @@ ASTRA:
 | Daily Scrum | 15분 x 10일 = 2.5h | 비동기 | 커밋 기반 자동 진척 보고 |
 | Design Review | (별도 없음) | 1시간 | DSA의 AI 생성 UI 검수 |
 | Sprint Review | 2시간 | 1시간 | `chrome-devtools` 실시간 데모 |
-| Retrospective | 1.5시간 | 30분 | AI 분석 → `hookify` 자동화 |
+| Retrospective | 1.5시간 | 30분 | `sprint-analyzer` AI 분석 → `hookify` 자동화 |
 | Backlog Refinement | 2시간 | 30분 | `feature-dev` code-explorer 자동 분석 |
 | **합계** | **~12시간/스프린트** | **~4시간/스프린트** | **67% 절감** |
 
@@ -650,76 +660,24 @@ docs/database/database-design.md의 업데이트된 내용을 반영해서
 > - 라우트/API 엔드포인트 — 화면 흐름
 > - 기존 테스트 코드 — 누락된 시나리오
 
-### 9.2 테스트 케이스 문서 작성
+### 9.2 예시: 스프린트 1 테스트 시나리오 작성
+
+스프린트 1에서 인증 기능 구현이 완료된 후, `/test-scenario` 명령으로 테스트 시나리오를 작성하는 예시입니다.
 
 ```
-# 기능별 테스트 케이스 사전 정의
-/feature-dev "docs/blueprints/auth.md의 기능 요구사항을 기반으로
-테스트 케이스 문서를 docs/tests/test-cases/sprint-1/auth-test-cases.md로 작성해줘.
-- 단위 테스트: 서비스 레이어 핵심 로직 (해싱, 토큰 생성/검증)
-- 통합 테스트: API 엔드포인트 (회원가입/로그인/토큰갱신)
-- 엣지 케이스: 만료 토큰, 잘못된 비밀번호, 중복 이메일
-- Given-When-Then 형식으로 작성
-아직 코드는 수정하지 마."
-```
+# 스프린트 1 테스트 시나리오 자동 생성
+/test-scenario 스프린트 1에 대한 테스트 시나리오 작성해줘.
 
-### 9.3 예시: 스프린트 1 테스트 시나리오 작성
-
-스프린트 1에서 인증 기능 구현이 완료된 후, 테스트 시나리오를 작성하는 전체 흐름 예시입니다.
-
-#### Step 1: E2E 테스트 시나리오 자동 생성
-
-```
-# 프로젝트 전체 컨텍스트 기반 E2E 시나리오 자동 생성
-/test-scenario
-
-# → 자동 분석 항목:
-# 1. docs/blueprints/auth.md — 인증 기능 요구사항
-# 2. docs/database/database-design.md — TB_COMM_USER 등 테이블 구조
-# 3. src/ 라우트/API 엔드포인트 — 화면 흐름 및 API 경로
-# 4. 기존 테스트 코드 — 누락된 시나리오 식별
+# → /test-scenario가 자동으로 수행하는 작업:
+# 1. docs/blueprints/ 스캔 — 스프린트 1 기능 요구사항 수집
+# 2. docs/database/database-design.md 분석 — 관련 테이블 구조 파악
+# 3. src/ 라우트/API 엔드포인트 탐색 — 화면 흐름 및 API 경로 매핑
+# 4. 기존 테스트 코드 확인 — 누락된 시나리오 식별
 #
-# → 생성 결과: E2E 시나리오 문서 (회원가입→로그인→토큰갱신→권한검증 흐름)
-```
-
-#### Step 2: 기능별 테스트 케이스 문서 작성
-
-```
-# 인증 기능 테스트 케이스 정의
-/feature-dev "docs/blueprints/auth.md의 기능 요구사항을 기반으로
-테스트 케이스 문서를 docs/tests/test-cases/sprint-1/auth-test-cases.md로 작성해줘.
-- 단위 테스트: bcrypt 해싱, JWT 토큰 생성/검증, RBAC 권한 판단
-- 통합 테스트: POST /auth/signup, POST /auth/login, POST /auth/refresh
-- 엣지 케이스: 만료 토큰, 잘못된 비밀번호, 중복 이메일, 비활성 계정
-- Given-When-Then 형식으로 작성
-아직 코드는 수정하지 마."
-
-# → 생성 결과 예시 (docs/tests/test-cases/sprint-1/auth-test-cases.md):
-#
-# ## TC-AUTH-001: 회원가입 성공
-# - Given: 유효한 이메일과 비밀번호
-# - When: POST /auth/signup 요청
-# - Then: 201 Created + 사용자 정보 반환
-#
-# ## TC-AUTH-002: 중복 이메일 회원가입
-# - Given: 이미 등록된 이메일
-# - When: POST /auth/signup 요청
-# - Then: 409 Conflict + 에러 메시지
-#
-# ## TC-AUTH-003: 로그인 성공
-# - Given: 등록된 사용자 계정
-# - When: POST /auth/login 요청 (올바른 비밀번호)
-# - Then: 200 OK + Access Token + Refresh Token
-```
-
-#### Step 3: 테스트 케이스 검증
-
-```
-# 테스트 케이스가 블루프린트의 모든 요구사항을 커버하는지 확인
-/feature-dev "docs/blueprints/auth.md의 기능 목록과
-docs/tests/test-cases/sprint-1/auth-test-cases.md의 테스트 케이스를 비교해서
-누락된 시나리오가 있는지 분석해줘.
-아직 코드는 수정하지 마."
+# → 생성 결과: docs/tests/test-cases/sprint-1/ 에 테스트 시나리오 문서 생성
+#   - E2E 시나리오 (회원가입→로그인→토큰갱신→권한검증 흐름)
+#   - 기능별 테스트 케이스 (Given-When-Then 형식)
+#   - 엣지 케이스 및 에러 시나리오
 ```
 
 ---
@@ -870,7 +828,7 @@ UI 기능이 포함된 경우, DSA가 디자인 검수를 수행합니다.
 
 | 도구 | 검사 내용 |
 |------|----------|
-| `feature-dev` code-reviewer | 코드 품질/버그/컨벤션 (3개 에이전트 병렬) |
+| `feature-dev` (내장 code-reviewer) | 코드 품질/버그/컨벤션 (3개 에이전트 병렬) |
 | `/code-review` | CLAUDE.md 준수, 버그, 이력 분석 (5개 에이전트 병렬, 80점+ 필터링) |
 | `blueprint-reviewer` 에이전트 | 설계 문서 품질/일관성 검증 (Sonnet, 읽기 전용) |
 | `test-coverage-analyzer` 에이전트 | 테스트 전략/커버리지 분석 (Haiku, 읽기 전용) |
@@ -1162,8 +1120,8 @@ DE와 이해관계자가 스테이징 환경에서 직접 테스트합니다.
 | 에이전트 | 모델 | 게이트 | 역할 |
 |----------|------|--------|------|
 | `astra-verifier` | Haiku | - | ASTRA 방법론 준수 여부 점검 |
-| `naming-validator` | Haiku | Gate 1 | DB 네이밍 표준 검증 |
-| `convention-validator` | Haiku | Gate 1/2 | 코딩 컨벤션 검증 (Java/TS/RN/Python/CSS/SCSS) |
+| `naming-validator` | Haiku | Gate 1/3 | DB 네이밍 표준 검증 (Gate 1: 훅 자동 경고, Gate 3: 에이전트 검증) |
+| `convention-validator` | Haiku | Gate 1/2 | 코딩 컨벤션 검증 (Gate 1: 스킬 자동 적용, Gate 2: 에이전트 검증) |
 | `blueprint-reviewer` | Sonnet | Gate 2 | 설계 문서 품질/일관성 검증 |
 | `test-coverage-analyzer` | Haiku | Gate 2 | 테스트 전략/커버리지 분석 |
 | `design-token-validator` | Haiku | Gate 2.5 | 디자인 토큰 시스템 준수 자동 검증 |
@@ -1429,19 +1387,4 @@ project-root/
 
 ### 부록 H: 비용 효과
 
-```
-            기존 스크럼          ASTRA              절감
- 기간:      5개월               3개월              40% ↓
- 인원:      8명                 4명                50% ↓
- 인건비:    3.2억원             0.96억원           70% ↓
- API비용:   -                   0.07억원           -
- 총 비용:   3.5억원             1.1억원            69% ↓
-
- ※ 기간 단축 x 인원 절감의 승수 효과로 비용 절감
- ※ 시간 단축률은 METR 연구 기반 40~60% 적용 (구조화된 AI 워크플로우 기준)
- ※ 품질은 AI 자동 게이트로 오히려 향상 (표준 준수율 60~70% → 95%+)
-```
-
-> **기간과 인원이 동시에 줄어드는 비결:**
-> AI 에이전트가 **반복적 수동 작업**(코딩, 리뷰, 테스트, 표준 검사)을 흡수하므로,
-> 사람은 **판단과 의사결정**(요구사항, 아키텍처, 디자인, 비즈니스 로직)에만 집중합니다.
+상세 내용은 [2.6 비용 효과](#26-비용-효과)를 참고하세요.

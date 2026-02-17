@@ -114,10 +114,12 @@ Customize the template below according to the project information and generate i
 
 ## Development Workflow
 
-    [기능 스프린트]
-    블루프린트 작성 → DB 설계 → 스프린트 작성 → 구현 → 테스트 시나리오 → 테스트 실행 → PR/리뷰
-                                                                                            ↓
-                                      메인 브랜치 머지 ← 사용자 테스트 ← 스테이징 머지 ←──────┘
+```
+[기능 스프린트]
+블루프린트 작성 → DB 설계 → 스프린트 작성 → 구현 → 테스트 시나리오 → 테스트 실행 → PR/리뷰
+                                                                                          ↓
+                                    메인 브랜치 머지 ← 사용자 테스트 ← 스테이징 머지 ←──────┘
+```
 
 ### 단계별 참조 문서
 | 단계 | 참조 경로 | 주요 도구 |
@@ -146,7 +148,7 @@ Customize the template below according to the project information and generate i
 ### Gate 2: REVIEW-TIME (PR/리뷰 시)
 | 도구 | 검사 내용 |
 |------|----------|
-| `code-reviewer` | 코드 품질/버그/컨벤션 (병렬 에이전트) |
+| `feature-dev` (내장 code-reviewer) | 코드 품질/버그/컨벤션 (3개 병렬 에이전트) |
 | `/code-review` | CLAUDE.md 준수, 버그, 이력 분석 (80점+ 필터링) |
 | `blueprint-reviewer` 에이전트 | 설계 문서 품질/일관성 검증 |
 | `test-coverage-analyzer` 에이전트 | 테스트 전략/커버리지 분석 |
@@ -173,33 +175,33 @@ Customize the template below according to the project information and generate i
 | Gate 3 | convention/naming 위반 0건, 콘솔 에러 0건 | 일괄 수정 후 배포 |
 
 ## Coding Rules
-- Authentication middleware is required for all API endpoints
-- DB schema is managed using docs/database/database-design.md as the Single Source of Truth
-- DB entities must comply with the public data standard terminology dictionary (use /lookup-term)
-- Table name prefixes: TB_ (general), TC_ (code), TH_ (history), TL_ (log), TR_ (relation)
-- REST API response format: { success: boolean, data: T, error?: string }
-- Error handling: distinguish between business exceptions and system exceptions
+- 모든 API 엔드포인트에 인증 미들웨어 필수
+- DB 스키마는 docs/database/database-design.md를 단일 진실 원천(SSoT)으로 관리
+- DB 엔티티는 공공 데이터 표준 용어 사전을 준수할 것 (`/lookup-term` 활용)
+- 테이블명 접두사: TB_ (일반), TC_ (코드), TH_ (이력), TL_ (로그), TR_ (관계)
+- REST API 응답 형식: `{ success: boolean, data: T, error?: string }`
+- 에러 처리: 비즈니스 예외와 시스템 예외를 구분할 것
 - 언어별 코딩 컨벤션은 `coding-convention` 스킬이 자동 적용 (Java/TypeScript/React Native/Python/CSS/SCSS)
 - `/check-convention src/` 으로 컨벤션 준수 여부를 수동 검사 가능
 
-## Design Rules (defined by DSA)
-- Design tokens: must reference docs/design-system/design-tokens.css
-- Colors must use CSS Variables (--color-*), hardcoding is prohibited
-- Font sizes must use token scale (--font-size-*)
-- Spacing must follow the 8px grid system (--spacing-*)
-- Responsive breakpoints: mobile(~767px), tablet(768~1023px), desktop(1024px~)
+## Design Rules (DSA 정의)
+- 디자인 토큰: docs/design-system/design-tokens.css를 반드시 참조할 것
+- 컬러는 CSS Variables (--color-*) 사용 필수, 하드코딩 금지
+- 폰트 크기는 토큰 스케일 (--font-size-*) 사용 필수
+- 스페이싱은 8px 그리드 시스템 (--spacing-*) 준수
+- 반응형 브레이크포인트: 모바일(~767px), 태블릿(768~1023px), 데스크톱(1024px~)
 - 디자인 시스템 프리뷰 페이지로 토큰/컴포넌트를 시각적으로 검증
 - `design-token-validator` 에이전트로 자동 검증 (Gate 2.5)
 
 ## Prohibited Practices
-- No console.log (use logger)
-- No any type
-- No raw SQL (use ORM)
-- No committing .env files
+- console.log 금지 (logger 사용)
+- any 타입 금지
+- 직접 SQL 금지 (ORM 사용)
+- .env 파일 커밋 금지
 
 ## Testing Rules
-- Write unit tests for all service layers
-- Minimum test coverage of 70%
+- 모든 서비스 레이어에 단위 테스트 작성
+- 최소 테스트 커버리지 70%
 - 테스트 전략: `docs/tests/test-strategy.md`
 - 테스트 케이스: `docs/tests/test-cases/sprint-N/` (스프린트별 관리)
 - 테스트 보고서: `docs/tests/test-reports/` (커버리지 달성률 포함)
@@ -212,9 +214,9 @@ Customize the template below according to the project information and generate i
 - `/pr-merge` — 커밋→PR→리뷰→수정→머지 전체 사이클
 
 ## Design Document Rules
-- Feature-specific design documents go in the docs/blueprints/ directory
-- DB design is centrally managed in docs/database/database-design.md
-- Design documents must be written and approved before feature implementation
+- 기능별 설계 문서는 docs/blueprints/ 디렉토리에 작성
+- DB 설계는 docs/database/database-design.md에서 중앙 관리
+- 설계 문서는 기능 구현 전에 반드시 작성 및 승인 완료
 - 블루프린트 기반 워크플로우: 블루프린트 작성 → DE 승인 → DB 설계 반영 → 스프린트 프롬프트 맵 작성 → 구현
 - 설계 문서 품질은 `blueprint-reviewer` 에이전트가 검증 (Gate 2)
 
@@ -234,6 +236,7 @@ Customize the template below according to the project information and generate i
 | 코딩 컨벤션 검사 | `/check-convention [대상]` |
 | DB 네이밍 검사 | `/check-naming [대상]` |
 | 커밋 | `/commit` |
+| 커밋+푸시+PR 일괄 | `/commit-push-pr` |
 | PR→리뷰→머지 자동화 | `/pr-merge` |
 | 코드 리뷰 | `/code-review` |
 | 훅 규칙 생성 | `/hookify [설명]` |
@@ -261,14 +264,14 @@ Customize the template below according to the project information and generate i
     - 단위 테스트와 통합 테스트를 모두 작성할 것"
 ```
 
-**Tech stack-specific customization rules:**
+**기술 스택별 커스텀 규칙:**
 
-- **Spring Boot**: `@RestControllerAdvice` global exception handling, `@Valid` input validation, Lombok usage
-- **NestJS**: `ExceptionFilter` global exception handling, `class-validator` DTO validation, Prisma ORM
-- **FastAPI**: Use `HTTPException`, Pydantic model validation, SQLAlchemy ORM
-- **Next.js**: App Router by default, Server Components first, leverage Server Actions
-- **React**: Functional components only, custom hooks pattern
-- **Vue 3**: Composition API by default, use `<script setup>`
+- **Spring Boot**: `@RestControllerAdvice` 전역 예외 처리, `@Valid` 입력 검증, Lombok 사용
+- **NestJS**: `ExceptionFilter` 전역 예외 처리, `class-validator` DTO 검증, Prisma ORM
+- **FastAPI**: `HTTPException` 사용, Pydantic 모델 검증, SQLAlchemy ORM
+- **Next.js**: App Router 기본, Server Components 우선, Server Actions 활용
+- **React**: 함수형 컴포넌트만 사용, 커스텀 훅 패턴
+- **Vue 3**: Composition API 기본, `<script setup>` 사용
 
 ### Step 4: Create Design System Templates
 
