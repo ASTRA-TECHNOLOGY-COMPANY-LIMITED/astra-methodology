@@ -171,7 +171,7 @@ ASTRA:
 
 ---
 
-## 3. 역할 정의
+4. ## 3. 역할 정의
 
 ### VA (Vibe Architect) - 시니어 개발자 1명
 
@@ -511,7 +511,7 @@ ISO 3166-1/2, E.164 표준에 맞게 추가해줘.
 아직 실제 코드는 수정하지 마."
 ```
 
-> **기능 스프린트에서 `docs/tests/test-cases/` 하위에 기능별 테스트 케이스 문서가 추가됩니다.**
+> **기능 스프린트에서 `docs/tests/test-cases/sprint-{N}/` 하위에 기능별 테스트 케이스 문서가 추가됩니다.**
 > 설계 문서(blueprint)에 정의된 기능 요구사항을 기반으로 테스트 케이스를 사전 정의하고,
 > AI가 코드와 테스트를 동시에 생성할 때 이 문서를 참조합니다.
 
@@ -723,7 +723,7 @@ docs/blueprints/auth.md로 작성해줘.
 
 # 3단계: 테스트 케이스 사전 정의
 /feature-dev "docs/blueprints/auth.md의 기능 요구사항을 기반으로
-테스트 케이스 문서를 docs/tests/test-cases/auth-test-cases.md로 작성해줘.
+테스트 케이스 문서를 docs/tests/test-cases/sprint-1/auth-test-cases.md로 작성해줘.
 - 단위 테스트: 서비스 레이어 핵심 로직 (해싱, 토큰 생성/검증)
 - 통합 테스트: API 엔드포인트 (회원가입/로그인/토큰갱신)
 - 엣지 케이스: 만료 토큰, 잘못된 비밀번호, 중복 이메일
@@ -733,7 +733,7 @@ docs/blueprints/auth.md로 작성해줘.
 # 4단계: 설계 문서 기반 구현
 /feature-dev "docs/blueprints/auth.md와
 docs/database/database-design.md의 내용을 엄격히 준수해서
-개발을 진행해줘. 테스트는 docs/tests/test-cases/auth-test-cases.md를
+개발을 진행해줘. 테스트는 docs/tests/test-cases/sprint-1/auth-test-cases.md를
 참조하여 작성하고, 구현이 끝나면 모든 테스트를 실행하고
 결과를 docs/tests/test-reports/에 보고해."
 ```
@@ -1144,14 +1144,14 @@ DB 스키마는 docs/database/database-design.md를 참조할 것.
 
 ### 1.3 테스트 케이스 프롬프트
 /feature-dev "docs/blueprints/auth.md의 기능 요구사항을 기반으로
-테스트 케이스를 docs/tests/test-cases/auth-test-cases.md로 작성해줘.
+테스트 케이스를 docs/tests/test-cases/sprint-{N}/auth-test-cases.md로 작성해줘.
 Given-When-Then 형식, 단위/통합/엣지 케이스를 포함.
 아직 코드는 수정하지 마."
 
 ### 1.4 구현 프롬프트
 /feature-dev "docs/blueprints/auth.md와
 docs/database/database-design.md의 내용을 엄격히 준수해서
-개발을 진행해줘. 테스트는 docs/tests/test-cases/auth-test-cases.md를
+개발을 진행해줘. 테스트는 docs/tests/test-cases/sprint-{N}/auth-test-cases.md를
 참조하여 작성하고, 구현이 끝나면 모든 테스트를 실행하고
 결과를 docs/tests/test-reports/에 보고해."
 
@@ -1246,7 +1246,7 @@ docs/design-system/design-tokens.css의 토큰 시스템을 반드시 사용할 
 | DB 엔티티 생성 | `/generate-entity [한글 정의]` | DB 설계 문서 기반, Java/TypeScript/SQL |
 | DB 설계 문서 갱신 | `/feature-dev` | `docs/database/database-design.md` 테이블 추가/변경 |
 | DB 마이그레이션 생성 | `/feature-dev` | `docs/database/migration/` DDL 생성 |
-| 테스트 케이스 작성 | `/feature-dev` | `docs/tests/test-cases/` 기능별 테스트 명세 |
+| 테스트 케이스 작성 | `/feature-dev` | `docs/tests/test-cases/sprint-{N}/` 기능별 테스트 명세 |
 | 테스트 결과 보고 | `/feature-dev` | `docs/tests/test-reports/` 스프린트별 보고서 |
 | E2E 테스트 시나리오 생성 | `/test-scenario` | 블루프린트, DB, 라우트 기반 E2E 시나리오 |
 | 통합 테스트 실행 | `/test-run` | 서버 실행 + Chrome MCP 자동 검증 |

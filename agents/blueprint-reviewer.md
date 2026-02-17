@@ -29,7 +29,7 @@ Checks the existence and quality of the following required sections in each desi
 - **Technical Design**: API specifications, data flows, sequence diagrams, etc.
 - **DB Schema Reference**: Whether references to `docs/database/database-design.md` are included
 - **Edge Cases**: Whether exception handling definitions exist
-- **Test Case Linkage**: Whether references to related `docs/tests/test-cases/` documents exist
+- **Test Case Linkage**: Whether references to related `docs/tests/test-cases/sprint-{N}/` documents exist
 
 ### 2. Design-Implementation Consistency
 
@@ -48,7 +48,7 @@ Verifies that what is defined in design documents has been implemented in the ac
 
 ### 4. Test Case Linkage
 
-- Whether test cases corresponding to features defined in design documents exist in `docs/tests/test-cases/`
+- Whether test cases corresponding to features defined in design documents exist in `docs/tests/test-cases/sprint-*/`
 - Whether edge cases from design documents are included in test cases
 - Whether Given-When-Then in test cases matches scenarios from the design document
 

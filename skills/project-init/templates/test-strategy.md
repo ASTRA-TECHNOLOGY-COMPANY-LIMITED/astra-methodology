@@ -1,7 +1,7 @@
 # Test Strategy
 
 > Defines the project's test scope, strategy, and criteria.
-> Feature-specific test case documents are added under `docs/tests/test-cases/` during feature sprints.
+> Feature-specific test case documents are added under `docs/tests/test-cases/sprint-{N}/` during feature sprints.
 
 ## 1. Test Level Definitions
 
@@ -100,7 +100,7 @@ def test_given_valid_user_info_when_signup_then_returns_success():
 | Order cancellation | Unit + Integration | High |
 | Order status change | Unit | Medium |
 
-> **Feature-specific test case documents are added to `docs/tests/test-cases/` during feature sprints.**
+> **Feature-specific test case documents are added to `docs/tests/test-cases/sprint-{N}/` during feature sprints.**
 > Test cases are pre-defined based on the functional requirements from design documents (blueprints),
 > and AI references this document when generating code and tests simultaneously.
 

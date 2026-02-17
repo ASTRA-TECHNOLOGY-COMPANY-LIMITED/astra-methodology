@@ -117,14 +117,14 @@ Do not modify any code yet."
 
 ### 2.3 Test Case Prompt
 /feature-dev "Based on the feature requirements in docs/blueprints/{feature-name}.md,
-write test cases to docs/tests/test-cases/{feature-name}-test-cases.md.
+write test cases to docs/tests/test-cases/sprint-{N}/{feature-name}-test-cases.md.
 Use Given-When-Then format, include unit/integration/edge cases.
 Do not modify any code yet."
 
 ### 2.4 Implementation Prompt
 /feature-dev "Strictly follow the contents of docs/blueprints/{feature-name}.md and
 docs/database/database-design.md to proceed with development.
-Write tests referencing docs/tests/test-cases/{feature-name}-test-cases.md,
+Write tests referencing docs/tests/test-cases/sprint-{N}/{feature-name}-test-cases.md,
 and once implementation is complete, run all tests and
 report results to docs/tests/test-reports/."
 

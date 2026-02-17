@@ -17,7 +17,7 @@ This skill defines the rules for detecting events and updating the progress tabl
 This skill applies when writing or editing files matching these patterns:
 - `docs/blueprints/*.md` (not `overview.md`) — blueprint event
 - `docs/database/database-design.md` — DB design event
-- `docs/tests/test-cases/*.md` — test case event
+- `docs/tests/test-cases/sprint-*/*.md` — test case event
 - `docs/tests/test-reports/*.md` — test report event
 - `src/**/*.{java,ts,tsx,py,js,jsx,kt,go,rs}` — implementation event
 
@@ -50,7 +50,7 @@ When `docs/database/database-design.md` is modified:
 
 ### Procedure 3: After Test Case Creation/Modification
 
-When a file under `docs/tests/test-cases/` is written:
+When a file under `docs/tests/test-cases/sprint-*/` is written:
 
 1. Open the sprint progress tracker
 2. Match the test case filename to a feature (e.g., `user-auth-test-cases.md` → `user-auth` feature)

@@ -39,7 +39,7 @@ case "$FILE_PATH" in
     EVENT="test_report"
     DETAIL=$(echo "$BASENAME" | sed 's/\.md$//')
     ;;
-  */docs/tests/test-cases/*.md)
+  */docs/tests/test-cases/sprint-*/*.md)
     EVENT="test_case"
     DETAIL=$(echo "$BASENAME" | sed 's/\.md$//')
     ;;

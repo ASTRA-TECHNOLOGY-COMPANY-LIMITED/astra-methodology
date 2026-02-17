@@ -118,7 +118,7 @@ When the plugin initializes a target project, it creates:
 │   ├── design-system/                 # Design tokens, components, layout grid
 │   ├── blueprints/                    # Feature design documents
 │   ├── database/                      # DB design (SSoT), naming rules, migrations
-│   ├── tests/                         # Test strategy, test cases, test reports
+│   ├── tests/                         # Test strategy, test cases (per sprint), test reports
 │   ├── sprints/                       # Sprint documents (prompt maps, progress trackers, retrospectives)
 │   └── delivery/                     # Release artifacts
 └── src/

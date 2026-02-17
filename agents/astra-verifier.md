@@ -33,7 +33,7 @@ docs/database/database-design.md
 docs/database/naming-rules.md
 docs/database/migration/
 docs/tests/test-strategy.md
-docs/tests/test-cases/
+docs/tests/test-cases/sprint-*/
 docs/tests/test-reports/
 docs/sprints/sprint-*/prompt-map.md
 ```
