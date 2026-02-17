@@ -17,7 +17,7 @@ This skill defines the rules for detecting events and updating the progress tabl
 This skill applies when writing or editing files matching these patterns:
 - `docs/blueprints/*.md` (not `overview.md`) — blueprint event
 - `docs/database/database-design.md` — DB design event
-- `docs/tests/test-cases/*.md` — test case event
+- `docs/tests/test-cases/sprint-*/*.md` — test case event
 - `docs/tests/test-reports/*.md` — test report event
 - `src/**/*.{java,ts,tsx,py,js,jsx,kt,go,rs}` — implementation event
 
@@ -50,12 +50,13 @@ When `docs/database/database-design.md` is modified:
 
 ### Procedure 3: After Test Case Creation/Modification
 
-When a file under `docs/tests/test-cases/` is written:
+When a file under `docs/tests/test-cases/sprint-*/` is written:
 
-1. Open the sprint progress tracker
-2. Match the test case filename to a feature (e.g., `user-auth-test-cases.md` → `user-auth` feature)
-3. Set the **Test Cases** column to `Done`
-4. Recalculate the Summary section
+1. Extract the sprint number from the file path (e.g., `docs/tests/test-cases/sprint-2/...` → sprint 2)
+2. Open `docs/sprints/sprint-{extracted-N}/progress.md` (not necessarily the latest sprint)
+3. Match the test case filename to a feature (e.g., `user-auth-test-cases.md` → `user-auth` feature)
+4. Set the **Test Cases** column to `Done`
+5. Recalculate the Summary section
 
 ### Procedure 4: After Implementation File Write
 
@@ -86,7 +87,7 @@ When a file under `docs/tests/test-reports/` is written:
 If the tracker file `docs/sprints/sprint-{N}/progress.md` does not exist when an event occurs:
 
 1. Read the sprint prompt map `docs/sprints/sprint-{N}/prompt-map.md`
-2. Extract feature names from `## Feature {N}: {name}` headers
+2. Extract feature names from `## Feature {#}: {name}` headers (where `{#}` is the feature ordinal, e.g., 1, 2, 3)
 3. Create the tracker file using the template below
 4. Then apply the appropriate update procedure
 

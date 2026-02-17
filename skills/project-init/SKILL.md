@@ -56,7 +56,8 @@ Create the following structure in the current working directory (CWD):
 │   ├── tests/
 │   │   ├── test-strategy.md
 │   │   ├── test-cases/
-│   │   │   └── .gitkeep
+│   │   │   └── sprint-1/
+│   │   │       └── .gitkeep
 │   │   └── test-reports/
 │   │       └── .gitkeep
 │   │

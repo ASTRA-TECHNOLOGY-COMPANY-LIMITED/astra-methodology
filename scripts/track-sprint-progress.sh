@@ -25,6 +25,7 @@ fi
 # Detect event type by file path
 EVENT=""
 DETAIL=""
+SPRINT_FROM_PATH=""
 
 case "$FILE_PATH" in
   */docs/blueprints/*.md)
@@ -39,9 +40,11 @@ case "$FILE_PATH" in
     EVENT="test_report"
     DETAIL=$(echo "$BASENAME" | sed 's/\.md$//')
     ;;
-  */docs/tests/test-cases/*.md)
+  */docs/tests/test-cases/sprint-*/*.md)
     EVENT="test_case"
     DETAIL=$(echo "$BASENAME" | sed 's/\.md$//')
+    # Extract sprint number from the file path for accurate attribution
+    SPRINT_FROM_PATH=$(echo "$FILE_PATH" | sed -n 's|.*/test-cases/sprint-\([0-9]*\)/.*|\1|p')
     ;;
   */docs/database/database-design.md)
     EVENT="db_design"
@@ -94,6 +97,15 @@ done
 
 if [ -z "$SPRINT_NUM" ]; then
   exit 0
+fi
+
+# For test_case events, use sprint number from file path instead of latest sprint
+if [ -n "$SPRINT_FROM_PATH" ]; then
+  if [ -d "$SPRINTS_DIR/sprint-${SPRINT_FROM_PATH}" ]; then
+    SPRINT_NUM="$SPRINT_FROM_PATH"
+  else
+    echo "[ASTRA] Warning: test case file is under sprint-${SPRINT_FROM_PATH} but docs/sprints/sprint-${SPRINT_FROM_PATH}/ does not exist. Progress will be logged to sprint-${SPRINT_NUM} tracker. Run /sprint-plan to initialize sprint-${SPRINT_FROM_PATH}."
+  fi
 fi
 
 TRACKER_FILE="$SPRINTS_DIR/sprint-${SPRINT_NUM}/progress.md"

@@ -20,7 +20,7 @@ directories=(
     "docs/design-system/references"
     "docs/blueprints"
     "docs/database/migration"
-    "docs/tests/test-cases"
+    "docs/tests/test-cases/sprint-1"
     "docs/tests/test-reports"
     "docs/sprints"
     "docs/delivery"
@@ -41,7 +41,7 @@ done
 gitkeep_dirs=(
     "docs/design-system/references"
     "docs/database/migration"
-    "docs/tests/test-cases"
+    "docs/tests/test-cases/sprint-1"
     "docs/tests/test-reports"
     "docs/delivery"
     "src"

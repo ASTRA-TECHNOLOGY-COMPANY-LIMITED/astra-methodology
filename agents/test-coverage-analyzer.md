@@ -22,7 +22,7 @@ This is a read-only agent and never modifies files.
 ## Reference Documents
 
 - `docs/tests/test-strategy.md`: Test strategy (levels, coverage targets, naming rules)
-- `docs/tests/test-cases/*.md`: Feature-specific test case specifications
+- `docs/tests/test-cases/sprint-*/*.md`: Feature-specific test case specifications (organized by sprint)
 - `docs/tests/test-reports/*.md`: Sprint-specific test result reports
 - `docs/blueprints/*.md`: Design documents (test target feature definitions)
 
@@ -53,7 +53,7 @@ Analyzes 1:1 correspondence between source files and test files:
 
 ### 3. Test Case Specification vs. Implementation
 
-Verifies whether test cases defined in `docs/tests/test-cases/*.md` have actually been implemented:
+Verifies whether test cases defined in `docs/tests/test-cases/sprint-*/*.md` have actually been implemented:
 
 - Whether each scenario in test case documents exists in actual test code
 - Correspondence between Given-When-Then scenarios and actual test method names

@@ -73,7 +73,7 @@ Comprehensively analyzes data for the entire sprint period.
 #### C. Design Document Currency
 - `docs/blueprints/` document creation/modification history
 - `docs/database/database-design.md` change history
-- `docs/tests/test-cases/` change history
+- `docs/tests/test-cases/sprint-*/` change history
 - Living Document maintenance status evaluation
 
 #### D. Pattern Detection

@@ -7,11 +7,22 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 
 # ASTRA E2E Test Scenario Generator
 
-Analyzes the project's existing work context (blueprints, DB design, routes, API endpoints, existing code) to generate comprehensive E2E test scenarios in `docs/tests/test-cases/`.
+Analyzes the project's existing work context (blueprints, DB design, routes, API endpoints, existing code) to generate comprehensive E2E test scenarios in `docs/tests/test-cases/sprint-{N}/`.
+
+Test scenarios are organized by sprint directory. Each sprint has its own subdirectory under `docs/tests/test-cases/`.
 
 Refer to `e2e-scenario-guide.md` in the same directory as this skill for scenario design guidelines and patterns.
 
 ## Execution Procedure
+
+### Step 0: Detect Current Sprint Number
+
+Determine the current sprint number for file output:
+
+1. Look in `docs/sprints/` for directories matching `sprint-{N}/`
+2. The highest `{N}` is the current sprint number
+3. If no sprint directories exist, default to `sprint-1`
+4. Store the sprint number as `{SPRINT_N}` for use in subsequent steps
 
 ### Step 1: Collect Project Context
 
@@ -19,7 +30,7 @@ Gather project-level context to understand the overall architecture:
 
 1. Read `CLAUDE.md` to identify tech stack, project structure, and conventions
 2. Read `docs/tests/test-strategy.md` to understand test levels, coverage goals, and naming rules
-3. Scan `docs/tests/test-cases/` for existing test case files to avoid duplication
+3. Scan `docs/tests/test-cases/sprint-*/` for existing test case files across all sprints to avoid duplication
 4. Read `docs/database/database-design.md` to understand the data model
 
 ### Step 2: Feature Discovery
@@ -94,7 +105,7 @@ Which features should I generate E2E scenarios for?
 
 Before generating new scenarios, check for existing coverage:
 
-1. Glob `docs/tests/test-cases/{feature-name}*` for each selected feature
+1. Glob `docs/tests/test-cases/sprint-*/{feature-name}*` for each selected feature (search across all sprints)
 2. If existing test case files are found:
    - Read and parse existing scenarios
    - Identify gaps (missing Happy Path, Edge Case, or Error Path)
@@ -144,7 +155,7 @@ For each scenario, specify:
 
 ### Step 6: Generate Scenario Files
 
-Write scenario files to `docs/tests/test-cases/` using the following format:
+Write scenario files to `docs/tests/test-cases/sprint-{SPRINT_N}/` using the following format:
 
 **File naming**: `{feature-name}-e2e-scenarios.md`
 
@@ -198,7 +209,7 @@ Write scenario files to `docs/tests/test-cases/` using the following format:
 | **Total** | **{n}** |
 ```
 
-Create the `docs/tests/test-cases/` directory if it does not exist.
+Create the `docs/tests/test-cases/sprint-{SPRINT_N}/` directory if it does not exist.
 
 ### Step 7: Generate Cross-feature Scenarios
 
@@ -209,7 +220,7 @@ If multiple features are selected (or `all`), generate cross-feature integration
 
    Example: Sign up -> Login -> Browse products -> Add to cart -> Checkout -> Payment -> Order confirmation
 
-3. Write to `docs/tests/test-cases/cross-feature-e2e-scenarios.md` using the same format as Step 6
+3. Write to `docs/tests/test-cases/sprint-{SPRINT_N}/cross-feature-e2e-scenarios.md` using the same format as Step 6
 
 **Skip this step** if only a single feature is selected.
 
@@ -221,15 +232,15 @@ Present the generated scenarios to the user for review:
 ## Generated E2E Test Scenarios
 
 ### {Feature 1 Name}
-- File: docs/tests/test-cases/{feature-1}-e2e-scenarios.md
+- File: docs/tests/test-cases/sprint-{SPRINT_N}/{feature-1}-e2e-scenarios.md
 - Scenarios: {N} total ({n} Happy, {n} Alternative, {n} Edge, {n} Error)
 
 ### {Feature 2 Name}
-- File: docs/tests/test-cases/{feature-2}-e2e-scenarios.md
+- File: docs/tests/test-cases/sprint-{SPRINT_N}/{feature-2}-e2e-scenarios.md
 - Scenarios: {N} total
 
 ### Cross-feature (if applicable)
-- File: docs/tests/test-cases/cross-feature-e2e-scenarios.md
+- File: docs/tests/test-cases/sprint-{SPRINT_N}/cross-feature-e2e-scenarios.md
 - Scenarios: {N} total
 
 Would you like to review or modify any scenarios?
@@ -253,9 +264,9 @@ After user confirmation, output a final summary:
 | **Total** | **{n}** | **{n}** | **{n}** | **{n}** | **{n}** |
 
 ### Generated Files
-- docs/tests/test-cases/{feature-1}-e2e-scenarios.md
-- docs/tests/test-cases/{feature-2}-e2e-scenarios.md
-- docs/tests/test-cases/cross-feature-e2e-scenarios.md
+- docs/tests/test-cases/sprint-{SPRINT_N}/{feature-1}-e2e-scenarios.md
+- docs/tests/test-cases/sprint-{SPRINT_N}/{feature-2}-e2e-scenarios.md
+- docs/tests/test-cases/sprint-{SPRINT_N}/cross-feature-e2e-scenarios.md
 
 ### Next Steps
 1. Run `/test-run` to execute the generated scenarios in a real browser
