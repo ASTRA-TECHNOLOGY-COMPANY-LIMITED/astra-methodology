@@ -86,7 +86,7 @@ When a file under `docs/tests/test-reports/` is written:
 If the tracker file `docs/sprints/sprint-{N}/progress.md` does not exist when an event occurs:
 
 1. Read the sprint prompt map `docs/sprints/sprint-{N}/prompt-map.md`
-2. Extract feature names from `## Feature {N}: {name}` headers
+2. Extract feature names from `## Feature {#}: {name}` headers (where `{#}` is the feature ordinal, e.g., 1, 2, 3)
 3. Create the tracker file using the template below
 4. Then apply the appropriate update procedure
 

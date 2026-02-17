@@ -100,8 +100,12 @@ if [ -z "$SPRINT_NUM" ]; then
 fi
 
 # For test_case events, use sprint number from file path instead of latest sprint
-if [ -n "$SPRINT_FROM_PATH" ] && [ -d "$SPRINTS_DIR/sprint-${SPRINT_FROM_PATH}" ]; then
-  SPRINT_NUM="$SPRINT_FROM_PATH"
+if [ -n "$SPRINT_FROM_PATH" ]; then
+  if [ -d "$SPRINTS_DIR/sprint-${SPRINT_FROM_PATH}" ]; then
+    SPRINT_NUM="$SPRINT_FROM_PATH"
+  else
+    echo "[ASTRA] Warning: test case file is under sprint-${SPRINT_FROM_PATH} but docs/sprints/sprint-${SPRINT_FROM_PATH}/ does not exist. Progress will be logged to sprint-${SPRINT_NUM} tracker. Run /sprint-plan to initialize sprint-${SPRINT_FROM_PATH}."
+  fi
 fi
 
 TRACKER_FILE="$SPRINTS_DIR/sprint-${SPRINT_NUM}/progress.md"
