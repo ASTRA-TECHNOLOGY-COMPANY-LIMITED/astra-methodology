@@ -52,10 +52,11 @@ When `docs/database/database-design.md` is modified:
 
 When a file under `docs/tests/test-cases/sprint-*/` is written:
 
-1. Open the sprint progress tracker
-2. Match the test case filename to a feature (e.g., `user-auth-test-cases.md` → `user-auth` feature)
-3. Set the **Test Cases** column to `Done`
-4. Recalculate the Summary section
+1. Extract the sprint number from the file path (e.g., `docs/tests/test-cases/sprint-2/...` → sprint 2)
+2. Open `docs/sprints/sprint-{extracted-N}/progress.md` (not necessarily the latest sprint)
+3. Match the test case filename to a feature (e.g., `user-auth-test-cases.md` → `user-auth` feature)
+4. Set the **Test Cases** column to `Done`
+5. Recalculate the Summary section
 
 ### Procedure 4: After Implementation File Write
 
