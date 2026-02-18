@@ -36,7 +36,10 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Task
      4. 현재 브랜치가 `staging`이 아닌 경우:
         ```
         git fetch origin
-        git checkout -b staging origin/{default-branch}
+        # 로컬 staging 브랜치 존재 여부 확인
+        git branch --list staging
+        # 로컬 staging이 이미 존재하면: git checkout staging
+        # 로컬 staging이 없으면: git checkout -b staging origin/{default-branch}
         git push -u origin staging
         git checkout {current-branch}
         ```
