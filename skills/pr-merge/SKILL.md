@@ -168,7 +168,7 @@ PR을 머지한다:
 
 머지 후 로컬 환경을 정리한다:
 
-1. `git checkout staging`으로 staging 브랜치로 전환한다. staging 브랜치가 없는 경우 `git checkout main`으로 전환한다.
+1. `git checkout {target-branch}`으로 머지 대상 브랜치로 전환한다.
 2. `git pull`로 최신 상태 동기화
 3. 머지된 로컬 브랜치 삭제: `git branch -d {branch-name}`
 4. 최종 요약을 출력한다:
@@ -214,7 +214,7 @@ PR을 머지한다:
 
 - main/master/staging 브랜치에서는 실행할 수 없다.
 - **머지 대상 브랜치 우선순위**: 원격에 `staging` 브랜치가 존재하면 `staging`으로, 없으면 `main`으로 머지한다.
-- 머지 완료 후 최종 체크아웃 위치는 `staging` 브랜치이다 (staging이 없는 경우에만 `main`).
+- 머지 완료 후 최종 체크아웃 위치는 `{target-branch}` (Step 1에서 결정된 머지 대상 브랜치)이다.
 - Critical 이슈가 남아있으면 머지가 차단된다.
 - 충돌 발생 시 자동 해결을 시도하지 않고, 사용자에게 안내 후 중단한다.
 - 버전 범프는 `.claude-plugin/plugin.json`이 존재하는 프로젝트에서만 실행된다.
