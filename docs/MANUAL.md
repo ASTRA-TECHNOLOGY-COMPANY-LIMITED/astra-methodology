@@ -13,8 +13,8 @@
 1. [방법론 개요](#1-방법론-개요)
 2. [스크럼에서 ASTRA로의 진화](#2-스크럼에서-astra로의-진화)
 3. [역할 정의](#3-역할-정의)
-- [개발 워크플로우](#개발-워크플로우)
 4. [플러그인 초기 셋업](#4-플러그인-초기-셋업)
+- [개발 워크플로우](#개발-워크플로우)
 5. [디자인 시스템 작성](#5-디자인-시스템-작성)
 6. [블루프린트 작성](#6-블루프린트-작성)
 7. [데이터베이스 설계](#7-데이터베이스-설계)
@@ -276,6 +276,8 @@ claude
 ```
 
 `/astra-setup`이 자동으로 수행하는 작업:
+
+> **보안 주의**: `bypassPermissions` 모드는 Claude Code의 도구 사용 확인 프롬프트를 생략합니다. 신뢰할 수 있는 환경에서만 사용하세요.
 
 1. **글로벌 설정** (`~/.claude/settings.json`)
    - Agent Teams 환경변수 활성화
@@ -1283,7 +1285,7 @@ claude plugin marketplace add https://github.com/ASTRA-TECHNOLOGY-COMPANY-LIMITE
 claude plugin install astra-methodology@astra
 
 # 3단계: 전역 개발환경 자동 셋업 (전역 설정, MCP 서버, 플러그인 9개 자동 설치)
-/astra-methodology:astra-setup
+/astra-setup
 ```
 
 **자동 설치되는 항목:**
