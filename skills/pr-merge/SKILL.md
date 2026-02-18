@@ -23,17 +23,22 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Task
 
 다음 사전 조건을 검증한다:
 
-1. **브랜치 확인**: 현재 브랜치가 `main` 또는 `master`가 아닌지 확인한다. main/master에서 실행 시 경고를 출력하고 중단한다.
+1. **브랜치 확인**: 현재 브랜치가 `main`, `master`, 또는 `staging`이 아닌지 확인한다. 이 브랜치들에서 실행 시 경고를 출력하고 중단한다.
 2. **gh CLI 인증**: `gh auth status`를 실행하여 GitHub CLI 인증 상태를 확인한다. 인증되지 않은 경우 `gh auth login`을 안내하고 중단한다.
 3. **클린 상태 확인**: `git status`로 현재 상태를 파악한다 (커밋되지 않은 변경사항, 스테이징된 파일 등).
+4. **머지 대상 브랜치 결정**: 다음 순서로 확인한다:
+   - `git ls-remote --heads origin staging`으로 원격에 `staging` 브랜치 존재 여부 확인
+   - **staging 존재**: 머지 대상을 `staging`으로 설정
+   - **staging 미존재**: `git remote show origin | grep 'HEAD branch'`로 기본 브랜치를 확인하여 머지 대상으로 설정 (`main` 또는 `master`)
+   - 이후 모든 단계에서 `{target-branch}`는 이 값을 참조한다.
 
-### Step 1.5: main 동기화
+### Step 1.5: 대상 브랜치 동기화
 
-원격 main 브랜치의 최신 변경사항을 현재 브랜치에 동기화한다:
+머지 대상 브랜치(`{target-branch}`)의 최신 변경사항을 현재 브랜치에 동기화한다:
 
 ```
-git fetch origin main
-git merge origin/main
+git fetch origin {target-branch}
+git merge origin/{target-branch}
 ```
 
 - **충돌 없음**: 다음 단계로 진행
@@ -63,7 +68,7 @@ git merge origin/main
 3. **기존 PR이 없으면**: ASTRA 템플릿으로 PR 생성
 
 ```bash
-gh pr create --title "{PR 제목}" --body "$(cat <<'EOF'
+gh pr create --base {target-branch} --title "{PR 제목}" --body "$(cat <<'EOF'
 ## Summary
 - {변경사항 요약 1}
 - {변경사항 요약 2}
@@ -77,6 +82,7 @@ EOF
 )"
 ```
 
+- `--base {target-branch}` 플래그로 머지 대상 브랜치를 명시적으로 지정
 - `--draft` 옵션이 지정된 경우 `--draft` 플래그 추가
 - PR 제목은 70자 이내로 작성
 - PR URL을 출력한다
@@ -136,37 +142,36 @@ Step 4에서 발견된 Critical 및 High 이슈를 수정한다:
 3. `git push`로 원격에 푸시
 4. **Step 4로 복귀**하여 재리뷰 실행
 
-### Step 7: 버전 업데이트
-
-`.claude-plugin/plugin.json` 파일이 존재하는 플러그인 프로젝트에서만 실행한다.
-
-1. `.claude-plugin/plugin.json`과 `.claude-plugin/marketplace.json`의 존재 여부를 확인한다.
-2. 파일이 존재하면 `--patch` / `--minor` / `--major` 옵션에 따라 SemVer 버전을 범프한다:
-   - `--patch` (기본값): `x.y.z` → `x.y.z+1`
-   - `--minor`: `x.y.z` → `x.y+1.0`
-   - `--major`: `x.y.z` → `x+1.0.0`
-3. 두 파일 모두 동일한 버전으로 업데이트한다.
-4. 버전 변경을 커밋하고 푸시한다: "chore: bump version to {new-version}"
-5. 파일이 존재하지 않으면 이 단계를 건너뛴다.
-
-### Step 8: PR 머지
-
-PR을 머지한다:
+### Step 7: PR 머지 확인
 
 1. **AskUserQuestion**으로 사용자에게 최종 머지 확인을 요청한다.
    - PR URL, 리뷰 결과 요약 (통과 여부, 반복 횟수), 변경 파일 수를 표시
-2. 사용자 확인 후:
-   - Draft PR인 경우 먼저 `gh pr ready`로 Ready 상태로 변경
-   - `gh pr merge --merge --delete-branch`로 머지 실행
+2. 사용자가 머지를 거부하면 워크플로우를 중단한다.
 
-### Step 9: 정리
+### Step 8: PR 머지
 
-머지 후 로컬 환경을 정리한다:
+사용자 확인 후 PR을 머지한다:
 
-1. `git checkout main`으로 main 브랜치로 전환
-2. `git pull`로 최신 상태 동기화
+1. Draft PR인 경우 먼저 `gh pr ready`로 Ready 상태로 변경
+2. `gh pr merge --merge --delete-branch`로 머지 실행
+
+### Step 9: 정리 및 버전 업데이트
+
+머지 후 로컬 환경을 정리하고, 필요 시 버전을 업데이트한다:
+
+1. `git checkout {target-branch}`으로 머지 대상 브랜치로 전환한다. 로컬에 해당 브랜치가 없으면 `git checkout -b {target-branch} origin/{target-branch}`로 트래킹 브랜치를 생성하며 전환한다.
+2. `git pull --ff-only`로 최신 상태 동기화
 3. 머지된 로컬 브랜치 삭제: `git branch -d {branch-name}`
-4. 최종 요약을 출력한다:
+4. `.claude-plugin/plugin.json` 파일이 존재하는 플러그인 프로젝트에서 버전을 업데이트한다:
+   - `.claude-plugin/plugin.json`과 `.claude-plugin/marketplace.json`의 존재 여부를 확인한다.
+   - 파일이 존재하면 `--patch` / `--minor` / `--major` 옵션에 따라 SemVer 버전을 범프한다:
+     - `--patch` (기본값): `x.y.z` → `x.y.z+1`
+     - `--minor`: `x.y.z` → `x.y+1.0`
+     - `--major`: `x.y.z` → `x+1.0.0`
+   - 두 파일 모두 동일한 버전으로 업데이트한다.
+   - `{target-branch}`에 직접 커밋하고 푸시한다: "chore: bump version to {new-version}"
+   - 파일이 존재하지 않으면 버전 업데이트를 건너뛴다.
+5. 최종 요약을 출력한다:
 
 ```
 ## PR Review & Merge 완료
@@ -207,7 +212,9 @@ PR을 머지한다:
 
 ## Notes
 
-- main/master 브랜치에서는 실행할 수 없다.
+- main/master/staging 브랜치에서는 실행할 수 없다.
+- **머지 대상 브랜치 우선순위**: 원격에 `staging` 브랜치가 존재하면 `staging`으로, 없으면 `main`으로 머지한다.
+- 머지 완료 후 최종 체크아웃 위치는 `{target-branch}` (Step 1에서 결정된 머지 대상 브랜치)이다.
 - Critical 이슈가 남아있으면 머지가 차단된다.
 - 충돌 발생 시 자동 해결을 시도하지 않고, 사용자에게 안내 후 중단한다.
 - 버전 범프는 `.claude-plugin/plugin.json`이 존재하는 프로젝트에서만 실행된다.
