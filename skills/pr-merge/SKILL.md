@@ -23,18 +23,50 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Task
 
 다음 사전 조건을 검증한다:
 
-1. **브랜치 확인**: 현재 브랜치가 `main`, `master`, 또는 `staging`이 아닌지 확인한다. 이 브랜치들에서 실행 시 경고를 출력하고 중단한다.
+1. **브랜치 확인**: 현재 브랜치가 `main`, `master`, 또는 `staging`인지 확인한다. 이 브랜치들에서 실행 시 **작업 브랜치 자동 생성이 필요**하다고 플래그를 설정한다 (중단하지 않음). 이미 작업 브랜치(feature, fix 등)이면 그대로 사용한다.
 2. **gh CLI 인증**: `gh auth status`를 실행하여 GitHub CLI 인증 상태를 확인한다. 인증되지 않은 경우 `gh auth login`을 안내하고 중단한다.
 3. **클린 상태 확인**: `git status`로 현재 상태를 파악한다 (커밋되지 않은 변경사항, 스테이징된 파일 등).
-4. **머지 대상 브랜치 결정**: 다음 순서로 확인한다:
-   - `git ls-remote --heads origin staging`으로 원격에 `staging` 브랜치 존재 여부 확인
-   - **staging 존재**: 머지 대상을 `staging`으로 설정
-   - **staging 미존재**: `git remote show origin | grep 'HEAD branch'`로 기본 브랜치를 확인하여 머지 대상으로 설정 (`main` 또는 `master`)
-   - 이후 모든 단계에서 `{target-branch}`는 이 값을 참조한다.
+4. **머지 대상 브랜치 결정**: `{target-branch}`는 항상 `staging`이다.
+   - `git ls-remote --heads origin staging`으로 원격에 `staging` 브랜치 존재 여부를 확인한다.
+   - **staging 존재**: 그대로 사용
+   - **staging 미존재**: 기본 브랜치로부터 `staging`을 자동 생성한다:
+     1. `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`으로 `{default-branch}`를 확인한다.
+     2. **AskUserQuestion**으로 사용자에게 `staging` 브랜치를 `{default-branch}`로부터 생성하여 원격에 push할 것인지 확인한다. 거부 시 중단한다.
+     3. 현재 브랜치가 `staging`인 경우 (로컬에만 존재): `git push -u origin staging`으로 현재 브랜치를 그대로 push한다.
+     4. 현재 브랜치가 `staging`이 아닌 경우:
+        ```
+        git fetch origin
+        # 로컬 staging 브랜치 존재 여부 확인
+        git branch --list staging
+        # 로컬 staging이 이미 존재하면: git checkout staging
+        # 로컬 staging이 없으면: git checkout -b staging origin/{default-branch}
+        git push -u origin staging
+        git checkout {current-branch}
+        ```
+   - 이후 모든 단계에서 `{target-branch}`는 `staging`을 참조한다.
+
+### Step 1.3: 작업 브랜치 생성 (필요 시)
+
+Step 1에서 작업 브랜치 자동 생성 플래그가 설정된 경우 (현재 브랜치가 `main`, `master`, 또는 `staging`인 경우):
+
+1. `git status`와 `git log`로 현재 변경사항 및 최근 작업 컨텍스트를 분석하여 적절한 브랜치명을 추천한다 (예: `feat/user-auth`, `fix/login-error`).
+2. **AskUserQuestion**으로 브랜치명을 확인한다. 추천 브랜치명을 기본 옵션으로 제시한다.
+3. 사용자가 확인한 브랜치명으로 현재 브랜치(`{current-branch}`)를 베이스로 작업 브랜치를 생성한다:
+   ```
+   git checkout -b {branch-name}
+   ```
+   작업 브랜치는 현재 HEAD를 베이스로 생성되므로, 미커밋 변경사항은 그대로 유지된다.
+4. 이후 단계에서 `{branch-name}`은 이 새로 생성된 브랜치를 참조한다.
+
+이미 작업 브랜치(feature, fix, docs 등)에 있으면 이 단계를 건너뛴다.
 
 ### Step 1.5: 대상 브랜치 동기화
 
-머지 대상 브랜치(`{target-branch}`)의 최신 변경사항을 현재 브랜치에 동기화한다:
+머지 대상 브랜치(`staging`)의 최신 변경사항을 현재 브랜치에 동기화한다.
+
+**건너뛰기 조건**: Step 1.3에서 작업 브랜치를 `staging`으로부터 방금 생성한 경우 (즉, `{current-branch}`가 `staging`이었던 경우), 이미 `origin/staging` HEAD와 동일하므로 이 단계를 건너뛴다.
+
+그 외의 경우:
 
 ```
 git fetch origin {target-branch}
@@ -43,6 +75,8 @@ git merge origin/{target-branch}
 
 - **충돌 없음**: 다음 단계로 진행
 - **충돌 발생**: 충돌 파일 목록을 출력하고, 사용자에게 수동 해결을 안내한 후 중단한다. 자동 충돌 해결은 시도하지 않는다.
+
+> **참고**: `{current-branch}`가 `main`/`master`였던 경우, `origin/staging`에 `main`에 없는 변경사항이 포함될 수 있다. 충돌 가능성이 있으므로 merge 전 사용자에게 안내한다.
 
 ### Step 2: 커밋 & 푸시
 
@@ -159,10 +193,11 @@ Step 4에서 발견된 Critical 및 High 이슈를 수정한다:
 
 머지 후 로컬 환경을 정리하고, 필요 시 버전을 업데이트한다:
 
-1. `git checkout {target-branch}`으로 머지 대상 브랜치로 전환한다. 로컬에 해당 브랜치가 없으면 `git checkout -b {target-branch} origin/{target-branch}`로 트래킹 브랜치를 생성하며 전환한다.
-2. `git pull --ff-only`로 최신 상태 동기화
-3. 머지된 로컬 브랜치 삭제: `git branch -d {branch-name}`
-4. `.claude-plugin/plugin.json` 파일이 존재하는 플러그인 프로젝트에서 버전을 업데이트한다:
+1. `git fetch origin`으로 원격 최신 상태를 가져온다.
+2. `git checkout {target-branch}`으로 머지 대상 브랜치로 전환한다. 로컬에 해당 브랜치가 없으면 `git checkout -b {target-branch} origin/{target-branch}`로 트래킹 브랜치를 생성하며 전환한다.
+3. `git pull --rebase`로 최신 상태 동기화 (fast-forward가 불가능한 경우에도 안전하게 동기화)
+4. 머지된 로컬 브랜치 삭제: `git branch -d {branch-name}`
+5. `.claude-plugin/plugin.json` 파일이 존재하는 플러그인 프로젝트에서 버전을 업데이트한다:
    - `.claude-plugin/plugin.json`과 `.claude-plugin/marketplace.json`의 존재 여부를 확인한다.
    - 파일이 존재하면 `--patch` / `--minor` / `--major` 옵션에 따라 SemVer 버전을 범프한다:
      - `--patch` (기본값): `x.y.z` → `x.y.z+1`
@@ -171,7 +206,7 @@ Step 4에서 발견된 Critical 및 High 이슈를 수정한다:
    - 두 파일 모두 동일한 버전으로 업데이트한다.
    - `{target-branch}`에 직접 커밋하고 푸시한다: "chore: bump version to {new-version}"
    - 파일이 존재하지 않으면 버전 업데이트를 건너뛴다.
-5. 최종 요약을 출력한다:
+6. 최종 요약을 출력한다:
 
 ```
 ## PR Review & Merge 완료
@@ -212,9 +247,9 @@ Step 4에서 발견된 Critical 및 High 이슈를 수정한다:
 
 ## Notes
 
-- main/master/staging 브랜치에서는 실행할 수 없다.
-- **머지 대상 브랜치 우선순위**: 원격에 `staging` 브랜치가 존재하면 `staging`으로, 없으면 `main`으로 머지한다.
-- 머지 완료 후 최종 체크아웃 위치는 `{target-branch}` (Step 1에서 결정된 머지 대상 브랜치)이다.
+- main/master/staging 브랜치에서 실행하면 자동으로 작업 브랜치를 생성한다.
+- **머지 대상 브랜치**: 항상 `staging`으로 머지한다. 원격에 `staging`이 없으면 기본 브랜치로부터 자동 생성한다.
+- 머지 완료 후 최종 체크아웃 위치는 `staging`이다.
 - Critical 이슈가 남아있으면 머지가 차단된다.
 - 충돌 발생 시 자동 해결을 시도하지 않고, 사용자에게 안내 후 중단한다.
 - 버전 범프는 `.claude-plugin/plugin.json`이 존재하는 프로젝트에서만 실행된다.
