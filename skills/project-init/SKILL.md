@@ -45,7 +45,7 @@ Create the following structure in the current working directory (CWD):
 │   │       └── .gitkeep
 │   │
 │   ├── blueprints/
-│   │   └── overview.md
+│   │   ├── overview.md
 │   │   └── {NNN}-{feature-name}/    # e.g., 001-auth/
 │   │       └── blueprint.md
 │   │
