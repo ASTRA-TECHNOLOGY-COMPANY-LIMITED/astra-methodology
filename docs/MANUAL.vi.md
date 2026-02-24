@@ -937,15 +937,15 @@ Ví dụ toàn bộ luồng từ tạo PR đến merge sau khi hoàn thành tri�
 # Bước 1: Commit + Push + Tạo PR
 /commit
 git push -u origin feature/sprint-1-auth
-gh pr create --title "feat: Sprint 1 사용자 인증 구현" --body "## Summary
-- JWT 기반 회원가입/로그인/토큰갱신 구현
-- RBAC 권한 관리
-- docs/blueprints/001-auth/blueprint.md 설계 준수
+gh pr create --title "feat: Sprint 1 triển khai xác thực người dùng" --body "## Summary
+- Triển khai đăng ký/đăng nhập/làm mới token dựa trên JWT
+- Quản lý quyền RBAC
+- Tuân thủ thiết kế docs/blueprints/001-auth/blueprint.md
 
 ## Test plan
-- [ ] 단위 테스트 통과 확인
-- [ ] API 통합 테스트 확인
-- [ ] 보안 패턴 검사 통과"
+- [ ] Xác nhận unit test đã pass
+- [ ] Xác nhận API integration test
+- [ ] Pass kiểm tra security pattern"
 
 # Bước 2: Code review (5 agent song song)
 /code-review
