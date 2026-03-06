@@ -242,6 +242,8 @@ Customize the template below according to the project information and generate i
 | 커밋+푸시+PR 일괄 | `/commit-push-pr` |
 | PR→리뷰→머지 자동화 | `/pr-merge` |
 | 코드 리뷰 | `/code-review` |
+| Slack→블루프린트+스프린트 | `/slack-to-sprint [채널]` |
+| Slack 백로그 추출 | `/slack-backlog [채널]` |
 | 훅 규칙 생성 | `/hookify [설명]` |
 | 빠른 참조 가이드 | `/astra-guide` |
 

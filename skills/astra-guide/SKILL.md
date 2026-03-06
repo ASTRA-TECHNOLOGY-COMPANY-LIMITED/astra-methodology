@@ -98,6 +98,10 @@ Sprint Progress:
   (automatic)                    Sprint progress auto-tracking on file events
   /sprint-plan [number]           Sprint plan init (includes progress tracker)
 
+Slack Integration:
+  /slack-to-sprint [channel]     Slack messages → blueprints + sprint plan
+  /slack-backlog [channel]       Extract backlog items from Slack channel
+
 ASTRA Tools:
   /project-init [project info]   Sprint 0 initial setup
   /astra-setup                   Global dev environment setup

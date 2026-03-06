@@ -1,13 +1,14 @@
 {
   "name": "astra-methodology",
   "version": "2.7.1",
-  "description": "ASTRA(AI-augmented Sprint Through Rapid Assembly) methodology plugin. Sprint 0 project initialization, coding convention enforcement (Java/TypeScript/React Native/Python/CSS/SCSS), Korean public data standard, international code standards (ISO 3166-1/2, ITU-T E.164), naming validation, and quality gates.",
+  "description": "ASTRA(AI-augmented Sprint Through Rapid Assembly) methodology plugin. Sprint 0 project initialization, coding convention enforcement (Java/TypeScript/React Native/Python/CSS/SCSS), Korean public data standard, international code standards (ISO 3166-1/2, ITU-T E.164), naming validation, quality gates, and Slack integration.",
   "author": {
     "name": "Zeans.L",
     "email": "zeans@astravision.co.kr"
   },
   "repository": "https://github.com/ASTRA-TECHNOLOGY-COMPANY-LIMITED/astra-methodology.git",
   "license": "MIT",
+  "mcpServers": "../.mcp.json",
   "keywords": [
     "astra",
     "spi",
@@ -28,6 +29,8 @@
     "react-native",
     "expo",
     "iso-3166",
-    "code-standard"
+    "code-standard",
+    "slack",
+    "mcp-server"
   ]
 }
