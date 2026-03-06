@@ -87,9 +87,11 @@ Slack 채널에서 요구사항/태스크 메시지를 수집하고 분석하여
 
 #### A. 메시지 원문 수집
 
-선택된 각 메시지의 전체 텍스트를 수집한다. 스레드가 있는 메시지는 스레드 메시지도 함께 가져온다:
+선택된 각 메시지의 전체 텍스트를 수집한다.
 
-- 스레드가 있는 경우: `mcp__fect-slack__slack_get_history`를 해당 스레드 timestamp 기반으로 호출하지 않고, 원본 메시지의 `thread_ts`를 참고하여 컨텍스트에 포함한다.
+- 채널 히스토리에서 가져온 원본 메시지의 전체 텍스트를 사용한다.
+- **스레드 답글 제한**: 현재 MCP 도구는 `conversations.replies` API를 지원하지 않으므로, 스레드 답글 내용은 조회할 수 없다. 원본 메시지의 `reply_count` 정보만 참고하여 스레드 활발도를 우선순위 판단에 활용한다.
+- 스레드 답글 내용이 필요한 경우, 사용자에게 핵심 내용을 직접 입력하도록 안내한다.
 
 #### B. 요구사항 추출
 
@@ -227,8 +229,9 @@ Slack 채널에서 요구사항/태스크 메시지를 수집하고 분석하여
 #### A. 스프린트 번호 결정
 
 1. `docs/sprints/` 디렉토리에서 가장 큰 스프린트 번호를 확인
-2. 현재 활성 스프린트가 있으면 (progress.md의 Status가 "In Progress"):
-   - 사용자에게 확인: "Sprint {N}이 진행 중입니다. 이 스프린트에 추가할까요, 새 스프린트를 시작할까요?"
+2. 해당 스프린트의 `progress.md`를 읽어 **End Date** 필드를 파싱한다. `Bash`로 `date` 명령을 실행하여 오늘 날짜를 가져온다.
+   - **End Date가 오늘 이후**: 활성 스프린트로 판단 → 사용자에게 확인: "Sprint {N}이 진행 중입니다 (종료: {End Date}). 이 스프린트에 추가할까요, 새 스프린트를 시작할까요?"
+   - **End Date가 오늘 이전 또는 End Date 파싱 불가**: 완료된 스프린트로 판단 → 다음 번호로 새 스프린트 생성
 3. 활성 스프린트가 없거나 사용자가 새 스프린트를 원하면 다음 번호로 생성
 
 #### B. 프롬프트 맵 생성 또는 업데이트
@@ -247,37 +250,39 @@ Slack #{CHANNEL_NAME} 채널에서 수집된 요구사항 기반 — {기능 요
 - **Messages Analyzed**: {분석된 메시지 수}
 - **Features Extracted**: {추출된 기능 수}
 
-## Feature 1: {feature-name}
+## Feature {F}: {feature-name}
 
-### 1.1 Design Prompt
+> **번호 규칙**: `{F}`는 Feature 순번 (1, 2, 3, ...). 서브섹션도 `{F}.1`, `{F}.2` 형태로 Feature 번호와 일치시킨다. 이는 `sprint-plan` 스킬의 프롬프트 맵 형식과 동일하다.
+
+### {F}.1 Design Prompt
 /feature-dev "docs/blueprints/{NNN}-{feature-name}/blueprint.md의 설계를
 기반으로 {기능 설명}을 위한 상세 설계 문서를 작성해줘.
 {핵심 요구사항 요약}
 docs/database/database-design.md를 참조할 것.
 아직 코드는 수정하지 마."
 
-### 1.2 DB Design Reflection Prompt
+### {F}.2 DB Design Reflection Prompt
 /feature-dev "docs/blueprints/{NNN}-{feature-name}/blueprint.md를 기반으로
 docs/database/database-design.md에 {관련 테이블} 테이블을 추가/수정해줘.
 ERD와 FK 관계 요약도 업데이트할 것.
 표준 용어 사전을 따를 것.
 아직 코드는 수정하지 마."
 
-### 1.3 Test Case Prompt
+### {F}.3 Test Case Prompt
 /feature-dev "docs/blueprints/{NNN}-{feature-name}/blueprint.md의 기능 요구사항을 기반으로
 docs/tests/test-cases/sprint-{N}/{feature-name}-test-cases.md에 테스트 케이스를 작성해줘.
 Given-When-Then 포맷을 사용하고, 단위/통합/엣지 케이스를 포함할 것.
 아직 코드는 수정하지 마."
 
-### 1.4 Implementation Prompt
+### {F}.4 Implementation Prompt
 /feature-dev "docs/blueprints/{NNN}-{feature-name}/blueprint.md와
 docs/database/database-design.md의 내용을 엄격히 따라 개발을 진행해줘.
 docs/tests/test-cases/sprint-{N}/{feature-name}-test-cases.md를 참조하여 테스트를 작성하고,
 구현이 완료되면 모든 테스트를 실행하여
 docs/tests/test-reports/에 결과를 보고해줘."
 
-## Feature 2: {feature-name}
-{위와 동일한 구조 반복}
+## Feature {F+1}: {feature-name}
+{위와 동일한 구조 반복 — 서브섹션 번호를 Feature 번호와 일치시킨다}
 ```
 
 **기존 스프린트에 추가 시**: 기존 `prompt-map.md`를 읽고, 마지막 Feature 번호 이후에 새 기능을 추가한다.
@@ -401,4 +406,4 @@ Slack #{CHANNEL_NAME} 채널에 처리 결과를 게시할까요? (y/n)
 - 프로젝트가 ASTRA로 초기화되어 있어야 한다 (`CLAUDE.md`, `docs/blueprints/` 존재). 미초기화 시 `/project-init` 안내.
 - 기존 블루프린트 파일은 덮어쓰지 않는다. 중복 시 사용자 확인 후 처리.
 - 메시지 분석 시 코드 스니펫, 이미지, 파일 첨부는 텍스트 내용만 분석한다.
-- 스레드가 있는 메시지는 스레드 내용도 요구사항에 포함하여 분석한다.
+- 스레드 답글은 현재 MCP 도구 한계로 직접 조회할 수 없다. 원본 메시지와 `reply_count`만 활용하며, 필요 시 사용자에게 핵심 내용 입력을 요청한다.
