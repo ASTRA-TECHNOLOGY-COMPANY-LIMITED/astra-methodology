@@ -234,10 +234,10 @@ Task tool (subagent_type: "feature-dev:code-reviewer")
    - 수정 내용 요약 출력
 4. 프로젝트에 테스트가 설정되어 있으면 테스트를 실행하여 수정이 기존 기능을 깨뜨리지 않았는지 확인한다.
 5. 수정된 파일을 `git add`로 스테이징
-6. `git commit` — 메시지는 "fix: address code review issues (iteration {N})" 형식
-7. `git push`로 원격에 푸시
-8. 반복 횟수를 1 증가시킨다.
-9. **Step 8로 복귀**하여 재리뷰 실행
+6. 반복 횟수를 1 증가시킨다.
+7. `git commit` — 메시지는 "fix: address code review issues (iteration {N})" 형식 (N은 1부터 시작)
+8. `git push`로 원격에 푸시
+9. **Step 8로 복귀**하여 재리뷰 실행 (반복 횟수는 유지, 재초기화하지 않음)
 
 ### Step 8.3: PR 머지 확인
 
@@ -345,7 +345,12 @@ EOF
 3. `git pull --rebase`로 최신 상태 동기화
 4. 프로모션에서는 소스 브랜치를 삭제하지 않는다 (`dev`, `staging`은 영구 브랜치).
 5. 버전 범프는 `--main` 프로모션일 때만 실행한다 (릴리스 버전 관리):
-   - `.claude-plugin/plugin.json` 파일이 존재하면 `--patch` / `--minor` / `--major` 옵션에 따라 SemVer 버전을 범프한다.
+   - `.claude-plugin/plugin.json`과 `.claude-plugin/marketplace.json`의 존재 여부를 확인한다.
+   - 파일이 존재하면 `--patch` / `--minor` / `--major` 옵션에 따라 SemVer 버전을 범프한다:
+     - `--patch` (기본값): `x.y.z` → `x.y.z+1`
+     - `--minor`: `x.y.z` → `x.y+1.0`
+     - `--major`: `x.y.z` → `x+1.0.0`
+   - 두 파일 모두 동일한 버전으로 업데이트한다.
    - `main`에 직접 커밋하고 푸시한다: "chore: bump version to {new-version}"
 6. 최종 요약을 출력한다:
 
@@ -400,7 +405,7 @@ EOF
 ## Notes
 
 - **브랜치 전략**: `feature → dev → staging → main` 순서로 코드를 승격한다.
-- **공통 전처리**: 모든 모드에서 실행 전 `main` / `staging` / `dev`를 pull 받고, `main → staging → dev` 캐스케이드 머지를 수행한다.
+- **공통 전처리**: 모든 모드에서 실행 전 `main` / `staging` / `dev`를 pull 받는다. 캐스케이드 머지는 모드별로 범위가 다르다: 기본 모드에서는 전체(`main → staging → dev`), `--staging`에서는 `main → staging`만, `--main`에서는 건너뛴다.
 - **기본 모드**: 작업 브랜치를 `dev`으로 머지한다. `main`/`master`/`staging`/`dev` 브랜치에서 실행하면 자동으로 작업 브랜치를 생성한다. 원격에 `dev`이 없으면 기본 브랜치로부터 자동 생성한다.
 - **프로모션 모드 (`--staging`)**: `dev` → `staging`으로 승격한다. 작업 브랜치 생성/커밋 단계를 건너뛰고 PR 기반 머지에 집중한다.
 - **프로모션 모드 (`--main`)**: `staging` → `main`으로 승격한다. 릴리스 프로모션이므로 버전 범프가 이 단계에서 실행된다.
