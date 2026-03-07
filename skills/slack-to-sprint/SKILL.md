@@ -1,13 +1,13 @@
 ---
 name: slack-to-sprint
-description: "Slack 채널의 메시지를 분석하여 블루프린트와 스프린트 프롬프트 맵을 자동 생성합니다. 채널 선택 → 메시지 조회 → 항목 선택 → 요구사항 분석 → 블루프린트/스프린트 생성의 워크플로우를 제공합니다."
+description: "Slack 채널의 List 항목을 분석하여 블루프린트와 스프린트 프롬프트 맵을 자동 생성합니다. 채널 선택 → List 선택 → Item 선택 → 상태 업데이트 → 요구사항 분석 → 블루프린트/스프린트 생성의 워크플로우를 제공합니다."
 argument-hint: "[channel-name or channel-id]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, mcp__fect-slack__slack_list_channels, mcp__fect-slack__slack_get_history, mcp__fect-slack__slack_search_channels, mcp__fect-slack__slack_get_user_info, mcp__fect-slack__slack_add_reaction, mcp__fect-slack__slack_post_message
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, mcp__fect-slack__slack_list_channels, mcp__fect-slack__slack_get_history, mcp__fect-slack__slack_search_channels, mcp__fect-slack__slack_get_user_info, mcp__fect-slack__slack_add_reaction, mcp__fect-slack__slack_post_message, mcp__fect-slack__slack_file_list, mcp__fect-slack__slack_list_items_list, mcp__fect-slack__slack_list_items_info, mcp__fect-slack__slack_list_items_update
 ---
 
-# Slack to Sprint: 슬랙 메시지 기반 블루프린트/스프린트 생성
+# Slack to Sprint: 슬랙 List 기반 블루프린트/스프린트 생성
 
-Slack 채널에서 요구사항/태스크 메시지를 수집하고 분석하여 ASTRA 블루프린트와 스프린트 프롬프트 맵을 자동 생성합니다.
+Slack 채널에 공유된 List의 항목을 수집하고 분석하여 ASTRA 블루프린트와 스프린트 프롬프트 맵을 자동 생성합니다.
 
 ## 실행 절차
 
@@ -38,43 +38,71 @@ Slack 채널에서 요구사항/태스크 메시지를 수집하고 분석하여
 | 2 | project-tasks | C05678 | Private | Yes |
 | 3 | dev-requirements | C09012 | Public | Yes |
 
-메시지를 조회할 채널 번호 또는 이름을 입력하세요:
+List를 조회할 채널 번호 또는 이름을 입력하세요:
 ```
 
 사용자가 번호 또는 채널명으로 선택하면 해당 채널 ID를 `{CHANNEL_ID}`, 채널명을 `{CHANNEL_NAME}`으로 저장한다.
 
-### Step 2: 메시지 조회 (즉시 실행)
+### Step 2: Slack List 선택
 
-> **중요**: 채널 선택이 완료되면, 분석이나 사용자 이름 조회 등 부가 작업 없이 **즉시** 메시지 히스토리를 가져와서 목록을 표시한다. 사용자가 항목을 선택한 후에야 상세 분석을 시작한다.
+#### A. 채널 내 List 조회
 
-#### A. 메시지 히스토리 가져오기
-
-`mcp__fect-slack__slack_get_history`를 호출하여 선택된 채널의 최근 메시지를 가져온다:
+`mcp__fect-slack__slack_file_list`를 호출하여 선택된 채널에 공유된 파일 목록을 가져온다:
 
 - `channel`: `{CHANNEL_ID}`
-- `limit`: 50 (최근 50개)
+- `count`: 100
 
-#### B. 메시지 목록 즉시 표시
+반환된 파일 목록에서 Slack List 유형(`mimetype`이 list 관련이거나, `filetype`이 `list` 등)을 필터링한다.
 
-가져온 메시지를 **추가 API 호출 없이 즉시** 테이블로 표시한다. 사용자 이름 조회(`slack_get_user_info`)는 이 단계에서 하지 않는다 — user ID를 그대로 표시하거나, 메시지에 포함된 `user` 필드 값을 사용한다.
+> **참고**: Slack List는 파일 시스템에서 `F`로 시작하는 ID를 가진다. 파일 목록에서 List로 식별되는 항목만 추출한다. 만약 `file_list`로 List를 찾을 수 없는 경우, `mcp__fect-slack__slack_get_history`로 채널 메시지를 조회하여 List가 공유된 메시지(attachment 또는 file 정보)에서 List ID를 추출한다.
+
+#### B. List 목록 표시 및 선택
+
+발견된 List 목록을 사용자에게 보여주고 `AskUserQuestion`으로 선택을 요청한다:
 
 ```
-## #{CHANNEL_NAME} 채널 최근 메시지
+## #{CHANNEL_NAME} 채널의 Slack Lists
 
-| # | 작성자 | 시간 | 내용 (요약) | 스레드 |
-|---|--------|------|-------------|--------|
-| 1 | U01ABC | 03-06 14:30 | 회원가입 시 이메일 인증 기능 필요... | 3 replies |
-| 2 | U02DEF | 03-06 13:15 | 결제 모듈 PG 연동 요구사항 정리... | 5 replies |
-| 3 | U03GHI | 03-06 11:00 | 관리자 대시보드 권한 분리 필요... | - |
-| ... | ... | ... | ... | ... |
+| # | List 이름 | ID | 생성일 |
+|---|-----------|-----|--------|
+| 1 | 요구사항 백로그 | F01ABC | 2026-03-01 |
+| 2 | 스프린트 태스크 | F02DEF | 2026-03-05 |
+
+조회할 List 번호를 선택하세요:
+```
+
+> **List를 찾을 수 없는 경우**: 채널에 List가 없으면 사용자에게 안내하고, List ID를 직접 입력받거나 기존 메시지 기반 워크플로우로 대체할지 묻는다.
+
+사용자가 선택하면 해당 List ID를 `{LIST_ID}`, List 이름을 `{LIST_NAME}`으로 저장한다.
+
+### Step 3: List Item 선택
+
+#### A. List Item 조회
+
+`mcp__fect-slack__slack_list_items_list`를 호출하여 선택된 List의 항목을 가져온다:
+
+- `list_id`: `{LIST_ID}`
+- `limit`: 100
+
+#### B. Item 목록 표시
+
+가져온 Item 목록을 테이블로 표시한다. 각 Item의 필드(컬럼) 값을 가독성 있게 보여준다:
+
+```
+## {LIST_NAME} — 항목 목록
+
+| # | 제목 | 상태 | 담당자 | 마감일 | 기타 |
+|---|------|------|--------|--------|------|
+| 1 | 회원가입 이메일 인증 기능 | 대기 | @kim | 03-15 | High |
+| 2 | PG 결제 연동 | 대기 | @lee | 03-20 | High |
+| 3 | 관리자 대시보드 권한 분리 | 진행 중 | @park | 03-18 | Medium |
+| ... | ... | ... | ... | ... | ... |
 
 처리할 항목을 선택하세요 (번호, 범위, 또는 'all'):
 예: 1,2,5  또는  1-5  또는  all
 ```
 
-내용 요약은 메시지 텍스트의 첫 50자를 표시하고, 긴 메시지는 `...`으로 truncate한다.
-
-> **사용자 이름 조회 시점**: `mcp__fect-slack__slack_get_user_info`는 Step 3(선택된 메시지 상세 분석) 단계에서 선택된 메시지의 작성자만 조회한다.
+> **컬럼 매핑**: List의 스키마(컬럼 정의)를 기반으로 테이블 헤더를 동적으로 구성한다. `mcp__fect-slack__slack_list_items_info`를 첫 번째 Item에 호출하여 스키마 구조를 파악할 수 있다.
 
 #### C. 사용자 항목 선택
 
@@ -85,30 +113,65 @@ Slack 채널에서 요구사항/태스크 메시지를 수집하고 분석하여
 - `all` — 전체 선택
 - `1-3,7,9-12` — 범위와 개별 번호 혼합
 
-### Step 3: 선택된 메시지 상세 분석
+### Step 4: 선택된 Item 상태 업데이트
 
-#### A. 메시지 원문 수집 및 작성자 조회
+선택된 각 Item의 상태를 "진행 중"으로 업데이트한다.
 
-선택된 각 메시지의 전체 텍스트를 수집하고, 이 시점에서 `mcp__fect-slack__slack_get_user_info`로 작성자 이름을 조회한다 (선택된 메시지의 고유 user ID만 한 번씩 조회, 중복 호출 방지).
+#### A. 상태 필드 식별
 
-- 채널 히스토리에서 가져온 원본 메시지의 전체 텍스트를 사용한다.
-- **스레드 답글 제한**: 현재 MCP 도구는 `conversations.replies` API를 지원하지 않으므로, 스레드 답글 내용은 조회할 수 없다. 원본 메시지의 `reply_count` 정보만 참고하여 스레드 활발도를 우선순위 판단에 활용한다.
-- 스레드 답글 내용이 필요한 경우, 사용자에게 핵심 내용을 직접 입력하도록 안내한다.
+List의 스키마에서 상태(status) 관련 컬럼을 식별한다:
+
+- `todo_mode`가 활성화된 List: 기본 `completed` 필드 등 todo 관련 필드를 사용
+- 커스텀 스키마: `select` 타입 컬럼 중 상태를 나타내는 컬럼 (예: "상태", "Status", "진행상태" 등)을 식별
+- 상태 컬럼의 `options` 목록에서 "진행 중", "In Progress" 등 매칭되는 값을 찾는다
+
+> **상태 값을 찾을 수 없는 경우**: 사용자에게 상태 컬럼과 값을 직접 지정하도록 `AskUserQuestion`으로 요청한다.
+
+#### B. 상태 업데이트 실행
+
+선택된 각 Item에 대해 `mcp__fect-slack__slack_list_items_update`를 호출한다:
+
+- `list_id`: `{LIST_ID}`
+- `item_id`: 각 선택된 Item의 ID
+- `fields`: `{ "{status_column_id}": "진행 중" }` (식별된 상태 컬럼 ID와 값)
+
+업데이트 결과를 사용자에게 보고한다:
+
+```
+## 상태 업데이트 완료
+
+| # | 항목 | 이전 상태 | 현재 상태 |
+|---|------|-----------|-----------|
+| 1 | 회원가입 이메일 인증 기능 | 대기 | 진행 중 |
+| 2 | PG 결제 연동 | 대기 | 진행 중 |
+
+{N}개 항목이 "진행 중"으로 업데이트되었습니다.
+```
+
+### Step 5: 선택된 Item 상세 분석
+
+#### A. Item 데이터 수집
+
+선택된 각 Item의 필드 데이터를 수집한다. 필요 시 `mcp__fect-slack__slack_list_items_info`로 상세 정보를 조회한다.
+
+- Item의 모든 필드 값 (제목, 설명, 상태, 담당자, 마감일, 우선순위 등)을 수집
+- 담당자 필드에 user ID가 있으면 이 시점에서 `mcp__fect-slack__slack_get_user_info`로 이름 조회 (고유 user ID만 한 번씩 조회, 중복 호출 방지)
 
 #### B. 요구사항 추출
 
-각 메시지에서 다음 정보를 추출한다:
+각 Item에서 다음 정보를 추출한다:
 
-1. **기능명** (Feature Name): 메시지에서 식별된 핵심 기능 (한글 + 영문 kebab-case)
-2. **기능 설명**: 요구사항 요약 (2-3문장)
+1. **기능명** (Feature Name): Item 제목 기반 핵심 기능 (한글 + 영문 kebab-case)
+2. **기능 설명**: Item의 필드 데이터를 기반으로 요구사항 요약 (2-3문장)
 3. **요구사항 목록**: 구체적인 기능 요구사항 (bullet list)
-4. **우선순위**: 메시지 내용/리액션/스레드 참여도로 판단 (High/Medium/Low)
+4. **우선순위**: Item의 우선순위 필드 또는 내용 분석으로 판단 (High/Medium/Low)
 5. **관련 모듈**: 연관되는 시스템 모듈 추정
 6. **기술적 고려사항**: API, DB, 외부 연동 등 기술 요소
 7. **의존성**: 다른 기능과의 선후 관계
-8. **디자인 참조 (Figma)**: 메시지 텍스트에서 Figma 링크(`https://www.figma.com/...` 또는 `https://figma.com/...`)를 감지하여 수집한다. 링크가 없으면 빈 값으로 둔다.
+8. **디자인 참조 (Figma)**: Item 필드에서 Figma 링크(`https://www.figma.com/...` 또는 `https://figma.com/...`)를 감지하여 수집한다. 링크가 없으면 빈 값으로 둔다.
+9. **담당자**: Item의 담당자 정보 (Assignee)
 
-유사한 주제의 메시지는 하나의 기능으로 병합한다.
+유사한 주제의 Item은 하나의 기능으로 병합한다.
 
 #### C. 분석 결과 확인
 
@@ -118,7 +181,7 @@ Slack 채널에서 요구사항/태스크 메시지를 수집하고 분석하여
 ## 요구사항 분석 결과
 
 ### 기능 1: 이메일 인증 (email-verification)
-- **출처**: 메시지 #1 (@kim, 03-06 14:30)
+- **출처**: {LIST_NAME} — Item #1 (@kim)
 - **설명**: 회원가입 시 이메일 인증 코드를 발송하고 검증하는 기능
 - **요구사항**:
   - 6자리 인증 코드 이메일 발송
@@ -130,7 +193,7 @@ Slack 채널에서 요구사항/태스크 메시지를 수집하고 분석하여
 - **디자인 참조**: https://www.figma.com/file/abc123 (또는 없음)
 
 ### 기능 2: PG 결제 연동 (pg-payment)
-- **출처**: 메시지 #2 (@lee, 03-06 13:15)
+- **출처**: {LIST_NAME} — Item #2 (@lee)
 - **설명**: 이니시스 PG사 연동을 통한 카드/계좌이체 결제 처리
 - **요구사항**: ...
 - **우선순위**: High
@@ -142,9 +205,9 @@ Slack 채널에서 요구사항/태스크 메시지를 수집하고 분석하여
 수정할 내용이 있으면 알려주세요. 없으면 "확인"을 입력하세요:
 ```
 
-사용자가 수정을 요청하면 해당 항목을 조정한다. "확인"이면 Step 4로 진행한다.
+사용자가 수정을 요청하면 해당 항목을 조정한다. "확인"이면 Step 6으로 진행한다.
 
-### Step 4: 기존 프로젝트 컨텍스트 확인
+### Step 6: 기존 프로젝트 컨텍스트 확인
 
 블루프린트와 스프린트를 생성하기 전에 기존 프로젝트 상태를 확인한다.
 
@@ -169,7 +232,7 @@ Slack 채널에서 요구사항/태스크 메시지를 수집하고 분석하여
 - 예: `001-auth/`, `002-payment/` 존재 시 → 다음은 `003`부터 시작
 - 3자리 zero-padded (예: `003`, `004`, ...)
 
-### Step 5: 블루프린트 생성
+### Step 7: 블루프린트 생성
 
 각 기능별로 `docs/blueprints/{NNN}-{feature-name}/blueprint.md`를 생성한다.
 
@@ -180,7 +243,7 @@ Slack 채널에서 요구사항/태스크 메시지를 수집하고 분석하여
 
 ## 개요
 - **기능명**: {기능명}
-- **출처**: Slack #{CHANNEL_NAME} — @{작성자} ({날짜})
+- **출처**: Slack List "{LIST_NAME}" — @{담당자}
 - **우선순위**: {High/Medium/Low}
 - **관련 모듈**: {모듈 목록}
 
@@ -189,7 +252,7 @@ Slack 채널에서 요구사항/태스크 메시지를 수집하고 분석하여
 - **Figma**: {Figma URL}
 
 ## 배경 및 목적
-{메시지 원문을 바탕으로 작성한 배경 설명}
+{Item 데이터를 바탕으로 작성한 배경 설명}
 
 ## 기능 요구사항
 
@@ -224,16 +287,16 @@ Slack 채널에서 요구사항/태스크 메시지를 수집하고 분석하여
 - [ ] {인수 조건 1}
 - [ ] {인수 조건 2}
 
-## 원본 Slack 메시지
+## 원본 Slack List Item
 
-> **채널**: #{CHANNEL_NAME}
-> **작성자**: @{작성자}
-> **시간**: {timestamp}
+> **List**: {LIST_NAME}
+> **담당자**: @{담당자}
+> **상태**: 진행 중
 >
-> {원본 메시지 텍스트}
+> {Item 필드 데이터 요약}
 ```
 
-### Step 6: 스프린트 프롬프트 맵 생성
+### Step 8: 스프린트 프롬프트 맵 생성
 
 #### A. 스프린트 번호 결정
 
@@ -251,12 +314,13 @@ Slack 채널에서 요구사항/태스크 메시지를 수집하고 분석하여
 # Sprint {N} Prompt Map
 
 ## Sprint Goal
-Slack #{CHANNEL_NAME} 채널에서 수집된 요구사항 기반 — {기능 요약}
+Slack List "{LIST_NAME}" 에서 수집된 요구사항 기반 — {기능 요약}
 
 ## Source
+- **Slack List**: {LIST_NAME} ({LIST_ID})
 - **Slack Channel**: #{CHANNEL_NAME}
 - **Collected**: {YYYY-MM-DD}
-- **Messages Analyzed**: {분석된 메시지 수}
+- **Items Analyzed**: {분석된 Item 수}
 - **Features Extracted**: {추출된 기능 수}
 
 ## Feature {F}: {feature-name}
@@ -305,7 +369,7 @@ docs/tests/test-reports/에 결과를 보고해줘."
 
 ## Sprint Information
 - **Sprint Number**: {N}
-- **Sprint Goal**: Slack #{CHANNEL_NAME} 기반 요구사항 구현
+- **Sprint Goal**: Slack List "{LIST_NAME}" 기반 요구사항 구현
 - **Start Date**: {YYYY-MM-DD}
 - **End Date**: {YYYY-MM-DD} (+7 days)
 - **Status**: In Progress
@@ -335,7 +399,7 @@ docs/tests/test-reports/에 결과를 보고해줘."
 
 | Timestamp | Event | File | Details |
 |-----------|-------|------|---------|
-| {YYYY-MM-DD HH:MM} | Blueprint Created | docs/blueprints/{NNN}-{feature}/blueprint.md | Slack #{CHANNEL_NAME}에서 추출 |
+| {YYYY-MM-DD HH:MM} | Blueprint Created | docs/blueprints/{NNN}-{feature}/blueprint.md | Slack List "{LIST_NAME}"에서 추출 |
 <!-- ACTIVITY_LOG_END -->
 ```
 
@@ -345,7 +409,7 @@ docs/tests/test-reports/에 결과를 보고해줘."
 
 새 스프린트인 경우 `docs/sprints/sprint-{N}/retrospective.md`를 생성한다 (sprint-plan 스킬과 동일한 포맷).
 
-### Step 7: Slack 피드백 (선택)
+### Step 9: Slack 피드백 (선택)
 
 사용자에게 Slack 채널에 처리 결과를 게시할지 묻는다:
 
@@ -366,17 +430,17 @@ Slack #{CHANNEL_NAME} 채널에 처리 결과를 게시할까요? (y/n)
 :spiral_calendar_pad: 프롬프트 맵: docs/sprints/sprint-{N}/prompt-map.md
 ```
 
-또한 처리된 원본 메시지에 `mcp__fect-slack__slack_add_reaction`으로 `:white_check_mark:` 리액션을 추가한다.
-
-### Step 8: 결과 요약
+### Step 10: 결과 요약
 
 ```
 ## Slack to Sprint 완료
 
 ### 소스
 - **채널**: #{CHANNEL_NAME}
-- **분석 메시지**: {N}개
+- **List**: {LIST_NAME} ({LIST_ID})
+- **분석 Item**: {N}개
 - **추출 기능**: {M}개
+- **상태 업데이트**: {N}개 항목 → "진행 중"
 
 ### 생성된 블루프린트
 | # | 기능명 | 경로 | 우선순위 |
@@ -414,5 +478,5 @@ Slack #{CHANNEL_NAME} 채널에 처리 결과를 게시할까요? (y/n)
 - `SLACK_BOT_TOKEN` 환경 변수가 설정되어 있어야 한다. 미설정 시 안내 메시지를 출력하고 중단한다.
 - 프로젝트가 ASTRA로 초기화되어 있어야 한다 (`CLAUDE.md`, `docs/blueprints/` 존재). 미초기화 시 `/project-init` 안내.
 - 기존 블루프린트 파일은 덮어쓰지 않는다. 중복 시 사용자 확인 후 처리.
-- 메시지 분석 시 코드 스니펫, 이미지, 파일 첨부는 텍스트 내용만 분석한다.
-- 스레드 답글은 현재 MCP 도구 한계로 직접 조회할 수 없다. 원본 메시지와 `reply_count`만 활용하며, 필요 시 사용자에게 핵심 내용 입력을 요청한다.
+- List Item의 필드 구조는 List마다 다를 수 있으므로, 스키마를 동적으로 파악하여 처리한다.
+- 상태 업데이트 시 기존 상태 값이 "완료" 또는 "Completed"인 Item은 건너뛰고 사용자에게 알린다.

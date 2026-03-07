@@ -22,7 +22,7 @@ astra-methodology/
 │   ├── test-run/          # Chrome MCP integration testing (/test-run)
 │   ├── test-scenario/     # E2E test scenario generation (/test-scenario)
 │   ├── pr-merge/          # Commit→review→fix→merge full cycle (/pr-merge)
-│   ├── slack-to-sprint/   # Slack message → blueprint + sprint generation (/slack-to-sprint)
+│   ├── slack-to-sprint/   # Slack List → blueprint + sprint generation (/slack-to-sprint)
 │   ├── coding-convention/ # Auto-applied coding convention (Java/TS/Python/CSS/SCSS)
 │   ├── code-standard/     # Auto-applied international code standards (ISO/ITU)
 │   └── sprint-progress/   # Auto-applied sprint progress tracking
@@ -123,9 +123,9 @@ The plugin provides automatic sprint progress tracking through a hook + skill hy
 
 The plugin integrates with Slack via the `fect-slack` MCP server to collect requirements directly from team communication channels:
 
-- **`/slack-to-sprint`** (skill): Full interactive workflow — list channels → select channel → view messages → select items → analyze requirements → generate blueprints + sprint prompt map + progress tracker
+- **`/slack-to-sprint`** (skill): Full interactive workflow — list channels → select channel → select List → select Items → update status → analyze requirements → generate blueprints + sprint prompt map + progress tracker
 - **`/slack-backlog`** (command): Quick extraction — fetch messages from a channel and output a structured backlog table with priorities
-- **MCP tools used**: `slack_list_channels`, `slack_get_history`, `slack_search_channels`, `slack_get_user_info`, `slack_post_message`, `slack_add_reaction`
+- **MCP tools used**: `slack_list_channels`, `slack_get_history`, `slack_search_channels`, `slack_get_user_info`, `slack_post_message`, `slack_add_reaction`, `slack_file_list`, `slack_list_items_list`, `slack_list_items_info`, `slack_list_items_update`
 - **Environment**: Requires `SLACK_BOT_TOKEN` environment variable
 - **MCP config**: Defined in `.mcp.json` (auto-configured by plugin manifest `mcpServers` field)
 
