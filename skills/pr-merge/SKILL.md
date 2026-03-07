@@ -49,19 +49,26 @@ git fetch origin
 
 `main`, `staging`, `dev` 각 브랜치에 대해:
 1. `git ls-remote --heads origin {branch}`로 원격 존재 여부를 확인한다.
-2. 원격에 존재하는 브랜치만 pull 한다:
+2. 원격에 존재하지 않는 브랜치는 건너뛴다 (경고만 출력).
+3. 원격에 존재하는 브랜치에 대해 로컬 브랜치가 없으면 `git checkout -b {branch} origin/{branch}`로 트래킹 브랜치를 생성한다.
+4. 로컬 브랜치가 이미 있으면 checkout 후 pull 한다:
    ```bash
    git checkout {branch}
    git pull --rebase origin {branch}
    ```
-3. 로컬에 브랜치가 없으면 `git checkout -b {branch} origin/{branch}`로 트래킹 브랜치를 생성한다.
-4. 원격에 존재하지 않는 브랜치는 건너뛴다 (경고만 출력).
 
 > **필수**: `dev` 브랜치는 반드시 존재해야 한다. 원격에 `dev`가 없으면 **AskUserQuestion**으로 사용자에게 기본 브랜치로부터 `dev`를 생성할지 확인한다. 거부 시 중단한다.
 
 #### Step 2.2: 캐스케이드 머지 (main → staging → dev)
 
 상위 브랜치의 변경사항을 하위 브랜치로 순차적으로 머지한다. 원격에 존재하는 브랜치만 대상으로 한다.
+
+**모드별 캐스케이드 범위**:
+- **기본 모드**: 전체 캐스케이드 실행 (`main → staging → dev`)
+- **`--staging` 프로모션**: `main → staging`까지만 실행 (dev는 머지 대상이 아님)
+- **`--main` 프로모션**: 캐스케이드를 건너뛴다 (staging → main 방향이므로 역방향 동기화 불필요)
+
+캐스케이드 실행 대상인 경우:
 
 1. **main → staging** (staging이 원격에 존재하는 경우):
    ```bash
@@ -71,7 +78,7 @@ git fetch origin
    - 충돌 발생 시: 충돌 파일 목록을 출력하고 사용자에게 수동 해결을 안내한 후 중단한다.
    - 머지 후 변경이 있으면: `git push origin staging`
 
-2. **staging → dev** (staging이 원격에 존재하는 경우):
+2. **staging → dev** (staging이 원격에 존재하고, 기본 모드인 경우):
    ```bash
    git checkout dev
    git merge staging
@@ -79,7 +86,7 @@ git fetch origin
    - 충돌 발생 시: 충돌 파일 목록을 출력하고 사용자에게 수동 해결을 안내한 후 중단한다.
    - 머지 후 변경이 있으면: `git push origin dev`
 
-3. **main → dev** (staging이 원격에 존재하지 않는 경우):
+3. **main → dev** (staging이 원격에 존재하지 않고, 기본 모드인 경우):
    ```bash
    git checkout dev
    git merge main
@@ -111,11 +118,11 @@ git fetch origin
 
 1. `git status`와 `git log`로 현재 변경사항 및 최근 작업 컨텍스트를 분석하여 적절한 브랜치명을 추천한다 (예: `feat/user-auth`, `fix/login-error`).
 2. **AskUserQuestion**으로 브랜치명을 확인한다. 추천 브랜치명을 기본 옵션으로 제시한다.
-3. 사용자가 확인한 브랜치명으로 현재 브랜치를 베이스로 작업 브랜치를 생성한다:
+3. 사용자가 확인한 브랜치명으로 `dev`를 베이스로 작업 브랜치를 생성한다:
    ```bash
-   git checkout -b {branch-name}
+   git checkout -b {branch-name} dev
    ```
-   작업 브랜치는 현재 HEAD를 베이스로 생성되므로, 미커밋 변경사항은 그대로 유지된다.
+   미커밋 변경사항은 그대로 유지된다. 현재 브랜치가 이미 `dev`인 경우에도 명시적으로 `dev`를 베이스로 지정한다.
 4. 이후 단계에서 `{branch-name}`은 이 새로 생성된 브랜치를 참조한다.
 
 ### Step 5: 대상 브랜치 동기화
@@ -131,7 +138,7 @@ git merge origin/dev
 - **충돌 없음**: 다음 단계로 진행
 - **충돌 발생**: 충돌 파일 목록을 출력하고, 사용자에게 수동 해결을 안내한 후 중단한다.
 
-**건너뛰기 조건**: Step 4.1에서 `dev`로부터 방금 작업 브랜치를 생성한 경우 이미 동기화 상태이므로 건너뛴다.
+**건너뛰기 조건**: Step 4.1을 방금 실행한 경우 (작업 브랜치를 `dev`로부터 생성) 이미 동기화 상태이므로 건너뛴다.
 
 ### Step 6: 커밋 & 푸시
 
@@ -183,6 +190,8 @@ EOF
 
 ### Step 8: 코드 리뷰
 
+리뷰 반복 횟수를 0으로 초기화한다.
+
 `--no-review` 옵션이 지정된 경우 이 단계를 건너뛰고 Step 8.3으로 진행한다.
 
 `feature-dev:code-reviewer` Task 에이전트를 스폰하여 코드 리뷰를 실행한다:
@@ -227,7 +236,8 @@ Task tool (subagent_type: "feature-dev:code-reviewer")
 5. 수정된 파일을 `git add`로 스테이징
 6. `git commit` — 메시지는 "fix: address code review issues (iteration {N})" 형식
 7. `git push`로 원격에 푸시
-8. **Step 8로 복귀**하여 재리뷰 실행
+8. 반복 횟수를 1 증가시킨다.
+9. **Step 8로 복귀**하여 재리뷰 실행
 
 ### Step 8.3: PR 머지 확인
 
@@ -243,8 +253,7 @@ Task tool (subagent_type: "feature-dev:code-reviewer")
 2. `gh pr merge --merge --delete-branch`로 머지 실행
    - 프로모션 모드에서는 `--delete-branch`를 제외한다 (소스 브랜치는 영구 브랜치)
 
-**기본 모드**: **Step 9**로 진행
-**프로모션 모드**: **Step 11**로 진행
+**모드 확인**: `--staging` 또는 `--main` 플래그가 지정된 경우 **Step 11**로, 그 외는 **Step 9**로 진행한다.
 
 ---
 
@@ -252,22 +261,15 @@ Task tool (subagent_type: "feature-dev:code-reviewer")
 
 ### Step 9: 정리 및 버전 업데이트
 
-머지 후 로컬 환경을 정리하고, 필요 시 버전을 업데이트한다:
+머지 후 로컬 환경을 정리한다:
 
 1. `git fetch origin`으로 원격 최신 상태를 가져온다.
 2. `git checkout dev`로 전환한다.
 3. `git pull --rebase`로 최신 상태 동기화
 4. 머지된 로컬 브랜치 삭제: `git branch -d {branch-name}`
-5. `.claude-plugin/plugin.json` 파일이 존재하는 플러그인 프로젝트에서 버전을 업데이트한다:
-   - `.claude-plugin/plugin.json`과 `.claude-plugin/marketplace.json`의 존재 여부를 확인한다.
-   - 파일이 존재하면 `--patch` / `--minor` / `--major` 옵션에 따라 SemVer 버전을 범프한다:
-     - `--patch` (기본값): `x.y.z` → `x.y.z+1`
-     - `--minor`: `x.y.z` → `x.y+1.0`
-     - `--major`: `x.y.z` → `x+1.0.0`
-   - 두 파일 모두 동일한 버전으로 업데이트한다.
-   - `dev`에 직접 커밋하고 푸시한다: "chore: bump version to {new-version}"
-   - 파일이 존재하지 않으면 버전 업데이트를 건너뛴다.
-6. 최종 요약을 출력한다:
+5. 최종 요약을 출력한다:
+
+> **참고**: 기본 모드에서는 버전 범프를 수행하지 않는다. 버전 범프는 `--main` 프로모션 (Step 11)에서만 실행된다.
 
 ```
 ## PR Review & Merge 완료
@@ -277,7 +279,6 @@ Task tool (subagent_type: "feature-dev:code-reviewer")
 - 머지: {branch-name} → dev
 - 리뷰 반복: {N}회
 - 수정된 이슈: Critical {n}건, High {n}건
-- 버전: {old-version} → {new-version} (해당 시)
 - 상태: ✅ 머지 완료
 
 ### 변경사항
@@ -406,6 +407,6 @@ EOF
 - 머지 완료 후 최종 체크아웃 위치는 `{target-branch}`이다.
 - Critical 이슈가 남아있으면 머지가 차단된다.
 - 충돌 발생 시 자동 해결을 시도하지 않고, 사용자에게 안내 후 중단한다.
-- 버전 범프는 `.claude-plugin/plugin.json`이 존재하는 프로젝트에서만 실행된다.
+- 버전 범프는 `--main` 프로모션에서만 실행되며, `.claude-plugin/plugin.json`이 존재하는 프로젝트에서만 적용된다.
 - 커밋, 자동 수정, 머지 전에는 반드시 사용자 확인을 거친다.
 - 프로모션 모드에서 소스 브랜치(`dev`, `staging`)는 삭제하지 않는다.
