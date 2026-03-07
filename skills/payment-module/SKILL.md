@@ -296,6 +296,8 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 ```markdown
 # Sprint {N} Progress Tracker
 
+## Sprint Information
+- **Sprint Number**: {N}
 - **Sprint Goal**: 구독 결제 모듈 전체 구축
 - **Start Date**: {TODAY}
 - **End Date**: {TODAY + 7 days}
@@ -309,9 +311,9 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 | F1. 기반 인프라 | Done | - | - | - | - | Not Started |
 | F2. PG 연동 + 결제 수단 | Done | Done | - | - | - | Not Started |
 | F3. 구독 관리 | Done | Done | - | - | - | Not Started |
-| F4. 크레딧 관리 | Done | Done | - | - | - | Not Started |
-| F5. 스케줄러 + Dunning | Done | N/A | - | - | - | Not Started |
-| F6. 화면 구현 | Done | N/A | - | - | - | Not Started |
+| F4. 크레딧 + 스케줄러 + Dunning | Done | Done | - | - | - | Not Started |
+| F5. 화면 구현 | Done | N/A | - | - | - | Not Started |
+| F6. 관리자 + 통합 | Done | N/A | - | - | - | Not Started |
 
 **Legend**: `-` Not Started, `WIP` In Progress, `Done` Completed, `N/A` Not Applicable
 <!-- PROGRESS_TABLE_END -->
