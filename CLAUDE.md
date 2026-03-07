@@ -24,6 +24,9 @@ astra-methodology/
 │   ├── pr-merge/          # Commit→review→fix→merge full cycle (/pr-merge)
 │   ├── slack-to-sprint/   # Slack List → blueprint + sprint generation (/slack-to-sprint)
 │   ├── coding-convention/ # Auto-applied coding convention (Java/TS/Python/CSS/SCSS)
+│   ├── auth-module/       # Auth module auto-builder (/auth-module)
+│   ├── workspace-module/  # Workspace module auto-builder (/workspace-module)
+│   ├── payment-module/    # Payment module auto-builder (/payment-module)
 │   ├── code-standard/     # Auto-applied international code standards (ISO/ITU)
 │   └── sprint-progress/   # Auto-applied sprint progress tracking
 ├── agents/              # Specialized Claude Code subagents (read-only, auto-discovered)
@@ -51,6 +54,14 @@ astra-methodology/
 │   ├── iso_3166_1_countries.json  # 249 ISO 3166-1 country codes
 │   ├── iso_3166_2_regions.json    # 653 ISO 3166-2 region codes (21 countries)
 │   └── country_calling_codes.json # 245 ITU-T E.164 calling codes
+├── docs/                # Reference design documents
+│   ├── auth/
+│   │   └── system-design.md     # Auth module reference design (AMA project)
+│   ├── workspace/
+│   │   ├── system-design.md     # Workspace module reference design (AMA project)
+│   │   └── flow.md              # Workspace → subscription payment flow
+│   └── payment/
+│       └── system-design.md     # Payment module reference design (AMA project)
 └── .claude-plugin/      # Plugin manifest (plugin.json, marketplace.json)
 ```
 
@@ -100,6 +111,40 @@ Data files: `iso_3166_1_countries.json` (249 countries), `iso_3166_2_regions.jso
 2. **validate-naming.sh** — checks table name prefixes in SQL, Java (@Table), TypeScript (@Entity), Python (__tablename__)
 3. **track-sprint-progress.sh** — detects sprint-related file events (blueprints, DB design, test cases, implementation, test reports) and appends activity log entries to the sprint progress tracker
 4. All hooks are non-blocking (exit 0) — they emit warnings only
+
+### Auth Module Auto-Builder
+
+The `/auth-module` skill automates the entire authentication module development lifecycle:
+
+- **Reference**: `docs/auth/system-design.md` — AMA project auth design (Next.js 14 + Firebase + PostgreSQL)
+- **Pipeline**: Blueprint → Sprint Plan → Implementation → Test Scenarios → Test Run & Debug
+- **Features**: signup (email + social), login/logout, token management (JWT + Token Rotation), terms management (CRUD + versioning + consent), user management (profile + admin), security (Rate Limiting, CSRF, XSS)
+- **Tech adaptation**: Automatically adapts the reference design to the target project's tech stack (Spring Boot, NestJS, FastAPI, React, Vue, Angular, etc.)
+- **Auto-debug**: Up to 5 retry cycles for test failures before requesting user assistance
+
+### Workspace Module Auto-Builder
+
+The `/workspace-module` skill automates the entire workspace management module development lifecycle:
+
+- **Reference**: `docs/workspace/system-design.md`, `flow.md` — AMA project workspace design (Next.js 14 + PostgreSQL + Drizzle ORM)
+- **Pipeline**: Blueprint → Sprint Plan → Implementation → Test Scenarios → Test Run & Debug
+- **Features**: workspace CRUD (create/read/update/delete), member management (list/role-change/remove/leave/transfer-ownership), invitation system (email + link invite, accept/decline/cancel), workspace switching (WorkspaceSwitcher + default workspace), auth integration (signup → personal WS auto-creation, withdrawal → WS cleanup), billing integration (subscription ↔ member count sync)
+- **DB tables**: TB_COMM_WKSPC, TR_COMM_WKSPC_MBR, TB_COMM_WKSPC_INVT + TB_COMM_USER.BSC_WKSPC_ID extension
+- **Auth dependency**: Requires auth module (TB_COMM_USER, JWT authentication). Prompts user to build auth module first if not detected.
+- **Tech adaptation**: Automatically adapts the reference design to the target project's tech stack
+- **Auto-debug**: Up to 5 retry cycles for test failures before requesting user assistance
+
+### Payment Module Auto-Builder
+
+The `/payment-module` skill automates the entire subscription payment module development lifecycle:
+
+- **Reference**: `docs/payment/system-design.md` — AMA project payment design (Next.js 14 + PostgreSQL + Drizzle ORM + TossPayments)
+- **Pipeline**: Blueprint → Sprint Plan → Implementation → Test Scenarios → Test Run & Debug
+- **Features**: plan management (CRUD + features/limits), payment methods (billing key issuance + AES-256 encryption), subscription management (start/change/cancel/pause/resume + proration), invoices (auto-generation + manual payment + refund), PG integration (PG-Agnostic abstraction + TossPayments/KCP adapters), webhooks (signature verification + idempotency), recurring payment scheduler (cron-based auto-renewal), dunning (4-step retry strategy), credit management (allocate/deduct/expire/adjust + atomic processing)
+- **DB tables**: TB_PAY_PLAN, TB_PAY_PLAN_FNC, TB_PAY_STLM_MTHD, TB_PAY_SBSC, TH_PAY_SBSC, TB_PAY_INVC, TB_PAY_INVC_ARTCL, TB_PAY_STLM, TL_PAY_BILNG_EVNT, TL_PAY_WBHK_EVNT, TH_PAY_STLM_RTRY, TB_PAY_CRDT_BLNC, TL_PAY_CRDT_TRNS (13 tables)
+- **Module dependency**: Requires auth module (TB_COMM_USER, JWT) and workspace module (TB_COMM_WKSPC, TR_COMM_WKSPC_MBR). Prompts user to build prerequisite modules first if not detected.
+- **Tech adaptation**: Automatically adapts the reference design to the target project's tech stack (including PG provider: TossPayments/Stripe/KCP)
+- **Auto-debug**: Up to 5 retry cycles for test failures before requesting user assistance
 
 ### Blueprint Directory Convention
 
