@@ -211,7 +211,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 
 `docs/database/database-design.md`에 결제 모듈 테이블 13개를 추가한다 (기존 내용 보존).
 
-블루프린트 작성 완료 후 사용자에게 확인:
+블루프린트 작성 완료 후 `AskUserQuestion`으로 사용자에게 확인한다:
 
 ```
 ## 블루프린트 검토
@@ -224,8 +224,10 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 - 크레딧 관리: 6개 API + 크레딧 생명주기
 
 블루프린트를 확인하고 수정사항이 있으면 알려주세요.
-계속 진행하려면 'Y'를 입력하세요.
+계속 진행할까요?
 ```
+
+선택지: "예, 계속 진행", "수정 필요 — 피드백 제공"
 
 ---
 
@@ -294,16 +296,43 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 ```markdown
 # Sprint {N} Progress Tracker
 
-| Feature | Blueprint | DB Design | Test Cases | Implementation | Test Report |
-|---------|-----------|-----------|------------|----------------|-------------|
-| F1. 기반 인프라 | - | - | - | - | - |
-| F2. PG 연동 + 결제 수단 | - | - | - | - | - |
-| F3. 구독 관리 | - | - | - | - | - |
-| F4. 크레딧 + 스케줄러 + Dunning | - | - | - | - | - |
-| F5. 화면 구현 | - | - | - | - | - |
-| F6. 관리자 + 통합 | - | - | - | - | - |
+- **Sprint Goal**: 구독 결제 모듈 전체 구축
+- **Start Date**: {TODAY}
+- **End Date**: {TODAY + 7 days}
+- **Status**: In Progress
 
+<!-- PROGRESS_TABLE_START -->
+## Feature Progress
+
+| Feature | Blueprint | DB Design | Test Cases | Implementation | Test Report | Status |
+|---------|-----------|-----------|------------|----------------|-------------|--------|
+| F1. 기반 인프라 | Done | - | - | - | - | Not Started |
+| F2. PG 연동 + 결제 수단 | Done | Done | - | - | - | Not Started |
+| F3. 구독 관리 | Done | Done | - | - | - | Not Started |
+| F4. 크레딧 관리 | Done | Done | - | - | - | Not Started |
+| F5. 스케줄러 + Dunning | Done | N/A | - | - | - | Not Started |
+| F6. 화면 구현 | Done | N/A | - | - | - | Not Started |
+
+**Legend**: `-` Not Started, `WIP` In Progress, `Done` Completed, `N/A` Not Applicable
+<!-- PROGRESS_TABLE_END -->
+
+<!-- SUMMARY_START -->
+## Summary
+- **Total Features**: 6
+- **Completed**: 0
+- **In Progress**: 0
+- **Overall Progress**: 0%
+- **Last Updated**: {TIMESTAMP}
+<!-- SUMMARY_END -->
+
+<!-- ACTIVITY_LOG_START -->
 ## Activity Log
+
+| Timestamp | Event | File | Details |
+|-----------|-------|------|---------|
+| {TIMESTAMP} | blueprint | docs/blueprints/{NNN}-payment/blueprint.md | 결제 모듈 블루프린트 생성 |
+| {TIMESTAMP} | db-design | docs/database/database-design.md | 결제 테이블 13개 추가 |
+<!-- ACTIVITY_LOG_END -->
 ```
 
 ---
@@ -504,7 +533,7 @@ Step 0에서 분석한 대상 프로젝트의 기술 스택에 맞게 레퍼런�
 
 #### 테스트 리포트 생성
 
-`docs/tests/test-report-sprint-{N}.md` 파일에 결과를 기록한다:
+`docs/tests/test-reports/sprint-{N}/payment-test-report.md` 파일에 결과를 기록한다:
 
 ```markdown
 # Test Report - Sprint {N} (구독 결제 모듈)

@@ -186,7 +186,7 @@ SMTP_FROM_EMAIL=noreply@astravision.co.kr
 │ ID (PK)              │     │  └────────────────────────────┘
 │ WKSPC_ID (FK) ───────┼─────┘
 │ EML_ADDR             │        ┌────────────────────────────┐
-│ ROLE_CD              │        │ pay_subscriptions           │
+│ ROLE_CD              │        │ TB_PAY_SBSC           │
 │ TKN (UK)             │        │ (결제 모듈)                  │
 │ INVT_TYPE_CD         │        │                             │
 │ INVTR_ID (FK)        │        │ WKSPC_ID (FK) ─────────────│
@@ -1355,7 +1355,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 [POST /workspaces/:wsId/billing/payment-methods] ── (결제 수단 등록) ──
   │
   │  4. 토스페이먼츠 SDK 결제창 → 빌링키 발급
-  │  5. pay_payment_methods 생성
+  │  5. TB_PAY_STLM_MTHD 생성
   ▼
 [POST /workspaces/:wsId/billing/subscriptions] ── (구독 생성) ──
   │
@@ -1363,7 +1363,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   │  7. 기존 활성 구독 존재 검사
   │  8. 플랜 유효성 검증
   │
-  │  9. pay_subscriptions 생성
+  │  9. TB_PAY_SBSC 생성
   │     ├─ WKSPC_ID: (선택한 워크스페이스)
   │     ├─ plan_id: Pro
   │     ├─ STTS_CD: "TRIALING" (14일 무료 체험)
@@ -1397,12 +1397,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 [Scheduler: 정기결제 시도] ────────────────────────────────────
   │
   │  1. 결제 실패 (잔액 부족 등)
-  │  2. pay_subscriptions.status_cd = "PAST_DUE"
+  │  2. TB_PAY_SBSC.status_cd = "PAST_DUE"
   │  3. Dunning 재시도 시작 (1일 → 3일 → 7일 → 14일)
   │
   │  ── 14일간 재시도 모두 실패 ──
   │
-  │  4. pay_subscriptions.status_cd = "SUSPENDED"
+  │  4. TB_PAY_SBSC.status_cd = "SUSPENDED"
   ▼
 [워크스페이스 정지 처리] ──────────────────────────────────────
   │
@@ -1422,7 +1422,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   ▼
 [결제 성공] ────────────────────────────────────────────────────
   │
-  │  9. pay_subscriptions.status_cd = "ACTIVE"
+  │  9. TB_PAY_SBSC.status_cd = "ACTIVE"
   │  10. TB_COMM_WKSPC.STTS_CD = "ACTIVE"
   │  11. 정상 서비스 복구
 ```

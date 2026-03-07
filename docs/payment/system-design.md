@@ -71,7 +71,7 @@
 
 | 항목 | 인증 모듈 | 워크스페이스 모듈 | IAM 모듈 | 결제 모듈 |
 |------|----------|-----------------|----------|----------|
-| 사용자 식별 | `TB_COMM_USER.ID` 정의 | `comm_workspace_members.user_id` FK 참조 | `iam_user_roles.user_id` FK 참조 | 감사 로그에서 FK 참조 |
+| 사용자 식별 | `TB_COMM_USER.ID` 정의 | `TR_COMM_WKSPC_MBR.USER_ID` FK 참조 | `TB_COMM_USER_ROLE.USER_ID` FK 참조 | 감사 로그에서 FK 참조 |
 | 워크스페이스 식별 | `TB_COMM_USER.BSC_WKSPC_ID` FK | `TB_COMM_WKSPC.ID` 정의 | 권한 검사 시 워크스페이스 컨텍스트 참조 | `WKSPC_ID` FK로 구독·결제수단·청구서의 주체 |
 | 인증/권한 | Firebase + JWT | 워크스페이스 멤버십 + 역할 검사 | 시스템 레벨 RBAC | 인증 JWT + 워크스페이스 `OWNER/ADMIN` 역할 |
 | 미들웨어 | 인증 검증 | 멤버십 검증 미들웨어 | 시스템 권한 미들웨어 | 인증 + 워크스페이스 멤버십·역할 미들웨어 |

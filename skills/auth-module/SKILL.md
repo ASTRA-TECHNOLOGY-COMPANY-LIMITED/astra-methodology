@@ -34,7 +34,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 8. 디렉토리 구조 (섹션 8)
 9. 구현 순서 — Phase 1~5 (섹션 9)
 
-> **중요**: 이 레퍼런스는 **AMA 프로젝트(Next.js 14 + Firebase + PostgreSQL)**를 기준으로 작성되었다. 대상 프로젝트의 기술 스택에 맞게 **적응(adapt)**해야 한다.
+> **중요**: 이 레퍼런스는 **AMA 프로젝트(Next.js 14 + Firebase + PostgreSQL)**를 기준으로 작성되었다. 설계 문서 내 "xframe"은 AMA 프로젝트의 기반 인증 아키텍처를 가리킨다. 대상 프로젝트의 기술 스택에 맞게 **적응(adapt)**해야 한다.
 
 #### B. 대상 프로젝트 분석
 
@@ -609,7 +609,7 @@ Step 5로 진행합니다...
 1. **서버 기동** — 프로젝트의 개발 서버를 백그라운드로 실행
 2. **서버 준비 대기** — 헬스체크 엔드포인트 또는 포트 확인
 3. **API 테스트** — `curl` 또는 `fetch`로 인증 API 엔드포인트 테스트:
-   - `POST /api/v1/terms/active` → 200 (활성 약관 목록)
+   - `GET /api/v1/terms/active` → 200 (활성 약관 목록)
    - `POST /api/v1/auth/signup` → 테스트 계정 생성 (Firebase 에뮬레이터 사용 권장)
    - `POST /api/v1/auth/login` → 토큰 발급 확인
    - `GET /api/v1/users/me` → 프로필 조회
