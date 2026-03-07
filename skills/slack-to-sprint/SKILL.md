@@ -440,7 +440,7 @@ docs/tests/test-reports/에 결과를 보고해줘."
 - **Total Features**: {N}
 - **Completed**: 0
 - **In Progress**: {N}
-- **Overall Progress**: {blueprint_pct}%
+- **Overall Progress**: 0%
 - **Last Updated**: {YYYY-MM-DD HH:MM}
 <!-- SUMMARY_END -->
 

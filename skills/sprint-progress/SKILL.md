@@ -98,11 +98,12 @@ Test Report가 생성되어 feature의 Status가 `Completed`로 변경될 때, S
    - **Status Options**: `완료` 옵션 ID
    - **Feature ↔ Slack Item ID** 매핑 테이블
 4. 완료된 feature에 매핑된 Slack Item ID를 찾는다
-5. `mcp__fect-slack__slack_list_items_update`를 호출한다:
+5. 각 Slack Item의 현재 상태를 확인한다. 이미 "완료" 상태인 Item은 건너뛰고 Activity Log에 "(이미 완료 상태)" 메모를 남긴다.
+6. "완료"가 아닌 Item에 대해서만 `mcp__fect-slack__slack_list_items_update`를 호출한다:
    - `list_id`: 파싱된 List ID
    - `item_id`: 매핑된 Slack Item ID
    - `fields`: `{ "{status_column_id}": "{완료_옵션_ID}" }`
-6. 업데이트 결과를 Activity Log에 기록한다:
+7. 업데이트 결과를 Activity Log에 기록한다:
    - `| {timestamp} | Slack Status Updated | {LIST_NAME} → {feature} | 완료 |`
 
 > **주의**: 하나의 feature에 여러 Slack Item이 매핑된 경우 (병합된 요구사항), 모든 관련 Item을 업데이트한다. Item ID가 쉼표로 구분되어 있을 수 있다 (예: `Rec001,Rec002`).
