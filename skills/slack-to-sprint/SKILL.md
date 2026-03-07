@@ -84,19 +84,37 @@ List를 조회할 채널 번호 또는 이름을 입력하세요:
 - `list_id`: `{LIST_ID}`
 - `limit`: 100
 
-#### B. Item 목록 표시
+#### B. 상태 필터링 (시작되지 않음만 표시)
 
-가져온 Item 목록을 테이블로 표시한다. 각 Item의 필드(컬럼) 값을 가독성 있게 보여준다:
+조회된 Item 목록에서 **"시작되지 않음"** 상태의 항목만 필터링한다:
+
+1. 아래 **알려진 상태 컬럼 매핑**을 확인하여 상태 컬럼 ID와 "시작되지 않음" 옵션 ID를 확인한다
+
+   | List ID | 상태 컬럼 ID | 시작되지 않음 | 진행중 | 완료 |
+   |---------|-------------|-------------|--------|------|
+   | `F0A5ZLTQ4T0` | `Col0A5L8XT9RD` | `Opt7MNHB19N` | `OptXBPNOYKC` | `OptTR35W8NA` |
+
+2. 각 Item의 상태 컬럼 값이 "시작되지 않음" 옵션 ID와 일치하는 항목만 추출한다
+   - 예: `Col0A5L8XT9RD` 값이 `Opt7MNHB19N`인 항목만 필터
+3. 알려진 매핑이 없는 List의 경우, 사용자에게 상태 컬럼과 "시작되지 않음" 옵션을 확인한 뒤 필터링한다
+4. 상태 컬럼이 비어있는 Item도 "시작되지 않음"으로 간주하여 포함한다
+
+> **필터링 결과가 0건인 경우**: "시작되지 않음 상태의 항목이 없습니다. 전체 항목을 표시할까요?" 라고 `AskUserQuestion`으로 확인한다.
+
+#### C. Item 목록 표시
+
+필터링된 Item 목록을 테이블로 표시한다. 각 Item의 필드(컬럼) 값을 가독성 있게 보여준다:
 
 ```
-## {LIST_NAME} — 항목 목록
+## {LIST_NAME} — 항목 목록 (시작되지 않음)
 
 | # | 제목 | 상태 | 담당자 | 마감일 | 기타 |
 |---|------|------|--------|--------|------|
-| 1 | 회원가입 이메일 인증 기능 | 대기 | @kim | 03-15 | High |
-| 2 | PG 결제 연동 | 대기 | @lee | 03-20 | High |
-| 3 | 관리자 대시보드 권한 분리 | 진행 중 | @park | 03-18 | Medium |
+| 1 | 회원가입 이메일 인증 기능 | 시작되지 않음 | @kim | 03-15 | High |
+| 2 | PG 결제 연동 | 시작되지 않음 | @lee | 03-20 | High |
 | ... | ... | ... | ... | ... | ... |
+
+총 {전체}건 중 {필터링}건 표시 (시작되지 않음만)
 
 처리할 항목을 선택하세요 (번호, 범위, 또는 'all'):
 예: 1,2,5  또는  1-5  또는  all
@@ -104,7 +122,7 @@ List를 조회할 채널 번호 또는 이름을 입력하세요:
 
 > **컬럼 매핑**: List의 스키마(컬럼 정의)를 기반으로 테이블 헤더를 동적으로 구성한다. `mcp__fect-slack__slack_list_items_info`를 첫 번째 Item에 호출하여 스키마 구조를 파악할 수 있다.
 
-#### C. 사용자 항목 선택
+#### D. 사용자 항목 선택
 
 `AskUserQuestion`으로 사용자의 선택을 받는다. 지원하는 입력 형태:
 
@@ -121,19 +139,26 @@ List를 조회할 채널 번호 또는 이름을 입력하세요:
 
 List의 스키마에서 상태(status) 관련 컬럼을 식별한다:
 
-- `todo_mode`가 활성화된 List: 기본 `completed` 필드 등 todo 관련 필드를 사용
-- 커스텀 스키마: `select` 타입 컬럼 중 상태를 나타내는 컬럼 (예: "상태", "Status", "진행상태" 등)을 식별
-- 상태 컬럼의 `options` 목록에서 "진행 중", "In Progress" 등 매칭되는 값을 찾는다
+1. **알려진 상태 컬럼 매핑 확인**: Step 3.B의 알려진 상태 컬럼 매핑 테이블에 해당하는 List이면 매핑을 바로 사용한다.
+
+2. **알려진 매핑이 없는 경우**: `select` 타입 컬럼 중 상태를 나타내는 컬럼을 식별한다.
+   - 3개 이상의 Item을 샘플링하여 select 컬럼의 옵션 ID 분포를 확인
+   - 사용자에게 각 옵션 ID의 라벨(시작되지 않음/진행중/완료)을 `AskUserQuestion`으로 확인
+   - 확인된 매핑을 이 스킬 파일의 테이블에 추가하여 다음 실행 시 재사용
 
 > **상태 값을 찾을 수 없는 경우**: 사용자에게 상태 컬럼과 값을 직접 지정하도록 `AskUserQuestion`으로 요청한다.
 
-#### B. 상태 업데이트 실행
+#### B. 상태 업데이트 실행 (→ 진행중)
 
-선택된 각 Item에 대해 `mcp__fect-slack__slack_list_items_update`를 호출한다:
+선택된 각 Item에 대해 상태를 확인한 뒤 **"진행중"**으로 변경한다:
+
+1. 각 Item의 현재 상태를 확인한다. 이미 "진행중" 또는 "완료" 상태인 Item은 건너뛰고 사용자에게 알린다.
+2. "시작되지 않음" 상태의 Item만 `mcp__fect-slack__slack_list_items_update`를 호출한다:
 
 - `list_id`: `{LIST_ID}`
 - `item_id`: 각 선택된 Item의 ID
-- `fields`: `{ "{status_column_id}": "진행 중" }` (식별된 상태 컬럼 ID와 값)
+- `fields`: `{ "{status_column_id}": "{진행중_옵션_ID}" }`
+  - 예: `{ "Col0A5L8XT9RD": "OptXBPNOYKC" }` (알려진 매핑 사용 시)
 
 업데이트 결과를 사용자에게 보고한다:
 
@@ -152,9 +177,10 @@ List의 스키마에서 상태(status) 관련 컬럼을 식별한다:
 
 #### A. Item 데이터 수집
 
-선택된 각 Item의 필드 데이터를 수집한다. 필요 시 `mcp__fect-slack__slack_list_items_info`로 상세 정보를 조회한다.
+선택된 **모든** Item에 대해 `mcp__fect-slack__slack_list_items_info`를 **반드시** 호출하여 상세 정보를 조회한다. List 목록 API(`slack_list_items_list`)의 응답만으로는 필드 데이터가 불완전할 수 있으므로, 개별 Item 상세 조회를 생략하지 않는다.
 
-- Item의 모든 필드 값 (제목, 설명, 상태, 담당자, 마감일, 우선순위 등)을 수집
+- 각 Item의 **모든 필드 값을 원문 그대로** 수집한다 (제목, 설명, 상태, 담당자, 마감일, 우선순위, 본문/메모, 커스텀 필드 등)
+- 설명(description)이나 본문(notes/memo) 등 장문 텍스트 필드가 있으면 **내용을 축약하지 않고 전체를 보존**한다
 - 담당자 필드에 user ID가 있으면 이 시점에서 `mcp__fect-slack__slack_get_user_info`로 이름 조회 (고유 user ID만 한 번씩 조회, 중복 호출 방지)
 
 #### B. 요구사항 추출
@@ -292,8 +318,18 @@ List의 스키마에서 상태(status) 관련 컬럼을 식별한다:
 > **List**: {LIST_NAME}
 > **담당자**: @{담당자}
 > **상태**: 진행 중
+
+아래는 `slack_list_items_info`로 조회한 원본 필드 데이터 전체이다. 축약하지 않고 모든 필드를 그대로 포함한다.
+
+| 필드명 | 값 |
+|--------|-----|
+| {필드1 이름} | {필드1 값 — 전체 내용} |
+| {필드2 이름} | {필드2 값 — 전체 내용} |
+| ... | ... |
+
+> **장문 텍스트 필드** (설명, 메모, 본문 등)는 아래에 원문 전체를 포함한다:
 >
-> {Item 필드 데이터 요약}
+> {장문 필드 원문 전체 — 줄바꿈 포함하여 그대로 기재}
 ```
 
 ### Step 8: 스프린트 프롬프트 맵 생성
@@ -374,6 +410,20 @@ docs/tests/test-reports/에 결과를 보고해줘."
 - **End Date**: {YYYY-MM-DD} (+7 days)
 - **Status**: In Progress
 
+<!-- SLACK_LIST_MAPPING_START -->
+## Slack List Mapping
+
+- **List ID**: {LIST_ID}
+- **List Name**: {LIST_NAME}
+- **Status Column**: {status_column_id}
+- **Status Options**: `시작되지 않음`={시작되지않음_옵션_ID}, `진행중`={진행중_옵션_ID}, `완료`={완료_옵션_ID}
+
+| Feature | Slack Item ID |
+|---------|---------------|
+| {feature-1} | {Rec_ID_1} |
+| {feature-2} | {Rec_ID_2} |
+<!-- SLACK_LIST_MAPPING_END -->
+
 <!-- PROGRESS_TABLE_START -->
 ## Feature Progress
 
@@ -390,7 +440,7 @@ docs/tests/test-reports/에 결과를 보고해줘."
 - **Total Features**: {N}
 - **Completed**: 0
 - **In Progress**: {N}
-- **Overall Progress**: {blueprint_pct}%
+- **Overall Progress**: 0%
 - **Last Updated**: {YYYY-MM-DD HH:MM}
 <!-- SUMMARY_END -->
 
@@ -479,4 +529,4 @@ Slack #{CHANNEL_NAME} 채널에 처리 결과를 게시할까요? (y/n)
 - 프로젝트가 ASTRA로 초기화되어 있어야 한다 (`CLAUDE.md`, `docs/blueprints/` 존재). 미초기화 시 `/project-init` 안내.
 - 기존 블루프린트 파일은 덮어쓰지 않는다. 중복 시 사용자 확인 후 처리.
 - List Item의 필드 구조는 List마다 다를 수 있으므로, 스키마를 동적으로 파악하여 처리한다.
-- 상태 업데이트 시 기존 상태 값이 "완료" 또는 "Completed"인 Item은 건너뛰고 사용자에게 알린다.
+- 상태 업데이트 가드: Step 4.B에서 "진행중" 또는 "완료" 상태의 Item은 자동으로 건너뛴다. "전체 항목 표시" 폴백으로 선택된 경우에도 동일하게 적용된다.

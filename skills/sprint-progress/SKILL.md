@@ -5,6 +5,7 @@ description: >
   test case, implementation, or test report files are created or modified.
   Used when writing files under docs/blueprints/, docs/database/, docs/tests/,
   docs/sprints/, or src/ directories.
+allowed-tools: Read, Write, Edit, Glob, Grep, mcp__fect-slack__slack_list_items_update
 ---
 
 # Sprint Progress Auto-Tracking Skill
@@ -81,7 +82,31 @@ When a file under `docs/tests/test-reports/` is written:
 3. Set the **Test Report** column to `Done`
 4. Check if the feature is now fully complete (all columns are `Done` or `N/A`)
 5. If fully complete, set the **Status** column to `Completed`
-6. Recalculate the Summary section
+6. If Status가 `Completed`로 변경되었으면, **Procedure 6**을 실행하여 Slack List Item 상태를 "완료"로 업데이트한다. Procedure 6이 실패하거나 매핑 섹션이 없으면 경고만 출력하고 다음 단계로 진행한다 (비차단).
+7. Recalculate the Summary section
+
+### Procedure 6: Slack List Item 상태 업데이트 (→ 완료)
+
+Test Report가 생성되어 feature의 Status가 `Completed`로 변경될 때, Slack List Item의 상태도 **"완료"**로 업데이트한다.
+
+1. `docs/sprints/sprint-{N}/progress.md`에서 `<!-- SLACK_LIST_MAPPING_START -->` ~ `<!-- SLACK_LIST_MAPPING_END -->` 섹션을 확인한다
+2. 해당 섹션이 없으면 이 절차를 건너뛴다 (Slack List 기반 스프린트가 아님)
+3. 섹션이 있으면 다음 정보를 파싱한다:
+   - **List ID**: Slack List 파일 ID
+   - **List Name**: Slack List 이름
+   - **Status Column**: 상태 컬럼 ID
+   - **Status Options**: `완료` 옵션 ID
+   - **Feature ↔ Slack Item ID** 매핑 테이블
+4. 완료된 feature에 매핑된 Slack Item ID를 찾는다
+5. 각 Slack Item의 현재 상태를 확인한다. 이미 "완료" 상태인 Item은 건너뛰고 Activity Log에 "(이미 완료 상태)" 메모를 남긴다.
+6. "완료"가 아닌 Item에 대해서만 `mcp__fect-slack__slack_list_items_update`를 호출한다:
+   - `list_id`: 파싱된 List ID
+   - `item_id`: 매핑된 Slack Item ID
+   - `fields`: `{ "{status_column_id}": "{완료_옵션_ID}" }`
+7. 업데이트 결과를 Activity Log에 기록한다:
+   - `| {timestamp} | Slack Status Updated | {LIST_NAME} → {feature} | 완료 |`
+
+> **주의**: 하나의 feature에 여러 Slack Item이 매핑된 경우 (병합된 요구사항), 모든 관련 Item을 업데이트한다. Item ID가 쉼표로 구분되어 있을 수 있다 (예: `Rec001,Rec002`).
 
 ## Tracker File Auto-Creation
 
