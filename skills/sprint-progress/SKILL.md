@@ -5,6 +5,7 @@ description: >
   test case, implementation, or test report files are created or modified.
   Used when writing files under docs/blueprints/, docs/database/, docs/tests/,
   docs/sprints/, or src/ directories.
+allowed-tools: Read, Write, Edit, Glob, Grep, mcp__fect-slack__slack_list_items_update
 ---
 
 # Sprint Progress Auto-Tracking Skill
@@ -81,7 +82,7 @@ When a file under `docs/tests/test-reports/` is written:
 3. Set the **Test Report** column to `Done`
 4. Check if the feature is now fully complete (all columns are `Done` or `N/A`)
 5. If fully complete, set the **Status** column to `Completed`
-6. If Status가 `Completed`로 변경되었으면, **Procedure 6**을 실행하여 Slack List Item 상태를 "완료"로 업데이트한다
+6. If Status가 `Completed`로 변경되었으면, **Procedure 6**을 실행하여 Slack List Item 상태를 "완료"로 업데이트한다. Procedure 6이 실패하거나 매핑 섹션이 없으면 경고만 출력하고 다음 단계로 진행한다 (비차단).
 7. Recalculate the Summary section
 
 ### Procedure 6: Slack List Item 상태 업데이트 (→ 완료)
@@ -92,6 +93,7 @@ Test Report가 생성되어 feature의 Status가 `Completed`로 변경될 때, S
 2. 해당 섹션이 없으면 이 절차를 건너뛴다 (Slack List 기반 스프린트가 아님)
 3. 섹션이 있으면 다음 정보를 파싱한다:
    - **List ID**: Slack List 파일 ID
+   - **List Name**: Slack List 이름
    - **Status Column**: 상태 컬럼 ID
    - **Status Options**: `완료` 옵션 ID
    - **Feature ↔ Slack Item ID** 매핑 테이블
