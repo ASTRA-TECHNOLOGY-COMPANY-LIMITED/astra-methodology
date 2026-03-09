@@ -527,29 +527,31 @@ Module dependency chain: **Auth → Workspace → Payment**
 - Workspace requires Auth (TB_COMM_USER, JWT)
 - Payment requires Auth + Workspace (TB_COMM_WKSPC, TR_COMM_WKSPC_MBR)
 
-Based on the user's selection, execute modules using Agent tool with **multi-agent parallelization where dependencies allow**:
+**Prerequisite confirmation (before execution):**
 
-**Execution strategy:**
+If the user selects a module that has missing prerequisites (e.g., Workspace without Auth), use **AskUserQuestion** to confirm before adding prerequisites:
+
+```
+워크스페이스 모듈은 인증 모듈(TB_COMM_USER, JWT)에 의존합니다.
+인증 모듈을 먼저 자동 구축한 후 워크스페이스 모듈을 실행합니다. 계속하시겠습니까?
+
+1. 예 — 인증 모듈을 먼저 구축 후 워크스페이스 모듈 실행
+2. 아니오 — 모듈 구축을 건너뛰기
+```
+
+If the user declines, skip module building and proceed to Step 12.
+
+**Execution strategy (after prerequisite confirmation):**
 
 | User Selection | Execution Plan |
 |---|---|
-| Auth only | 1 agent: Auth |
-| Workspace only | 2 agents sequential: Auth → Workspace |
-| Payment only | 3 agents sequential: Auth → Workspace → Payment |
-| Auth + Workspace | Auth agent → (after completion) Workspace agent |
-| Auth + Payment | Auth agent → Workspace agent → Payment agent |
-| Workspace + Payment | Auth agent → Workspace agent → Payment agent |
-| All (option 4) | Auth agent → Workspace agent → Payment agent |
-
-> **IMPORTANT**: If the user selects a module that has missing prerequisites (e.g., Workspace without Auth), use **AskUserQuestion** to confirm before adding prerequisites:
-> ```
-> 워크스페이스 모듈은 인증 모듈(TB_COMM_USER, JWT)에 의존합니다.
-> 인증 모듈을 먼저 자동 구축한 후 워크스페이스 모듈을 실행합니다. 계속하시겠습니까?
->
-> 1. 예 — 인증 모듈을 먼저 구축 후 워크스페이스 모듈 실행
-> 2. 아니오 — 모듈 구축을 건너뛰기
-> ```
-> If the user declines, skip module building and proceed to Step 12.
+| Auth only | Auth |
+| Workspace only | Auth (confirmed prerequisite) → Workspace |
+| Payment only | Auth → Workspace (confirmed prerequisites) → Payment |
+| Auth + Workspace | Auth → Workspace |
+| Auth + Payment | Auth → Workspace (confirmed prerequisite) → Payment |
+| Workspace + Payment | Auth (confirmed prerequisite) → Workspace → Payment |
+| All (option 4) | Auth → Workspace → Payment |
 
 **Agent invocation pattern:**
 
