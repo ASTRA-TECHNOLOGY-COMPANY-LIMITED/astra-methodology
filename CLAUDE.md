@@ -28,7 +28,8 @@ astra-methodology/
 │   ├── workspace-module/  # Workspace module auto-builder (/workspace-module)
 │   ├── payment-module/    # Payment module auto-builder (/payment-module)
 │   ├── code-standard/     # Auto-applied international code standards (ISO/ITU)
-│   └── sprint-progress/   # Auto-applied sprint progress tracking
+│   ├── sprint-progress/   # Auto-applied sprint progress tracking
+│   └── service-planner/   # Design thinking based planning deliverables (/service-planner)
 ├── agents/              # Specialized Claude Code subagents (read-only, auto-discovered)
 │   ├── astra-verifier.md        # ASTRA methodology compliance checker (haiku)
 │   ├── naming-validator.md      # DB naming standard validation (haiku)
@@ -146,6 +147,21 @@ The `/payment-module` skill automates the entire subscription payment module dev
 - **Tech adaptation**: Automatically adapts the reference design to the target project's tech stack (including PG provider: TossPayments/Stripe/KCP)
 - **Auto-debug**: Up to 5 retry cycles for test failures before requesting user assistance
 
+### Service Planner (Design Thinking Based)
+
+The `/service-planner` skill automates the planning phase using Design Thinking methodology:
+
+- **Methodology**: Design Thinking (Empathize → Define → Ideate → Decision)
+- **Pipeline**: Feature Input → Actor Derivation → Persona Interview → Pain Point Analysis → Idea Generation → Requirements → Use Cases → Feature Definition
+- **Interactive**: Actor multi-select, idea multi-select with user confirmation at each major step
+- **Deliverables** (4 files under `docs/planner/{NNN}-{feature-name}/`):
+  1. `interview-report.md` — Persona interview results with pain point analysis
+  2. `requirements-definition.md` — Functional/non-functional requirements with traceability
+  3. `usecase-definition.md` — Use case definitions with Mermaid diagrams per actor
+  4. `feature-definition.md` — Feature definition with MoSCoW prioritization
+- **Persona generation**: 3 personas per selected actor type with realistic interview simulation
+- **Idea generation**: HMW + SCAMPER techniques, 10-15 ideas with implementation difficulty and expected impact
+
 ### Blueprint Directory Convention
 
 Individual feature blueprints are organized as numbered directories under `docs/blueprints/`:
@@ -186,6 +202,12 @@ When the plugin initializes a target project, it creates:
 │   │   ├── overview.md                # Project overview
 │   │   ├── {NNN}-{feature-name}/      # Numbered feature directories (e.g., 001-auth/)
 │   │   │   └── blueprint.md           # Main design document + related files
+│   ├── planner/                       # Planning deliverables (Design Thinking)
+│   │   └── {NNN}-{feature-name}/      # Numbered feature directories (e.g., 001-auth/)
+│   │       ├── interview-report.md    # Persona interview results
+│   │       ├── requirements-definition.md # Requirements definition
+│   │       ├── usecase-definition.md  # Use case definition with diagrams
+│   │       └── feature-definition.md  # Feature definition
 │   ├── database/                      # DB design (SSoT), naming rules, migrations
 │   ├── tests/                         # Test strategy, test cases (per sprint), test reports
 │   ├── sprints/                       # Sprint documents (prompt maps, progress trackers, retrospectives)
