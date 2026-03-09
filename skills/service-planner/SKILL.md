@@ -2,7 +2,7 @@
 name: service-planner
 description: "기능에 대한 기획 산출물을 자동 생성합니다. 디자인씽킹 방법론 기반으로 액터 도출 → 페르소나 인터뷰 → 페인포인트 분석 → 아이디어 도출 → 요구사항 정의 → 유즈케이스 정의 → 기능 정의서까지 전체 기획 파이프라인을 실행합니다."
 argument-hint: "[기능 설명 또는 서비스 키워드]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 ---
 
 # ASTRA 서비스 기획 산출물 자동 생성
