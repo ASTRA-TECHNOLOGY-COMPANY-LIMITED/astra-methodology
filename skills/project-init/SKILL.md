@@ -421,6 +421,8 @@ Create the following files under `docs/design-system/`.
 
 If the user selected a design system in Step 1.5 (not "추후 직접 구현"), invoke the `/frontend-design` skill to implement the following **common base components**. Pass the selected design system, tech stack, and design tokens as context.
 
+> **IMPORTANT**: The prompt below is written in Korean as a reference. You MUST translate the entire prompt into the language selected in Step 0 BEFORE invoking the frontend-design skill.
+
 Use the Skill tool to invoke `frontend-design` with a prompt like:
 
 ```
@@ -452,9 +454,7 @@ Use the Skill tool to invoke `frontend-design` with a prompt like:
 - 디자인 시스템 프리뷰 페이지도 함께 생성해 줘 (모든 컴포넌트를 한 페이지에서 확인 가능)"
 ```
 
-> **Note**: Translate the prompt to the selected language (Step 0) before invoking.
-
-If the user chose "추후 직접 구현", skip Step 4-B entirely. Only the design system documentation templates (Step 4-A) are created.
+If the user chose to implement later, skip Step 4-B entirely. Only the design system documentation templates (Step 4-A) are created.
 
 ### Step 5: Create Blueprint Template
 
@@ -484,7 +484,9 @@ If the user chose "추후 직접 구현", skip Step 4-B entirely. Only the desig
 
 ### Step 10: Output Result Summary
 
-After all files are created, output the following:
+After all files are created, output the following summary.
+
+> **IMPORTANT**: The output block below is in English as a reference. You MUST translate it into the language selected in Step 0 before presenting to the user.
 
 ```
 ## ASTRA Sprint 0 Initial Setup Complete
@@ -504,7 +506,7 @@ After all files are created, output the following:
 - src/components/ (common UI components — if design system was selected)
 
 ### Design System
-- Selected: {design-system-name} (or "추후 직접 구현")
+- Selected: {design-system-name} (or "Implement later")
 - Common components implemented: Button, Input, Card, Modal, Toast, Badge, Table, Dropdown, Tabs, Sidebar Layout (if design system was selected)
 - Preview page: src/app/design-system/page.tsx (or equivalent path for the framework)
 
