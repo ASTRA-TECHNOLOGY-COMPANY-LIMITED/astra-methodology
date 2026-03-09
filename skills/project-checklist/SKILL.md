@@ -18,7 +18,7 @@ Checks the existence of the following files/directories:
 |------|----------|-------------|
 | `CLAUDE.md` | Required | Project AI rules |
 | `.claude/settings.json` | Optional | Project-specific settings |
-| `docs/design-system/design-tokens.css` | Required | Design tokens |
+| `src/styles/design-tokens.css` | Required | Design tokens |
 | `docs/design-system/components.md` | Required | Component guide |
 | `docs/design-system/layout-grid.md` | Required | Layout grid |
 | `docs/blueprints/overview.md` | Required | Project overview |
@@ -41,7 +41,7 @@ Checks whether CLAUDE.md contains the following sections:
 
 ### C. Design System Verification
 
-Checks whether the following tokens are defined in `docs/design-system/design-tokens.css`:
+Checks whether the following tokens are defined in `src/styles/design-tokens.css`:
 
 - [ ] Color tokens (`--color-*`)
 - [ ] Typography tokens (`--font-size-*`, `--font-weight-*`)
