@@ -2,7 +2,7 @@
 name: project-init
 description: "ASTRA Sprint 0 project initial setup. Creates project directory structure, CLAUDE.md, design system templates, blueprint templates, and sprint templates."
 argument-hint: "[project-name] [backend-tech] [frontend-tech] [db-type]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill
 ---
 
 # ASTRA Sprint 0: Project Initial Setup
@@ -12,9 +12,30 @@ You configure the initial setup tailored to the user's project.
 
 ## Execution Procedure
 
+### Step 0: Select Language
+
+Use AskUserQuestion to ask the user which language to use for the setup process. Present the options as follows:
+
+```
+프로젝트 초기 설정에 사용할 언어를 선택해 주세요.
+Vui lòng chọn ngôn ngữ để thiết lập dự án.
+Please select a language for project setup.
+
+1. 한국어 (Korean)
+2. Tiếng Việt (Vietnamese)
+3. English
+```
+
+Based on the user's selection:
+- **한국어**: All generated documents (CLAUDE.md, templates, messages) are written in Korean (default behavior)
+- **Tiếng Việt**: All generated documents (CLAUDE.md, templates, messages) are written in Vietnamese
+- **English**: All generated documents (CLAUDE.md, templates, messages) are written in English
+
+Store the selected language and apply it to all subsequent steps. Every user-facing text, template content, and output message must use the selected language throughout the entire setup process.
+
 ### Step 1: Gather Project Information
 
-If user arguments are insufficient, use AskUserQuestion to confirm the following:
+If user arguments are insufficient, use AskUserQuestion to confirm the following (ask in the selected language):
 
 1. **Project name** (e.g., online-payment-system)
 2. **Project description** (one-line summary)
@@ -25,6 +46,53 @@ If user arguments are insufficient, use AskUserQuestion to confirm the following
 7. **Team composition** (number of VA, PE, DE, DSA members)
 
 If `$ARGUMENTS` is provided, parse and extract as much information as possible, and only ask additional questions for missing information.
+
+### Step 1.5: Select Design System
+
+After gathering project info, use AskUserQuestion to ask the user which design system to use. Present framework-appropriate options based on the frontend tech stack gathered in Step 1.
+
+> **IMPORTANT**: The option examples below are in Korean. You MUST translate all option text into the language selected in Step 0 before presenting to the user.
+
+**For React / Next.js projects:**
+
+```
+디자인 시스템을 선택해 주세요 (프로젝트 초기 설정 시 공통 컴포넌트가 자동 생성됩니다):
+
+1. shadcn/ui — Radix UI + Tailwind CSS 기반, 소스 코드 소유 방식 (★ 가장 인기)
+2. MUI (Material UI) — Google Material Design, 가장 큰 컴포넌트 생태계
+3. Ant Design — 엔터프라이즈/어드민 특화, 60+ 컴포넌트
+4. Mantine — 120+ 컴포넌트 + 60+ 훅, 뛰어난 DX
+5. Chakra UI — 깔끔하고 접근성 높은 컴포저블 컴포넌트
+6. 추후 직접 구현 (디자인 시스템 템플릿만 생성)
+```
+
+**For Vue 3 projects:**
+
+```
+1. Ant Design Vue — Ant Design의 Vue 버전, 100+ 컴포넌트
+2. PrimeVue — 90+ 컴포넌트, 다양한 테마
+3. Headless UI — Tailwind Labs 공식, 비스타일드 프리미티브
+4. DaisyUI — Tailwind CSS 플러그인, 프레임워크 무관
+5. 추후 직접 구현 (디자인 시스템 템플릿만 생성)
+```
+
+**For React Native / Expo projects:**
+
+```
+1. Tamagui — RN + Web 유니버설, 최적화 컴파일러
+2. Gluestack UI — NativeBase 후속, 트리쉐이킹 지원
+3. NativeWind — Tailwind CSS for React Native
+4. 추후 직접 구현 (디자인 시스템 템플릿만 생성)
+```
+
+**For other frameworks or no frontend:**
+
+```
+1. DaisyUI — Tailwind CSS 플러그인, 프레임워크 무관
+2. 추후 직접 구현 (디자인 시스템 템플릿만 생성)
+```
+
+Store the user's selection. If the user chose a design system (not "추후 직접 구현"), it will be implemented in Step 4.
 
 ### Step 2: Create Project Directory Structure
 
@@ -74,7 +142,66 @@ Create the following structure in the current working directory (CWD):
     └── .gitkeep
 ```
 
+### Step 2.5: Create Project Scaffolding
+
+Based on the tech stack gathered in Step 1, create the basic project management files. This step ensures the project is immediately runnable after setup.
+
+**For Node.js-based projects (Next.js, React, Vue, NestJS, Express):**
+- `package.json` — project name, version, scripts (dev, build, start, lint, test), dependencies based on selected tech stack and design system
+- `tsconfig.json` — TypeScript configuration (if TypeScript is used)
+- `.gitignore` — Node.js standard ignores (node_modules, .next, dist, .env, etc.)
+- `.env.example` — environment variable template with placeholder values
+- `.prettierrc` — Prettier configuration aligned with coding conventions
+- `.eslintrc.json` or `eslint.config.mjs` — ESLint configuration for the tech stack
+- Run `npm install` (or the appropriate package manager) to install dependencies
+
+**For React Native / Expo projects:**
+- `package.json` — with expo, react-native, and selected design system dependencies
+- `tsconfig.json` — React Native TypeScript config
+- `app.json` or `app.config.ts` — Expo configuration
+- `.gitignore` — React Native standard ignores
+- `.env.example` — environment variable template
+- Run `npx expo install` for dependencies if Expo, otherwise `npm install`
+
+**For Spring Boot projects (Java/Kotlin):**
+- `build.gradle` (Gradle) or `pom.xml` (Maven) — project coordinates, dependencies (Spring Web, Spring Data JPA, selected DB driver, Lombok, etc.)
+- `application.yml` — default configuration template with DB, server port, logging settings
+- `src/main/java/{package}/Application.java` — main application entry point
+- `src/main/resources/application.yml` — configuration placeholder
+- `.gitignore` — Java/Gradle/Maven standard ignores
+- `.env.example` — environment variable template
+
+**For FastAPI projects (Python):**
+- `pyproject.toml` — project metadata, dependencies (fastapi, uvicorn, sqlalchemy, alembic, etc.) — primary dependency definition file
+- `requirements.txt` — generated from pyproject.toml for deployment compatibility (`pip freeze` format). Both files are created; `pyproject.toml` is the source of truth.
+- `.gitignore` — Python standard ignores (__pycache__, .venv, .env, etc.)
+- `.env.example` — environment variable template
+- `src/main.py` — FastAPI application entry point skeleton
+
+**Design system dependencies**: If a design system was selected in Step 1.5, include its required packages in the dependency file:
+| Design System | Key Dependencies |
+|--------------|-----------------|
+| shadcn/ui | `tailwindcss`, `@radix-ui/*`, `class-variance-authority`, `clsx`, `tailwind-merge`, `lucide-react` |
+| MUI | `@mui/material`, `@mui/icons-material`, `@emotion/react`, `@emotion/styled` |
+| Ant Design | `antd`, `@ant-design/icons` |
+| Mantine | `@mantine/core`, `@mantine/hooks`, `@mantine/form`, `@mantine/notifications` |
+| Chakra UI | `@chakra-ui/react`, `@emotion/react`, `@emotion/styled`, `framer-motion` |
+| Ant Design Vue | `ant-design-vue`, `@ant-design/icons-vue` |
+| PrimeVue | `primevue`, `primeicons`, `@primevue/themes` |
+| Headless UI | `@headlessui/vue`, `tailwindcss` |
+| DaisyUI | `tailwindcss`, `daisyui` |
+| Tamagui | `tamagui`, `@tamagui/core`, `@tamagui/config` |
+| Gluestack UI | `@gluestack-ui/themed`, `@gluestack-style/react` |
+| NativeWind | `nativewind`, `tailwindcss` |
+
+> **Important**:
+> - Before running any install command (`npm install`, `npx expo install`, etc.), verify that the CWD is the project root directory where `package.json` was created. Use `cd {project-root}` explicitly.
+> - If the install command fails (e.g., Node.js not installed, network unavailable), display the error to the user and continue with the remaining steps. Do not block the entire setup process.
+> - Adapt all configuration files to the specific versions and conventions of the selected tech stack. Use the latest stable versions of all dependencies. If the project uses a monorepo structure, adjust accordingly.
+
 ### Step 3: Create CLAUDE.md
+
+> **IMPORTANT**: The template below is written in Korean as a reference. If the user selected Vietnamese or English in Step 0, you MUST translate ALL Korean text in the template (section headers, table contents, descriptions, workflow diagrams, rules, guides) into the selected language BEFORE writing the file. Only technical identifiers (tool names, file paths, command names) remain untranslated.
 
 Customize the template below according to the project information and generate it:
 
@@ -278,7 +405,9 @@ Customize the template below according to the project information and generate i
 - **React**: 함수형 컴포넌트만 사용, 커스텀 훅 패턴
 - **Vue 3**: Composition API 기본, `<script setup>` 사용
 
-### Step 4: Create Design System Templates
+### Step 4: Create Design System Templates & Implement Components
+
+#### Step 4-A: Create design system documentation
 
 Create the following files under `docs/design-system/`.
 
@@ -287,6 +416,45 @@ Create the following files under `docs/design-system/`.
 **components.md**: Core component style guide template (buttons, inputs, cards, modals, tables, navigation)
 
 **layout-grid.md**: Layout grid system definition (column system, containers, behavior per breakpoint)
+
+#### Step 4-B: Implement Design System Components (if a design system was selected)
+
+If the user selected a design system in Step 1.5 (not "추후 직접 구현"), invoke the `/frontend-design` skill to implement the following **common base components**. Pass the selected design system, tech stack, and design tokens as context.
+
+> **IMPORTANT**: The prompt below is written in Korean as a reference. You MUST translate the entire prompt into the language selected in Step 0 BEFORE invoking the frontend-design skill.
+
+Use the Skill tool to invoke `frontend-design` with a prompt like:
+
+```
+"프로젝트 {project-name}의 디자인 시스템 공통 컴포넌트를 구현해 줘.
+
+- 디자인 시스템: {selected-design-system}
+- 프론트엔드: {frontend-tech-stack}
+- 디자인 토큰: docs/design-system/design-tokens.css 참조
+- 컴포넌트 가이드: docs/design-system/components.md 참조
+
+아래 공통 컴포넌트를 구현해 줘:
+1. Button — Primary/Secondary/Danger/Ghost 변형, sm/md/lg 크기, 로딩/비활성 상태
+2. Input — 텍스트 입력, 라벨, 에러 상태, 헬퍼 텍스트, 비활성 상태
+3. Card — Default/Elevated/Outlined/Interactive 변형
+4. Modal — 헤더/바디/푸터 구조, 백드롭, 크기 변형 (sm/md/lg), 닫기 버튼
+5. Toast/Alert — Success/Warning/Error/Info 변형, 자동 닫힘
+6. Badge — 상태 뱃지, 카테고리 태그, sm/md 크기
+7. Table — 정렬, 호버 상태, 반응형 (모바일 카드 전환)
+8. Dropdown/Select — 옵션 목록, 검색, 다중 선택
+9. Tabs — 인디케이터, 활성/비활성 상태
+10. Sidebar Layout — 접기/펼치기, 활성 메뉴 하이라이트
+
+모든 컴포넌트는:
+- 디자인 토큰(CSS Variables) 사용
+- 다크 모드 지원
+- 반응형 대응
+- 접근성(ARIA) 준수
+- 프로젝트의 코딩 컨벤션 준수
+- 디자인 시스템 프리뷰 페이지도 함께 생성해 줘 (모든 컴포넌트를 한 페이지에서 확인 가능)"
+```
+
+If the user chose to implement later, skip Step 4-B entirely. Only the design system documentation templates (Step 4-A) are created.
 
 ### Step 5: Create Blueprint Template
 
@@ -316,7 +484,9 @@ Create the following files under `docs/design-system/`.
 
 ### Step 10: Output Result Summary
 
-After all files are created, output the following:
+After all files are created, output the following summary.
+
+> **IMPORTANT**: The output block below is in English as a reference. You MUST translate it into the language selected in Step 0 before presenting to the user.
 
 ```
 ## ASTRA Sprint 0 Initial Setup Complete
@@ -324,16 +494,25 @@ After all files are created, output the following:
 ### Generated File List
 - CLAUDE.md (project AI rules)
 - .claude/settings.json (project settings)
+- package.json / build.gradle / pyproject.toml (project dependencies & scripts)
+- tsconfig.json / .eslintrc / .prettierrc (dev tooling configs)
+- .gitignore, .env.example (project essentials)
 - docs/design-system/ (design system templates)
 - docs/blueprints/ (design document templates)
 - docs/database/ (DB design documents, naming rules, migrations)
 - docs/tests/ (test strategy, test cases, test reports)
 - docs/sprints/ (sprint prompt maps, progress trackers, retrospectives)
 - docs/delivery/ (for release artifacts)
+- src/components/ (common UI components — if design system was selected)
+
+### Design System
+- Selected: {design-system-name} (or "Implement later")
+- Common components implemented: Button, Input, Card, Modal, Toast, Badge, Table, Dropdown, Tabs, Sidebar Layout (if design system was selected)
+- Preview page: src/app/design-system/page.tsx (or equivalent path for the framework)
 
 ### Next Steps (Sprint 0 progress)
 1. [ ] Review CLAUDE.md and customize for the project
-2. [ ] Define docs/design-system/ files with DSA
+2. [ ] Verify design system preview page and adjust design tokens with DSA
 3. [ ] Verify global dev environment with /astra-setup
 4. [ ] Generate core feature design documents with /feature-dev
 5. [ ] Write docs/database/database-design.md
@@ -348,4 +527,4 @@ After all files are created, output the following:
 - Existing files are **not overwritten**. If existing files are found, confirm with the user.
 - .gitkeep files are created only to maintain empty directories.
 - CLAUDE.md rules are automatically adjusted based on the tech stack.
-- All text is written in Korean (except code comments).
+- All text is written in the language selected in Step 0 (except code comments and technical identifiers).
