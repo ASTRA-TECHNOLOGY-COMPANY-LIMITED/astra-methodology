@@ -120,6 +120,9 @@ Create the following structure in the current working directory (CWD):
 │   │   └── {NNN}-{feature-name}/    # e.g., 001-auth/
 │   │       └── blueprint.md
 │   │
+│   ├── planner/
+│   │   └── .gitkeep               # Planning deliverables (/service-planner)
+│   │
 │   ├── database/
 │   │   ├── database-design.md
 │   │   ├── naming-rules.md
@@ -264,6 +267,7 @@ Customize the template below according to the project information and generate i
 ### 단계별 참조 문서
 | 단계 | 참조 경로 | 주요 도구 |
 |------|----------|----------|
+| 서비스 기획 | `docs/planner/{NNN}-{feature-name}/` | `/service-planner` |
 | 디자인 시스템 | `src/styles/design-tokens.css`, `docs/design-system/` | `/frontend-design` |
 | 블루프린트 작성 | `docs/blueprints/{NNN}-{feature-name}/` | `/feature-dev` (아직 코드는 수정하지 마) |
 | DB 설계 | `docs/database/database-design.md` | `/feature-dev`, `/lookup-term` |

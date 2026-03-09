@@ -98,6 +98,9 @@ Sprint Progress:
   (automatic)                    Sprint progress auto-tracking on file events
   /sprint-plan [number]           Sprint plan init (includes progress tracker)
 
+Planning:
+  /service-planner [feature]     Design Thinking based planning deliverables
+
 Slack Integration:
   /slack-to-sprint [channel]     Slack messages → blueprints + sprint plan
   /slack-backlog [channel]       Extract backlog items from Slack channel
