@@ -493,9 +493,9 @@ If the user chose to implement later, skip Step 5-B entirely. Only the design sy
 
 **.claude/settings.json**: Project-specific Claude Code settings
 
-### Step 11: Module Auto-Builder (Optional — Multi-Agent)
+### Step 11: Module Auto-Builder (Multi-Agent)
 
-> **MANDATORY**: This step MUST always be executed. Do NOT skip this step under any circumstances. You MUST use AskUserQuestion to present the module selection and wait for the user's response before proceeding.
+> **MANDATORY**: This step MUST always be executed. You MUST use AskUserQuestion to present the module selection and wait for the user's response before proceeding. The module building itself is optional (the user may choose to skip), but the question MUST always be asked.
 
 After all templates and scaffolding are created, ask the user whether to auto-build common modules. These modules run the full pipeline: **Blueprint → Sprint Plan → Implementation → Test Scenarios → Test Run & Debug**.
 
@@ -541,10 +541,15 @@ Based on the user's selection, execute modules using Agent tool with **multi-age
 | Workspace + Payment | Auth agent → Workspace agent → Payment agent |
 | All (option 4) | Auth agent → Workspace agent → Payment agent |
 
-> **IMPORTANT**: If the user selects a module that has missing prerequisites (e.g., Workspace without Auth), automatically include the prerequisite modules and inform the user:
+> **IMPORTANT**: If the user selects a module that has missing prerequisites (e.g., Workspace without Auth), use **AskUserQuestion** to confirm before adding prerequisites:
 > ```
-> 워크스페이스 모듈은 인증 모듈에 의존합니다. 인증 모듈을 먼저 자동 구축한 후 워크스페이스 모듈을 실행합니다.
+> 워크스페이스 모듈은 인증 모듈(TB_COMM_USER, JWT)에 의존합니다.
+> 인증 모듈을 먼저 자동 구축한 후 워크스페이스 모듈을 실행합니다. 계속하시겠습니까?
+>
+> 1. 예 — 인증 모듈을 먼저 구축 후 워크스페이스 모듈 실행
+> 2. 아니오 — 모듈 구축을 건너뛰기
 > ```
+> If the user declines, skip module building and proceed to Step 12.
 
 **Agent invocation pattern:**
 

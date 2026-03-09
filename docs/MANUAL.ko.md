@@ -1355,9 +1355,7 @@ project-root/
 │   └── settings.json            # 프로젝트별 Claude 설정
 │
 ├── docs/
-│   ├── design-system/           # Sprint 0에서 DSA가 구축
-│   │   ├── design-tokens.css
-│   │   ├── tailwind.config.js
+│   ├── design-system/           # 디자인 문서 (Sprint 0에서 DSA가 구축)
 │   │   ├── components.md
 │   │   ├── layout-grid.md
 │   │   └── references/
@@ -1396,6 +1394,8 @@ project-root/
 │       └── quality-report.md
 │
 └── src/                         # 소스 코드
+    └── styles/
+        └── design-tokens.css    # CSS Custom Properties — 소스 코드
 ```
 
 #### F.2 스프린트 회고 템플릿

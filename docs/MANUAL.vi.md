@@ -1358,9 +1358,7 @@ project-root/
 │   └── settings.json            # Cấu hình Claude theo dự án
 │
 ├── docs/
-│   ├── design-system/           # DSA xây dựng trong Sprint 0
-│   │   ├── design-tokens.css
-│   │   ├── tailwind.config.js
+│   ├── design-system/           # Tài liệu thiết kế (DSA xây dựng trong Sprint 0)
 │   │   ├── components.md
 │   │   ├── layout-grid.md
 │   │   └── references/
@@ -1399,6 +1397,8 @@ project-root/
 │       └── quality-report.md
 │
 └── src/                         # Source code
+    └── styles/
+        └── design-tokens.css    # CSS Custom Properties — source code
 ```
 
 #### F.2 Template hồi cứu Sprint
