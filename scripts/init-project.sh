@@ -19,6 +19,7 @@ directories=(
     ".claude"
     "docs/design-system/references"
     "docs/blueprints"
+    "docs/planner"
     "docs/database/migration"
     "docs/tests/test-cases/sprint-1"
     "docs/tests/test-reports"
@@ -40,6 +41,7 @@ done
 # Add .gitkeep to empty directories
 gitkeep_dirs=(
     "docs/design-system/references"
+    "docs/planner"
     "docs/database/migration"
     "docs/tests/test-cases/sprint-1"
     "docs/tests/test-reports"
