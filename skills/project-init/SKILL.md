@@ -33,6 +33,8 @@ Based on the user's selection:
 
 Store the selected language and apply it to all subsequent steps. Every user-facing text, template content, and output message must use the selected language throughout the entire setup process.
 
+The selected language will be persisted in the target project's CLAUDE.md (see Step 4, `## Language` section) so that all team members sharing the repository automatically use the same language in every Claude Code session.
+
 ### Step 1: Gather Project Information
 
 If user arguments are insufficient, use AskUserQuestion to confirm the following (ask in the selected language):
@@ -211,6 +213,12 @@ Customize the template below according to the project information and generate i
 # Project: {project-name}
 
 > {project description}
+
+## Language
+
+- **Project Language**: {selected language name} ({selected language code: ko / vi / en})
+- All Claude responses, generated documents, and template content MUST be written in the above language.
+- Technical identifiers (tool names, file paths, command names, code comments) remain in their original language.
 
 ## Architecture
 - Backend: {backend tech stack}
