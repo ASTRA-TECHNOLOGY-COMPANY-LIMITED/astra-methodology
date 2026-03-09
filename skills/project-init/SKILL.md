@@ -216,9 +216,9 @@ Customize the template below according to the project information and generate i
 
 ## Language
 
-- **Project Language**: {selected language name} ({selected language code: ko / vi / en})
-- All Claude responses, generated documents, and template content MUST be written in the above language.
-- Technical identifiers (tool names, file paths, command names, code comments) remain in their original language.
+- **프로젝트 언어**: {selected language name} ({selected language code})
+- 모든 Claude 응답, 생성 문서, 템플릿 콘텐츠는 위 언어로 작성되어야 합니다.
+- 기술 식별자(도구명, 파일 경로, 명령어명, 코드 주석)는 원래 언어를 유지합니다.
 
 ## Architecture
 - Backend: {backend tech stack}
