@@ -2,7 +2,7 @@
 name: project-init
 description: "ASTRA Sprint 0 project initial setup. Creates project directory structure, CLAUDE.md, design system templates, blueprint templates, and sprint templates."
 argument-hint: "[project-name] [backend-tech] [frontend-tech] [db-type]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Agent
 ---
 
 # ASTRA Sprint 0: Project Initial Setup
@@ -110,7 +110,6 @@ Create the following structure in the current working directory (CWD):
 │
 ├── docs/
 │   ├── design-system/
-│   │   ├── design-tokens.css
 │   │   ├── components.md
 │   │   ├── layout-grid.md
 │   │   └── references/
@@ -143,6 +142,8 @@ Create the following structure in the current working directory (CWD):
 │       └── .gitkeep
 │
 └── src/
+    ├── styles/
+    │   └── design-tokens.css
     └── .gitkeep
 ```
 
@@ -263,7 +264,7 @@ Customize the template below according to the project information and generate i
 ### 단계별 참조 문서
 | 단계 | 참조 경로 | 주요 도구 |
 |------|----------|----------|
-| 디자인 시스템 | `docs/design-system/` | `/frontend-design` |
+| 디자인 시스템 | `src/styles/design-tokens.css`, `docs/design-system/` | `/frontend-design` |
 | 블루프린트 작성 | `docs/blueprints/{NNN}-{feature-name}/` | `/feature-dev` (아직 코드는 수정하지 마) |
 | DB 설계 | `docs/database/database-design.md` | `/feature-dev`, `/lookup-term` |
 | 스프린트 계획 | `docs/sprints/sprint-N/prompt-map.md` | `/sprint-plan` |
@@ -324,7 +325,7 @@ Customize the template below according to the project information and generate i
 - `/check-convention src/` 으로 컨벤션 준수 여부를 수동 검사 가능
 
 ## Design Rules (DSA 정의)
-- 디자인 토큰: docs/design-system/design-tokens.css를 반드시 참조할 것
+- 디자인 토큰: src/styles/design-tokens.css를 반드시 참조할 것
 - 컬러는 CSS Variables (--color-*) 사용 필수, 하드코딩 금지
 - 폰트 크기는 토큰 스케일 (--font-size-*) 사용 필수
 - 스페이싱은 8px 그리드 시스템 (--spacing-*) 준수
@@ -417,15 +418,15 @@ Customize the template below according to the project information and generate i
 
 ### Step 5: Create Design System Templates & Implement Components
 
-#### Step 5-A: Create design system documentation
+#### Step 5-A: Create design system files
 
-Create the following files under `docs/design-system/`.
+Create the design token source file and documentation files separately:
 
-**design-tokens.css**: Base design token set (colors, typography, spacing, shadows, responsive breakpoints)
+**`src/styles/design-tokens.css`**: Base design token set (colors, typography, spacing, shadows, responsive breakpoints). This is a source file consumed by components via `@import`, so it belongs in `src/styles/`, NOT in `docs/`.
 
-**components.md**: Core component style guide template (buttons, inputs, cards, modals, tables, navigation)
+**`docs/design-system/components.md`**: Core component style guide template (buttons, inputs, cards, modals, tables, navigation)
 
-**layout-grid.md**: Layout grid system definition (column system, containers, behavior per breakpoint)
+**`docs/design-system/layout-grid.md`**: Layout grid system definition (column system, containers, behavior per breakpoint)
 
 #### Step 5-B: Implement Design System Components (if a design system was selected)
 
@@ -440,7 +441,7 @@ Use the Skill tool to invoke `frontend-design` with a prompt like:
 
 - 디자인 시스템: {selected-design-system}
 - 프론트엔드: {frontend-tech-stack}
-- 디자인 토큰: docs/design-system/design-tokens.css 참조
+- 디자인 토큰: src/styles/design-tokens.css 참조
 - 컴포넌트 가이드: docs/design-system/components.md 참조
 
 아래 공통 컴포넌트를 구현해 줘:
@@ -492,7 +493,99 @@ If the user chose to implement later, skip Step 5-B entirely. Only the design sy
 
 **.claude/settings.json**: Project-specific Claude Code settings
 
-### Step 11: Output Result Summary
+### Step 11: Module Auto-Builder (Optional — Multi-Agent)
+
+> **MANDATORY**: This step MUST always be executed. Do NOT skip this step under any circumstances. You MUST use AskUserQuestion to present the module selection and wait for the user's response before proceeding.
+
+After all templates and scaffolding are created, ask the user whether to auto-build common modules. These modules run the full pipeline: **Blueprint → Sprint Plan → Implementation → Test Scenarios → Test Run & Debug**.
+
+> **IMPORTANT**: The option text below is in Korean. You MUST translate all option text into the language selected in Step 0 before presenting to the user.
+
+Use AskUserQuestion:
+
+```
+## 공통 모듈 자동 구축
+
+프로젝트 초기 설정이 완료되었습니다. 다음 공통 모듈을 자동으로 구축할 수 있습니다.
+각 모듈은 블루프린트 작성 → 스프린트 생성 → 구현 → 테스트 시나리오 → 테스트 실행까지 전체 파이프라인을 자동 실행합니다.
+
+구축할 모듈을 선택해 주세요 (복수 선택 가능, 쉼표로 구분):
+
+1. 인증 모듈 — 회원가입, 로그인/로그아웃, JWT 토큰, 약관 관리, 사용자 관리
+2. 워크스페이스 모듈 — 워크스페이스 CRUD, 멤버 관리, 초대 시스템, 전환기 (인증 모듈 필요)
+3. 결제 모듈 — 구독/플랜, 빌링키, PG 연동, 정기결제, Dunning, 크레딧 (인증+워크스페이스 필요)
+4. 전체 선택 (1→2→3 순서로 자동 실행)
+5. 건너뛰기 (나중에 /auth-module, /workspace-module, /payment-module로 개별 실행)
+```
+
+If the user selects option 5, skip to Step 12.
+
+#### Step 11-A: Execute module builders respecting dependency order
+
+Module dependency chain: **Auth → Workspace → Payment**
+
+- Workspace requires Auth (TB_COMM_USER, JWT)
+- Payment requires Auth + Workspace (TB_COMM_WKSPC, TR_COMM_WKSPC_MBR)
+
+Based on the user's selection, execute modules using Agent tool with **multi-agent parallelization where dependencies allow**:
+
+**Execution strategy:**
+
+| User Selection | Execution Plan |
+|---|---|
+| Auth only | 1 agent: Auth |
+| Workspace only | 2 agents sequential: Auth → Workspace |
+| Payment only | 3 agents sequential: Auth → Workspace → Payment |
+| Auth + Workspace | Auth agent → (after completion) Workspace agent |
+| Auth + Payment | Auth agent → Workspace agent → Payment agent |
+| Workspace + Payment | Auth agent → Workspace agent → Payment agent |
+| All (option 4) | Auth agent → Workspace agent → Payment agent |
+
+> **IMPORTANT**: If the user selects a module that has missing prerequisites (e.g., Workspace without Auth), automatically include the prerequisite modules and inform the user:
+> ```
+> 워크스페이스 모듈은 인증 모듈에 의존합니다. 인증 모듈을 먼저 자동 구축한 후 워크스페이스 모듈을 실행합니다.
+> ```
+
+**Agent invocation pattern:**
+
+For each module, invoke the corresponding skill using the Skill tool. After each dependency completes, immediately launch the next module.
+
+```
+Phase 1 — Auth (if selected or required as dependency):
+  Use Skill tool: invoke "auth-module"
+
+Phase 2 — Workspace (if selected or required as dependency, after Auth completes):
+  Use Skill tool: invoke "workspace-module"
+
+Phase 3 — Payment (if selected, after Workspace completes):
+  Use Skill tool: invoke "payment-module"
+```
+
+Each skill internally handles the full pipeline:
+1. Reference design document loading
+2. Blueprint generation (`docs/blueprints/{NNN}-{module}/blueprint.md`)
+3. Sprint plan generation
+4. Implementation (backend API + frontend screens)
+5. Test scenario generation
+6. Test run & auto-debug (up to 5 retry cycles)
+
+#### Step 11-B: Module build progress reporting
+
+After each module completes, output a brief status update:
+
+```
+## 모듈 자동 구축 진행 상황
+
+| 모듈 | 상태 | 블루프린트 | 구현 | 테스트 |
+|------|------|-----------|------|--------|
+| 인증 | ✅ 완료 | docs/blueprints/001-auth/ | src/... | ✅ Pass |
+| 워크스페이스 | 🔄 진행중 | - | - | - |
+| 결제 | ⏳ 대기 | - | - | - |
+```
+
+When all selected modules are complete, proceed to Step 12.
+
+### Step 12: Output Result Summary
 
 After all files are created, output the following summary.
 
@@ -507,7 +600,8 @@ After all files are created, output the following summary.
 - package.json / build.gradle / pyproject.toml (project dependencies & scripts)
 - tsconfig.json / .eslintrc / .prettierrc (dev tooling configs)
 - .gitignore, .env.example (project essentials)
-- docs/design-system/ (design system templates)
+- src/styles/design-tokens.css (design tokens — source code)
+- docs/design-system/ (design system documentation)
 - docs/blueprints/ (design document templates)
 - docs/database/ (DB design documents, naming rules, migrations)
 - docs/tests/ (test strategy, test cases, test reports)
@@ -519,6 +613,15 @@ After all files are created, output the following summary.
 - Selected: {design-system-name} (or "Implement later")
 - Common components implemented: Button, Input, Card, Modal, Toast, Badge, Table, Dropdown, Tabs, Sidebar Layout (if design system was selected)
 - Preview page: src/app/design-system/page.tsx (or equivalent path for the framework)
+
+### Module Auto-Build Results (if modules were selected)
+| Module | Status | Blueprint | Implementation | Tests |
+|--------|--------|-----------|----------------|-------|
+| Auth | {status} | {path} | {path} | {result} |
+| Workspace | {status} | {path} | {path} | {result} |
+| Payment | {status} | {path} | {path} | {result} |
+
+(Only include rows for modules that were selected. Omit this section entirely if the user chose "Skip".)
 
 ### Next Steps (Sprint 0 progress)
 1. [ ] Review CLAUDE.md and customize for the project

@@ -24,7 +24,7 @@ directories=(
     "docs/tests/test-reports"
     "docs/sprints"
     "docs/delivery"
-    "src"
+    "src/styles"
 )
 
 for dir in "${directories[@]}"; do
@@ -44,7 +44,7 @@ gitkeep_dirs=(
     "docs/tests/test-cases/sprint-1"
     "docs/tests/test-reports"
     "docs/delivery"
-    "src"
+    "src/styles"
 )
 
 for dir in "${gitkeep_dirs[@]}"; do

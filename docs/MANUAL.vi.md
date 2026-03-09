@@ -303,20 +303,25 @@ Các tác vụ `/astra-setup` tự động thực hiện:
 
 ## 5. Xây dựng Design System
 
-Trong Sprint 0, DSA chủ trì xây dựng **Design System** cho dự án. Design System là nền tảng cốt lõi để AI tạo UI nhất quán, được quản lý tại `docs/design-system/`.
+Trong Sprint 0, DSA chủ trì xây dựng **Design System** cho dự án. Design System là nền tảng cốt lõi để AI tạo UI nhất quán. Design token (source code) được quản lý tại `src/styles/`, tài liệu thiết kế tại `docs/design-system/`.
 
 > **Nguyên tắc cốt lõi**: UI do AI tạo mà không có Design System sẽ có style khác nhau ở mỗi màn hình. Hệ thống token đóng vai trò guardrail cho thiết kế của AI.
 
 ### 5.1 Cấu trúc thư mục Design System
 
 ```
+src/styles/
+└── design-tokens.css       # CSS Custom Properties (màu sắc, font, spacing) — source code
+
 docs/design-system/
-├── design-tokens.css       # CSS Custom Properties (màu sắc, font, spacing)
-├── tailwind.config.js      # Dùng cho dự án sử dụng Tailwind
 ├── components.md           # Hướng dẫn style component cốt lõi
 ├── layout-grid.md          # Hệ thống layout grid
 └── references/             # Hình ảnh tham khảo thiết kế/moodboard
+
+tailwind.config.js          # Dùng cho dự án sử dụng Tailwind (thư mục gốc dự án)
 ```
+
+> **Tại sao `src/styles/`?** `design-tokens.css` là source code được component `@import` để sử dụng. Tất cả framework lớn (shadcn/ui, MUI, Next.js) đặt file token/theme trong `src/`. `docs/` chỉ dành cho tài liệu con người đọc.
 
 ### 5.2 Định nghĩa Design Token
 
@@ -324,7 +329,7 @@ Design token định nghĩa các giá trị thiết kế như màu sắc, typogr
 
 ```
 # Tạo file design token
-/feature-dev "Định nghĩa design token cho dự án tại docs/design-system/design-tokens.css.
+/feature-dev "Định nghĩa design token cho dự án tại src/styles/design-tokens.css.
 - Bảng màu (Primary, Secondary, Neutral, Semantic)
 - Typography (Font Family, Size Scale, Weight, Line Height)
 - Spacing (grid 4px: 4, 8, 12, 16, 24, 32, 48, 64)
@@ -373,7 +378,7 @@ Khi design token, component, layout grid đã được định nghĩa, tạo **t
 
 ```
 # Tạo trang preview Design System
-/frontend-design "Tạo trang preview Design System để xem tổng quan design token,
+/frontend-design "Tạo trang preview Design System để xem tổng quan design token từ src/styles/design-tokens.css,
 hướng dẫn style component, layout grid từ docs/design-system/.
 - Swatch bảng màu (toàn bộ Primary, Secondary, Neutral, Semantic)
 - Xem trước tỷ lệ typography (mỗi tổ hợp size/weight)
@@ -381,7 +386,7 @@ hướng dẫn style component, layout grid từ docs/design-system/.
 - Showcase component cốt lõi (Button, Input, Card, Modal, Toast — tất cả trạng thái)
 - Overlay layout grid (trực quan hóa grid 12 cột)
 - Xem trước theo breakpoint responsive
-- Chỉ sử dụng token từ docs/design-system/design-tokens.css"
+- Chỉ sử dụng token từ src/styles/design-tokens.css"
 ```
 
 > **Xác minh trang preview (DSA chủ trì):**
@@ -624,7 +629,7 @@ Khi yêu cầu công việc frontend, skill `frontend-design` tự động kích
 - Biểu đồ doanh thu theo ngày (30 ngày gần nhất)
 - Danh sách giao dịch gần đây (phân trang)
 - Dark mode mặc định, phong cách minimalist
-- Bắt buộc sử dụng hệ thống token từ docs/design-system/design-tokens.css"
+- Bắt buộc sử dụng hệ thống token từ src/styles/design-tokens.css"
 
 # Ví dụ chỉ định hướng thẩm mỹ đa dạng
 "Tạo trang portfolio phong cách brutalist"
