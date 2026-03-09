@@ -21,7 +21,7 @@ This is a read-only agent and never modifies files.
 
 ## Reference Data
 
-- `docs/design-system/design-tokens.css`: CSS Custom Properties definitions (colors, fonts, spacing)
+- `src/styles/design-tokens.css`: CSS Custom Properties definitions (colors, fonts, spacing)
 - `docs/design-system/components.md`: Core component style guide
 - `docs/design-system/layout-grid.md`: Layout grid system
 - `tailwind.config.js` (if exists): Tailwind custom token definitions
@@ -150,6 +150,6 @@ Additional validation for Tailwind projects:
 ## Notes
 
 - This is a read-only agent. It never modifies files.
-- If `docs/design-system/design-tokens.css` does not exist, it is reported as design system not established.
+- If `src/styles/design-tokens.css` does not exist, it is reported as design system not established.
 - Suggests corresponding design token names for all detected items.
 - Recommends defining new tokens when a token does not exist.

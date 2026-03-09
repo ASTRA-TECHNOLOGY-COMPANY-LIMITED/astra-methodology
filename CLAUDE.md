@@ -181,7 +181,7 @@ When the plugin initializes a target project, it creates:
 {project}/
 ├── CLAUDE.md                          # Project-specific AI rules
 ├── docs/
-│   ├── design-system/                 # Design tokens, components, layout grid
+│   ├── design-system/                 # Component guides, layout grid (documentation only)
 │   ├── blueprints/                    # Feature design documents
 │   │   ├── overview.md                # Project overview
 │   │   ├── {NNN}-{feature-name}/      # Numbered feature directories (e.g., 001-auth/)
@@ -191,6 +191,8 @@ When the plugin initializes a target project, it creates:
 │   ├── sprints/                       # Sprint documents (prompt maps, progress trackers, retrospectives)
 │   └── delivery/                     # Release artifacts
 └── src/
+    └── styles/
+        └── design-tokens.css         # CSS Custom Properties (source code)
 ```
 
 ## Development Notes

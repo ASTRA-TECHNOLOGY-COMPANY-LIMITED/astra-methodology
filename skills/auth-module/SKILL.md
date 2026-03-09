@@ -48,7 +48,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 4. `docs/database/database-design.md` 읽기 — 기존 DB 스키마 확인
 5. `docs/sprints/` 스캔 — 현재 스프린트 번호 확인
 6. `src/` 스캔 — 기존 코드 구조, 라우팅 패턴, 인증 관련 기존 코드 확인
-7. `docs/design-system/` 스캔 — 디자인 토큰, 컴포넌트 패턴 확인
+7. `src/styles/design-tokens.css` + `docs/design-system/` 스캔 — 디자인 토큰, 컴포넌트 패턴 확인
 
 #### C. 기술 스택 적응 매트릭스
 
@@ -486,7 +486,7 @@ Step 3으로 진행합니다...
 7. **약관 관리** — DataTable + 필터 + 에디터 (ADMIN, 레퍼런스 섹션 5.7)
 8. **사용자 관리** — 검색 + 역할/상태 관리 (ADMIN, 레퍼런스 섹션 5.8)
 
-각 화면 구현 시 `docs/design-system/`의 디자인 토큰과 컴포넌트 패턴을 따른다.
+각 화면 구현 시 `src/styles/design-tokens.css`의 디자인 토큰과 `docs/design-system/`의 컴포넌트 패턴을 따른다.
 
 #### F. Feature 5: 통합/보안 강화
 

@@ -63,7 +63,7 @@ echo ""
 
 # 3. Required files verification
 echo "--- Required Files ---"
-check "design-tokens.css" "[ -f '${PROJECT_ROOT}/docs/design-system/design-tokens.css' ]"
+check "design-tokens.css" "[ -f '${PROJECT_ROOT}/src/styles/design-tokens.css' ]"
 check "components.md" "[ -f '${PROJECT_ROOT}/docs/design-system/components.md' ]"
 check "layout-grid.md" "[ -f '${PROJECT_ROOT}/docs/design-system/layout-grid.md' ]"
 check "overview.md" "[ -f '${PROJECT_ROOT}/docs/blueprints/overview.md' ]"
