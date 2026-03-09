@@ -33,6 +33,8 @@ Based on the user's selection:
 
 Store the selected language and apply it to all subsequent steps. Every user-facing text, template content, and output message must use the selected language throughout the entire setup process.
 
+The selected language will be persisted in the target project's CLAUDE.md (see Step 4, `## Language` section) so that all team members sharing the repository automatically use the same language in every Claude Code session.
+
 ### Step 1: Gather Project Information
 
 If user arguments are insufficient, use AskUserQuestion to confirm the following (ask in the selected language):
@@ -47,7 +49,9 @@ If user arguments are insufficient, use AskUserQuestion to confirm the following
 
 If `$ARGUMENTS` is provided, parse and extract as much information as possible, and only ask additional questions for missing information.
 
-### Step 1.5: Select Design System
+### Step 2: Select Design System
+
+> **MANDATORY**: This step MUST always be executed. Do NOT skip this step under any circumstances. You MUST use AskUserQuestion to ask the user and wait for their response before proceeding.
 
 After gathering project info, use AskUserQuestion to ask the user which design system to use. Present framework-appropriate options based on the frontend tech stack gathered in Step 1.
 
@@ -92,9 +96,9 @@ After gathering project info, use AskUserQuestion to ask the user which design s
 2. 추후 직접 구현 (디자인 시스템 템플릿만 생성)
 ```
 
-Store the user's selection. If the user chose a design system (not "추후 직접 구현"), it will be implemented in Step 4.
+Store the user's selection. If the user chose a design system (not "추후 직접 구현"), it will be implemented in Step 5.
 
-### Step 2: Create Project Directory Structure
+### Step 3: Create Project Directory Structure
 
 Create the following structure in the current working directory (CWD):
 
@@ -142,7 +146,7 @@ Create the following structure in the current working directory (CWD):
     └── .gitkeep
 ```
 
-### Step 2.5: Create Project Scaffolding
+### Step 3-B: Create Project Scaffolding
 
 Based on the tech stack gathered in Step 1, create the basic project management files. This step ensures the project is immediately runnable after setup.
 
@@ -178,7 +182,7 @@ Based on the tech stack gathered in Step 1, create the basic project management 
 - `.env.example` — environment variable template
 - `src/main.py` — FastAPI application entry point skeleton
 
-**Design system dependencies**: If a design system was selected in Step 1.5, include its required packages in the dependency file:
+**Design system dependencies**: If a design system was selected in Step 2, include its required packages in the dependency file:
 | Design System | Key Dependencies |
 |--------------|-----------------|
 | shadcn/ui | `tailwindcss`, `@radix-ui/*`, `class-variance-authority`, `clsx`, `tailwind-merge`, `lucide-react` |
@@ -199,7 +203,7 @@ Based on the tech stack gathered in Step 1, create the basic project management 
 > - If the install command fails (e.g., Node.js not installed, network unavailable), display the error to the user and continue with the remaining steps. Do not block the entire setup process.
 > - Adapt all configuration files to the specific versions and conventions of the selected tech stack. Use the latest stable versions of all dependencies. If the project uses a monorepo structure, adjust accordingly.
 
-### Step 3: Create CLAUDE.md
+### Step 4: Create CLAUDE.md
 
 > **IMPORTANT**: The template below is written in Korean as a reference. If the user selected Vietnamese or English in Step 0, you MUST translate ALL Korean text in the template (section headers, table contents, descriptions, workflow diagrams, rules, guides) into the selected language BEFORE writing the file. Only technical identifiers (tool names, file paths, command names) remain untranslated.
 
@@ -209,6 +213,12 @@ Customize the template below according to the project information and generate i
 # Project: {project-name}
 
 > {project description}
+
+## Language
+
+- **프로젝트 언어**: {selected language name} ({selected language code})
+- 모든 Claude 응답, 생성 문서, 템플릿 콘텐츠는 위 언어로 작성되어야 합니다.
+- 기술 식별자(도구명, 파일 경로, 명령어명, 코드 주석)는 원래 언어를 유지합니다.
 
 ## Architecture
 - Backend: {backend tech stack}
@@ -405,9 +415,9 @@ Customize the template below according to the project information and generate i
 - **React**: 함수형 컴포넌트만 사용, 커스텀 훅 패턴
 - **Vue 3**: Composition API 기본, `<script setup>` 사용
 
-### Step 4: Create Design System Templates & Implement Components
+### Step 5: Create Design System Templates & Implement Components
 
-#### Step 4-A: Create design system documentation
+#### Step 5-A: Create design system documentation
 
 Create the following files under `docs/design-system/`.
 
@@ -417,9 +427,9 @@ Create the following files under `docs/design-system/`.
 
 **layout-grid.md**: Layout grid system definition (column system, containers, behavior per breakpoint)
 
-#### Step 4-B: Implement Design System Components (if a design system was selected)
+#### Step 5-B: Implement Design System Components (if a design system was selected)
 
-If the user selected a design system in Step 1.5 (not "추후 직접 구현"), invoke the `/frontend-design` skill to implement the following **common base components**. Pass the selected design system, tech stack, and design tokens as context.
+If the user selected a design system in Step 2 (not "추후 직접 구현"), invoke the `/frontend-design` skill to implement the following **common base components**. Pass the selected design system, tech stack, and design tokens as context.
 
 > **IMPORTANT**: The prompt below is written in Korean as a reference. You MUST translate the entire prompt into the language selected in Step 0 BEFORE invoking the frontend-design skill.
 
@@ -454,35 +464,35 @@ Use the Skill tool to invoke `frontend-design` with a prompt like:
 - 디자인 시스템 프리뷰 페이지도 함께 생성해 줘 (모든 컴포넌트를 한 페이지에서 확인 가능)"
 ```
 
-If the user chose to implement later, skip Step 4-B entirely. Only the design system documentation templates (Step 4-A) are created.
+If the user chose to implement later, skip Step 5-B entirely. Only the design system documentation templates (Step 5-A) are created.
 
-### Step 5: Create Blueprint Template
+### Step 6: Create Blueprint Template
 
 **docs/blueprints/overview.md**: Project overview document (vision, goals, module structure, tech stack decision rationale)
 
 > **Blueprint Directory Convention**: Individual feature blueprints are organized as numbered directories under `docs/blueprints/`. Each directory uses the format `{NNN}-{feature-name}/` (e.g., `001-auth/`, `002-payment/`) and contains `blueprint.md` as the main design document along with any related supplementary files (diagrams, API specs, etc.).
 
-### Step 6: Create Database Document Templates
+### Step 7: Create Database Document Templates
 
 **docs/database/database-design.md**: Central DB design document template (full ERD, common rules, module-specific tables, FK relationship summary)
 
 **docs/database/naming-rules.md**: DB naming rules and standard terminology mapping document (table prefixes, column naming, standard terminology dictionary integration)
 
-### Step 7: Create Test Document Template
+### Step 8: Create Test Document Template
 
 **docs/tests/test-strategy.md**: Test strategy document (test level definitions, coverage goals, test environments, naming conventions, automation scope)
 
-### Step 8: Create Sprint Template
+### Step 9: Create Sprint Template
 
 **docs/sprints/sprint-1/prompt-map.md**: First sprint prompt map template
 
 **docs/sprints/sprint-1/progress.md**: First sprint progress tracker (template format with placeholder features — features will be populated when the sprint is actually planned)
 
-### Step 9: Create Project Configuration File
+### Step 10: Create Project Configuration File
 
 **.claude/settings.json**: Project-specific Claude Code settings
 
-### Step 10: Output Result Summary
+### Step 11: Output Result Summary
 
 After all files are created, output the following summary.
 
