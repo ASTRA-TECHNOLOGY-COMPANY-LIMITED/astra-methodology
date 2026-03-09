@@ -25,7 +25,7 @@ Checks whether the following directories/files exist:
 
 ```
 CLAUDE.md
-docs/design-system/design-tokens.css
+src/styles/design-tokens.css
 docs/design-system/components.md
 docs/design-system/layout-grid.md
 docs/blueprints/overview.md
@@ -70,7 +70,7 @@ In `docs/tests/test-strategy.md`:
 
 ### 4. Design System Completeness
 
-In `docs/design-system/design-tokens.css`:
+In `src/styles/design-tokens.css`:
 - Color tokens defined
 - Typography tokens defined
 - Spacing tokens defined

@@ -60,7 +60,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 4. `docs/database/database-design.md` 읽기 — 기존 DB 스키마 확인 (특히 인증/워크스페이스 모듈 테이블)
 5. `docs/sprints/` 스캔 — 현재 스프린트 번호 확인
 6. `src/` 스캔 — 기존 코드 구조, 라우팅 패턴, 인증/워크스페이스 모듈 코드 확인
-7. `docs/design-system/` 스캔 — 디자인 토큰, 컴포넌트 패턴 확인
+7. `src/styles/design-tokens.css` + `docs/design-system/` 스캔 — 디자인 토큰, 컴포넌트 패턴 확인
 
 #### C. 선행 모듈 의존성 확인
 
