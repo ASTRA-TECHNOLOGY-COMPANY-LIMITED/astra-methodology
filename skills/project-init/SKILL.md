@@ -49,7 +49,9 @@ If `$ARGUMENTS` is provided, parse and extract as much information as possible, 
 
 ### Step 1.5: Select Design System
 
-After gathering project info, use AskUserQuestion to ask the user which design system to use (ask in the selected language). Present framework-appropriate options based on the frontend tech stack gathered in Step 1.
+After gathering project info, use AskUserQuestion to ask the user which design system to use. Present framework-appropriate options based on the frontend tech stack gathered in Step 1.
+
+> **IMPORTANT**: The option examples below are in Korean. You MUST translate all option text into the language selected in Step 0 before presenting to the user.
 
 **For React / Next.js projects:**
 
@@ -89,8 +91,6 @@ After gathering project info, use AskUserQuestion to ask the user which design s
 1. DaisyUI — Tailwind CSS 플러그인, 프레임워크 무관
 2. 추후 직접 구현 (디자인 시스템 템플릿만 생성)
 ```
-
-> **Note**: Display the options in the selected language (Step 0). The examples above are in Korean — translate to Vietnamese or English as needed.
 
 Store the user's selection. If the user chose a design system (not "추후 직접 구현"), it will be implemented in Step 4.
 
@@ -172,8 +172,8 @@ Based on the tech stack gathered in Step 1, create the basic project management 
 - `.env.example` — environment variable template
 
 **For FastAPI projects (Python):**
-- `pyproject.toml` — project metadata, dependencies (fastapi, uvicorn, sqlalchemy, alembic, etc.)
-- `requirements.txt` — pinned dependency versions (alternative to pyproject.toml)
+- `pyproject.toml` — project metadata, dependencies (fastapi, uvicorn, sqlalchemy, alembic, etc.) — primary dependency definition file
+- `requirements.txt` — generated from pyproject.toml for deployment compatibility (`pip freeze` format). Both files are created; `pyproject.toml` is the source of truth.
 - `.gitignore` — Python standard ignores (__pycache__, .venv, .env, etc.)
 - `.env.example` — environment variable template
 - `src/main.py` — FastAPI application entry point skeleton
@@ -194,9 +194,14 @@ Based on the tech stack gathered in Step 1, create the basic project management 
 | Gluestack UI | `@gluestack-ui/themed`, `@gluestack-style/react` |
 | NativeWind | `nativewind`, `tailwindcss` |
 
-> **Important**: Adapt all configuration files to the specific versions and conventions of the selected tech stack. Use the latest stable versions of all dependencies. If the project uses a monorepo structure, adjust accordingly.
+> **Important**:
+> - Before running any install command (`npm install`, `npx expo install`, etc.), verify that the CWD is the project root directory where `package.json` was created. Use `cd {project-root}` explicitly.
+> - If the install command fails (e.g., Node.js not installed, network unavailable), display the error to the user and continue with the remaining steps. Do not block the entire setup process.
+> - Adapt all configuration files to the specific versions and conventions of the selected tech stack. Use the latest stable versions of all dependencies. If the project uses a monorepo structure, adjust accordingly.
 
 ### Step 3: Create CLAUDE.md
+
+> **IMPORTANT**: The template below is written in Korean as a reference. If the user selected Vietnamese or English in Step 0, you MUST translate ALL Korean text in the template (section headers, table contents, descriptions, workflow diagrams, rules, guides) into the selected language BEFORE writing the file. Only technical identifiers (tool names, file paths, command names) remain untranslated.
 
 Customize the template below according to the project information and generate it:
 
