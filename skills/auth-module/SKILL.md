@@ -46,7 +46,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 2. `package.json` 또는 `build.gradle` 또는 `pom.xml` 또는 `pyproject.toml` 읽기 — 프레임워크/의존성 파악
 3. `docs/blueprints/` 스캔 — 기존 블루프린트 번호 확인 (다음 번호 결정)
 4. `docs/database/database-design.md` 읽기 — 기존 DB 스키마 확인
-5. `docs/sprints/` 스캔 — 현재 스프린트 번호 확인
+5. `docs/sprints/` 스캔 — `sprint-{N}-{name}/` 패턴 디렉토리에서 현재 스프린트 번호 확인
 6. `src/` 스캔 — 기존 코드 구조, 라우팅 패턴, 인증 관련 기존 코드 확인
 7. `src/styles/design-tokens.css` + `docs/design-system/` 스캔 — 디자인 토큰, 컴포넌트 패턴 확인
 
@@ -219,11 +219,11 @@ Step 2로 진행합니다...
 
 #### A. 스프린트 번호 결정
 
-`docs/sprints/` 디렉토리를 스캔하여 다음 스프린트 번호를 결정한다.
+`docs/sprints/` 디렉토리에서 `sprint-{N}-{name}/` 패턴 디렉토리를 스캔하여 다음 스프린트 번호를 결정한다.
 
 #### B. 스프린트 프롬프트 맵 생성
 
-`docs/sprints/sprint-{N}/prompt-map.md`를 생성한다.
+`docs/sprints/sprint-{N}-auth/prompt-map.md`를 생성한다.
 
 레퍼런스의 Phase를 스프린트 Feature 단위로 분할한다:
 
@@ -345,7 +345,7 @@ docs/tests/test-cases/sprint-{N}/auth-security-test-cases.md에
 
 #### C. 스프린트 프로그레스 트래커 생성
 
-`docs/sprints/sprint-{N}/progress.md`를 생성한다:
+`docs/sprints/sprint-{N}-auth/progress.md`를 생성한다:
 
 ```markdown
 # Sprint {N} Progress Tracker
@@ -396,8 +396,8 @@ docs/tests/test-cases/sprint-{N}/auth-security-test-cases.md에
 ## Step 2 완료: 스프린트 계획 생성
 
 ### 생성된 파일
-- docs/sprints/sprint-{N}/prompt-map.md (프롬프트 맵)
-- docs/sprints/sprint-{N}/progress.md (프로그레스 트래커)
+- docs/sprints/sprint-{N}-auth/prompt-map.md (프롬프트 맵)
+- docs/sprints/sprint-{N}-auth/progress.md (프로그레스 트래커)
 
 ### 스프린트 구조
 - Feature 1: 인증 기반 인프라 (의존성, DB, Firebase, JWT)
@@ -702,7 +702,7 @@ Step 5로 진행합니다...
 
 #### A. 프로그레스 트래커 최종 업데이트
 
-`docs/sprints/sprint-{N}/progress.md`의 모든 Feature 상태를 최종 업데이트한다.
+`docs/sprints/sprint-{N}-auth/progress.md`의 모든 Feature 상태를 최종 업데이트한다.
 
 #### B. 최종 결과 보고
 
@@ -713,7 +713,7 @@ Step 5로 진행합니다...
 | 단계 | 결과 | 산출물 |
 |------|------|--------|
 | 1. 블루프린트 | Done | docs/blueprints/{NNN}-auth/blueprint.md |
-| 2. 스프린트 계획 | Done | docs/sprints/sprint-{N}/prompt-map.md, progress.md |
+| 2. 스프린트 계획 | Done | docs/sprints/sprint-{N}-auth/prompt-map.md, progress.md |
 | 3. 구현 | Done | {총 파일 수}개 파일 생성/수정 |
 | 4. 테스트 시나리오 | Done | {총 시나리오 수}개 시나리오 |
 | 5. 테스트/디버깅 | Done | Pass: {n}, Fail: {n}, Coverage: {n}% |

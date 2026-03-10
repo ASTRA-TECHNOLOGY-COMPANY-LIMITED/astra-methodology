@@ -182,7 +182,8 @@ The plugin provides automatic sprint progress tracking through a hook + skill hy
 
 - **Hook** (`track-sprint-progress.sh`): Detects file write events matching sprint-related paths (blueprints, DB design, test cases, implementation files, test reports), appends activity log entries to the tracker file, and emits a message prompting the LLM to update the progress table
 - **Auto-applied skill** (`sprint-progress/SKILL.md`): Guides the LLM to intelligently update the progress table columns (Blueprint, DB Design, Test Cases, Implementation, Test Report) based on the event type
-- **Tracker file**: `docs/sprints/sprint-{N}/progress.md` — contains a feature progress table, summary statistics, and an activity log
+- **Sprint directory format**: `sprint-{N}-{feature-name}/` (e.g., `sprint-1-auth/`, `sprint-2-workspace/`) — includes the primary blueprint name for traceability
+- **Tracker file**: `docs/sprints/sprint-{N}-{feature-name}/progress.md` — contains a feature progress table, summary statistics, and an activity log
 - Tracker is auto-created during `/sprint-plan` initialization, or created on-demand by the skill when an event is detected but no tracker exists
 
 ### Slack Integration

@@ -517,9 +517,9 @@ Once the blueprint is complete, plan the sprint based on it. Use the `/sprint-pl
 ```
 
 > Generated files:
-> - `docs/sprints/sprint-1/prompt-map.md` — Feature-specific prompt plan
-> - `docs/sprints/sprint-1/progress.md` — Progress tracking table
-> - `docs/sprints/sprint-1/retrospective.md` — Retrospective template
+> - `docs/sprints/sprint-1-auth/prompt-map.md` — Feature-specific prompt plan
+> - `docs/sprints/sprint-1-auth/progress.md` — Progress tracking table
+> - `docs/sprints/sprint-1-auth/retrospective.md` — Retrospective template
 
 ### 8.2 Sprint Planning (1 hour)
 
@@ -1379,11 +1379,11 @@ project-root/
 │   │       └── sprint-1-report.md
 │   │
 │   ├── sprints/                 # Sprint documents
-│   │   ├── sprint-1/
+│   │   ├── sprint-1-auth/
 │   │   │   ├── prompt-map.md
 │   │   │   ├── progress.md
 │   │   │   └── retrospective.md
-│   │   └── sprint-2/
+│   │   └── sprint-2-workspace/
 │   │       └── prompt-map.md
 │   │
 │   └── delivery/                # Release Sprint artifacts

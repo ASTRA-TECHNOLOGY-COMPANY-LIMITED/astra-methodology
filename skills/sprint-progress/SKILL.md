@@ -24,9 +24,10 @@ This skill applies when writing or editing files matching these patterns:
 
 ## Current Sprint Detection
 
-1. Look in `docs/sprints/` for directories matching `sprint-{N}/`
-2. The highest `{N}` is the current sprint number
-3. The tracker file is `docs/sprints/sprint-{N}/progress.md`
+1. Look in `docs/sprints/` for directories matching `sprint-{N}-{name}/` (e.g., `sprint-1-auth/`, `sprint-2-workspace/`)
+2. Extract the sprint number from each directory name (the `{N}` part before the second hyphen)
+3. The highest `{N}` is the current sprint number
+4. The tracker file is `docs/sprints/sprint-{N}-{name}/progress.md`
 
 ## Update Procedures
 
@@ -34,7 +35,7 @@ This skill applies when writing or editing files matching these patterns:
 
 When a file inside a numbered blueprint directory (`docs/blueprints/{NNN}-{feature-name}/`) is written:
 
-1. Open `docs/sprints/sprint-{N}/progress.md`
+1. Open `docs/sprints/sprint-{N}-{name}/progress.md`
 2. Extract the feature name from the directory name (strip the `{NNN}-` prefix, e.g., `001-auth` → `auth`)
 3. Find the feature row that matches the extracted feature name
 4. Set the **Blueprint** column to `Done`
@@ -55,7 +56,7 @@ When `docs/database/database-design.md` is modified:
 When a file under `docs/tests/test-cases/sprint-*/` is written:
 
 1. Extract the sprint number from the file path (e.g., `docs/tests/test-cases/sprint-2/...` → sprint 2)
-2. Open `docs/sprints/sprint-{extracted-N}/progress.md` (not necessarily the latest sprint)
+2. Open `docs/sprints/sprint-{extracted-N}-*/progress.md` (glob to find the directory; not necessarily the latest sprint)
 3. Match the test case filename to a feature (e.g., `user-auth-test-cases.md` → `user-auth` feature)
 4. Set the **Test Cases** column to `Done`
 5. Recalculate the Summary section
@@ -91,7 +92,7 @@ Test Report가 생성되어 feature의 Status가 `Completed`로 변경될 때, S
 
 > **주의**: Slack List Item의 체크박스(완료 체크)는 절대 건드리지 않는다. 체크박스는 담당자가 직접 테스트를 완료한 후 수동으로 체크하는 용도이다. 이 절차에서는 **상태(status) 선택 컬럼의 옵션값만** 변경한다.
 
-1. `docs/sprints/sprint-{N}/progress.md`에서 `<!-- SLACK_LIST_MAPPING_START -->` ~ `<!-- SLACK_LIST_MAPPING_END -->` 섹션을 확인한다
+1. `docs/sprints/sprint-{N}-{name}/progress.md`에서 `<!-- SLACK_LIST_MAPPING_START -->` ~ `<!-- SLACK_LIST_MAPPING_END -->` 섹션을 확인한다
 2. 해당 섹션이 없으면 이 절차를 건너뛴다 (Slack List 기반 스프린트가 아님)
 3. 섹션이 있으면 다음 정보를 파싱한다:
    - **List ID**: Slack List 파일 ID
@@ -112,9 +113,9 @@ Test Report가 생성되어 feature의 Status가 `Completed`로 변경될 때, S
 
 ## Tracker File Auto-Creation
 
-If the tracker file `docs/sprints/sprint-{N}/progress.md` does not exist when an event occurs:
+If the tracker file `docs/sprints/sprint-{N}-{name}/progress.md` does not exist when an event occurs:
 
-1. Read the sprint prompt map `docs/sprints/sprint-{N}/prompt-map.md`
+1. Read the sprint prompt map `docs/sprints/sprint-{N}-{name}/prompt-map.md`
 2. Extract feature names from `## Feature {#}: {name}` headers (where `{#}` is the feature ordinal, e.g., 1, 2, 3)
 3. Create the tracker file using the template below
 4. Then apply the appropriate update procedure
