@@ -82,7 +82,7 @@ Comprehensively analyzes data for the entire sprint period.
 - **Recurring issues**: Repeated modifications to the same file/module (signal of insufficient design)
 
 #### E. Sprint Progress Tracker
-- Read `docs/sprints/sprint-{N}/progress.md` (if it exists)
+- Read `docs/sprints/sprint-{N}-*/progress.md` (glob to find the sprint directory by number)
 - Compare tracker data with git history for consistency
 - Include feature-level completion data in report
 - Flag discrepancies between tracker status and actual file existence

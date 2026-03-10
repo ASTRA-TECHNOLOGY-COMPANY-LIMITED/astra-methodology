@@ -18,7 +18,7 @@ fi
 
 # Skip self-referential writes to prevent loops
 BASENAME=$(basename "$FILE_PATH")
-if [ "$BASENAME" = "progress.md" ] && echo "$FILE_PATH" | grep -q '/docs/sprints/sprint-[0-9]*/'; then
+if [ "$BASENAME" = "progress.md" ] && echo "$FILE_PATH" | grep -q '/docs/sprints/sprint-[0-9]*-[^/]*/'; then
   exit 0
 fi
 
@@ -85,14 +85,16 @@ if [ ! -d "$SPRINTS_DIR" ]; then
   exit 0
 fi
 
-# Detect current sprint number (highest sprint-{N} directory in docs/sprints/)
+# Detect current sprint number and directory (highest sprint-{N}-{name} directory in docs/sprints/)
 SPRINT_NUM=""
-for d in "$SPRINTS_DIR"/sprint-*/; do
+SPRINT_DIR=""
+for d in "$SPRINTS_DIR"/sprint-*-*/; do
   [ -d "$d" ] || continue
-  NUM=$(basename "$d" | sed -n 's/^sprint-\([0-9]*\)$/\1/p')
+  NUM=$(basename "$d" | sed -n 's/^sprint-\([0-9]*\)-.*$/\1/p')
   if [ -n "$NUM" ]; then
     if [ -z "$SPRINT_NUM" ] || [ "$NUM" -gt "$SPRINT_NUM" ]; then
       SPRINT_NUM="$NUM"
+      SPRINT_DIR="$d"
     fi
   fi
 done
@@ -103,14 +105,21 @@ fi
 
 # For test_case events, use sprint number from file path instead of latest sprint
 if [ -n "$SPRINT_FROM_PATH" ]; then
-  if [ -d "$SPRINTS_DIR/sprint-${SPRINT_FROM_PATH}" ]; then
+  # Find sprint directory matching the number from test case path
+  FOUND_DIR=""
+  for d in "$SPRINTS_DIR"/sprint-${SPRINT_FROM_PATH}-*/; do
+    [ -d "$d" ] && FOUND_DIR="$d" && break
+  done
+  if [ -n "$FOUND_DIR" ]; then
     SPRINT_NUM="$SPRINT_FROM_PATH"
+    SPRINT_DIR="$FOUND_DIR"
   else
-    echo "[ASTRA] Warning: test case file is under sprint-${SPRINT_FROM_PATH} but docs/sprints/sprint-${SPRINT_FROM_PATH}/ does not exist. Progress will be logged to sprint-${SPRINT_NUM} tracker. Run /sprint-plan to initialize sprint-${SPRINT_FROM_PATH}."
+    echo "[ASTRA] Warning: test case file is under sprint-${SPRINT_FROM_PATH} but no docs/sprints/sprint-${SPRINT_FROM_PATH}-*/ directory exists. Progress will be logged to sprint-${SPRINT_NUM} tracker. Run /sprint-plan to initialize the sprint."
   fi
 fi
 
-TRACKER_FILE="$SPRINTS_DIR/sprint-${SPRINT_NUM}/progress.md"
+# Use detected SPRINT_DIR to find tracker file
+TRACKER_FILE="${SPRINT_DIR%/}/progress.md"
 
 # If tracker file exists, append activity log entry
 if [ -f "$TRACKER_FILE" ]; then
@@ -127,6 +136,7 @@ if [ -f "$TRACKER_FILE" ]; then
 fi
 
 # Output message for the LLM
-echo "[ASTRA] Sprint progress: ${EVENT} detected for '${DETAIL}'. Update the progress table in docs/sprints/sprint-${SPRINT_NUM}/progress.md."
+SPRINT_DIR_NAME=$(basename "${SPRINT_DIR%/}")
+echo "[ASTRA] Sprint progress: ${EVENT} detected for '${DETAIL}'. Update the progress table in docs/sprints/${SPRINT_DIR_NAME}/progress.md."
 
 exit 0

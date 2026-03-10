@@ -362,7 +362,7 @@ List의 스키마에서 상태(status) 관련 컬럼을 식별한다:
 
 #### A. 스프린트 번호 결정
 
-1. `docs/sprints/` 디렉토리에서 가장 큰 스프린트 번호를 확인
+1. `docs/sprints/` 디렉토리에서 `sprint-{N}-{name}/` 패턴의 디렉토리를 스캔하여 가장 큰 스프린트 번호를 확인
 2. 해당 스프린트의 `progress.md`를 읽어 **End Date** 필드를 파싱한다. `Bash`로 `date` 명령을 실행하여 오늘 날짜를 가져온다.
    - **End Date가 오늘 이후**: 활성 스프린트로 판단 → 사용자에게 확인: "Sprint {N}이 진행 중입니다 (종료: {End Date}). 이 스프린트에 추가할까요, 새 스프린트를 시작할까요?"
    - **End Date가 오늘 이전 또는 End Date 파싱 불가**: 완료된 스프린트로 판단 → 다음 번호로 새 스프린트 생성
@@ -370,7 +370,7 @@ List의 스키마에서 상태(status) 관련 컬럼을 식별한다:
 
 #### B. 프롬프트 맵 생성 또는 업데이트
 
-**새 스프린트 생성 시**: `docs/sprints/sprint-{N}/prompt-map.md`를 생성한다.
+**새 스프린트 생성 시**: 스프린트 디렉토리명을 `sprint-{N}-{primary-feature-name}/` 형태로 생성한다 (예: `sprint-1-auth/`, `sprint-2-workspace/`). `{primary-feature-name}`은 추출된 기능 중 첫 번째 기능명을 사용한다. `docs/sprints/sprint-{N}-{primary-feature-name}/prompt-map.md`를 생성한다.
 
 ```markdown
 # Sprint {N} Prompt Map
@@ -424,7 +424,7 @@ docs/tests/test-reports/에 결과를 보고해줘."
 
 #### C. 진행 추적 파일 생성/업데이트
 
-새 스프린트인 경우 `docs/sprints/sprint-{N}/progress.md`를 생성한다:
+새 스프린트인 경우 `docs/sprints/sprint-{N}-{sprint-name}/progress.md`를 생성한다:
 
 ```markdown
 # Sprint {N} Progress Tracker
@@ -483,7 +483,7 @@ docs/tests/test-reports/에 결과를 보고해줘."
 
 #### D. 회고 템플릿 생성
 
-새 스프린트인 경우 `docs/sprints/sprint-{N}/retrospective.md`를 생성한다 (sprint-plan 스킬과 동일한 포맷).
+새 스프린트인 경우 `docs/sprints/sprint-{N}-{sprint-name}/retrospective.md`를 생성한다 (sprint-plan 스킬과 동일한 포맷).
 
 ### Step 9: Slack 피드백 (선택)
 
@@ -503,7 +503,7 @@ Slack #{CHANNEL_NAME} 채널에 처리 결과를 게시할까요? (y/n)
 {기능 목록 (bullet)}
 
 :page_facing_up: 블루프린트: docs/blueprints/ 에서 확인
-:spiral_calendar_pad: 프롬프트 맵: docs/sprints/sprint-{N}/prompt-map.md
+:spiral_calendar_pad: 프롬프트 맵: docs/sprints/sprint-{N}-{sprint-name}/prompt-map.md
 ```
 
 ### Step 10: 결과 요약
@@ -525,9 +525,9 @@ Slack #{CHANNEL_NAME} 채널에 처리 결과를 게시할까요? (y/n)
 | {NNN} | {기능명} | docs/blueprints/{NNN}-{name}/ | Medium |
 
 ### 스프린트
-- **Sprint {N}** 프롬프트 맵: docs/sprints/sprint-{N}/prompt-map.md
-- **Sprint {N}** 진행 추적: docs/sprints/sprint-{N}/progress.md
-- **Sprint {N}** 회고 템플릿: docs/sprints/sprint-{N}/retrospective.md
+- **Sprint {N}** 프롬프트 맵: docs/sprints/sprint-{N}-{sprint-name}/prompt-map.md
+- **Sprint {N}** 진행 추적: docs/sprints/sprint-{N}-{sprint-name}/progress.md
+- **Sprint {N}** 회고 템플릿: docs/sprints/sprint-{N}-{sprint-name}/retrospective.md
 
 ### 다음 단계
 1. 생성된 블루프린트를 검토하고 DE와 함께 요구사항 확인

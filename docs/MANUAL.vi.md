@@ -517,9 +517,9 @@ Khi Blueprint hoàn tất, lập kế hoạch Sprint dựa trên đó. Khởi t�
 ```
 
 > Các file được tạo:
-> - `docs/sprints/sprint-1/prompt-map.md` — Kế hoạch prompt theo tính năng
-> - `docs/sprints/sprint-1/progress.md` — Bảng theo dõi tiến độ
-> - `docs/sprints/sprint-1/retrospective.md` — Template hồi cứu
+> - `docs/sprints/sprint-1-auth/prompt-map.md` — Kế hoạch prompt theo tính năng
+> - `docs/sprints/sprint-1-auth/progress.md` — Bảng theo dõi tiến độ
+> - `docs/sprints/sprint-1-auth/retrospective.md` — Template hồi cứu
 
 ### 8.2 Sprint Planning (1 giờ)
 
@@ -1385,11 +1385,11 @@ project-root/
 │   │       └── sprint-1-report.md
 │   │
 │   ├── sprints/                 # Tài liệu Sprint
-│   │   ├── sprint-1/
+│   │   ├── sprint-1-auth/
 │   │   │   ├── prompt-map.md
 │   │   │   ├── progress.md
 │   │   │   └── retrospective.md
-│   │   └── sprint-2/
+│   │   └── sprint-2-workspace/
 │   │       └── prompt-map.md
 │   │
 │   └── delivery/                # Sản phẩm Release Sprint

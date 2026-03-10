@@ -19,9 +19,10 @@ Refer to `e2e-scenario-guide.md` in the same directory as this skill for scenari
 
 Determine the current sprint number for file output:
 
-1. Look in `docs/sprints/` for directories matching `sprint-{N}/`
-2. The highest `{N}` is the current sprint number
-3. If no sprint directories exist, default to `sprint-1`
+1. Look in `docs/sprints/` for directories matching `sprint-{N}-{name}/` (e.g., `sprint-1-auth/`, `sprint-2-workspace/`)
+2. Extract the sprint number `{N}` from each directory name (the number before the second hyphen)
+3. The highest `{N}` is the current sprint number
+4. If no sprint directories exist, default to `sprint-1`
 4. Store the sprint number as `{SPRINT_N}` for use in subsequent steps
 
 ### Step 1: Collect Project Context
