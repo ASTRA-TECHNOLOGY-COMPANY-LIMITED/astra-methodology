@@ -27,13 +27,26 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Task
 
 **모드 결정**:
 - `--staging` 또는 `--main` → 프로모션 모드
-- 그 외 → 기본 모드 (feature → dev)
+- 그 외 → 기본 모드 (feature → 대상 브랜치, Step 1.1에서 결정)
 
 다음 사전 조건을 검증한다:
 
 1. **gh CLI 인증**: `gh auth status`를 실행하여 GitHub CLI 인증 상태를 확인한다. 인증되지 않은 경우 `gh auth login`을 안내하고 중단한다.
 2. **클린 상태 확인**: `git status`로 현재 상태를 파악한다 (커밋되지 않은 변경사항, 스테이징된 파일 등).
    - 프로모션 모드에서 미커밋 변경사항이 있으면 경고하고 중단한다 (프로모션은 클린 상태에서만 실행).
+
+### Step 1.1: 대상 브랜치 선택 (기본 모드만)
+
+프로모션 모드가 아닌 경우, **AskUserQuestion**으로 머지 대상 브랜치를 사용자에게 물어본다:
+
+> **어떤 브랜치에 머지할까요?**
+> - `dev` — 피처 개발 (기본값)
+> - `staging` — 스테이징 버그픽스
+> - 기타 (직접 입력)
+
+사용자의 선택을 `{target-branch}`로 저장한다. 입력이 없거나 기본값을 선택하면 `dev`를 사용한다.
+
+> **참고**: 이후 모든 단계에서 `{target-branch}`는 이 단계에서 선택된 브랜치를 참조한다.
 
 ### Step 2: 브랜치 동기화 (모든 모드 공통)
 
@@ -57,14 +70,16 @@ git fetch origin
    git pull --rebase origin {branch}
    ```
 
-> **필수**: `dev` 브랜치는 반드시 존재해야 한다. 원격에 `dev`가 없으면 **AskUserQuestion**으로 사용자에게 기본 브랜치로부터 `dev`를 생성할지 확인한다. 거부 시 중단한다.
+> **필수**: `{target-branch}` 브랜치는 반드시 존재해야 한다. 원격에 `{target-branch}`가 없으면 **AskUserQuestion**으로 사용자에게 기본 브랜치로부터 `{target-branch}`를 생성할지 확인한다. 거부 시 중단한다. (기본 모드에서 Step 1.1이 Step 2보다 먼저 실행되므로 `{target-branch}` 값이 이미 결정되어 있다.)
 
 #### Step 2.2: 캐스케이드 머지 (main → staging → dev)
 
 상위 브랜치의 변경사항을 하위 브랜치로 순차적으로 머지한다. 원격에 존재하는 브랜치만 대상으로 한다.
 
 **모드별 캐스케이드 범위**:
-- **기본 모드**: 전체 캐스케이드 실행 (`main → staging → dev`)
+- **기본 모드 (`{target-branch}` = `dev`)**: 전체 캐스케이드 실행 (`main → staging → dev`)
+- **기본 모드 (`{target-branch}` = `staging`)**: `main → staging`까지만 실행 (dev로의 캐스케이드 불필요)
+- **기본 모드 (`{target-branch}` = 기타)**: 전체 캐스케이드 실행 (`main → staging → dev`). 단, `{target-branch}` 자체는 캐스케이드 대상이 아니므로 Step 5에서 `origin/{target-branch}`와 머지하여 동기화한다.
 - **`--staging` 프로모션**: `main → staging`까지만 실행 (dev는 머지 대상이 아님)
 - **`--main` 프로모션**: 캐스케이드를 건너뛴다 (staging → main 방향이므로 역방향 동기화 불필요)
 
@@ -78,7 +93,7 @@ git fetch origin
    - 충돌 발생 시: 충돌 파일 목록을 출력하고 사용자에게 수동 해결을 안내한 후 중단한다.
    - 머지 후 변경이 있으면: `git push origin staging`
 
-2. **staging → dev** (staging이 원격에 존재하고, 기본 모드인 경우):
+2. **staging → dev** (staging이 원격에 존재하고, 기본 모드이며, `{target-branch}` = `dev`인 경우):
    ```bash
    git checkout dev
    git merge staging
@@ -86,7 +101,7 @@ git fetch origin
    - 충돌 발생 시: 충돌 파일 목록을 출력하고 사용자에게 수동 해결을 안내한 후 중단한다.
    - 머지 후 변경이 있으면: `git push origin dev`
 
-3. **main → dev** (staging이 원격에 존재하지 않고, 기본 모드인 경우):
+3. **main → dev** (staging이 원격에 존재하지 않고, 기본 모드이며, `{target-branch}` = `dev`인 경우):
    ```bash
    git checkout dev
    git merge main
@@ -105,40 +120,38 @@ git fetch origin
 
 ---
 
-## 기본 모드 (feature → dev)
+## 기본 모드 (feature → {target-branch})
 
 ### Step 4: 작업 브랜치 확인
 
-현재 브랜치가 `main`, `master`, `staging`, 또는 `dev`인지 확인한다.
+현재 브랜치가 `main`, `master`, `staging`, `dev`, 또는 `{target-branch}`인지 확인한다.
 
-- **보호 브랜치에 있는 경우**: 작업 브랜치 자동 생성이 필요 → **Step 4.1**로 진행
+- **보호 브랜치 또는 `{target-branch}`에 있는 경우**: 작업 브랜치 자동 생성이 필요 → **Step 4.1**로 진행
 - **이미 작업 브랜치(feature, fix, docs 등)에 있는 경우**: 그대로 사용 → **Step 5**로 진행
 
 ### Step 4.1: 작업 브랜치 생성
 
 1. `git status`와 `git log`로 현재 변경사항 및 최근 작업 컨텍스트를 분석하여 적절한 브랜치명을 추천한다 (예: `feat/user-auth`, `fix/login-error`).
 2. **AskUserQuestion**으로 브랜치명을 확인한다. 추천 브랜치명을 기본 옵션으로 제시한다.
-3. 사용자가 확인한 브랜치명으로 `dev`를 베이스로 작업 브랜치를 생성한다:
+3. 사용자가 확인한 브랜치명으로 `{target-branch}`를 베이스로 작업 브랜치를 생성한다:
    ```bash
-   git checkout -b {branch-name} dev
+   git checkout -b {branch-name} {target-branch}
    ```
-   미커밋 변경사항은 그대로 유지된다. 현재 브랜치가 이미 `dev`인 경우에도 명시적으로 `dev`를 베이스로 지정한다.
+   미커밋 변경사항은 그대로 유지된다. 현재 브랜치가 이미 `{target-branch}`인 경우에도 명시적으로 `{target-branch}`를 베이스로 지정한다.
 4. 이후 단계에서 `{branch-name}`은 이 새로 생성된 브랜치를 참조한다.
 
 ### Step 5: 대상 브랜치 동기화
 
-`{target-branch}` = `dev`
-
-Step 2에서 이미 캐스케이드 머지를 완료했으므로, 작업 브랜치에 `dev`의 최신 변경사항을 반영한다:
+Step 2에서 이미 캐스케이드 머지를 완료했으므로, 작업 브랜치에 `{target-branch}`의 최신 변경사항을 반영한다:
 
 ```bash
-git merge origin/dev
+git merge origin/{target-branch}
 ```
 
 - **충돌 없음**: 다음 단계로 진행
 - **충돌 발생**: 충돌 파일 목록을 출력하고, 사용자에게 수동 해결을 안내한 후 중단한다.
 
-**건너뛰기 조건**: Step 4.1을 방금 실행한 경우 (작업 브랜치를 `dev`로부터 생성) 이미 동기화 상태이므로 건너뛴다.
+**건너뛰기 조건**: Step 4.1을 방금 실행한 경우 (작업 브랜치를 `{target-branch}`로부터 생성) 이미 동기화 상태이므로 건너뛴다.
 
 ### Step 6: 커밋 & 푸시
 
@@ -159,12 +172,12 @@ git merge origin/dev
 
 기존 PR이 있는지 확인하고, 없으면 새로 생성한다:
 
-1. `gh pr list --head {branch-name} --base dev --state open`으로 기존 PR 확인
+1. `gh pr list --head {branch-name} --base {target-branch} --state open`으로 기존 PR 확인
 2. **기존 PR이 있으면**: PR URL을 출력하고 Step 8로 진행
 3. **기존 PR이 없으면**: ASTRA 템플릿으로 PR 생성
 
 ```bash
-gh pr create --base dev --title "{PR 제목}" --body "$(cat <<'EOF'
+gh pr create --base {target-branch} --title "{PR 제목}" --body "$(cat <<'EOF'
 ## Summary
 - {변경사항 요약 1}
 - {변경사항 요약 2}
@@ -264,7 +277,7 @@ Task tool (subagent_type: "feature-dev:code-reviewer")
 머지 후 로컬 환경을 정리한다:
 
 1. `git fetch origin`으로 원격 최신 상태를 가져온다.
-2. `git checkout dev`로 전환한다.
+2. `git checkout {target-branch}`로 전환한다.
 3. `git pull --rebase`로 최신 상태 동기화
 4. 머지된 로컬 브랜치 삭제: `git branch -d {branch-name}`
 5. 최종 요약을 출력한다:
@@ -276,7 +289,7 @@ Task tool (subagent_type: "feature-dev:code-reviewer")
 
 ### 결과 요약
 - PR: {PR URL}
-- 머지: {branch-name} → dev
+- 머지: {branch-name} → {target-branch}
 - 리뷰 반복: {N}회
 - 수정된 이슈: Critical {n}건, High {n}건
 - 상태: ✅ 머지 완료
@@ -371,7 +384,7 @@ EOF
 ## Quick Run Examples
 
 ```
-# 기본 실행 — feature → dev 머지 (최대 3회 리뷰 반복)
+# 기본 실행 — feature → 선택한 브랜치 머지, 기본값 dev (최대 3회 리뷰 반복)
 /pr-merge
 
 # 리뷰 반복 최대 5회
@@ -405,8 +418,8 @@ EOF
 ## Notes
 
 - **브랜치 전략**: `feature → dev → staging → main` 순서로 코드를 승격한다.
-- **공통 전처리**: 모든 모드에서 실행 전 `main` / `staging` / `dev`를 pull 받는다. 캐스케이드 머지는 모드별로 범위가 다르다: 기본 모드에서는 전체(`main → staging → dev`), `--staging`에서는 `main → staging`만, `--main`에서는 건너뛴다.
-- **기본 모드**: 작업 브랜치를 `dev`으로 머지한다. `main`/`master`/`staging`/`dev` 브랜치에서 실행하면 자동으로 작업 브랜치를 생성한다. 원격에 `dev`이 없으면 기본 브랜치로부터 자동 생성한다.
+- **공통 전처리**: 모든 모드에서 실행 전 `main` / `staging` / `dev`를 pull 받는다. 캐스케이드 머지는 모드와 `{target-branch}`에 따라 범위가 다르다: 기본 모드에서 `{target-branch}` = `dev`이면 전체(`main → staging → dev`), `{target-branch}` = `staging`이면 `main → staging`만, `--staging` 프로모션에서는 `main → staging`만, `--main` 프로모션에서는 건너뛴다.
+- **기본 모드**: 실행 시 머지 대상 브랜치를 사용자에게 물어본다 (`dev`, `staging`, 또는 기타). 스테이징 버그픽스는 `staging`에 직접 머지하고, 피처 개발은 `dev`에 머지할 수 있다. `main`/`master`/`staging`/`dev` 브랜치에서 실행하면 자동으로 작업 브랜치를 생성한다. 원격에 `{target-branch}`가 없으면 기본 브랜치로부터 자동 생성한다.
 - **프로모션 모드 (`--staging`)**: `dev` → `staging`으로 승격한다. 작업 브랜치 생성/커밋 단계를 건너뛰고 PR 기반 머지에 집중한다.
 - **프로모션 모드 (`--main`)**: `staging` → `main`으로 승격한다. 릴리스 프로모션이므로 버전 범프가 이 단계에서 실행된다.
 - 머지 완료 후 최종 체크아웃 위치는 `{target-branch}`이다.

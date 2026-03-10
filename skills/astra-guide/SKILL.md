@@ -99,7 +99,7 @@ Sprint Progress:
   /sprint-plan [number]           Sprint plan init (includes progress tracker)
 
 Planning:
-  /service-planner [feature]     Design Thinking based planning deliverables
+  /service-planner [feature]     Design Thinking planning (6 deliverables: market analysis, interview, requirements+KPI, use cases+journey map, IA+wireframe, features+risk)
 
 Slack Integration:
   /slack-to-sprint [channel]     Slack messages → blueprints + sprint plan

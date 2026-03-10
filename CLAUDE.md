@@ -152,15 +152,20 @@ The `/payment-module` skill automates the entire subscription payment module dev
 The `/service-planner` skill automates the planning phase using Design Thinking methodology:
 
 - **Methodology**: Design Thinking (Empathize → Define → Ideate → Prototype)
-- **Pipeline**: Feature Input → Actor Derivation → Persona Interview → Pain Point Analysis → Idea Generation → Requirements → Use Cases → Feature Definition
-- **Interactive**: Actor multi-select, idea multi-select with user confirmation at each major step
-- **Deliverables** (4 files under `docs/planner/{NNN}-{feature-name}/`):
-  1. `interview-report.md` — Persona interview results with pain point analysis
-  2. `requirements-definition.md` — Functional/non-functional requirements with traceability
-  3. `usecase-definition.md` — Use case definitions with Mermaid diagrams per actor
-  4. `feature-definition.md` — Feature definition with MoSCoW prioritization
+- **Modes**: New service planning / Existing service improvement (Continuous Discovery)
+- **Pipeline**: Mode Selection → Market Analysis(PEST/SWOT) → Actor Derivation → Persona Interview → Pain Point Analysis → Idea Generation(HMW/SCAMPER/JTBD) → Requirements(KPI/OKR) → Use Cases(Journey Map) → IA/Screen Design(Wireframe) → Feature Definition(Story Map/Risk/Policy)
+- **Interactive**: Mode select, actor multi-select, idea multi-select with user confirmation at each major step
+- **Deliverables** (6 files under `docs/planner/{NNN}-{feature-name}/`):
+  1. `market-analysis.md` — Market/competitor analysis with PEST, benchmarking, SWOT
+  2. `interview-report.md` — Persona interview results with pain point analysis
+  3. `requirements-definition.md` — Requirements with KPI/OKR, JTBD, traceability
+  4. `usecase-definition.md` — Use case definitions with Mermaid diagrams and customer journey maps
+  5. `ia-screen-design.md` — Information Architecture, screen flow, text-based wireframes
+  6. `feature-definition.md` — Feature definition with User Story Map, MoSCoW, risk analysis, service policies
 - **Persona generation**: 3 personas per selected actor type with realistic interview simulation
-- **Idea generation**: HMW + SCAMPER techniques, 10-15 ideas with implementation difficulty and expected impact
+- **Idea generation**: HMW + SCAMPER + JTBD Job Statements, 10-15 ideas with implementation difficulty and expected impact
+- **Business alignment**: OKR/KPI metrics linked to features for strategy-to-execution traceability
+- **Risk management**: Risk register with likelihood/impact scoring and mitigation strategies
 
 ### Blueprint Directory Convention
 
@@ -204,10 +209,12 @@ When the plugin initializes a target project, it creates:
 │   │   │   └── blueprint.md           # Main design document + related files
 │   ├── planner/                       # Planning deliverables (Design Thinking)
 │   │   └── {NNN}-{feature-name}/      # Numbered feature directories (e.g., 001-auth/)
+│   │       ├── market-analysis.md     # Market/competitor analysis (PEST, SWOT, benchmarking)
 │   │       ├── interview-report.md    # Persona interview results
-│   │       ├── requirements-definition.md # Requirements definition
-│   │       ├── usecase-definition.md  # Use case definition with diagrams
-│   │       └── feature-definition.md  # Feature definition
+│   │       ├── requirements-definition.md # Requirements (KPI/OKR, JTBD, traceability)
+│   │       ├── usecase-definition.md  # Use cases with customer journey maps
+│   │       ├── ia-screen-design.md    # IA structure, screen flow, wireframes
+│   │       └── feature-definition.md  # Features with story map, risk, policies
 │   ├── database/                      # DB design (SSoT), naming rules, migrations
 │   ├── tests/                         # Test strategy, test cases (per sprint), test reports
 │   ├── sprints/                       # Sprint documents (prompt maps, progress trackers, retrospectives)
