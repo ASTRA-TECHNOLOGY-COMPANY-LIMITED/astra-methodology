@@ -516,9 +516,9 @@ docs/blueprints/001-auth/blueprint.md로 작성해줘.
 ```
 
 > 생성되는 파일:
-> - `docs/sprints/sprint-1/prompt-map.md` — 기능별 프롬프트 계획
-> - `docs/sprints/sprint-1/progress.md` — 진행 추적 테이블
-> - `docs/sprints/sprint-1/retrospective.md` — 회고 템플릿
+> - `docs/sprints/sprint-1-auth/prompt-map.md` — 기능별 프롬프트 계획
+> - `docs/sprints/sprint-1-auth/progress.md` — 진행 추적 테이블
+> - `docs/sprints/sprint-1-auth/retrospective.md` — 회고 템플릿
 
 ### 8.2 Sprint Planning (1시간)
 
@@ -1382,11 +1382,11 @@ project-root/
 │   │       └── sprint-1-report.md
 │   │
 │   ├── sprints/                 # 스프린트 문서
-│   │   ├── sprint-1/
+│   │   ├── sprint-1-auth/
 │   │   │   ├── prompt-map.md
 │   │   │   ├── progress.md
 │   │   │   └── retrospective.md
-│   │   └── sprint-2/
+│   │   └── sprint-2-workspace/
 │   │       └── prompt-map.md
 │   │
 │   └── delivery/                # Release Sprint 산출물

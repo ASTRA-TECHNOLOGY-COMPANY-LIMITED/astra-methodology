@@ -82,7 +82,7 @@ Analyze the following to write test cases:
 
 #### C. Write Test Cases
 
-Write test cases in the `docs/tests/test-cases/sprint-{N}/` directory (where `{N}` is the current sprint number detected from `docs/sprints/`):
+Write test cases in the `docs/tests/test-cases/sprint-{N}/` directory (where `{N}` is the current sprint number detected from `docs/sprints/` by scanning `sprint-{N}-{name}/` directories and finding the highest `{N}`):
 
 ```markdown
 # {Feature Name} Test Cases

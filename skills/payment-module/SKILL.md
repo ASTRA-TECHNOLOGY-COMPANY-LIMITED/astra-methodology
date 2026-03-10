@@ -58,7 +58,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 2. `package.json` 또는 `build.gradle` 또는 `pom.xml` 또는 `pyproject.toml` 읽기 — 프레임워크/의존성 파악
 3. `docs/blueprints/` 스캔 — 기존 블루프린트 번호 확인 (다음 번호 결정)
 4. `docs/database/database-design.md` 읽기 — 기존 DB 스키마 확인 (특히 인증/워크스페이스 모듈 테이블)
-5. `docs/sprints/` 스캔 — 현재 스프린트 번호 확인
+5. `docs/sprints/` 스캔 — `sprint-{N}-{name}/` 패턴 디렉토리에서 현재 스프린트 번호 확인
 6. `src/` 스캔 — 기존 코드 구조, 라우팅 패턴, 인증/워크스페이스 모듈 코드 확인
 7. `src/styles/design-tokens.css` + `docs/design-system/` 스캔 — 디자인 토큰, 컴포넌트 패턴 확인
 
@@ -235,11 +235,11 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 
 #### 스프린트 번호 결정
 
-`docs/sprints/` 디렉토리를 스캔하여 다음 스프린트 번호를 결정한다.
+`docs/sprints/` 디렉토리에서 `sprint-{N}-{name}/` 패턴 디렉토리를 스캔하여 다음 스프린트 번호를 결정한다.
 
 #### 프롬프트 맵 생성
 
-결제 모듈의 6개 Phase를 Feature 단위로 분할하여 `docs/sprints/sprint-{N}/prompt-map.md` 파일을 생성한다:
+결제 모듈의 6개 Phase를 Feature 단위로 분할하여 `docs/sprints/sprint-{N}-payment/prompt-map.md` 파일을 생성한다:
 
 ```markdown
 # Sprint {N} - 구독 결제 모듈
@@ -291,7 +291,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 
 #### 프로그레스 트래커 생성
 
-`docs/sprints/sprint-{N}/progress.md` 파일을 생성한다:
+`docs/sprints/sprint-{N}-payment/progress.md` 파일을 생성한다:
 
 ```markdown
 # Sprint {N} Progress Tracker
