@@ -79,7 +79,7 @@ git fetch origin
 **모드별 캐스케이드 범위**:
 - **기본 모드 (`{target-branch}` = `dev`)**: 전체 캐스케이드 실행 (`main → staging → dev`)
 - **기본 모드 (`{target-branch}` = `staging`)**: `main → staging`까지만 실행 (dev로의 캐스케이드 불필요)
-- **기본 모드 (`{target-branch}` = 기타)**: 전체 캐스케이드 실행 (`main → staging → dev`)
+- **기본 모드 (`{target-branch}` = 기타)**: 전체 캐스케이드 실행 (`main → staging → dev`). 단, `{target-branch}` 자체는 캐스케이드 대상이 아니므로 Step 5에서 `origin/{target-branch}`와 머지하여 동기화한다.
 - **`--staging` 프로모션**: `main → staging`까지만 실행 (dev는 머지 대상이 아님)
 - **`--main` 프로모션**: 캐스케이드를 건너뛴다 (staging → main 방향이므로 역방향 동기화 불필요)
 
@@ -124,9 +124,9 @@ git fetch origin
 
 ### Step 4: 작업 브랜치 확인
 
-현재 브랜치가 `main`, `master`, `staging`, 또는 `dev`인지 확인한다.
+현재 브랜치가 `main`, `master`, `staging`, `dev`, 또는 `{target-branch}`인지 확인한다.
 
-- **보호 브랜치에 있는 경우**: 작업 브랜치 자동 생성이 필요 → **Step 4.1**로 진행
+- **보호 브랜치 또는 `{target-branch}`에 있는 경우**: 작업 브랜치 자동 생성이 필요 → **Step 4.1**로 진행
 - **이미 작업 브랜치(feature, fix, docs 등)에 있는 경우**: 그대로 사용 → **Step 5**로 진행
 
 ### Step 4.1: 작업 브랜치 생성
