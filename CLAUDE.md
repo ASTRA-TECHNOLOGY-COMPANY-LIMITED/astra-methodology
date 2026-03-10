@@ -152,7 +152,7 @@ The `/payment-module` skill automates the entire subscription payment module dev
 The `/service-planner` skill automates the planning phase using Design Thinking methodology:
 
 - **Methodology**: Design Thinking (Empathize → Define → Ideate → Prototype)
-- **Modes**: New service planning / Existing service improvement (Continuous Discovery)
+- **Modes**: New service planning (from scratch) / Existing service improvement (data-driven, leverages existing analytics, CS logs, and user feedback)
 - **Pipeline**: Mode Selection → Market Analysis(PEST/SWOT) → Actor Derivation → Persona Interview → Pain Point Analysis → Idea Generation(HMW/SCAMPER/JTBD) → Requirements(KPI/OKR) → Use Cases(Journey Map) → IA/Screen Design(Wireframe) → Feature Definition(Story Map/Risk/Policy)
 - **Interactive**: Mode select, actor multi-select, idea multi-select with user confirmation at each major step
 - **Deliverables** (6 files under `docs/planner/{NNN}-{feature-name}/`):

@@ -25,6 +25,8 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 
 **산출물 위치**: `docs/planner/{NNN}-{feature-name}/`
 
+> **🌐 LANGUAGE RULE**: Before executing this skill, read the project's `CLAUDE.md` and check the `## Language` section to detect the project language. If the project language is NOT Korean (`ko`), you MUST translate ALL user-facing output — including prompts, messages, generated document content, section headers, table headers, and descriptions — into the project language. Technical identifiers (tool names, file paths, command names, DB table/column names) remain untranslated. If no `CLAUDE.md` exists or no `## Language` section is found, default to Korean.
+
 ## 실행 절차
 
 ### Step 0: 사전 준비 및 컨텍스트 수집
@@ -397,10 +399,11 @@ NNN = (기존 최대 번호) + 1, 없으면 001
 
 ### 4.4 전체 통합 페인포인트 Top 10
 
-| 순위 | 페인포인트 | 관련 액터 | 심각도 | 해결 우선순위 |
-|------|-----------|---------|--------|------------|
-| 1 | {페인포인트} | {액터} | {점수} | {상/중/하} |
-| ... | ... | ... | ... | ... |
+| PP-ID | 순위 | 페인포인트 | 관련 액터 | 심각도 | 해결 우선순위 |
+|-------|------|-----------|---------|--------|------------|
+| PP-001 | 1 | {페인포인트} | {액터} | {점수} | {상/중/하} |
+| PP-002 | 2 | {페인포인트} | {액터} | {점수} | {상/중/하} |
+| ... | ... | ... | ... | ... | ... |
 ```
 
 > **중요**: 인터뷰결과서를 작성한 후 사용자에게 "인터뷰결과서가 생성되었습니다. 다음 단계(아이디어 도출)로 진행할까요?"라고 확인한다.
@@ -420,6 +423,8 @@ NNN = (기존 최대 번호) + 1, 없으면 001
   - 형식: "**When** [상황/맥락], **I want to** [동기/행동], **so I can** [기대 결과]"
   - 각 JTBD에서 현재 underserved된 니즈를 식별하여 아이디어에 반영
 - **기술 적용**: AI/자동화/UX 개선 등 기술적 해결 방안 포함
+
+> **기존 서비스 개선 모드**: `{EXISTING_SERVICE_DATA}`가 있으면 실제 사용 데이터(이탈 구간, CS 인입 유형, 사용 빈도 등)를 기반으로 JTBD/HMW를 작성하고, 아이디어 우선순위를 실증 데이터로 뒷받침한다.
 
 최소 10개, 최대 15개 아이디어를 도출한다.
 
@@ -529,6 +534,8 @@ NNN = (기존 최대 번호) + 1, 없으면 001
 | ... | ... | ... | ... | ... | ... | ... | ... |
 ```
 
+> **중요**: 요구사항정의서를 작성한 후 사용자에게 "요구사항정의서가 생성되었습니다. 다음 단계(유즈케이스 정의)로 진행할까요?"라고 확인한다.
+
 ---
 
 ### Step 5: 유즈케이스 정의서 생성
@@ -558,7 +565,7 @@ NNN = (기존 최대 번호) + 1, 없으면 001
 
 `{OUTPUT_DIR}/usecase-definition.md` 파일을 생성한다:
 
-```markdown
+~~~markdown
 # 유즈케이스 정의서 — {기능명}
 
 ## 1. 개요
@@ -567,7 +574,7 @@ NNN = (기존 최대 번호) + 1, 없으면 001
 |------|------|
 | 기능 | {FEATURE_DESCRIPTION} |
 | 작성일 | {오늘 날짜} |
-| 기반 문서 | market-analysis.md, interview-report.md, requirements-definition.md |
+| 기반 문서 | interview-report.md, requirements-definition.md |
 | 액터 수 | {N}명 |
 | 유즈케이스 수 | {N}개 |
 
@@ -686,7 +693,9 @@ graph LR
 |------------|-------------|---------|
 | FR-001 | UC-001, UC-002 | 완전 |
 | FR-002 | UC-003 | 부분 |
-```
+~~~
+
+> **중요**: 유즈케이스정의서를 작성한 후 사용자에게 "유즈케이스정의서가 생성되었습니다. 다음 단계(IA 구조 및 화면 설계)로 진행할까요?"라고 확인한다.
 
 ---
 
@@ -704,6 +713,8 @@ graph LR
 
 각 메뉴 항목에 관련 유즈케이스와 요구사항을 매핑한다.
 
+> **기존 서비스 개선 모드**: 현재 서비스의 IA를 기준으로 시작하여, 변경/추가되는 메뉴 항목만 별도 표시한다 (예: `[NEW]`, `[CHANGED]`). 기존 화면은 변경이 필요한 부분만 와이어프레임으로 작성한다.
+
 #### B. 화면 흐름도 (Screen Flow)
 
 주요 사용자 시나리오(유즈케이스 기본 흐름 기준)의 화면 이동 경로를 Mermaid 플로우차트로 작성한다.
@@ -720,7 +731,7 @@ graph LR
 
 `{OUTPUT_DIR}/ia-screen-design.md` 파일을 생성한다:
 
-```markdown
+~~~markdown
 # IA 구조 및 화면 설계서 — {기능명}
 
 ## 1. 개요
@@ -828,7 +839,9 @@ flowchart LR
 | 화면ID | 화면명 | 유즈케이스 | 요구사항 | 액터 |
 |--------|--------|-----------|---------|------|
 | SCR-001 | {화면명} | UC-001 | FR-001, FR-002 | {액터} |
-```
+~~~
+
+> **중요**: IA/화면설계서를 작성한 후 사용자에게 "IA/화면설계서가 생성되었습니다. 다음 단계(기능 정의서)로 진행할까요?"라고 확인한다.
 
 ---
 
@@ -851,11 +864,13 @@ flowchart LR
 - **User Story** (열): 과업의 세부 스토리 (소기능에 대응)
 - **Release Slice**: MVP / v1.1 / v1.2 등 릴리스 단위로 수평 구분
 
+> **기존 서비스 개선 모드**: 기능 트리에서 기존 기능과 신규/변경 기능을 구분하여 표시한다 (예: `[NEW]`, `[CHANGED]`, `[AS-IS]`). User Story Map에서는 현재 릴리스에 포함될 변경사항만 MVP 슬라이스에 배치한다.
+
 #### C. 기능 정의서 작성
 
 `{OUTPUT_DIR}/feature-definition.md` 파일을 생성한다:
 
-```markdown
+~~~markdown
 # 기능 정의서 — {기능명}
 
 ## 1. 개요
@@ -1004,7 +1019,9 @@ flowchart LR
 |---------|--------|---------|------|-----------|------|------|----------|-----|---------|-------|
 | FT-01-01 | {기능명} | FR-001 | J1 | UC-001 | SCR-001 | {액터} | PP-{N} | {KPI} | Must | MVP |
 | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... |
-```
+~~~
+
+> **중요**: 기능정의서를 작성한 후 사용자에게 "기능정의서가 생성되었습니다. 최종 완료 보고를 출력할까요?"라고 확인한다.
 
 ---
 
