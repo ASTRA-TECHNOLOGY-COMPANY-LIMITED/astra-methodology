@@ -11,70 +11,23 @@ Creates prompt maps and retrospective templates for a new sprint.
 
 ## Execution Procedure
 
-### Step 1: Confirm Sprint Number
+### Step 1: Confirm Sprint Number and Sprint Name
 
-Parse the sprint number from `$ARGUMENTS`. If not provided, check existing directories in the `docs/sprints/` directory (e.g., `sprint-1/`, `sprint-2/`) to automatically determine the next number.
+Parse from `$ARGUMENTS`:
+- **Sprint number** (optional): If not provided, scan existing directories in `docs/sprints/` matching the `sprint-{N}-{name}/` pattern (e.g., `sprint-1-auth/`, `sprint-2-workspace/`) to determine the next number.
+- **Sprint name** (optional): The primary blueprint/feature name for this sprint.
 
-### Step 1.5: Analyze Previous Sprint (skip if N = 1)
+**Directory name format**: `sprint-{N}-{sprint-name}/` (e.g., `sprint-1-auth/`, `sprint-2-payment/`, `sprint-3-dashboard/`)
 
-If this is Sprint 2 or later, analyze the previous sprint's results before creating the prompt map.
+If the sprint name is not provided in `$ARGUMENTS`, ask the user for the primary feature/blueprint name. This name will be used as the directory suffix. Use kebab-case format (e.g., `auth`, `workspace`, `payment-dashboard`).
 
-#### A. Read Previous Sprint Progress Tracker
-
-Read `docs/sprints/sprint-{N-1}/progress.md` and extract:
-
-1. **Incomplete features**: rows where Status ≠ `Completed` — these are carryover candidates
-2. **Partially completed features**: rows where some columns are `Done` but Status ≠ `Completed` — identify exactly which pipeline stages remain (e.g., "Blueprint Done, Implementation WIP, Test Report missing")
-3. **Completed features**: rows where Status = `Completed` — these are done and do not carry over
-
-#### B. Read Previous Sprint Retrospective
-
-Read `docs/sprints/sprint-{N-1}/retrospective.md` and extract:
-
-1. **Improvement actions** from the "What to try (Try)" section
-2. **Automated improvement actions** (hookify rules, CLAUDE.md updates)
-3. **Recurring issues** from the "What to improve (Problem)" section
-
-If the retro file does not exist or is empty (template only), note this as "Retrospective not conducted".
-
-#### C. Compare Blueprints vs Implementation Status
-
-1. List all numbered directories in `docs/blueprints/` (matching pattern `{NNN}-{feature-name}/`)
-2. For each blueprint directory, check if corresponding implementation exists:
-   - Source files in `src/` matching the feature name (by directory or filename)
-   - Test reports in `docs/tests/test-reports/` matching the feature name
-3. Identify **designed but not implemented** features — potential carryover or deprioritization candidates
-
-#### D. Output Previous Sprint Summary
-
-Display the analysis before proceeding to the prompt map:
-
-```
-## Previous Sprint (Sprint {N-1}) Analysis
-
-### Carryover Candidates
-| Feature | Remaining Stages | Priority |
-|---------|-----------------|----------|
-| {feature} | {Implementation, Test Report} | {High/Medium/Low} |
-
-### Blueprints Without Implementation
-- {NNN}-{blueprint-name}/ — designed in Sprint {X}, not yet implemented
-
-### Retrospective Actions to Address
-- {action item from retro}
-
-### Recommendation
-- Carry over {M} incomplete features as priority items
-- {N} blueprints exist without implementation — confirm with DE whether to include
-```
-
-Ask the user (VA/PE) to confirm which carryover items to include in this sprint before proceeding to Step 2.
+When scanning existing directories, extract the sprint number from directory names matching pattern `sprint-{N}-{name}` (e.g., `sprint-1-auth` → number `1`).
 
 ### Step 2: Create Sprint Prompt Map
 
-Create the `docs/sprints/sprint-{N}/prompt-map.md` file.
+Create the `docs/sprints/sprint-{N}-{sprint-name}/prompt-map.md` file.
 
-If there are carryover items from Step 1.5, list them first as `(Carryover)` features before new features. Carryover features that already have blueprints should skip the Design Prompt (1.1) and note the existing blueprint path instead. Similarly, skip any pipeline stage that is already `Done` from the previous sprint.
+Scan `docs/blueprints/` for numbered directories matching the sprint name (or use the blueprint names provided by the user). Each blueprint becomes a feature in the prompt map. Do NOT analyze or carry over items from previous sprints.
 
 ```markdown
 # Sprint {N} Prompt Map
@@ -82,63 +35,46 @@ If there are carryover items from Step 1.5, list them first as `(Carryover)` fea
 ## Sprint Goal
 [Describe the business value to achieve in this sprint]
 
-## Previous Sprint Carryover
-{If N >= 2, summarize carried-over items and retrospective actions. If N = 1, omit this section.}
-
-## Feature 1: {carryover-feature} (Carryover from Sprint {N-1})
+## Feature 1: {feature-name}
 
 ### 1.1 Design Prompt
-(Already completed — see docs/blueprints/{NNN}-{feature-name}/blueprint.md)
-
-### 1.2 DB Design Reflection Prompt
-(Already completed — reflected in docs/database/database-design.md)
-
-### 1.3 Test Case Prompt
-{Include only if test cases were not written in the previous sprint}
-
-### 1.4 Implementation Prompt
-{Include — this is the remaining work}
-
-## Feature 2: {new-feature-name}
-
-### 2.1 Design Prompt
 /feature-dev "Write the design document for {feature description}
 to docs/blueprints/{NNN}-{feature-name}/blueprint.md.
 {detailed requirements}
 Refer to docs/database/database-design.md for DB schema.
 Do not modify any code yet."
 
-> **Numbering Rule**: Scan existing directories in `docs/blueprints/` to determine the next number. Use 3-digit zero-padded format (e.g., `001-`, `002-`). If the feature is a carryover, keep its original number from the previous sprint.
+> **Numbering Rule**: Scan existing directories in `docs/blueprints/` to determine the next number. Use 3-digit zero-padded format (e.g., `001-`, `002-`).
 
-### 2.2 DB Design Reflection Prompt
+### 1.2 DB Design Reflection Prompt
 /feature-dev "Add/update the {module-name} tables in
 docs/database/database-design.md:
 - {table list}
 - Also update the ERD and FK relationship summary. Follow standard terminology dictionary.
 Do not modify any code yet."
 
-### 2.3 Test Case Prompt
+### 1.3 Test Case Prompt
 /feature-dev "Based on the feature requirements in docs/blueprints/{NNN}-{feature-name}/blueprint.md,
 write test cases to docs/tests/test-cases/sprint-{N}/{feature-name}-test-cases.md.
 Use Given-When-Then format, include unit/integration/edge cases.
 Do not modify any code yet."
 
-### 2.4 Implementation Prompt
+### 1.4 Implementation Prompt
 /feature-dev "Strictly follow the contents of docs/blueprints/{NNN}-{feature-name}/blueprint.md and
 docs/database/database-design.md to proceed with development.
 Write tests referencing docs/tests/test-cases/sprint-{N}/{feature-name}-test-cases.md,
 and once implementation is complete, run all tests and
 report results to docs/tests/test-reports/."
 
-## Feature 3: {feature-name}
+## Feature 2: {feature-name}
 {Repeat with the same structure as above}
 ```
 
 ### Step 2.5: Create Sprint Progress Tracker
 
-Read the prompt map created in Step 2 (`docs/sprints/sprint-{N}/prompt-map.md`) and extract feature names from `## Feature {#}: {name}` headers (where `{#}` is the feature ordinal, e.g., 1, 2, 3).
+Read the prompt map created in Step 2 (`docs/sprints/sprint-{N}-{sprint-name}/prompt-map.md`) and extract feature names from `## Feature {#}: {name}` headers (where `{#}` is the feature ordinal, e.g., 1, 2, 3).
 
-Create the `docs/sprints/sprint-{N}/progress.md` file:
+Create the `docs/sprints/sprint-{N}-{sprint-name}/progress.md` file:
 
 ```markdown
 # Sprint {N} Progress Tracker
@@ -178,12 +114,11 @@ Create the `docs/sprints/sprint-{N}/progress.md` file:
 <!-- ACTIVITY_LOG_END -->
 ```
 
-- **New features** start as `-` (Not Started) in every column.
-- **Carryover features** carry forward their previous sprint's column statuses (e.g., if Blueprint was `Done` in Sprint {N-1}, it starts as `Done` in Sprint {N}).
+- All features start as `-` (Not Started) in every column.
 
 ### Step 3: Create Retrospective Template
 
-Create the `docs/sprints/sprint-{N}/retrospective.md` file:
+Create the `docs/sprints/sprint-{N}-{sprint-name}/retrospective.md` file:
 
 ```markdown
 # Sprint {N} Retrospective
@@ -217,13 +152,13 @@ Create the `docs/sprints/sprint-{N}/retrospective.md` file:
 ## Sprint {N} Initialization Complete
 
 ### Generated Files
-- docs/sprints/sprint-{N}/prompt-map.md (prompt map)
-- docs/sprints/sprint-{N}/progress.md (progress tracker)
-- docs/sprints/sprint-{N}/retrospective.md (retrospective template)
+- docs/sprints/sprint-{N}-{sprint-name}/prompt-map.md (prompt map)
+- docs/sprints/sprint-{N}-{sprint-name}/progress.md (progress tracker)
+- docs/sprints/sprint-{N}-{sprint-name}/retrospective.md (retrospective template)
 
 ### Sprint Planning Procedure (1 hour)
-1. (10 min) Review previous sprint analysis & AI analysis report
-2. (20 min) Confirm business priorities with DE, review carryover items, and agree on sprint goal
+1. (10 min) Review AI analysis report
+2. (20 min) Confirm business priorities with DE and agree on sprint goal
 3. (20 min) Discuss prompt design direction per item + DSA shares design direction
 4. (10 min) Finalize sprint backlog
 
