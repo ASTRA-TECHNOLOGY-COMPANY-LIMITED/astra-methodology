@@ -2,7 +2,7 @@
 name: ux-publish
 description: "기획 산출물(service-planner)의 IA/화면설계서와 기능정의서를 기반으로 프로덕션 수준의 UX 프로토타입을 HTML로 퍼블리싱합니다. /frontend-design 스킬로 세련된 디자인을 적용하고, fect-image로 AI 생성 이미지 에셋을 포함하며, UX 인터랙션 패턴 가이드를 기반으로 화면별 맞춤 인터랙션을 구현합니다. 프로젝트의 디자인 시스템과 공통 컴포넌트를 사용하여 ux/ 디렉토리 하위에 반응형 HTML 페이지를 생성합니다."
 argument-hint: "[기획 디렉토리명 또는 기능 설명]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent, Skill, mcp__fect-image__image_text2img, mcp__fect-image__image_img2img
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent, Skill, mcp__fect-image__image_text2img
 ---
 
 # ASTRA UX 프로토타입 퍼블리싱
@@ -28,7 +28,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent, Skil
 - 의도적인 타이포그래피, 색상 구성, 공간 배치, 모션 디자인
 - 화면 유형에 최적화된 UX 인터랙션 패턴 적용
 
-> **LANGUAGE RULE**: Before executing this skill, read the project's `CLAUDE.md` and check the `## Language` section to detect the project language. If the project language is NOT Korean (`ko`), you MUST translate ALL user-facing output — including HTML page titles, labels, placeholder text, navigation text — into the project language. Technical identifiers (file paths, CSS variable names, class names) remain untranslated. If no `CLAUDE.md` exists or no `## Language` section is found, default to Korean.
+> **🌐 LANGUAGE RULE**: Before executing this skill, read the project's `CLAUDE.md` and check the `## Language` section to detect the project language. If the project language is NOT Korean (`ko`), you MUST translate ALL user-facing output — including HTML page titles, labels, placeholder text, navigation text — into the project language. Technical identifiers (file paths, CSS variable names, class names) remain untranslated. If no `CLAUDE.md` exists or no `## Language` section is found, default to Korean.
 
 ## 실행 절차
 
@@ -102,6 +102,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent, Skil
 | 마이크로 인터랙션 | 버튼 피드백, 토글 애니메이션, 로딩 상태, 카운터 애니메이션 | 전체 |
 | 내비게이션 | 탭 바, 브레드크럼, 바텀 시트 | 전체 |
 | 피드백 & 응답 | 스켈레톤 스크린, 낙관적 업데이트, 토스트/스낵바 | 전체 |
+| 제스처 기반 인터랙션 | 스와이프 액션, 핀치 투 줌, 드래그 앤 드롭, 롱 프레스, 더블 탭 | 목록(스와이프), 상세(핀치줌), 설정(드래그 정렬) |
 | 스크롤 인터랙션 | 패럴랙스, 무한 스크롤, 고정 헤더, 스크롤 트리거 애니메이션, 스크롤 스냅 | 목록, 대시보드, 랜딩 |
 | 폼 인터랙션 | 인라인 유효성 검사, 플로팅 라벨, 자동완성, 스마트 기본값, 단계별 마법사, 입력 마스크 | 폼, 로그인/가입 |
 | 전환 & 애니메이션 | 페이지 전환, 공유 요소 전환, 모핑, 스프링 물리학, 시차 등장 | 전체 |
@@ -400,11 +401,11 @@ body {
 
 위 CSS는 기본 템플릿이다. 프로젝트의 `layout-grid.md` 내용에 맞게 실제 값을 조정한다.
 
-#### D. `/frontend-design` 스킬로 프로덕션급 컴포넌트 스타일 생성
+#### D. 프로덕션급 컴포넌트 스타일 생성
 
-`Skill` 도구를 사용하여 `/frontend-design` 스킬을 호출한다. 이 스킬은 **개성 있고 세련된 프로덕션급 디자인**을 생성하는 전문 스킬이다.
+> **`/frontend-design` 연동**: `frontend-design` 스킬이 설치되어 있으면 `Skill` 도구로 호출하여 프로덕션급 디자인을 생성한다. 설치되어 있지 않으면 아래 프롬프트의 요구사항을 직접 구현하여 `ux-components.css` 파일을 작성한다. (frontend-design은 별도 Claude Code 플러그인으로, 설치 여부는 환경에 따라 다르다.)
 
-다음 프롬프트로 호출한다:
+호출 또는 직접 구현 시 다음 요구사항을 따른다:
 
 ```
 "UX 프로토타입의 공통 컴포넌트 CSS를 프로덕션 수준으로 작성해 줘.
@@ -439,7 +440,7 @@ body {
 - 제네릭하고 평범한 AI 스타일이 아닌, 의도적이고 개성 있는 디자인"
 ```
 
-> **핵심**: `/frontend-design`은 "아름답고 기억에 남는 인터페이스"를 목표로 한다. 디자인 토큰 기반 위에 선택된 `{DESIGN_TONE}`에 맞는 추가적인 미학적 요소(미묘한 그라디언트, 배경 텍스처, 대담한 타이포그래피, 인텐셔널한 공간 배치)를 적용한다.
+> **핵심**: 프로덕션급 디자인은 "아름답고 기억에 남는 인터페이스"를 목표로 한다. 디자인 토큰 기반 위에 선택된 `{DESIGN_TONE}`에 맞는 추가적인 미학적 요소(미묘한 그라디언트, 배경 텍스처, 대담한 타이포그래피, 인텐셔널한 공간 배치)를 적용한다. `frontend-design` 스킬이 없는 경우에도 동일한 품질 기준으로 직접 CSS를 작성한다.
 
 #### E. 인터랙션 & 애니메이션 CSS 생성
 
@@ -559,6 +560,8 @@ body {
 
 #### F. AI 이미지 에셋 생성
 
+> **`fect-image` MCP 연동**: `mcp__fect-image__image_text2img` 도구가 사용 가능한 경우 AI 이미지 에셋을 생성한다. MCP 도구가 사용 불가능한 경우(fect-image 서버가 설치되지 않은 환경), 이미지 대신 CSS 그라디언트/SVG 패턴 기반 플레이스홀더를 사용하고 이미지 생성 단계를 건너뛴다.
+
 `mcp__fect-image__image_text2img` 도구를 사용하여 프로토타입에 필요한 이미지 에셋을 생성한다.
 
 **생성할 이미지 목록** (화면 구성에 따라 선별 적용):
@@ -578,8 +581,9 @@ body {
 3. 대시보드/랜딩 → 히어로 배너 생성
 4. 사용자 목록/프로필 → 아바타 2~3개 생성
 5. 로그인/가입 화면 → 배경 또는 사이드 일러스트 생성
-6. 모든 이미지는 `imageSize: "2K"`, `model: "gemini-3.1-flash-image-preview"` 사용
+6. 모든 이미지는 `imageSize: "2K"` 사용 (model 파라미터는 MCP 서버 기본값 사용)
 7. 프롬프트는 영어로 작성 (더 나은 품질)
+8. `mcp__fect-image__image_text2img` 도구가 사용 불가능하면 이 단계를 건너뛰고, HTML에서 CSS 그라디언트/SVG 기반 플레이스홀더를 대신 사용한다
 
 #### G. 공통 네비게이션 & 인터랙션 JS 생성
 
@@ -602,7 +606,7 @@ body {
 | 토스트 프로그레스 바 | 3.5 | CSS animation + 자동 닫힘 |
 | 포커스 트랩 (모달) | 9.2 | 첫 포커서블 요소로 이동 |
 
-각 JS 파일의 구체적인 구현은 `/frontend-design` 스킬이 `{DESIGN_TONE}`에 맞게 세련된 인터랙션 코드를 작성한다. Skill 도구로 다음과 같이 호출한다:
+각 JS 파일의 구체적인 구현은 `frontend-design` 스킬이 설치되어 있으면 `Skill` 도구로 호출하고, 없으면 아래 요구사항을 직접 구현한다:
 
 ```
 "UX 프로토타입의 공통 JavaScript 파일 2개를 작성해 줘.
@@ -701,11 +705,11 @@ body {
 - 색상 대비(9.4): WCAG AA 기준 준수
 - 터치 타겟(9.5): 최소 44px
 
-#### C. 개별 화면 HTML 생성 (`/frontend-design` 활용)
+#### C. 개별 화면 HTML 생성 (프로덕션 수준)
 
-각 화면에 대해 `Skill` 도구로 `/frontend-design`을 호출하여 **프로덕션 수준의 HTML**을 생성한다.
+각 화면에 대해 **프로덕션 수준의 HTML**을 생성한다. `frontend-design` 스킬이 설치되어 있으면 `Skill` 도구로 호출하고, 없으면 아래 요구사항을 직접 구현하여 HTML 파일을 작성한다.
 
-화면마다 다음 프롬프트 패턴으로 `/frontend-design`를 호출한다:
+화면마다 다음 요구사항을 적용한다:
 
 ```
 "UX 프로토타입 화면을 프로덕션 수준으로 작성해 줘.
