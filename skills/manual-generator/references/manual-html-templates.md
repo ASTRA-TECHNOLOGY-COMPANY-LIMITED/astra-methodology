@@ -212,6 +212,7 @@
     <div class="search-modal">
       <input type="search" class="search-input" placeholder="매뉴얼 검색..." autofocus>
       <div class="search-results"></div>
+      <div class="search-footer">ESC로 닫기 · Enter로 이동</div>
     </div>
   </div>
 
