@@ -27,6 +27,7 @@ astra-methodology/
 │   ├── auth-module/       # Auth module auto-builder (/auth-module)
 │   ├── workspace-module/  # Workspace module auto-builder (/workspace-module)
 │   ├── payment-module/    # Payment module auto-builder (/payment-module)
+│   ├── ai-agent-module/   # AI agent platform auto-builder (/ai-agent-module)
 │   ├── code-standard/     # Auto-applied international code standards (ISO/ITU)
 │   ├── sprint-progress/   # Auto-applied sprint progress tracking
 │   ├── service-planner/   # Design thinking based planning deliverables (/service-planner)
@@ -64,6 +65,8 @@ astra-methodology/
 │   │   └── flow.md              # Workspace → subscription payment flow
 │   ├── payment/
 │   │   └── system-design.md     # Payment module reference design (AMA project)
+│   ├── ai-agent/
+│   │   └── system-design.md     # AI agent platform reference design (fect-api-agent)
 │   └── ux/
 │       └── ux-interaction-patterns.md  # UX/UI interaction patterns guide (11 categories)
 └── .claude-plugin/      # Plugin manifest (plugin.json, marketplace.json)
@@ -148,6 +151,18 @@ The `/payment-module` skill automates the entire subscription payment module dev
 - **DB tables**: TB_PAY_PLAN, TB_PAY_PLAN_FNC, TB_PAY_STLM_MTHD, TB_PAY_SBSC, TH_PAY_SBSC, TB_PAY_INVC, TB_PAY_INVC_ARTCL, TB_PAY_STLM, TL_PAY_BILNG_EVNT, TL_PAY_WBHK_EVNT, TH_PAY_STLM_RTRY, TB_PAY_CRDT_BLNC, TL_PAY_CRDT_TRNS (13 tables)
 - **Module dependency**: Requires auth module (TB_COMM_USER, JWT) and workspace module (TB_COMM_WKSPC, TR_COMM_WKSPC_MBR). Prompts user to build prerequisite modules first if not detected.
 - **Tech adaptation**: Automatically adapts the reference design to the target project's tech stack (including PG provider: TossPayments/Stripe/KCP)
+- **Auto-debug**: Up to 5 retry cycles for test failures before requesting user assistance
+
+### AI Agent Module Auto-Builder
+
+The `/ai-agent-module` skill automates the entire AI agent platform module development lifecycle:
+
+- **Reference**: `docs/ai-agent/system-design.md` — fect-api-agent design (Next.js 14 + PostgreSQL + Drizzle ORM + Anthropic/OpenAI)
+- **Pipeline**: Blueprint → Sprint Plan → Implementation → Test Scenarios → Test Run & Debug
+- **Features**: multi-provider LLM client (Anthropic/OpenAI/Ollama via native fetch), SSE real-time streaming (20+ event types), Agent Core Loop (executeLoop with 4 safety guards), Context Building (10-step pipeline), Plugin-based tool system (PLUGIN.md → PluginManager → 20+ built-in tools), Skill system (GLOBAL/WORKSPACE/Agent mapping with on-demand + direct injection), HITL (hitl_prompt + SSE + loop interruption), Memory (pgvector flat + Neo4j graph hybrid ranking), RAG (Agentic query classification + HyDE + reranking), Sub-agent orchestration (spawn/steer/kill with depth/child limits), Model routing (complexity-based SIMPLE/VAGUE/COMPLEX) + multi-provider fallback, Conversation management (CRUD + compaction + auto-title), Secret management (AES-256-GCM + OAuth PKCE), Channel integration (Slack/Teams/Discord webhooks)
+- **DB tables**: TB_AI_AGNT_CTGRY, TB_AI_AGNT, TB_AI_CNVRSTN, TH_AI_MSG, TB_AI_MMRY, TB_AI_KNWLDG_BS, TB_AI_KNWLDG_DOC, TB_AI_EMBDNG_CHNK, TB_AI_SKILL_DEF, TR_AI_CNFG_SKILL, TB_AI_MCP_SRVR, TR_AI_CNFG_MCP_SRVR, TB_AI_SBAGNT_RUN, TL_AI_SBAGNT_LOG, TL_AI_TKN_USG, TB_AI_WKSPC_SCRT, TB_AI_SYS_CRED, TH_AI_OAUTH_SESSION, TL_AI_SCRT_ACCS_LOG, TB_AI_CHNL_CNFG, TL_AI_CHNL_MSG_LOG, TB_AI_PRJCT, TL_AI_MCP_SRVR_LOG, TB_AI_SGGSTN_TMPL (26 tables)
+- **Module dependency**: Requires auth module (TB_COMM_USER, JWT) and workspace module (TB_COMM_WKSPC). Optionally integrates with payment module for credit-based billing.
+- **Tech adaptation**: Automatically adapts the reference design to the target project's tech stack (SSE: WebFlux/NestJS @Sse/FastAPI StreamingResponse, LLM: native fetch vs SDK, Vector DB: pgvector/Pinecone/Qdrant)
 - **Auto-debug**: Up to 5 retry cycles for test failures before requesting user assistance
 
 ### Service Planner (Design Thinking Based)
