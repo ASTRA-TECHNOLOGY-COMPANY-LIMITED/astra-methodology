@@ -36,7 +36,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 
 1. 아키텍처 개요 — Gateway Proxy 패턴, Skill-First 설계, Plugin-Based 도구 (섹션 1)
 2. 기술 스택 — Next.js 14, Drizzle ORM, native fetch LLM 클라이언트 (섹션 2)
-3. 데이터베이스 스키마 — 26개 테이블 (섹션 3):
+3. 데이터베이스 스키마 — 24개 테이블 (섹션 3):
    - TB_AI_AGNT_CTGRY (에이전트 카테고리), TB_AI_AGNT (에이전트 정의)
    - TB_AI_CNVRSTN (대화), TH_AI_MSG (메시지 이력)
    - TB_AI_MMRY (메모리 — pgvector)
@@ -155,7 +155,7 @@ AI 에이전트 모듈은 인증 모듈(TB_COMM_USER, JWT)과 워크스페이스
 
 | # | 모듈 | 기능 | 주요 구현 |
 |---|------|------|----------|
-| 1 | 인프라 | DB 스키마 + 리소스 로더 | 26개 테이블, prompts/skills/plugins 파싱 |
+| 1 | 인프라 | DB 스키마 + 리소스 로더 | 24개 테이블, prompts/skills/plugins 파싱 |
 | 2 | LLM | 멀티 프로바이더 클라이언트 | Anthropic/OpenAI/Ollama native fetch |
 | 3 | 스트리밍 | SSE 핸들러 | createSSEStream, SSEWriter, keep-alive |
 | 4 | 런타임 | Agent Core Loop | executeLoop, 4중 안전장치 |
@@ -207,7 +207,7 @@ NNN = (기존 최대 번호) + 1
 
 ## 3. 데이터베이스 스키마
 - ER 다이어그램 (레퍼런스 섹션 3.1)
-- 테이블 정의 — 26개 테이블 (레퍼런스 섹션 3.2~3.14 적응)
+- 테이블 정의 — 24개 테이블 (레퍼런스 섹션 3.2~3.14 적응)
 - DDL (대상 DB에 맞게 변환)
 - ORM 스키마 정의 (대상 ORM에 맞게 변환)
 
@@ -245,7 +245,7 @@ NNN = (기존 최대 번호) + 1
 
 `docs/database/database-design.md`에 AI 에이전트 모듈 테이블을 추가한다:
 
-1. 레퍼런스의 26개 테이블을 추가
+1. 레퍼런스의 24개 테이블을 추가
 2. ER 다이어그램 업데이트
 3. FK 관계 요약 업데이트 (TB_COMM_USER, TB_COMM_WKSPC와의 관계)
 4. 공공 데이터 표준 네이밍 규칙 준수 확인
@@ -311,7 +311,7 @@ DB 스키마 검증, 리소스 로더 파싱, 환경 변수 검증 테스트 케
 /feature-dev "docs/blueprints/{NNN}-ai-agent/blueprint.md Phase 1을 참조하여
 기반 인프라를 구현한다:
 - 의존성 설치, 환경 변수 설정
-- Drizzle ORM 설정 및 DB 스키마 정의 (26개 테이블)
+- Drizzle ORM 설정 및 DB 스키마 정의 (24개 테이블)
 - DB 마이그레이션 (pgvector 확장 포함)
 - 리소스 로더 (prompts, skills, plugins YAML 파싱)
 - 싱글톤 초기화 (instrumentation.ts)
@@ -418,13 +418,16 @@ docs/tests/test-cases/sprint-{N}/ai-routing-subagent-test-cases.md에
 
 ## Feature 6: 미들웨어 + 시크릿 + OAuth (Phase 6)
 
-### 6.1 Test Case Prompt
+### 6.1 Design Prompt
+(Already completed — see docs/blueprints/{NNN}-ai-agent/blueprint.md 섹션 4.1, 3.12, 3.13)
+
+### 6.2 Test Case Prompt
 /feature-dev "docs/blueprints/{NNN}-ai-agent/blueprint.md 섹션 4.1, 3.12를 기반으로
 docs/tests/test-cases/sprint-{N}/ai-middleware-secret-test-cases.md에
 Gateway 미들웨어 (인증/컨텍스트/크레딧), 시크릿 관리 (AES-256-GCM),
 OAuth 플로우 (PKCE), 채널 웹훅 테스트 케이스를 작성한다. 코드 수정 없음."
 
-### 6.2 Implementation Prompt
+### 6.3 Implementation Prompt
 /feature-dev "docs/blueprints/{NNN}-ai-agent/blueprint.md Phase 6을 참조하여 구현:
 - withGatewayAuth (X-User-id, X-Workspace-id 등 헤더 파싱/검증)
 - withAiContext (워크스페이스 ACTIVE 검증, 로케일 결정)
@@ -437,13 +440,16 @@ OAuth 플로우 (PKCE), 채널 웹훅 테스트 케이스를 작성한다. 코�
 
 ## Feature 7: 스킬 시스템 + 대화 관리 (Phase 7)
 
-### 7.1 Test Case Prompt
+### 7.1 Design Prompt
+(Already completed — see docs/blueprints/{NNN}-ai-agent/blueprint.md 섹션 7)
+
+### 7.2 Test Case Prompt
 /feature-dev "docs/blueprints/{NNN}-ai-agent/blueprint.md 섹션 7을 기반으로
 docs/tests/test-cases/sprint-{N}/ai-skill-conv-test-cases.md에
 Skill Merger (GLOBAL+WORKSPACE+Agent), 스킬 분류기, 대화 CRUD,
 Compaction, 자동 제목 생성, 메모리 자동 추출 테스트 케이스를 작성한다. 코드 수정 없음."
 
-### 7.2 Implementation Prompt
+### 7.3 Implementation Prompt
 /feature-dev "docs/blueprints/{NNN}-ai-agent/blueprint.md Phase 7을 참조하여 구현:
 - Skill Merger (GLOBAL + WORKSPACE → Agent 매핑 필터 — 화이트리스트)
 - 스킬 분류기 (사용자 쿼리 → 스킬 카탈로그 매칭 → 자동 주입)
@@ -457,13 +463,16 @@ Compaction, 자동 제목 생성, 메모리 자동 추출 테스트 케이스를
 
 ## Feature 8: 통합 및 최적화 (Phase 8)
 
-### 8.1 Test Case Prompt
+### 8.1 Design Prompt
+(Already completed — see docs/blueprints/{NNN}-ai-agent/blueprint.md 섹션 5.6, 부록)
+
+### 8.2 Test Case Prompt
 /feature-dev "docs/blueprints/{NNN}-ai-agent/blueprint.md 섹션 5.6, 부록을 기반으로
 docs/tests/test-cases/sprint-{N}/ai-integration-test-cases.md에
 Anthropic Prompt Caching, Extended Thinking, 토큰 사용량 로깅,
 MCP 서버 스키마 캐싱, 크론 서비스, UI 액션 통합 테스트를 작성한다. 코드 수정 없음."
 
-### 8.2 Implementation Prompt
+### 8.3 Implementation Prompt
 /feature-dev "docs/blueprints/{NNN}-ai-agent/blueprint.md Phase 8을 참조하여 구현:
 - Anthropic Prompt Caching (cache_control on system messages)
 - Extended Thinking 모드
@@ -580,6 +589,8 @@ Step 3으로 진행합니다...
    - 시크릿 (TB_AI_WKSPC_SCRT, TB_AI_SYS_CRED, TH_AI_OAUTH_SESSION)
    - 채널 (TB_AI_CHNL_CNFG, TL_AI_CHNL_MSG_LOG)
    - 프로젝트 (TB_AI_PRJCT)
+   - 로그 (TL_AI_SCRT_ACCS_LOG, TL_AI_CHNL_MSG_LOG, TL_AI_MCP_SRVR_LOG)
+   - 제안 (TB_AI_SGGSTN_TMPL)
 5. **DB 마이그레이션** — pgvector 확장 설치 + 마이그레이션 파일 생성/실행
 6. **리소스 로더** — `resources/` 디렉토리에서 prompts/skills/plugins YAML 파싱 → 메모리 캐시
 7. **서버 초기화** — `instrumentation.ts`에서 리소스 로드 + PluginManager 초기화
@@ -901,7 +912,7 @@ Step 6(최종 보고)으로 진행합니다...
 | 산출물 | 경로 |
 |--------|------|
 | 블루프린트 | docs/blueprints/{NNN}-ai-agent/blueprint.md |
-| DB 설계 | docs/database/database-design.md (26개 테이블 추가) |
+| DB 설계 | docs/database/database-design.md (24개 테이블 추가) |
 | 스프린트 맵 | docs/sprints/sprint-{N}-ai-agent/prompt-map.md |
 | 프로그레스 | docs/sprints/sprint-{N}-ai-agent/progress.md |
 | 테스트 보고서 | docs/tests/test-reports/sprint-{N}/ai-agent-test-report.md |

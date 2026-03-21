@@ -1278,7 +1278,7 @@ app:
 
 ### Phase 1: 기반 인프라 (DB + LLM + 리소스)
 
-1. Drizzle ORM 설정 및 DB 스키마 정의 (26개 테이블)
+1. Drizzle ORM 설정 및 DB 스키마 정의 (24개 테이블)
 2. DB 마이그레이션 실행 (pgvector 확장 포함)
 3. 환경 변수 설정 (`.env.example`)
 4. 리소스 로더 (prompts, skills, plugins 파싱)
