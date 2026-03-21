@@ -257,7 +257,7 @@ NNN = (기존 최대 번호) + 1
 
 ### 생성된 파일
 - docs/blueprints/{NNN}-ai-agent/blueprint.md (AI 에이전트 모듈 설계 문서)
-- docs/database/database-design.md (DB 테이블 26개 추가)
+- docs/database/database-design.md (DB 테이블 24개 추가)
 
 ### 포함된 기능
 - AI 런타임 엔진 (Core Loop + 4중 안전장치)
@@ -299,7 +299,7 @@ AI 에이전트 플랫폼 모듈 전체 구축 — 멀티 프로바이더 LLM, S
 
 ### 1.2 DB Design Reflection Prompt
 /feature-dev "docs/blueprints/{NNN}-ai-agent/blueprint.md 섹션 3의 DDL을 기반으로
-docs/database/database-design.md에 AI 에이전트 모듈 테이블 26개를 추가/업데이트한다.
+docs/database/database-design.md에 AI 에이전트 모듈 테이블 24개를 추가/업데이트한다.
 ER 다이어그램과 FK 관계도 반영한다. pgvector 확장 설치도 포함. 코드 수정 없음."
 
 ### 1.3 Test Case Prompt
@@ -530,7 +530,7 @@ MCP 서버 스키마 캐싱, 크론 서비스, UI 액션 통합 테스트를 작
 | Timestamp | Event | File | Details |
 |-----------|-------|------|---------|
 | {TIMESTAMP} | blueprint | docs/blueprints/{NNN}-ai-agent/blueprint.md | AI 에이전트 모듈 블루프린트 생성 |
-| {TIMESTAMP} | db-design | docs/database/database-design.md | AI 에이전트 테이블 26개 추가 |
+| {TIMESTAMP} | db-design | docs/database/database-design.md | AI 에이전트 테이블 24개 추가 |
 <!-- ACTIVITY_LOG_END -->
 ```
 
@@ -544,7 +544,7 @@ MCP 서버 스키마 캐싱, 크론 서비스, UI 액션 통합 테스트를 작
 - docs/sprints/sprint-{N}-ai-agent/progress.md (프로그레스 트래커)
 
 ### 스프린트 구조
-- Feature 1: 기반 인프라 (DB 스키마 26개 + 리소스 로더)
+- Feature 1: 기반 인프라 (DB 스키마 24개 + 리소스 로더)
 - Feature 2: AI 런타임 코어 (LLM 클라이언트 + SSE + Core Loop + 안전장치)
 - Feature 3: 도구/플러그인 시스템 (PluginManager + 20+ 도구 + HITL)
 - Feature 4: 에이전트 설정 + 지식 베이스 (CRUD + RAG + 메모리)
