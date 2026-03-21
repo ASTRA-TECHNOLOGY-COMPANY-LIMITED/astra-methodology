@@ -83,7 +83,8 @@ AI 에이전트 모듈은 **인증 모듈**에 **의존**한다 (Gateway 미들�
 
 **워크스페이스 모듈 (필수)**:
 1. TB_COMM_WKSPC 테이블 존재 여부
-2. 워크스페이스 멤버십 검증 미들웨어 존재 여부
+2. TR_COMM_WKSPC_MBR 테이블 존재 여부
+3. 워크스페이스 멤버십/역할 검증 미들웨어 존재 여부
 
 **결제 모듈 (선택)**:
 1. 크레딧 기반 과금 사용 시 필요
@@ -345,13 +346,16 @@ Core Loop(도구 호출/HITL 중단/안전장치), Context Builder 테스트 케
 
 ## Feature 3: 도구 및 플러그인 시스템 (Phase 3)
 
-### 3.1 Test Case Prompt
+### 3.1 Design Prompt
+(Already completed — see docs/blueprints/{NNN}-ai-agent/blueprint.md 섹션 6)
+
+### 3.2 Test Case Prompt
 /feature-dev "docs/blueprints/{NNN}-ai-agent/blueprint.md 섹션 6을 기반으로
 docs/tests/test-cases/sprint-{N}/ai-tools-test-cases.md에
 PluginManager 초기화, 도구 해석/실행, HITL 이벤트/루프 중단,
 핵심 도구 (calculator, datetime, memory) 테스트 케이스를 작성한다. 코드 수정 없음."
 
-### 3.2 Implementation Prompt
+### 3.3 Implementation Prompt
 /feature-dev "docs/blueprints/{NNN}-ai-agent/blueprint.md Phase 3을 참조하여 구현:
 - Plugin Manager (싱글톤 — PLUGIN.md 로드, 핸들러 바인딩, ToolRegistry)
 - Handler Registry (도구 코드 → 핸들러 함수 매핑)
@@ -368,13 +372,16 @@ PluginManager 초기화, 도구 해석/실행, HITL 이벤트/루프 중단,
 
 ## Feature 4: 에이전트 설정 + 지식 베이스 (Phase 4)
 
-### 4.1 Test Case Prompt
+### 4.1 Design Prompt
+(Already completed — see docs/blueprints/{NNN}-ai-agent/blueprint.md 섹션 4.2, 5.4)
+
+### 4.2 Test Case Prompt
 /feature-dev "docs/blueprints/{NNN}-ai-agent/blueprint.md 섹션 4.2를 기반으로
 docs/tests/test-cases/sprint-{N}/ai-config-kb-test-cases.md에
 에이전트 CRUD, 스킬 매핑, 지식 베이스 CRUD, 문서 업로드/청크,
 RAG 검색 (SIMPLE/VAGUE/COMPLEX), 메모리 하이브리드 랭킹 테스트 케이스를 작성한다. 코드 수정 없음."
 
-### 4.2 Implementation Prompt
+### 4.3 Implementation Prompt
 /feature-dev "docs/blueprints/{NNN}-ai-agent/blueprint.md Phase 4를 참조하여 구현:
 - 에이전트 CRUD API (카테고리, 에이전트 설정, 스킬 매핑, MCP 서버 매핑)
 - 지식 베이스 CRUD + 문서 업로드 (multipart) + 청크 생성 (pgvector 임베딩)
@@ -389,13 +396,16 @@ RAG 검색 (SIMPLE/VAGUE/COMPLEX), 메모리 하이브리드 랭킹 테스트 �
 
 ## Feature 5: 모델 라우팅 + 서브에이전트 (Phase 5)
 
-### 5.1 Test Case Prompt
+### 5.1 Design Prompt
+(Already completed — see docs/blueprints/{NNN}-ai-agent/blueprint.md 섹션 5.5~5.7)
+
+### 5.2 Test Case Prompt
 /feature-dev "docs/blueprints/{NNN}-ai-agent/blueprint.md 섹션 5.5~5.7을 기반으로
 docs/tests/test-cases/sprint-{N}/ai-routing-subagent-test-cases.md에
 모델 라우팅 (복잡도 분류), 폴백 (프로바이더 전환), 에러 분류/재시도,
 서브에이전트 (스폰/관리/킬, 깊이 제한) 테스트 케이스를 작성한다. 코드 수정 없음."
 
-### 5.2 Implementation Prompt
+### 5.3 Implementation Prompt
 /feature-dev "docs/blueprints/{NNN}-ai-agent/blueprint.md Phase 5를 참조하여 구현:
 - 모델 라우터 (classifyQueryComplexity → SIMPLE/VAGUE/COMPLEX → 모델 선택)
 - Skill-Triggered 모델 업그레이드 (skill_get 호출 시 COMPLEX 모델로)
