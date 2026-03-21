@@ -230,7 +230,7 @@ docs/manual/{feature-name}/
 ├── assets/
 ├── screenshots/
 │   ├── desktop/
-│   ├── tablet/    (RESPONSIVE_MODE >= 2일 때)
+│   ├── tablet/    (RESPONSIVE_MODE >= 3일 때)
 │   └── mobile/    (RESPONSIVE_MODE >= 2일 때)
 └── shared/
 ```
@@ -283,7 +283,7 @@ docs/manual/{feature-name}/
    - 스크린샷 페이지 넘김 방지
    - 링크 URL 텍스트 출력
 
-4. **`assets/manual-search.css`** — 검색 오버레이 전용 스타일
+> **참고**: 검색 오버레이 스타일은 `manual-components.css`에 포함되어 있다 (별도 파일 불필요).
 
 #### E. JavaScript 파일 생성
 
@@ -308,7 +308,7 @@ docs/manual/{feature-name}/
 
 ```
 ✅ 공통 리소스 생성 완료
-   - CSS: manual-base.css, manual-components.css, manual-print.css, manual-search.css
+   - CSS: manual-base.css, manual-components.css, manual-print.css
    - JS: nav.js, search.js, theme.js
    - 디자인 토큰: tokens.css
 ```
@@ -337,6 +337,7 @@ docs/manual/{feature-name}/
 
 3. **하이라이트 CSS 주입** — `evaluate_script`로 `.manual-highlight` 클래스를 대상 요소에 추가:
    - 스타일: `outline: 3px solid #2563EB`, `outline-offset: 2px`, `box-shadow: 0 0 0 6px rgba(37,99,235,0.15)`
+   - (의도적 예외: 대상 서비스 DOM에는 매뉴얼 디자인 토큰이 없으므로 하드코딩 사용. 서비스 색상과 충돌 시 `#FF3B30` 등 대비 색상으로 대체)
    - `<style id="manual-highlight-style">`을 head에 주입 후 `querySelector('{target-selector}').classList.add('manual-highlight')`
 
 4. **단계 번호 오버레이 주입** — `evaluate_script`로 대상 요소 우상단에 원형 배지 추가:

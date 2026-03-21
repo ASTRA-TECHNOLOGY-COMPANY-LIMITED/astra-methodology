@@ -308,6 +308,42 @@ body {
   font-size: var(--font-size-xs, 0.75rem);
   color: var(--color-text-tertiary, #94a3b8);
 }
+
+/* 푸터 */
+.manual-footer {
+  text-align: center;
+  padding: var(--spacing-8, 2rem) var(--spacing-4, 1rem);
+  margin-top: var(--spacing-12, 3rem);
+  border-top: 1px solid var(--color-border-default, #e2e8f0);
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-tertiary, #94a3b8);
+}
+
+/* 대형 검색 입력란 (인덱스 페이지) */
+.search-input-large {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  display: block;
+  padding: var(--spacing-4, 1rem) var(--spacing-5, 1.25rem);
+  border: 1px solid var(--color-border-default, #e2e8f0);
+  border-radius: var(--radius-lg, 0.5rem);
+  font-size: var(--font-size-lg, 1.125rem);
+  outline: none;
+  background: var(--color-bg-primary, #ffffff);
+  color: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.search-input-large:focus {
+  border-color: var(--color-primary, #2563eb);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+[data-theme="dark"] .search-input-large {
+  background: var(--color-bg-secondary-dark, #1e293b);
+  border-color: var(--color-border-default-dark, #334155);
+}
 ```
 
 ## 2. manual-components.css — 컴포넌트

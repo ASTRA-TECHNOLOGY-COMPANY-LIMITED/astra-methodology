@@ -153,6 +153,7 @@
   <link rel="stylesheet" href="assets/tokens.css">
   <link rel="stylesheet" href="assets/manual-base.css">
   <link rel="stylesheet" href="assets/manual-components.css">
+  <link rel="stylesheet" href="assets/manual-print.css" media="print">
 </head>
 <body>
   <header class="manual-header">
