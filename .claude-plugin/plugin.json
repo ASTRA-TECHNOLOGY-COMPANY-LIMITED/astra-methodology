@@ -1,7 +1,7 @@
 {
   "name": "astra-methodology",
-  "version": "2.17.0",
-  "description": "ASTRA(AI-augmented Sprint Through Rapid Assembly) methodology plugin. Sprint 0 project initialization, coding convention enforcement (Java/TypeScript/React Native/Python/CSS/SCSS), Korean public data standard, international code standards (ISO 3166-1/2, ITU-T E.164), naming validation, quality gates, and Slack integration.",
+  "version": "2.18.0",
+  "description": "ASTRA(AI-augmented Sprint Through Rapid Assembly) methodology plugin. Sprint 0 project initialization, coding convention enforcement (Java/TypeScript/React Native/Python/CSS/SCSS), Korean public data standard, international code standards (ISO 3166-1/2, ITU-T E.164), naming validation, quality gates, Slack integration, and AI agent platform auto-builder.",
   "author": {
     "name": "Zeans.L",
     "email": "zeans@astravision.co.kr"
@@ -39,6 +39,10 @@
     "iso-3166",
     "code-standard",
     "slack",
-    "mcp-server"
+    "mcp-server",
+    "ai-agent",
+    "llm",
+    "sse",
+    "rag"
   ]
 }
