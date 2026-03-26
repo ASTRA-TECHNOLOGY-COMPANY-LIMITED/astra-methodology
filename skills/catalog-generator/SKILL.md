@@ -11,7 +11,7 @@ Analyzes product data (CSV/JSON/text/URL) and produces a production-grade HTML c
 
 **Core Principles**:
 - **Fully autonomous from input to final deliverable** — all decisions (design tone, layout, copy, product placement) are made by AI based on product characteristics, with zero user interaction
-- **Expert know-how applied** — based on `$CLAUDE_PLUGIN_ROOT/docs/cadalog/catalog-expert-workflow.md`
+- **Expert know-how applied** — based on `$CLAUDE_PLUGIN_ROOT/docs/catalog/catalog-expert-workflow.md`
 - **Built-in sales strategies** — cross-selling, upselling, price anchoring, and CTA placement applied automatically
 - **Professional copywriting techniques** — benefit-driven, sensory language, storytelling, social proof
 - **`/frontend-design` skill integration** — polished, production-grade design (prevents generic AI aesthetics)
@@ -90,7 +90,7 @@ Normalize collected data into the internal standard structure:
 
 Read the following reference files to load expert know-how into context:
 
-1. `$CLAUDE_PLUGIN_ROOT/docs/cadalog/catalog-expert-workflow.md` — Full workflow & know-how
+1. `$CLAUDE_PLUGIN_ROOT/docs/catalog/catalog-expert-workflow.md` — Full workflow & know-how
 2. `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-html-templates.md` — HTML structure templates
 3. `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-css-template.md` — CSS component templates
 
@@ -425,7 +425,7 @@ Save generated images to `images/lifestyle/`.
 
 ### Step 3: Copywriting — Product Descriptions & Headlines
 
-Apply Section 5 (Copywriting Know-How) from `$CLAUDE_PLUGIN_ROOT/docs/cadalog/catalog-expert-workflow.md` to generate all text content.
+Apply Section 5 (Copywriting Know-How) from `$CLAUDE_PLUGIN_ROOT/docs/catalog/catalog-expert-workflow.md` to generate all text content.
 
 #### A. Catalog Headline & Tagline
 

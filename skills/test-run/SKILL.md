@@ -269,25 +269,25 @@ Shut down the server process after testing is complete:
 
 Confirm with the user before shutting down the server.
 
-### Step 10: PR Review & Merge 실행
+### Step 10: PR Review & Merge
 
-테스트 완료 후 자동으로 `/pr-merge` 워크플로우를 실행한다.
+After testing is complete, automatically trigger the `/pr-merge` workflow.
 
-1. **AskUserQuestion**으로 사용자에게 PR 머지 진행 여부를 확인한다:
+1. Use **AskUserQuestion** to confirm with the user whether to proceed with PR merge:
 
-> **테스트가 완료되었습니다. PR 리뷰 & 머지를 진행할까요?**
-> - 예 (기본값) — `/pr-merge` 실행
-> - 아니오 — 워크플로우 종료
+> **Testing is complete. Would you like to proceed with PR Review & Merge?**
+> - Yes (default) — Run `/pr-merge`
+> - No — End workflow
 
-2. 사용자가 승인하면 Skill tool로 `pr-merge`를 호출한다:
+2. If the user approves, invoke `pr-merge` using the Skill tool:
 
 ```
 Use Skill tool: invoke "pr-merge"
 ```
 
-> **참고**: `/pr-merge`에 전달할 인자가 필요한 경우 (예: `--no-review`, `--draft`, `--staging`), 사용자에게 추가 옵션을 물어본다.
+> **Note**: If additional arguments are needed for `/pr-merge` (e.g., `--no-review`, `--draft`, `--staging`), ask the user for options.
 
-3. 사용자가 거부하면 테스트 결과 리포트 위치만 안내하고 종료한다.
+3. If the user declines, provide the test report location and end the workflow.
 
 ## Quick Run Examples
 
