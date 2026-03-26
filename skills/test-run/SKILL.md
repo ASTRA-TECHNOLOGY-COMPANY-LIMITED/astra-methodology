@@ -2,7 +2,7 @@
 name: test-run
 description: "Launches the server and performs integration testing with Chrome MCP. Automatically conducts server log monitoring, page verification, API behavior checks, and performance measurement."
 argument-hint: "[target URL or scenario]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__fill_form, mcp__chrome-devtools__press_key, mcp__chrome-devtools__hover, mcp__chrome-devtools__list_console_messages, mcp__chrome-devtools__get_console_message, mcp__chrome-devtools__list_network_requests, mcp__chrome-devtools__get_network_request, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__emulate, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__new_page, mcp__chrome-devtools__handle_dialog, mcp__chrome-devtools__performance_start_trace, mcp__chrome-devtools__performance_stop_trace, mcp__chrome-devtools__performance_analyze_insight
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill, AskUserQuestion, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__fill_form, mcp__chrome-devtools__press_key, mcp__chrome-devtools__hover, mcp__chrome-devtools__list_console_messages, mcp__chrome-devtools__get_console_message, mcp__chrome-devtools__list_network_requests, mcp__chrome-devtools__get_network_request, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__emulate, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__new_page, mcp__chrome-devtools__handle_dialog, mcp__chrome-devtools__performance_start_trace, mcp__chrome-devtools__performance_stop_trace, mcp__chrome-devtools__performance_analyze_insight
 ---
 
 # ASTRA Integration Testing
@@ -268,6 +268,26 @@ Shut down the server process after testing is complete:
 ```
 
 Confirm with the user before shutting down the server.
+
+### Step 10: PR Review & Merge
+
+After testing is complete, automatically trigger the `/pr-merge` workflow.
+
+1. Use **AskUserQuestion** to confirm with the user whether to proceed with PR merge:
+
+> **Testing is complete. Would you like to proceed with PR Review & Merge?**
+> - Yes (default) — Run `/pr-merge`
+> - No — End workflow
+
+2. If the user approves, invoke `pr-merge` using the Skill tool:
+
+```
+Use Skill tool: invoke "pr-merge"
+```
+
+> **Note**: If additional arguments are needed for `/pr-merge` (e.g., `--no-review`, `--draft`, `--staging`), ask the user for options.
+
+3. If the user declines, provide the test report location and end the workflow.
 
 ## Quick Run Examples
 
