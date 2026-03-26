@@ -1,5 +1,18 @@
 {
   "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/enforce-work-summary.sh",
+            "timeout": 5,
+            "statusMessage": "작업 설명 확인 중..."
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "matcher": "",

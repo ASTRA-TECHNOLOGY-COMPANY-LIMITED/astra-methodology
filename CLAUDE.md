@@ -114,11 +114,16 @@ Data files: `iso_3166_1_countries.json` (249 countries), `iso_3166_2_regions.jso
 
 ### Hooks Architecture
 
-`hooks/hooks.json` defines PostToolUse hooks that run automatically after Write/Edit operations:
+`hooks/hooks.json` defines hooks that run automatically:
+
+**Stop hooks** (run when Claude finishes responding):
+1. **enforce-work-summary.sh** — ensures Claude provides a work summary in the user's language after completing tasks. Uses `decision: "block"` with `reason` to make Claude continue if summary is missing. Checks `stop_hook_active` to prevent infinite loops. Skips short responses (<80 words) and question-only responses.
+
+**PostToolUse hooks** (run after Write/Edit operations):
 1. **check-forbidden-words.sh** — scans DB-related files for forbidden words from the standard dictionary
 2. **validate-naming.sh** — checks table name prefixes in SQL, Java (@Table), TypeScript (@Entity), Python (__tablename__)
 3. **track-sprint-progress.sh** — detects sprint-related file events (blueprints, DB design, test cases, implementation, test reports) and appends activity log entries to the sprint progress tracker
-4. All hooks are non-blocking (exit 0) — they emit warnings only
+4. All PostToolUse hooks are non-blocking (exit 0) — they emit warnings only
 
 ### Auth Module Auto-Builder
 
