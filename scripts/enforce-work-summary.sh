@@ -39,7 +39,7 @@ MESSAGE_LOWER=$(echo "$MESSAGE" | tr '[:upper:]' '[:lower:]')
 if echo "$MESSAGE" | grep -qE '(완료했습니다|수행했습니다|작업 요약|작업 설명|변경 사항|수정 사항|작업 내용|처리했습니다|적용했습니다|구현했습니다|생성했습니다|업데이트했습니다|추가했습니다|삭제했습니다|리팩토링했습니다|수정했습니다)'; then
   exit 0
 fi
-if echo "$MESSAGE_LOWER" | grep -qE "(summary|here['']s what|completed|changes made|what i did|in summary|to summarize|accomplished|implemented|created|updated|modified|refactored)"; then
+if echo "$MESSAGE_LOWER" | grep -qE "(summary|here['''']s what|completed|changes made|what i did|in summary|to summarize|accomplished|implemented|created|updated|modified|refactored)"; then
   exit 0
 fi
 if echo "$MESSAGE" | grep -qE '(完了しました|変更内容|作業内容|実装しました|更新しました|修正しました)'; then
