@@ -1,0 +1,1735 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code 공식 플러그인 가이드</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --primary: #6B4CE6;
+    --primary-light: #8B6FF0;
+    --primary-dark: #5038B8;
+    --primary-bg: #F5F2FF;
+    --accent: #E8563F;
+    --accent-light: #FF7A63;
+    --surface: #FFFFFF;
+    --surface-alt: #F8F9FC;
+    --border: #E2E5EE;
+    --border-light: #F0F1F5;
+    --text: #1A1D26;
+    --text-secondary: #5A5F72;
+    --text-muted: #9096A8;
+    --code-bg: #1E1E2E;
+    --code-text: #CDD6F4;
+    --success: #2EAF6B;
+    --warning: #E5A822;
+    --info: #3B82F6;
+    --tag-blue: #DBEAFE;
+    --tag-blue-text: #1E40AF;
+    --tag-purple: #EDE9FE;
+    --tag-purple-text: #5B21B6;
+    --tag-green: #DCFCE7;
+    --tag-green-text: #166534;
+    --tag-orange: #FFF7ED;
+    --tag-orange-text: #9A3412;
+    --tag-pink: #FCE7F3;
+    --tag-pink-text: #9D174D;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  @page {
+    size: A4;
+    margin: 20mm 18mm 25mm 18mm;
+  }
+
+  body {
+    font-family: 'Noto Sans KR', 'Inter', -apple-system, sans-serif;
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 9.5pt;
+    background: var(--surface);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ── Cover Page ── */
+  .cover {
+    page-break-after: always;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #0F0A1E 0%, #1A1040 30%, #2D1B69 60%, #1A1040 100%);
+    color: white;
+    padding: 60px 40px;
+  }
+
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 30% 50%, rgba(107, 76, 230, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 30%, rgba(232, 86, 63, 0.1) 0%, transparent 40%),
+                radial-gradient(ellipse at 50% 80%, rgba(107, 76, 230, 0.08) 0%, transparent 45%);
+    pointer-events: none;
+  }
+
+  .cover-badge {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(107, 76, 230, 0.2);
+    border: 1px solid rgba(107, 76, 230, 0.4);
+    border-radius: 24px;
+    padding: 8px 20px;
+    font-size: 11pt;
+    font-weight: 500;
+    color: #C4B5FD;
+    margin-bottom: 40px;
+    letter-spacing: 0.02em;
+  }
+
+  .cover-icon {
+    width: 100px;
+    height: 100px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 36px;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 20px 60px rgba(107, 76, 230, 0.4);
+  }
+
+  .cover-icon svg {
+    width: 52px;
+    height: 52px;
+    fill: white;
+  }
+
+  .cover h1 {
+    position: relative;
+    z-index: 1;
+    font-size: 32pt;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #FFFFFF 0%, #C4B5FD 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .cover-subtitle {
+    position: relative;
+    z-index: 1;
+    font-size: 14pt;
+    color: #A5A0C0;
+    font-weight: 400;
+    margin-bottom: 48px;
+    line-height: 1.6;
+  }
+
+  .cover-meta {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    gap: 32px;
+    font-size: 9.5pt;
+    color: #8B85A8;
+  }
+
+  .cover-meta span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .cover-stats {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    gap: 40px;
+    margin-top: 48px;
+    padding-top: 40px;
+    border-top: 1px solid rgba(107, 76, 230, 0.2);
+  }
+
+  .cover-stat {
+    text-align: center;
+  }
+
+  .cover-stat-number {
+    font-size: 28pt;
+    font-weight: 800;
+    color: #C4B5FD;
+    line-height: 1;
+  }
+
+  .cover-stat-label {
+    font-size: 9pt;
+    color: #8B85A8;
+    margin-top: 4px;
+  }
+
+  /* ── TOC ── */
+  .toc-page {
+    page-break-after: always;
+    padding: 40px 0;
+  }
+
+  .toc-title {
+    font-size: 20pt;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .toc-subtitle {
+    font-size: 10pt;
+    color: var(--text-muted);
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid var(--primary);
+  }
+
+  .toc-section {
+    margin-bottom: 20px;
+  }
+
+  .toc-section-title {
+    font-size: 10pt;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .toc-section-title::before {
+    content: '';
+    width: 4px;
+    height: 14px;
+    background: var(--primary);
+    border-radius: 2px;
+  }
+
+  .toc-items {
+    list-style: none;
+    padding-left: 12px;
+  }
+
+  .toc-items li {
+    padding: 4px 0;
+    font-size: 9.5pt;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .toc-items li::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  .toc-items .toc-sub {
+    padding-left: 16px;
+    font-size: 8.5pt;
+    color: var(--text-muted);
+  }
+
+  /* ── Content Sections ── */
+  .section {
+    margin-bottom: 28px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--primary);
+  }
+
+  .section-number {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14pt;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .section-header h2 {
+    font-size: 16pt;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  .section-desc {
+    font-size: 9pt;
+    color: var(--text-muted);
+  }
+
+  /* ── Category Header ── */
+  .category-header {
+    background: var(--surface-alt);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 24px 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .category-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .category-icon.dev { background: var(--tag-blue); color: var(--tag-blue-text); }
+  .category-icon.quality { background: var(--tag-green); color: var(--tag-green-text); }
+  .category-icon.plugin { background: var(--tag-purple); color: var(--tag-purple-text); }
+  .category-icon.lsp { background: var(--tag-orange); color: var(--tag-orange-text); }
+  .category-icon.style { background: var(--tag-pink); color: var(--tag-pink-text); }
+  .category-icon.external { background: #E0F2FE; color: #0369A1; }
+  .category-icon.eng { background: #FEF3C7; color: #92400E; }
+  .category-icon.product { background: #DBEAFE; color: #1E40AF; }
+  .category-icon.design { background: #FCE7F3; color: #9D174D; }
+  .category-icon.data { background: #DCFCE7; color: #166534; }
+  .category-icon.sales { background: #FFF7ED; color: #9A3412; }
+  .category-icon.ops { background: #F3E8FF; color: #7C3AED; }
+  .category-icon.legal { background: #E0E7FF; color: #3730A3; }
+  .category-icon.productivity { background: #FEF9C3; color: #854D0E; }
+
+  .category-header h3 {
+    font-size: 11pt;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  /* ── Plugin Card ── */
+  .plugin-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    background: var(--surface);
+    page-break-inside: avoid;
+  }
+
+  .plugin-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .plugin-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11pt;
+    font-weight: 600;
+    color: var(--primary-dark);
+  }
+
+  .plugin-desc {
+    font-size: 9pt;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    line-height: 1.6;
+  }
+
+  .install-cmd {
+    background: var(--code-bg);
+    color: var(--code-text);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7.5pt;
+    margin-bottom: 12px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .install-cmd .prompt { color: #89B4FA; }
+  .install-cmd .cmd { color: #A6E3A1; }
+
+  /* ── Command Table ── */
+  .cmd-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8.5pt;
+    margin-bottom: 10px;
+  }
+
+  .cmd-table th {
+    background: var(--surface-alt);
+    font-weight: 600;
+    text-align: left;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .cmd-table td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: top;
+  }
+
+  .cmd-table td:first-child {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--primary);
+    font-weight: 500;
+    font-size: 8pt;
+    white-space: nowrap;
+  }
+
+  /* ── Feature List ── */
+  .features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .feature-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 7.5pt;
+    font-weight: 500;
+  }
+
+  .feature-tag.blue { background: var(--tag-blue); color: var(--tag-blue-text); }
+  .feature-tag.purple { background: var(--tag-purple); color: var(--tag-purple-text); }
+  .feature-tag.green { background: var(--tag-green); color: var(--tag-green-text); }
+  .feature-tag.orange { background: var(--tag-orange); color: var(--tag-orange-text); }
+
+  /* ── Agent/Workflow Box ── */
+  .info-box {
+    background: var(--surface-alt);
+    border-left: 3px solid var(--primary);
+    border-radius: 0 6px 6px 0;
+    padding: 10px 14px;
+    margin: 10px 0;
+    font-size: 8.5pt;
+  }
+
+  .info-box-title {
+    font-weight: 600;
+    color: var(--primary-dark);
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+  }
+
+  .info-box ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .info-box li {
+    padding: 2px 0;
+    color: var(--text-secondary);
+  }
+
+  .info-box li::before {
+    content: '\2022';
+    color: var(--primary);
+    font-weight: bold;
+    margin-right: 6px;
+  }
+
+  /* ── Workflow Steps ── */
+  .workflow-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 8px 0;
+    align-items: center;
+  }
+
+  .workflow-step {
+    background: var(--primary-bg);
+    color: var(--primary-dark);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 7.5pt;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .workflow-step .step-num {
+    background: var(--primary);
+    color: white;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 7pt;
+    font-weight: 700;
+  }
+
+  .workflow-arrow {
+    color: var(--text-muted);
+    font-size: 8pt;
+  }
+
+  /* ── Integration Tags ── */
+  .integrations {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .integrations-label {
+    font-size: 7.5pt;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-right: 4px;
+  }
+
+  .integration-tag {
+    background: #F1F5F9;
+    color: #475569;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 7pt;
+    font-weight: 500;
+  }
+
+  /* ── CLI Commands Box ── */
+  .cli-box {
+    background: var(--code-bg);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8pt;
+    color: var(--code-text);
+    line-height: 2;
+  }
+
+  .cli-box .comment { color: #6C7086; }
+  .cli-box .cmd { color: #A6E3A1; }
+  .cli-box .flag { color: #89B4FA; }
+  .cli-box .arg { color: #F9E2AF; }
+
+  /* ── Marketplace Table ── */
+  .marketplace-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8.5pt;
+    margin: 12px 0;
+  }
+
+  .marketplace-table th {
+    background: var(--primary);
+    color: white;
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 8pt;
+  }
+
+  .marketplace-table th:first-child { border-radius: 6px 0 0 0; }
+  .marketplace-table th:last-child { border-radius: 0 6px 0 0; }
+
+  .marketplace-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .marketplace-table tr:nth-child(even) td {
+    background: var(--surface-alt);
+  }
+
+  .marketplace-table td:first-child {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8pt;
+    color: var(--primary-dark);
+    font-weight: 500;
+  }
+
+  /* ── Summary Section ── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+
+  .summary-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    background: var(--surface);
+  }
+
+  .summary-card h4 {
+    font-size: 9pt;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 10px;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 8.5pt;
+  }
+
+  .stat-row .stat-label { color: var(--text-secondary); }
+  .stat-row .stat-value { font-weight: 600; color: var(--text); }
+
+  .stat-bar {
+    height: 6px;
+    background: var(--border-light);
+    border-radius: 3px;
+    margin-top: 2px;
+    overflow: hidden;
+  }
+
+  .stat-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+  }
+
+  /* ── Uninstalled list ── */
+  .uninstalled-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 8px 0;
+  }
+
+  .uninstalled-tag {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--surface-alt);
+    color: var(--text-muted);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 7pt;
+    border: 1px solid var(--border-light);
+  }
+
+  /* ── Note Box ── */
+  .note-box {
+    background: linear-gradient(135deg, var(--primary-bg) 0%, #EDE9FE 100%);
+    border: 1px solid rgba(107, 76, 230, 0.15);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 8.5pt;
+    color: var(--primary-dark);
+    line-height: 1.6;
+  }
+
+  .note-box strong {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── Footer ── */
+  .page-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 8px 18mm;
+    font-size: 7pt;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid var(--border-light);
+  }
+
+  /* ── Page break helpers ── */
+  .page-break { page-break-before: always; }
+  .avoid-break { page-break-inside: avoid; }
+
+  @media print {
+    body { font-size: 9.5pt; }
+    .cover { min-height: 100vh; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ COVER PAGE ═══════════════════ -->
+<div class="cover">
+  <div class="cover-badge">Anthropic Official Reference</div>
+  <div class="cover-icon">
+    <svg viewBox="0 0 24 24"><path d="M13.5 2c-5.288 0-9.649 3.914-10.377 9h-3.123l4 5.917 4-5.917h-2.847c.711-3.972 4.174-7 8.347-7 4.687 0 8.5 3.813 8.5 8.5s-3.813 8.5-8.5 8.5c-3.015 0-5.662-1.583-7.159-3.948l-1.696 1.11c1.871 2.94 5.164 4.838 8.855 4.838 5.79 0 10.5-4.71 10.5-10.5s-4.71-10.5-10.5-10.5z"/></svg>
+  </div>
+  <h1>Claude Code<br>공식 플러그인 가이드</h1>
+  <div class="cover-subtitle">
+    Anthropic 공식 플러그인 마켓플레이스 완벽 레퍼런스<br>
+    설치, 명령어, 활용법, 연동 도구 총정리
+  </div>
+  <div class="cover-meta">
+    <span>2026-03-27</span>
+    <span>macOS Darwin 25.3.0</span>
+    <span>v1.0</span>
+  </div>
+  <div class="cover-stats">
+    <div class="cover-stat">
+      <div class="cover-stat-number">64</div>
+      <div class="cover-stat-label">전체 플러그인</div>
+    </div>
+    <div class="cover-stat">
+      <div class="cover-stat-number">35</div>
+      <div class="cover-stat-label">설치 완료</div>
+    </div>
+    <div class="cover-stat">
+      <div class="cover-stat-number">14</div>
+      <div class="cover-stat-label">카테고리</div>
+    </div>
+    <div class="cover-stat">
+      <div class="cover-stat-number">2</div>
+      <div class="cover-stat-label">마켓플레이스</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ TABLE OF CONTENTS ═══════════════════ -->
+<div class="toc-page">
+  <div class="toc-title">목차</div>
+  <div class="toc-subtitle">Table of Contents</div>
+
+  <div class="toc-section">
+    <div class="toc-section-title">시작하기</div>
+    <ul class="toc-items">
+      <li>플러그인 관리 명령어 (설치, 제거, 업데이트)</li>
+      <li>마켓플레이스 목록</li>
+    </ul>
+  </div>
+
+  <div class="toc-section">
+    <div class="toc-section-title">공식 플러그인 (claude-plugins-official)</div>
+    <ul class="toc-items">
+      <li>개발 워크플로우 — commit-commands, feature-dev, frontend-design, ralph-loop</li>
+      <li>코드 품질 — code-review, pr-review-toolkit, code-simplifier, security-guidance</li>
+      <li>플러그인/스킬 개발 — plugin-dev, skill-creator, mcp-server-dev, claude-code-setup, claude-md-management, hookify</li>
+      <li>LSP — typescript-lsp, jdtls-lsp, pyright-lsp</li>
+      <li>출력 스타일 — learning-output-style</li>
+      <li>외부 연동 — context7, telegram</li>
+    </ul>
+  </div>
+
+  <div class="toc-section">
+    <div class="toc-section-title">Knowledge Work 플러그인 (knowledge-work-plugins)</div>
+    <ul class="toc-items">
+      <li>엔지니어링 — engineering</li>
+      <li>제품/프로젝트 관리 — product-management</li>
+      <li>디자인 — design</li>
+      <li>데이터 분석 — data, enterprise-search</li>
+      <li>영업/마케팅 — sales, marketing</li>
+      <li>비즈니스 운영 — operations, customer-support</li>
+      <li>법무/재무/인사 — legal, finance, human-resources</li>
+      <li>생산성 — productivity</li>
+    </ul>
+  </div>
+
+  <div class="toc-section">
+    <div class="toc-section-title">부록</div>
+    <ul class="toc-items">
+      <li>설치 현황 요약 (마켓플레이스별, 카테고리별)</li>
+      <li>미설치 플러그인 목록</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════ SECTION 1: CLI COMMANDS ═══════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number">1</div>
+    <div>
+      <h2>플러그인 관리 명령어</h2>
+      <div class="section-desc">설치, 제거, 업데이트를 위한 CLI 명령어</div>
+    </div>
+  </div>
+
+  <div class="cli-box">
+    <span class="comment"># 설치된 플러그인 목록 확인</span><br>
+    <span class="cmd">claude plugins list</span><br><br>
+    <span class="comment"># 플러그인 설치 (전역)</span><br>
+    <span class="cmd">claude plugin install</span> <span class="arg">&lt;plugin-name&gt;@&lt;marketplace&gt;</span> <span class="flag">-s user</span><br><br>
+    <span class="comment"># 플러그인 설치 (프로젝트 범위)</span><br>
+    <span class="cmd">claude plugin install</span> <span class="arg">&lt;plugin-name&gt;@&lt;marketplace&gt;</span> <span class="flag">-s project</span><br><br>
+    <span class="comment"># 플러그인 제거</span><br>
+    <span class="cmd">claude plugin uninstall</span> <span class="arg">&lt;plugin-name&gt;@&lt;marketplace&gt;</span><br><br>
+    <span class="comment"># 플러그인 업데이트</span><br>
+    <span class="cmd">claude plugins update</span>
+  </div>
+
+  <h3 style="font-size: 10pt; font-weight: 600; margin: 16px 0 8px; color: var(--text);">마켓플레이스 목록</h3>
+  <table class="marketplace-table">
+    <thead>
+      <tr><th>마켓플레이스</th><th>소스</th><th>설명</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>claude-plugins-official</td><td>anthropics/claude-plugins-official</td><td>Anthropic 공식 개발 도구</td></tr>
+      <tr><td>knowledge-work-plugins</td><td>anthropics/knowledge-work-plugins</td><td>Anthropic Knowledge Work 업무 도구</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════ SECTION 2: OFFICIAL PLUGINS ═══════════════════ -->
+<div class="section page-break">
+  <div class="section-header">
+    <div class="section-number">2</div>
+    <div>
+      <h2>공식 플러그인</h2>
+      <div class="section-desc">claude-plugins-official 마켓플레이스</div>
+    </div>
+  </div>
+
+  <!-- ── 개발 워크플로우 ── -->
+  <div class="category-header">
+    <div class="category-icon dev">&#9881;</div>
+    <h3>개발 워크플로우</h3>
+  </div>
+
+  <!-- commit-commands -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">commit-commands</div>
+    </div>
+    <div class="plugin-desc">Git 워크플로우를 간소화하는 커밋/푸시/PR 명령어 모음</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install commit-commands@claude-plugins-official -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/commit</td><td>Git 커밋 생성 (변경사항 분석 후 커밋 메시지 자동 작성)</td></tr>
+        <tr><td>/commit-push-pr</td><td>커밋 + 푸시 + PR 생성을 한번에 실행</td></tr>
+        <tr><td>/clean_gone</td><td>리모트에서 삭제된 로컬 브랜치 일괄 정리</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- feature-dev -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">feature-dev</div>
+    </div>
+    <div class="plugin-desc">기능 개발의 전체 라이프사이클을 7단계로 가이드하는 체계적 개발 워크플로우</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install feature-dev@claude-plugins-official -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/feature-dev</td><td>7단계 기능 개발 워크플로우 실행</td></tr>
+      </tbody>
+    </table>
+    <div class="workflow-steps">
+      <div class="workflow-step"><span class="step-num">1</span> Discovery</div>
+      <span class="workflow-arrow">&#8594;</span>
+      <div class="workflow-step"><span class="step-num">2</span> Exploration</div>
+      <span class="workflow-arrow">&#8594;</span>
+      <div class="workflow-step"><span class="step-num">3</span> Questions</div>
+      <span class="workflow-arrow">&#8594;</span>
+      <div class="workflow-step"><span class="step-num">4</span> Architecture</div>
+      <span class="workflow-arrow">&#8594;</span>
+      <div class="workflow-step"><span class="step-num">5</span> Implement</div>
+      <span class="workflow-arrow">&#8594;</span>
+      <div class="workflow-step"><span class="step-num">6</span> Review</div>
+      <span class="workflow-arrow">&#8594;</span>
+      <div class="workflow-step"><span class="step-num">7</span> Summary</div>
+    </div>
+    <div class="info-box">
+      <div class="info-box-title">전용 에이전트</div>
+      <ul>
+        <li><strong>code-explorer</strong> — 코드베이스 깊이 분석 (실행 경로 추적, 아키텍처 매핑)</li>
+        <li><strong>code-architect</strong> — 아키텍처 설계 (파일 구조, 컴포넌트, 데이터 플로우)</li>
+        <li><strong>code-reviewer</strong> — 버그, 보안, 품질, 컨벤션 리뷰</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- frontend-design -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">frontend-design</div>
+    </div>
+    <div class="plugin-desc">프로덕션 수준의 고품질 프론트엔드 UI를 생성하는 디자인 스킬. 제네릭 AI 미학을 회피하고 독창적인 디자인 결과물 생성.</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install frontend-design@claude-plugins-official -s user</span></div>
+    <div class="features">
+      <span class="feature-tag purple">20+ 미학적 방향</span>
+      <span class="feature-tag blue">커스텀 타이포그래피</span>
+      <span class="feature-tag green">모션/애니메이션</span>
+      <span class="feature-tag orange">비대칭 레이아웃</span>
+      <span class="feature-tag purple">배경 이펙트</span>
+    </div>
+  </div>
+
+  <!-- ralph-loop -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">ralph-loop</div>
+    </div>
+    <div class="plugin-desc">동일 프롬프트를 반복 실행하여 점진적으로 품질을 개선하는 자기참조 루프</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install ralph-loop@claude-plugins-official -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/ralph-loop</td><td>Ralph 루프 시작 (반복적 자가 개선)</td></tr>
+        <tr><td>/cancel-ralph</td><td>활성 Ralph 루프 취소</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── 코드 품질 ── -->
+  <div class="category-header">
+    <div class="category-icon quality">&#10003;</div>
+    <h3>코드 품질</h3>
+  </div>
+
+  <!-- code-review -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">code-review</div>
+    </div>
+    <div class="plugin-desc">PR에 대해 5개의 전문 에이전트가 병렬로 코드 리뷰를 수행하는 자동화 도구. 신뢰도 기반 점수(0-100), 임계값 80 이상만 보고.</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install code-review@claude-plugins-official -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/code-review</td><td>PR에 대한 자동화된 멀티 에이전트 코드 리뷰 실행</td></tr>
+      </tbody>
+    </table>
+    <div class="features">
+      <span class="feature-tag blue">CLAUDE.md 컴플라이언스</span>
+      <span class="feature-tag green">버그 감지</span>
+      <span class="feature-tag purple">히스토리 분석</span>
+      <span class="feature-tag orange">코멘트 분석</span>
+      <span class="feature-tag blue">False positive 필터링</span>
+    </div>
+  </div>
+
+  <!-- pr-review-toolkit -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">pr-review-toolkit</div>
+    </div>
+    <div class="plugin-desc">6개의 전문 리뷰 에이전트 번들로 PR의 다양한 품질 차원을 분석</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install pr-review-toolkit@claude-plugins-official -s user</span></div>
+    <div class="info-box">
+      <div class="info-box-title">전용 에이전트 (6개)</div>
+      <ul>
+        <li><strong>comment-analyzer</strong> — 코드 코멘트 정확성 및 유지보수성</li>
+        <li><strong>pr-test-analyzer</strong> — 테스트 커버리지 품질 및 완전성</li>
+        <li><strong>silent-failure-hunter</strong> — 에러 핸들링 및 사일런트 실패 감지</li>
+        <li><strong>type-design-analyzer</strong> — 타입 설계 품질 및 불변성 검증</li>
+        <li><strong>code-reviewer</strong> — CLAUDE.md 준수 및 버그 감지</li>
+        <li><strong>code-simplifier</strong> — 코드 간소화 및 리팩토링</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- code-simplifier -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">code-simplifier</div>
+    </div>
+    <div class="plugin-desc">최근 수정된 코드의 명확성, 일관성, 유지보수성을 자동으로 개선. 기능 100% 보존.</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install code-simplifier@claude-plugins-official -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/simplify</td><td>변경된 코드의 재사용성, 품질, 효율성 리뷰 후 개선</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- security-guidance -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">security-guidance</div>
+    </div>
+    <div class="plugin-desc">파일 편집 시 보안 취약점을 자동 감지하여 경고하는 훅 기반 플러그인. Command Injection, XSS, 안전하지 않은 패턴 감지.</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install security-guidance@claude-plugins-official -s user</span></div>
+    <div class="features">
+      <span class="feature-tag green">훅 기반 자동 트리거</span>
+      <span class="feature-tag orange">백그라운드 작동</span>
+      <span class="feature-tag blue">별도 명령어 불필요</span>
+    </div>
+  </div>
+
+  <!-- ── 플러그인/스킬 개발 ── -->
+  <div class="category-header page-break">
+    <div class="category-icon plugin">&#9998;</div>
+    <h3>플러그인/스킬 개발</h3>
+  </div>
+
+  <!-- plugin-dev -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">plugin-dev</div>
+    </div>
+    <div class="plugin-desc">Claude Code 플러그인 개발의 모든 측면을 가이드하는 종합 도구</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install plugin-dev@claude-plugins-official -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/plugin-structure</td><td>플러그인 디렉토리 구조 설정 가이드</td></tr>
+        <tr><td>/skill-development</td><td>스킬(SKILL.md) 생성 및 개발</td></tr>
+        <tr><td>/command-development</td><td>슬래시 커맨드(.md) 개발</td></tr>
+        <tr><td>/agent-development</td><td>서브에이전트(.md) 생성 및 개발</td></tr>
+        <tr><td>/hook-development</td><td>훅(hooks.json) 생성 및 설정</td></tr>
+        <tr><td>/mcp-integration</td><td>MCP 서버 연동 설정</td></tr>
+        <tr><td>/plugin-settings</td><td>플러그인 설정(plugin.json) 관리</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- skill-creator -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">skill-creator</div>
+    </div>
+    <div class="plugin-desc">스킬의 전체 개발 라이프사이클을 관리 — 생성, 테스트, 벤치마크, 반복 개선</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install skill-creator@claude-plugins-official -s user</span></div>
+    <div class="workflow-steps">
+      <div class="workflow-step"><span class="step-num">1</span> 의도 캡처</div>
+      <span class="workflow-arrow">&#8594;</span>
+      <div class="workflow-step"><span class="step-num">2</span> 엣지 케이스</div>
+      <span class="workflow-arrow">&#8594;</span>
+      <div class="workflow-step"><span class="step-num">3</span> SKILL.md 작성</div>
+      <span class="workflow-arrow">&#8594;</span>
+      <div class="workflow-step"><span class="step-num">4</span> 테스트 생성</div>
+      <span class="workflow-arrow">&#8594;</span>
+      <div class="workflow-step"><span class="step-num">5</span> 벤치마크</div>
+      <span class="workflow-arrow">&#8594;</span>
+      <div class="workflow-step"><span class="step-num">6</span> 반복 개선</div>
+    </div>
+  </div>
+
+  <!-- mcp-server-dev -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">mcp-server-dev</div>
+    </div>
+    <div class="plugin-desc">MCP 서버 설계 및 구현을 가이드하는 종합 스킬</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install mcp-server-dev@claude-plugins-official -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/build-mcp-server</td><td>MCP 서버 개발 (유스케이스 분석 → 배포 모델 → 도구 패턴)</td></tr>
+        <tr><td>/build-mcp-app</td><td>인터랙티브 UI 위젯 MCP 앱 개발</td></tr>
+        <tr><td>/build-mcpb</td><td>MCPB (번들 로컬 서버) 개발</td></tr>
+      </tbody>
+    </table>
+    <div class="features">
+      <span class="feature-tag blue">Remote HTTP</span>
+      <span class="feature-tag purple">MCPB</span>
+      <span class="feature-tag green">Local stdio</span>
+      <span class="feature-tag orange">MCP Apps</span>
+      <span class="feature-tag blue">OAuth 2.0</span>
+    </div>
+  </div>
+
+  <!-- claude-code-setup -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">claude-code-setup</div>
+    </div>
+    <div class="plugin-desc">코드베이스를 분석하여 최적의 Claude Code 자동화를 추천하는 분석 도구</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install claude-code-setup@claude-plugins-official -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/claude-automation-recommender</td><td>코드베이스 분석 후 자동화 추천 (hooks, skills, MCP, agents, plugins)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- claude-md-management -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">claude-md-management</div>
+    </div>
+    <div class="plugin-desc">CLAUDE.md 파일의 품질을 감사하고 개선. 6개 기준 A-F 등급 평가.</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install claude-md-management@claude-plugins-official -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/claude-md-improver</td><td>CLAUDE.md 파일 감사 및 개선</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- hookify -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">hookify</div>
+    </div>
+    <div class="plugin-desc">대화 패턴을 분석하여 원치 않는 행동을 방지하는 훅을 생성하는 도구</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install hookify@claude-plugins-official -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/hookify</td><td>대화 분석으로 방지할 행동 감지 후 훅 생성</td></tr>
+        <tr><td>/writing-rules</td><td>훅 규칙 작성 가이드</td></tr>
+        <tr><td>/list</td><td>설정된 훅 규칙 목록</td></tr>
+        <tr><td>/configure</td><td>훅 규칙 활성화/비활성화</td></tr>
+      </tbody>
+    </table>
+    <div class="features">
+      <span class="feature-tag blue">bash / file / stop / prompt / all</span>
+      <span class="feature-tag green">warn / block</span>
+      <span class="feature-tag purple">regex / contains / equals</span>
+    </div>
+  </div>
+
+  <!-- ── LSP ── -->
+  <div class="category-header">
+    <div class="category-icon lsp">&#9888;</div>
+    <h3>LSP (Language Server Protocol)</h3>
+  </div>
+
+  <div class="plugin-card">
+    <table class="cmd-table" style="margin: 0;">
+      <thead><tr><th>플러그인</th><th>언어</th><th>기능</th></tr></thead>
+      <tbody>
+        <tr><td>typescript-lsp</td><td>TypeScript / JavaScript</td><td>코드 완성, 타입 체크, 에러 감지, 리팩토링</td></tr>
+        <tr><td>jdtls-lsp</td><td>Java</td><td>코드 완성, 에러 체크, 리팩토링, 의존성 분석</td></tr>
+        <tr><td>pyright-lsp</td><td>Python</td><td>코드 완성, 타입 체크, 에러 감지</td></tr>
+      </tbody>
+    </table>
+    <div class="note-box" style="margin-top: 12px;">
+      <strong>참고</strong>
+      모든 LSP 플러그인은 별도 명령어 없이 자동 활성화됩니다. 해당 언어 파일 편집 시 코드 인텔리전스가 백그라운드에서 작동합니다.
+    </div>
+  </div>
+
+  <!-- ── 출력 스타일 ── -->
+  <div class="category-header">
+    <div class="category-icon style">&#9733;</div>
+    <h3>출력 스타일</h3>
+  </div>
+
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">learning-output-style</div>
+    </div>
+    <div class="plugin-desc">의사결정 포인트에서 사용자에게 코드 기여를 요청하는 인터랙티브 학습 모드. 모든 코드를 자동 작성하지 않고, 주요 결정에서 사용자 입력 요청.</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install learning-output-style@claude-plugins-official -s user</span></div>
+  </div>
+
+  <!-- ── 외부 연동 ── -->
+  <div class="category-header">
+    <div class="category-icon external">&#9729;</div>
+    <h3>외부 연동</h3>
+  </div>
+
+  <!-- context7 -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">context7</div>
+    </div>
+    <div class="plugin-desc">라이브러리/프레임워크의 최신 공식 문서와 코드 예제를 실시간으로 조회하는 MCP 서버. React, Express, FastAPI, Django, Prisma, Stripe, AWS SDK 등 지원.</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install context7@claude-plugins-official -s user</span></div>
+  </div>
+
+  <!-- telegram -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">telegram</div>
+    </div>
+    <div class="plugin-desc">Claude Code와 Telegram 메신저를 연결하는 MCP 서버. 봇을 통해 양방향 메시징 지원.</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install telegram@claude-plugins-official -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/telegram:configure</td><td>Telegram 봇 토큰 설정 및 채널 구성</td></tr>
+        <tr><td>/telegram:access</td><td>접근 제어 관리 (페어링 승인, 허용 목록, DM/그룹 정책)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════ SECTION 3: KNOWLEDGE WORK PLUGINS ═══════════════════ -->
+<div class="section page-break">
+  <div class="section-header">
+    <div class="section-number">3</div>
+    <div>
+      <h2>Knowledge Work 플러그인</h2>
+      <div class="section-desc">knowledge-work-plugins 마켓플레이스</div>
+    </div>
+  </div>
+
+  <div class="note-box">
+    <strong>Standalone + Supercharged 설계</strong>
+    모든 Knowledge Work 플러그인은 수동 입력만으로도 작동하지만, MCP로 외부 도구를 연결하면 기능이 대폭 강화됩니다.
+  </div>
+
+  <!-- ── 엔지니어링 ── -->
+  <div class="category-header">
+    <div class="category-icon eng">&#9881;</div>
+    <h3>엔지니어링</h3>
+  </div>
+
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">engineering</div>
+    </div>
+    <div class="plugin-desc">엔지니어링 워크플로우 전반 — 스탠드업, 코드 리뷰, 아키텍처 결정, 인시던트 대응, 기술 문서</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install engineering@knowledge-work-plugins -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/standup</td><td>최근 활동에서 스탠드업 업데이트 생성</td></tr>
+        <tr><td>/review</td><td>코드 변경 리뷰 (보안, 성능, 스타일, 정확성)</td></tr>
+        <tr><td>/debug</td><td>구조화된 디버깅 세션 (재현 → 격리 → 진단 → 수정)</td></tr>
+        <tr><td>/architecture</td><td>아키텍처 결정 문서(ADR) 생성 또는 평가</td></tr>
+        <tr><td>/incident</td><td>인시던트 대응 워크플로우</td></tr>
+        <tr><td>/deploy-checklist</td><td>배포 전 체크리스트</td></tr>
+      </tbody>
+    </table>
+    <div class="integrations">
+      <span class="integrations-label">연동</span>
+      <span class="integration-tag">GitHub/GitLab</span>
+      <span class="integration-tag">Linear/Jira</span>
+      <span class="integration-tag">Datadog</span>
+      <span class="integration-tag">PagerDuty</span>
+      <span class="integration-tag">Slack/Teams</span>
+      <span class="integration-tag">Notion</span>
+    </div>
+  </div>
+
+  <!-- ── 제품/프로젝트 관리 ── -->
+  <div class="category-header">
+    <div class="category-icon product">&#9670;</div>
+    <h3>제품/프로젝트 관리</h3>
+  </div>
+
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">product-management</div>
+    </div>
+    <div class="plugin-desc">기능 스펙 작성, 로드맵 관리, 사용자 리서치 종합, 경쟁 분석까지 제품 관리 전반 지원</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install product-management@knowledge-work-plugins -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/write-spec</td><td>문제 정의에서 기능 스펙/PRD 작성</td></tr>
+        <tr><td>/roadmap-update</td><td>로드맵 생성, 업데이트, 우선순위 재조정</td></tr>
+        <tr><td>/stakeholder-update</td><td>이해관계자 업데이트 (주간, 월간, 출시)</td></tr>
+        <tr><td>/synthesize-research</td><td>사용자 리서치 종합</td></tr>
+        <tr><td>/competitive-brief</td><td>경쟁 분석 브리프 생성</td></tr>
+        <tr><td>/metrics-review</td><td>제품 메트릭 리뷰 및 분석</td></tr>
+        <tr><td>/brainstorm</td><td>제품 아이디어 브레인스토밍 파트너</td></tr>
+      </tbody>
+    </table>
+    <div class="integrations">
+      <span class="integrations-label">연동</span>
+      <span class="integration-tag">Slack</span>
+      <span class="integration-tag">Linear/Jira</span>
+      <span class="integration-tag">Notion</span>
+      <span class="integration-tag">Figma</span>
+      <span class="integration-tag">Amplitude</span>
+      <span class="integration-tag">Intercom</span>
+    </div>
+  </div>
+
+  <!-- ── 디자인 ── -->
+  <div class="category-header">
+    <div class="category-icon design">&#9830;</div>
+    <h3>디자인</h3>
+  </div>
+
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">design</div>
+    </div>
+    <div class="plugin-desc">디자인 크리틱, 디자인 시스템 관리, UX 카피라이팅, 접근성 감사, 개발자 핸드오프</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install design@knowledge-work-plugins -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/critique</td><td>디자인 피드백 (유저빌리티, 시각 계층, 접근성)</td></tr>
+        <tr><td>/design-system</td><td>디자인 시스템 감사, 문서화, 확장</td></tr>
+        <tr><td>/handoff</td><td>개발자 핸드오프 스펙 생성</td></tr>
+        <tr><td>/ux-copy</td><td>UX 카피 작성/리뷰</td></tr>
+        <tr><td>/accessibility</td><td>접근성 감사 (WCAG 2.1 AA)</td></tr>
+        <tr><td>/research-synthesis</td><td>사용자 리서치 종합</td></tr>
+      </tbody>
+    </table>
+    <div class="integrations">
+      <span class="integrations-label">연동</span>
+      <span class="integration-tag">Figma</span>
+      <span class="integration-tag">Intercom</span>
+      <span class="integration-tag">Linear/Jira</span>
+      <span class="integration-tag">Notion</span>
+      <span class="integration-tag">Amplitude</span>
+    </div>
+  </div>
+
+  <!-- ── 데이터 분석 ── -->
+  <div class="category-header page-break">
+    <div class="category-icon data">&#9632;</div>
+    <h3>데이터 분석</h3>
+  </div>
+
+  <!-- data -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">data</div>
+    </div>
+    <div class="plugin-desc">SQL 작성, 데이터 탐색, 시각화, 대시보드 구축, 통계 분석까지 데이터 업무 전반 지원</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install data@knowledge-work-plugins -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/analyze</td><td>데이터 질문 답변 (간단한 조회부터 전체 분석)</td></tr>
+        <tr><td>/explore-data</td><td>데이터셋 프로파일링</td></tr>
+        <tr><td>/write-query</td><td>방언별 최적화된 SQL 작성</td></tr>
+        <tr><td>/create-viz</td><td>출판 수준 시각화 생성</td></tr>
+        <tr><td>/build-dashboard</td><td>인터랙티브 HTML 대시보드 구축</td></tr>
+        <tr><td>/validate</td><td>분석 QA</td></tr>
+      </tbody>
+    </table>
+    <div class="integrations">
+      <span class="integrations-label">연동</span>
+      <span class="integration-tag">Snowflake</span>
+      <span class="integration-tag">BigQuery</span>
+      <span class="integration-tag">Databricks</span>
+      <span class="integration-tag">Amplitude</span>
+      <span class="integration-tag">Jupyter</span>
+    </div>
+  </div>
+
+  <!-- enterprise-search -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">enterprise-search</div>
+    </div>
+    <div class="plugin-desc">연결된 모든 도구에서 통합 검색. 이메일, 채팅, 문서, 위키를 한곳에서 검색.</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install enterprise-search@knowledge-work-plugins -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/search</td><td>연결된 모든 소스에서 통합 검색</td></tr>
+        <tr><td>/digest</td><td>일간/주간 활동 다이제스트 생성</td></tr>
+      </tbody>
+    </table>
+    <div class="integrations">
+      <span class="integrations-label">연동</span>
+      <span class="integration-tag">Slack/Teams</span>
+      <span class="integration-tag">Gmail/M365</span>
+      <span class="integration-tag">Drive/OneDrive</span>
+      <span class="integration-tag">Notion</span>
+      <span class="integration-tag">HubSpot/Salesforce</span>
+    </div>
+  </div>
+
+  <!-- ── 영업/마케팅 ── -->
+  <div class="category-header">
+    <div class="category-icon sales">&#9733;</div>
+    <h3>영업/마케팅</h3>
+  </div>
+
+  <!-- sales -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">sales</div>
+    </div>
+    <div class="plugin-desc">영업 전체 라이프사이클 — 프로스펙팅, 아웃리치, 파이프라인 관리, 콜 준비/정리, 예측</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install sales@knowledge-work-plugins -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/call-summary</td><td>콜 노트 처리 → 액션 아이템, 팔로업 이메일</td></tr>
+        <tr><td>/forecast</td><td>가중치 영업 예측 (best/likely/worst)</td></tr>
+        <tr><td>/pipeline-review</td><td>파이프라인 건강도 분석</td></tr>
+        <tr><td>/draft-outreach</td><td>개인화된 아웃리치 작성</td></tr>
+        <tr><td>/call-prep</td><td>영업 콜 준비</td></tr>
+        <tr><td>/daily-briefing</td><td>일일 영업 브리핑</td></tr>
+        <tr><td>/account-research</td><td>회사/사람 영업 인텔리전스</td></tr>
+        <tr><td>/competitive-intelligence</td><td>경쟁사 리서치 및 배틀카드</td></tr>
+        <tr><td>/create-an-asset</td><td>맞춤형 영업 자산 생성</td></tr>
+      </tbody>
+    </table>
+    <div class="integrations">
+      <span class="integrations-label">연동</span>
+      <span class="integration-tag">HubSpot/Salesforce</span>
+      <span class="integration-tag">Gong</span>
+      <span class="integration-tag">Clay/ZoomInfo</span>
+      <span class="integration-tag">Slack</span>
+      <span class="integration-tag">Gmail</span>
+    </div>
+  </div>
+
+  <!-- marketing -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">marketing</div>
+    </div>
+    <div class="plugin-desc">콘텐츠 작성, 캠페인 기획, 브랜드 리뷰, 경쟁 분석, 성과 리포트, SEO 감사</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install marketing@knowledge-work-plugins -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/draft-content</td><td>블로그, 소셜미디어, 이메일, 보도자료 등 작성</td></tr>
+        <tr><td>/campaign-plan</td><td>캠페인 브리프 생성</td></tr>
+        <tr><td>/brand-review</td><td>브랜드 보이스 기준 콘텐츠 리뷰</td></tr>
+        <tr><td>/competitive-brief</td><td>경쟁사 포지셔닝 비교</td></tr>
+        <tr><td>/performance-report</td><td>마케팅 성과 리포트</td></tr>
+        <tr><td>/seo-audit</td><td>SEO 감사</td></tr>
+        <tr><td>/email-sequence</td><td>멀티 이메일 시퀀스 설계</td></tr>
+      </tbody>
+    </table>
+    <div class="integrations">
+      <span class="integrations-label">연동</span>
+      <span class="integration-tag">Slack</span>
+      <span class="integration-tag">Canva</span>
+      <span class="integration-tag">HubSpot</span>
+      <span class="integration-tag">Amplitude</span>
+      <span class="integration-tag">Ahrefs</span>
+      <span class="integration-tag">Klaviyo</span>
+    </div>
+  </div>
+
+  <!-- ── 비즈니스 운영 ── -->
+  <div class="category-header page-break">
+    <div class="category-icon ops">&#9670;</div>
+    <h3>비즈니스 운영</h3>
+  </div>
+
+  <!-- operations -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">operations</div>
+    </div>
+    <div class="plugin-desc">벤더 관리, 프로세스 문서화, 변경 관리, 용량 계획, 컴플라이언스 추적</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install operations@knowledge-work-plugins -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/vendor-review</td><td>벤더 평가 (비용, 리스크, 갱신 권장)</td></tr>
+        <tr><td>/process-doc</td><td>비즈니스 프로세스 문서화 (RACI, SOP)</td></tr>
+        <tr><td>/change-request</td><td>변경 관리 요청서 (영향 분석, 롤백)</td></tr>
+        <tr><td>/capacity-plan</td><td>리소스 용량 계획</td></tr>
+        <tr><td>/status-report</td><td>상태 리포트</td></tr>
+        <tr><td>/runbook</td><td>운영 런북 생성/업데이트</td></tr>
+      </tbody>
+    </table>
+    <div class="integrations">
+      <span class="integrations-label">연동</span>
+      <span class="integration-tag">ServiceNow</span>
+      <span class="integration-tag">Jira</span>
+      <span class="integration-tag">Notion</span>
+      <span class="integration-tag">Slack/Teams</span>
+    </div>
+  </div>
+
+  <!-- customer-support -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">customer-support</div>
+    </div>
+    <div class="plugin-desc">티켓 트리아지, 고객 응대, 에스컬레이션, 지식 베이스 관리까지 CS 워크플로우 전반</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install customer-support@knowledge-work-plugins -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/triage</td><td>티켓 분류, P1-P4 우선순위 지정, 라우팅</td></tr>
+        <tr><td>/research</td><td>고객 질문 멀티소스 리서치</td></tr>
+        <tr><td>/draft-response</td><td>전문적인 고객 응대 메시지 작성</td></tr>
+        <tr><td>/escalate</td><td>에스컬레이션 패키지</td></tr>
+        <tr><td>/kb-article</td><td>지식 베이스 아티클 작성</td></tr>
+      </tbody>
+    </table>
+    <div class="integrations">
+      <span class="integrations-label">연동</span>
+      <span class="integration-tag">Slack</span>
+      <span class="integration-tag">Intercom</span>
+      <span class="integration-tag">HubSpot</span>
+      <span class="integration-tag">Guru/Notion</span>
+      <span class="integration-tag">Jira</span>
+    </div>
+  </div>
+
+  <!-- ── 법무/재무/인사 ── -->
+  <div class="category-header">
+    <div class="category-icon legal">&#9878;</div>
+    <h3>법무/재무/인사</h3>
+  </div>
+
+  <!-- legal -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">legal</div>
+    </div>
+    <div class="plugin-desc">계약 리뷰, NDA 트리아지, 컴플라이언스, 법적 리스크 평가, 벤더 점검</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install legal@knowledge-work-plugins -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/review-contract</td><td>계약서 리뷰 (레드라인 생성)</td></tr>
+        <tr><td>/triage-nda</td><td>NDA 신속 트리아지 (GREEN/YELLOW/RED)</td></tr>
+        <tr><td>/vendor-check</td><td>벤더 기존 계약 상태 통합 조회</td></tr>
+        <tr><td>/brief</td><td>법무 브리핑 생성</td></tr>
+        <tr><td>/respond</td><td>법적 문의 템플릿 기반 응답</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- finance -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">finance</div>
+    </div>
+    <div class="plugin-desc">분개, 계정 대사, 재무제표, 차이 분석, SOX 감사 지원</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install finance@knowledge-work-plugins -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/journal-entry</td><td>분개 작성 (발생주의, 감가상각, 수익 인식)</td></tr>
+        <tr><td>/reconciliation</td><td>계정 대사</td></tr>
+        <tr><td>/income-statement</td><td>손익계산서 생성</td></tr>
+        <tr><td>/variance-analysis</td><td>차이/변동 분석</td></tr>
+        <tr><td>/sox-testing</td><td>SOX 컴플라이언스 테스트</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- human-resources -->
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">human-resources</div>
+    </div>
+    <div class="plugin-desc">채용, 온보딩, 성과 리뷰, 보상 분석, 정책 안내, 인력 분석</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install human-resources@knowledge-work-plugins -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/draft-offer</td><td>오퍼 레터 작성</td></tr>
+        <tr><td>/onboarding</td><td>온보딩 체크리스트 및 첫 주 계획</td></tr>
+        <tr><td>/performance-review</td><td>성과 리뷰 구조화</td></tr>
+        <tr><td>/policy-lookup</td><td>회사 정책 검색 및 설명</td></tr>
+        <tr><td>/comp-analysis</td><td>보상 분석</td></tr>
+        <tr><td>/people-report</td><td>인력 리포트</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── 생산성 ── -->
+  <div class="category-header">
+    <div class="category-icon productivity">&#9733;</div>
+    <h3>생산성</h3>
+  </div>
+
+  <div class="plugin-card">
+    <div class="plugin-card-header">
+      <div class="plugin-name">productivity</div>
+    </div>
+    <div class="plugin-desc">태스크 관리, 일일 계획, 중요한 워크 컨텍스트 메모리 구축</div>
+    <div class="install-cmd"><span class="prompt">$</span> <span class="cmd">claude plugin install productivity@knowledge-work-plugins -s user</span></div>
+    <table class="cmd-table">
+      <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>/start</td><td>태스크 + 메모리 초기화, 대시보드 오픈</td></tr>
+        <tr><td>/update</td><td>stale 항목 트리아지, 메모리 갭 체크, 외부 동기화</td></tr>
+        <tr><td>/update --comprehensive</td><td>이메일/캘린더/채팅 딥 스캔, 누락된 TODO 감지</td></tr>
+      </tbody>
+    </table>
+    <div class="features">
+      <span class="feature-tag blue">TASKS.md 기반</span>
+      <span class="feature-tag purple">2계층 메모리</span>
+      <span class="feature-tag green">HTML 대시보드</span>
+    </div>
+    <div class="integrations">
+      <span class="integrations-label">연동</span>
+      <span class="integration-tag">Slack</span>
+      <span class="integration-tag">Microsoft 365</span>
+      <span class="integration-tag">Notion</span>
+      <span class="integration-tag">Asana/Linear/Jira</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SECTION 4: SUMMARY ═══════════════════ -->
+<div class="section page-break">
+  <div class="section-header">
+    <div class="section-number">4</div>
+    <div>
+      <h2>설치 현황 요약</h2>
+      <div class="section-desc">마켓플레이스별 / 카테고리별 현황</div>
+    </div>
+  </div>
+
+  <h3 style="font-size: 10pt; font-weight: 600; margin: 16px 0 8px; color: var(--text);">마켓플레이스별 현황</h3>
+
+  <table class="marketplace-table">
+    <thead>
+      <tr><th>마켓플레이스</th><th style="text-align:center;">설치</th><th style="text-align:center;">미설치</th><th style="text-align:center;">합계</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>claude-plugins-official (내장)</td><td style="text-align:center;">20</td><td style="text-align:center;">12</td><td style="text-align:center;">32</td></tr>
+      <tr><td>claude-plugins-official (외부)</td><td style="text-align:center;">2</td><td style="text-align:center;">15</td><td style="text-align:center;">17</td></tr>
+      <tr><td>knowledge-work-plugins</td><td style="text-align:center;">13</td><td style="text-align:center;">2</td><td style="text-align:center;">15</td></tr>
+      <tr style="font-weight: 700; background: var(--primary-bg) !important;"><td style="color: var(--primary-dark);">합계</td><td style="text-align:center; color: var(--primary-dark);">35</td><td style="text-align:center;">29</td><td style="text-align:center; color: var(--primary-dark);">64</td></tr>
+    </tbody>
+  </table>
+
+  <div class="summary-grid" style="margin-top: 24px;">
+    <div class="summary-card">
+      <h4>설치율</h4>
+      <div class="stat-row">
+        <span class="stat-label">claude-plugins-official (내장)</span>
+        <span class="stat-value">63%</span>
+      </div>
+      <div class="stat-bar"><div class="stat-bar-fill" style="width: 63%;"></div></div>
+      <div class="stat-row" style="margin-top: 8px;">
+        <span class="stat-label">claude-plugins-official (외부)</span>
+        <span class="stat-value">12%</span>
+      </div>
+      <div class="stat-bar"><div class="stat-bar-fill" style="width: 12%;"></div></div>
+      <div class="stat-row" style="margin-top: 8px;">
+        <span class="stat-label">knowledge-work-plugins</span>
+        <span class="stat-value">87%</span>
+      </div>
+      <div class="stat-bar"><div class="stat-bar-fill" style="width: 87%;"></div></div>
+    </div>
+    <div class="summary-card">
+      <h4>전체 통계</h4>
+      <div class="stat-row"><span class="stat-label">전체 플러그인</span><span class="stat-value">64</span></div>
+      <div class="stat-row"><span class="stat-label">설치 완료</span><span class="stat-value" style="color: var(--success);">35</span></div>
+      <div class="stat-row"><span class="stat-label">미설치</span><span class="stat-value" style="color: var(--text-muted);">29</span></div>
+      <div class="stat-row"><span class="stat-label">전체 설치율</span><span class="stat-value" style="color: var(--primary);">54.7%</span></div>
+    </div>
+  </div>
+
+  <h3 style="font-size: 10pt; font-weight: 600; margin: 24px 0 8px; color: var(--text);">카테고리별 현황</h3>
+
+  <table class="marketplace-table">
+    <thead>
+      <tr><th>카테고리</th><th>플러그인</th><th style="text-align:center;">수량</th></tr>
+    </thead>
+    <tbody>
+      <tr><td style="font-family: 'Noto Sans KR', sans-serif;">개발 워크플로우</td><td>commit-commands, feature-dev, frontend-design, ralph-loop</td><td style="text-align:center;">4</td></tr>
+      <tr><td style="font-family: 'Noto Sans KR', sans-serif;">코드 품질</td><td>code-review, pr-review-toolkit, code-simplifier, security-guidance</td><td style="text-align:center;">4</td></tr>
+      <tr><td style="font-family: 'Noto Sans KR', sans-serif;">플러그인/스킬 개발</td><td>plugin-dev, skill-creator, mcp-server-dev, claude-code-setup, claude-md-management, hookify</td><td style="text-align:center;">6</td></tr>
+      <tr><td style="font-family: 'Noto Sans KR', sans-serif;">LSP</td><td>typescript-lsp, jdtls-lsp, pyright-lsp</td><td style="text-align:center;">3</td></tr>
+      <tr><td style="font-family: 'Noto Sans KR', sans-serif;">출력 스타일</td><td>learning-output-style</td><td style="text-align:center;">1</td></tr>
+      <tr><td style="font-family: 'Noto Sans KR', sans-serif;">외부 연동</td><td>context7, telegram</td><td style="text-align:center;">2</td></tr>
+      <tr><td style="font-family: 'Noto Sans KR', sans-serif;">엔지니어링</td><td>engineering</td><td style="text-align:center;">1</td></tr>
+      <tr><td style="font-family: 'Noto Sans KR', sans-serif;">제품 관리</td><td>product-management</td><td style="text-align:center;">1</td></tr>
+      <tr><td style="font-family: 'Noto Sans KR', sans-serif;">디자인</td><td>design</td><td style="text-align:center;">1</td></tr>
+      <tr><td style="font-family: 'Noto Sans KR', sans-serif;">데이터</td><td>data, enterprise-search</td><td style="text-align:center;">2</td></tr>
+      <tr><td style="font-family: 'Noto Sans KR', sans-serif;">영업/마케팅</td><td>sales, marketing</td><td style="text-align:center;">2</td></tr>
+      <tr><td style="font-family: 'Noto Sans KR', sans-serif;">비즈니스 운영</td><td>operations, customer-support</td><td style="text-align:center;">2</td></tr>
+      <tr><td style="font-family: 'Noto Sans KR', sans-serif;">법무/재무/인사</td><td>legal, finance, human-resources</td><td style="text-align:center;">3</td></tr>
+      <tr><td style="font-family: 'Noto Sans KR', sans-serif;">생산성</td><td>productivity</td><td style="text-align:center;">1</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-size: 10pt; font-weight: 600; margin: 24px 0 8px; color: var(--text);">미설치 플러그인</h3>
+
+  <div class="plugin-card">
+    <div style="font-size: 8pt; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">claude-plugins-official 내장 (미설치)</div>
+    <div class="uninstalled-list">
+      <span class="uninstalled-tag">agent-sdk-dev</span>
+      <span class="uninstalled-tag">clangd-lsp</span>
+      <span class="uninstalled-tag">csharp-lsp</span>
+      <span class="uninstalled-tag">explanatory-output-style</span>
+      <span class="uninstalled-tag">gopls-lsp</span>
+      <span class="uninstalled-tag">kotlin-lsp</span>
+      <span class="uninstalled-tag">lua-lsp</span>
+      <span class="uninstalled-tag">math-olympiad</span>
+      <span class="uninstalled-tag">php-lsp</span>
+      <span class="uninstalled-tag">playground</span>
+      <span class="uninstalled-tag">ruby-lsp</span>
+      <span class="uninstalled-tag">rust-analyzer-lsp</span>
+      <span class="uninstalled-tag">swift-lsp</span>
+    </div>
+
+    <div style="font-size: 8pt; font-weight: 600; color: var(--text-secondary); margin: 12px 0 6px;">claude-plugins-official 외부 (미설치)</div>
+    <div class="uninstalled-list">
+      <span class="uninstalled-tag">asana</span>
+      <span class="uninstalled-tag">discord</span>
+      <span class="uninstalled-tag">fakechat</span>
+      <span class="uninstalled-tag">firebase</span>
+      <span class="uninstalled-tag">github</span>
+      <span class="uninstalled-tag">gitlab</span>
+      <span class="uninstalled-tag">greptile</span>
+      <span class="uninstalled-tag">imessage</span>
+      <span class="uninstalled-tag">laravel-boost</span>
+      <span class="uninstalled-tag">linear</span>
+      <span class="uninstalled-tag">playwright</span>
+      <span class="uninstalled-tag">serena</span>
+      <span class="uninstalled-tag">slack</span>
+      <span class="uninstalled-tag">supabase</span>
+      <span class="uninstalled-tag">terraform</span>
+    </div>
+
+    <div style="font-size: 8pt; font-weight: 600; color: var(--text-secondary); margin: 12px 0 6px;">knowledge-work-plugins (미설치)</div>
+    <div class="uninstalled-list">
+      <span class="uninstalled-tag">bio-research</span>
+      <span class="uninstalled-tag">cowork-plugin-management</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
