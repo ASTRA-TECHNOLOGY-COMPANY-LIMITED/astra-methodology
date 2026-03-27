@@ -71,8 +71,16 @@ astra-methodology/
 │   │   └── system-design.md     # AI agent platform reference design (fect-api-agent)
 │   ├── ux/
 │   │   └── ux-interaction-patterns.md  # UX/UI interaction patterns guide (11 categories)
-│   └── catalog/
-│       └── catalog-expert-workflow.md  # Catalog design expert workflow & know-how
+│   ├── catalog/
+│   │   ├── catalog-expert-workflow.md     # Catalog design expert workflow & know-how
+│   │   ├── catalog-expert-workflow.ko.md  # Korean translation
+│   │   └── catalog-expert-workflow.vi.md  # Vietnamese translation
+│   ├── manual/                            # Service methodology manuals
+│   │   ├── MANUAL.md                      # English manual
+│   │   ├── MANUAL.ko.md                   # Korean manual
+│   │   └── MANUAL.vi.md                   # Vietnamese manual
+│   └── plugin/                            # Plugin development guides
+│       └── claude-code-plugins-guide.md   # Claude Code plugins guide
 └── .claude-plugin/      # Plugin manifest (plugin.json, marketplace.json)
 ```
 
