@@ -341,14 +341,16 @@ Show `git diff --staged --stat` to the user and use **AskUserQuestion** to confi
 
 > **커밋할 변경사항을 확인해주세요:**
 > {staged file list}
-> - **Commit** — 커밋 진행
-> - **Cancel** — 워크플로우 중단
+> - **커밋 진행** (기본값)
+> - **취소** — 워크플로우 중단
 
 After user confirms:
 
 ```bash
-# Commit with descriptive message
-git commit -m "test: sprint-{N} {feature-name} integration test passed
+# Determine commit type based on staged files:
+# - If only docs/tests/ and docs/sprints/ changed → use "test:"
+# - If src/ or other source directories also changed → use "fix:"
+git commit -m "{type}: sprint-{N} {feature-name} integration test passed
 
 - Scenario tests: {passed}/{total} passed
 - Console errors: {count}
@@ -364,6 +366,10 @@ git commit -m "test: sprint-{N} {feature-name} integration test passed
 git push -u origin {branch-name}
 ```
 
+**Push failure handling:**
+- If push fails due to branch already existing on remote (e.g., re-run on the same day), append a counter suffix: `{branch-name}-v2`, `{branch-name}-v3`, etc.
+- If push fails due to authentication or network error, display the error and end the workflow.
+
 After push completes, display the branch name and push result.
 
 ### Step 12: PR Review & Merge (Optional)
@@ -375,8 +381,8 @@ After successful push, ask the user whether to proceed with PR merge:
 > **테스트 통과 → 브랜치 생성 → 커밋 → 푸시 완료!**
 > Branch: `{branch-name}`
 > **PR Review & Merge를 진행할까요?**
-> - Yes (default) — Run `/pr-merge`
-> - No — End workflow
+> - **예** (기본값) — `/pr-merge` 실행
+> - **아니오** — 워크플로우 종료
 
 2. If the user approves, invoke `pr-merge` using the Skill tool:
 
