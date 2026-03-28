@@ -480,3 +480,6 @@ import type { User } from '@/types';
 - [Ignite Boilerplate by Infinite Red](https://github.com/infinitered/ignite)
 - [React Official Docs - Custom Hooks](https://react.dev/learn/reusing-logic-with-custom-hooks)
 - [eslint-plugin-react-native](https://github.com/Intellicode/eslint-plugin-react-native)
+- [ASTRA Mobile Design Guide](../../../docs/ux/mobile-design-guide.md) — Platform guidelines (Apple HIG, Material Design 3), touch interaction, animation timing, haptic feedback, dark mode, accessibility, and expert polish tips
+- [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/)
+- [Material Design 3](https://m3.material.io/)

@@ -1,190 +1,470 @@
 /* ==========================================================================
-   ASTRA Design Tokens
+   ASTRA Design Tokens v2
+   3-Tier Token Architecture: Primitive → Semantic → Component
+   Color Space: OKLCH (perceptually uniform)
+   Typography: Geist Sans + Pretendard (Korean) + Geist Mono
    DSA가 프로젝트에 맞게 커스터마이즈합니다.
    ========================================================================== */
 
 :root {
   /* ========================================================================
-     1. COLOR TOKENS
+     TIER 1: PRIMITIVE TOKENS (Raw values — brand palette)
+     These are the raw design values. Never reference directly in components.
      ======================================================================== */
 
-  /* Primary */
-  --color-primary-50: #eff6ff;
-  --color-primary-100: #dbeafe;
-  --color-primary-200: #bfdbfe;
-  --color-primary-300: #93c5fd;
-  --color-primary-400: #60a5fa;
-  --color-primary-500: #3b82f6;
-  --color-primary-600: #2563eb;
-  --color-primary-700: #1d4ed8;
-  --color-primary-800: #1e40af;
-  --color-primary-900: #1e3a8a;
+  /* --- Primary (Blue) --- */
+  --primitive-primary-50:  oklch(97.0% 0.014 254.6);
+  --primitive-primary-100: oklch(93.2% 0.032 255.6);
+  --primitive-primary-200: oklch(87.0% 0.065 256.0);
+  --primitive-primary-300: oklch(78.5% 0.115 258.5);
+  --primitive-primary-400: oklch(70.7% 0.165 259.4);
+  --primitive-primary-500: oklch(62.3% 0.214 259.8);
+  --primitive-primary-600: oklch(54.6% 0.245 262.9);
+  --primitive-primary-700: oklch(48.8% 0.243 264.4);
+  --primitive-primary-800: oklch(42.4% 0.199 265.6);
+  --primitive-primary-900: oklch(37.9% 0.146 265.5);
+  --primitive-primary-950: oklch(28.2% 0.091 267.9);
 
-  /* Neutral (Gray) */
-  --color-neutral-50: #f9fafb;
-  --color-neutral-100: #f3f4f6;
-  --color-neutral-200: #e5e7eb;
-  --color-neutral-300: #d1d5db;
-  --color-neutral-400: #9ca3af;
-  --color-neutral-500: #6b7280;
-  --color-neutral-600: #4b5563;
-  --color-neutral-700: #374151;
-  --color-neutral-800: #1f2937;
-  --color-neutral-900: #111827;
+  /* --- Neutral (Zinc) --- */
+  --primitive-neutral-0:   oklch(100% 0 0);
+  --primitive-neutral-50:  oklch(98.5% 0.002 247.8);
+  --primitive-neutral-100: oklch(96.7% 0.003 264.5);
+  --primitive-neutral-200: oklch(92.0% 0.004 286.3);
+  --primitive-neutral-300: oklch(87.1% 0.006 286.3);
+  --primitive-neutral-400: oklch(70.7% 0.015 261.1);
+  --primitive-neutral-500: oklch(55.2% 0.016 285.9);
+  --primitive-neutral-600: oklch(44.2% 0.017 285.8);
+  --primitive-neutral-700: oklch(37.0% 0.013 285.8);
+  --primitive-neutral-800: oklch(27.4% 0.006 286.0);
+  --primitive-neutral-900: oklch(21.0% 0.006 285.9);
+  --primitive-neutral-950: oklch(14.1% 0.005 285.8);
+  --primitive-neutral-1000: oklch(0% 0 0);
 
-  /* Semantic */
-  --color-success-500: #22c55e;
-  --color-success-600: #16a34a;
-  --color-warning-500: #f59e0b;
-  --color-warning-600: #d97706;
-  --color-error-500: #ef4444;
-  --color-error-600: #dc2626;
-  --color-info-500: #3b82f6;
-  --color-info-600: #2563eb;
+  /* --- Success (Emerald) --- */
+  --primitive-success-50:  oklch(97.9% 0.021 166.1);
+  --primitive-success-100: oklch(95.0% 0.052 163.1);
+  --primitive-success-500: oklch(69.6% 0.17 162.5);
+  --primitive-success-600: oklch(59.6% 0.145 163.2);
+  --primitive-success-700: oklch(50.8% 0.118 165.6);
+  --primitive-success-900: oklch(35.9% 0.074 168.3);
 
-  /* Background */
-  --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f9fafb;
-  --color-bg-tertiary: #f3f4f6;
+  /* --- Warning (Amber) --- */
+  --primitive-warning-50:  oklch(98.7% 0.022 95.3);
+  --primitive-warning-100: oklch(96.2% 0.059 95.3);
+  --primitive-warning-500: oklch(76.9% 0.188 70.1);
+  --primitive-warning-600: oklch(66.6% 0.179 58.3);
+  --primitive-warning-700: oklch(55.5% 0.163 49.0);
+  --primitive-warning-900: oklch(39.7% 0.108 43.6);
 
-  /* Text */
-  --color-text-primary: #111827;
-  --color-text-secondary: #4b5563;
-  --color-text-tertiary: #9ca3af;
-  --color-text-inverse: #ffffff;
+  /* --- Error (Red) --- */
+  --primitive-error-50:  oklch(97.1% 0.013 17.4);
+  --primitive-error-100: oklch(93.6% 0.032 17.7);
+  --primitive-error-500: oklch(63.7% 0.237 25.3);
+  --primitive-error-600: oklch(57.7% 0.245 27.3);
+  --primitive-error-700: oklch(50.5% 0.213 27.5);
+  --primitive-error-900: oklch(35.8% 0.14 25.7);
 
-  /* Border */
-  --color-border-default: #e5e7eb;
-  --color-border-strong: #d1d5db;
+  /* --- Info (Blue — alias of primary) --- */
+  --primitive-info-50:  var(--primitive-primary-50);
+  --primitive-info-100: var(--primitive-primary-100);
+  --primitive-info-500: var(--primitive-primary-500);
+  --primitive-info-600: var(--primitive-primary-600);
 
   /* ========================================================================
-     2. TYPOGRAPHY TOKENS
+     TIER 1: PRIMITIVE — Typography
      ======================================================================== */
 
   /* Font Family */
-  --font-family-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-family-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  --font-sans: 'Geist', 'Pretendard Variable', Pretendard, -apple-system,
+               BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto,
+               'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic',
+               'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
+  --font-mono: 'Geist Mono', 'JetBrains Mono', 'Fira Code',
+               ui-monospace, SFMono-Regular, Menlo, Monaco,
+               Consolas, monospace;
+  --font-heading: var(--font-sans);
 
-  /* Font Size (Major Third Scale - 1.250) */
-  --font-size-xs: 0.75rem;    /* 12px */
-  --font-size-sm: 0.875rem;   /* 14px */
-  --font-size-base: 1rem;     /* 16px */
-  --font-size-lg: 1.125rem;   /* 18px */
-  --font-size-xl: 1.25rem;    /* 20px */
-  --font-size-2xl: 1.5rem;    /* 24px */
-  --font-size-3xl: 1.875rem;  /* 30px */
-  --font-size-4xl: 2.25rem;   /* 36px */
-  --font-size-5xl: 3rem;      /* 48px */
+  /* Static Font Sizes (Major Third Scale — 1.250) */
+  --text-xs:   0.75rem;    /* 12px */
+  --text-sm:   0.875rem;   /* 14px */
+  --text-base: 1rem;       /* 16px */
+  --text-lg:   1.125rem;   /* 18px */
+  --text-xl:   1.25rem;    /* 20px */
+  --text-2xl:  1.5rem;     /* 24px */
+  --text-3xl:  1.875rem;   /* 30px */
+  --text-4xl:  2.25rem;    /* 36px */
+  --text-5xl:  3rem;       /* 48px */
+  --text-6xl:  3.75rem;    /* 60px */
+
+  /* Fluid Font Sizes — scales smoothly between mobile (375px) and desktop (1440px) */
+  --fluid-xs:   clamp(0.75rem,  0.7rem  + 0.25vw, 0.875rem);   /* 12→14 */
+  --fluid-sm:   clamp(0.875rem, 0.8rem  + 0.35vw, 1rem);       /* 14→16 */
+  --fluid-base: clamp(1rem,     0.93rem + 0.35vw, 1.125rem);   /* 16→18 */
+  --fluid-lg:   clamp(1.125rem, 1rem    + 0.65vw, 1.375rem);   /* 18→22 */
+  --fluid-xl:   clamp(1.25rem,  1.1rem  + 0.75vw, 1.5rem);     /* 20→24 */
+  --fluid-2xl:  clamp(1.5rem,   1.2rem  + 1.5vw,  2.25rem);    /* 24→36 */
+  --fluid-3xl:  clamp(1.875rem, 1.5rem  + 1.9vw,  2.75rem);    /* 30→44 */
+  --fluid-4xl:  clamp(2.25rem,  1.8rem  + 2.25vw, 3.25rem);    /* 36→52 */
+  --fluid-5xl:  clamp(3rem,     2.2rem  + 4vw,    4.5rem);      /* 48→72 */
 
   /* Font Weight */
-  --font-weight-regular: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
 
   /* Line Height */
-  --line-height-tight: 1.25;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.75;
+  --leading-none:    1;
+  --leading-tight:   1.25;
+  --leading-snug:    1.375;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.625;
+  --leading-loose:   1.75;
 
   /* Letter Spacing */
-  --letter-spacing-tight: -0.025em;
-  --letter-spacing-normal: 0;
-  --letter-spacing-wide: 0.025em;
+  --tracking-tighter: -0.05em;
+  --tracking-tight:   -0.025em;
+  --tracking-normal:  0;
+  --tracking-wide:    0.025em;
+  --tracking-wider:   0.05em;
 
   /* ========================================================================
-     3. SPACING TOKENS (8px Grid System)
+     TIER 1: PRIMITIVE — Spacing (4px base grid)
      ======================================================================== */
 
-  --spacing-0: 0;
-  --spacing-1: 0.25rem;   /* 4px */
-  --spacing-2: 0.5rem;    /* 8px */
-  --spacing-3: 0.75rem;   /* 12px */
-  --spacing-4: 1rem;      /* 16px */
-  --spacing-5: 1.25rem;   /* 20px */
-  --spacing-6: 1.5rem;    /* 24px */
-  --spacing-8: 2rem;      /* 32px */
-  --spacing-10: 2.5rem;   /* 40px */
-  --spacing-12: 3rem;     /* 48px */
-  --spacing-16: 4rem;     /* 64px */
-  --spacing-20: 5rem;     /* 80px */
-  --spacing-24: 6rem;     /* 96px */
+  --space-0:   0;
+  --space-px:  1px;
+  --space-0-5: 0.125rem;   /* 2px */
+  --space-1:   0.25rem;    /* 4px */
+  --space-1-5: 0.375rem;   /* 6px */
+  --space-2:   0.5rem;     /* 8px */
+  --space-3:   0.75rem;    /* 12px */
+  --space-4:   1rem;       /* 16px */
+  --space-5:   1.25rem;    /* 20px */
+  --space-6:   1.5rem;     /* 24px */
+  --space-8:   2rem;       /* 32px */
+  --space-10:  2.5rem;     /* 40px */
+  --space-12:  3rem;       /* 48px */
+  --space-16:  4rem;       /* 64px */
+  --space-20:  5rem;       /* 80px */
+  --space-24:  6rem;       /* 96px */
+  --space-32:  8rem;       /* 128px */
+
+  /* Fluid Spacing — scales with viewport */
+  --fluid-space-xs:  clamp(0.25rem, 0.2rem  + 0.25vw, 0.5rem);
+  --fluid-space-sm:  clamp(0.5rem,  0.4rem  + 0.5vw,  0.75rem);
+  --fluid-space-md:  clamp(1rem,    0.8rem  + 1vw,    1.5rem);
+  --fluid-space-lg:  clamp(1.5rem,  1.2rem  + 1.5vw,  2.5rem);
+  --fluid-space-xl:  clamp(2rem,    1.5rem  + 2.5vw,  4rem);
+  --fluid-space-2xl: clamp(3rem,    2rem    + 5vw,    6rem);
 
   /* ========================================================================
-     4. BORDER & RADIUS TOKENS
+     TIER 1: PRIMITIVE — Border & Radius
      ======================================================================== */
 
   --border-width-default: 1px;
-  --border-width-thick: 2px;
+  --border-width-thick:   2px;
 
-  --radius-sm: 0.25rem;   /* 4px */
-  --radius-md: 0.375rem;  /* 6px */
-  --radius-lg: 0.5rem;    /* 8px */
-  --radius-xl: 0.75rem;   /* 12px */
-  --radius-2xl: 1rem;     /* 16px */
+  --radius-none: 0;
+  --radius-sm:   0.25rem;   /* 4px */
+  --radius-md:   0.375rem;  /* 6px */
+  --radius-lg:   0.5rem;    /* 8px */
+  --radius-xl:   0.75rem;   /* 12px */
+  --radius-2xl:  1rem;      /* 16px */
+  --radius-3xl:  1.5rem;    /* 24px */
   --radius-full: 9999px;
 
   /* ========================================================================
-     5. SHADOW TOKENS
+     TIER 1: PRIMITIVE — Shadows
      ======================================================================== */
 
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-xs: 0 1px 2px 0 oklch(0% 0 0 / 0.04);
+  --shadow-sm: 0 1px 3px 0 oklch(0% 0 0 / 0.06), 0 1px 2px -1px oklch(0% 0 0 / 0.06);
+  --shadow-md: 0 4px 6px -1px oklch(0% 0 0 / 0.07), 0 2px 4px -2px oklch(0% 0 0 / 0.05);
+  --shadow-lg: 0 10px 15px -3px oklch(0% 0 0 / 0.08), 0 4px 6px -4px oklch(0% 0 0 / 0.04);
+  --shadow-xl: 0 20px 25px -5px oklch(0% 0 0 / 0.08), 0 8px 10px -6px oklch(0% 0 0 / 0.04);
+  --shadow-2xl: 0 25px 50px -12px oklch(0% 0 0 / 0.2);
+  --shadow-inner: inset 0 2px 4px 0 oklch(0% 0 0 / 0.04);
 
   /* ========================================================================
-     6. TRANSITION TOKENS
+     TIER 1: PRIMITIVE — Motion & Animation
      ======================================================================== */
 
-  --duration-fast: 150ms;
-  --duration-normal: 250ms;
-  --duration-slow: 350ms;
-  --easing-default: cubic-bezier(0.4, 0, 0.2, 1);
-  --easing-in: cubic-bezier(0.4, 0, 1, 1);
-  --easing-out: cubic-bezier(0, 0, 0.2, 1);
+  /* Durations */
+  --duration-instant:  50ms;
+  --duration-fast:     100ms;
+  --duration-normal:   200ms;
+  --duration-moderate: 300ms;
+  --duration-slow:     500ms;
+
+  /* Standard Easings */
+  --ease-default:   cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in:        cubic-bezier(0.55, 0, 1, 0.45);
+  --ease-out:       cubic-bezier(0, 0.55, 0.45, 1);
+  --ease-in-out:    cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-out-back:  cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Spring Easings (CSS linear() — physics-based motion) */
+  --ease-spring-gentle: linear(
+    0, 0.006, 0.025 2.8%, 0.101 6.1%, 0.539 18.9%,
+    0.721 25.3%, 0.849 31.5%, 0.937 38.1%,
+    0.968 41.8%, 0.991 45.7%, 1.006 50.1%,
+    1.015 55%, 1.017 63.9%, 1.001
+  );
+  --ease-spring-bouncy: linear(
+    0, 0.004, 0.016 2.5%, 0.063 5.4%, 0.251 10.6%,
+    0.561 17.3%, 0.742 21.6%, 0.891 26.4%,
+    0.976 31%, 1.025 36.2%, 1.05 42.2%,
+    1.048 49%, 1.029 57.6%, 1.008 68.4%,
+    0.998 84.8%, 1
+  );
+  --ease-spring-snappy: linear(
+    0, 0.009, 0.037 2.1%, 0.153 4.6%, 0.776 14.3%,
+    1.001 19.1%, 1.091 23%, 1.111 25.4%,
+    1.108 28.1%, 1.067 33.7%, 1.009 44.4%,
+    0.997 53.5%, 1
+  );
 
   /* ========================================================================
-     7. Z-INDEX TOKENS
+     TIER 1: PRIMITIVE — Z-Index
      ======================================================================== */
 
-  --z-dropdown: 1000;
-  --z-sticky: 1020;
-  --z-fixed: 1030;
+  --z-auto:           auto;
+  --z-base:           0;
+  --z-dropdown:       1000;
+  --z-sticky:         1020;
+  --z-fixed:          1030;
   --z-modal-backdrop: 1040;
-  --z-modal: 1050;
-  --z-popover: 1060;
-  --z-tooltip: 1070;
-  --z-toast: 1080;
+  --z-modal:          1050;
+  --z-popover:        1060;
+  --z-tooltip:        1070;
+  --z-toast:          1080;
+  --z-max:            9999;
+
+  /* ========================================================================
+     TIER 2: SEMANTIC TOKENS (Intent/meaning — theme-switchable)
+     Reference these in component styles and layouts.
+     ======================================================================== */
+
+  /* --- Surface --- */
+  --surface-base:    var(--primitive-neutral-0);
+  --surface-raised:  var(--primitive-neutral-50);
+  --surface-overlay: var(--primitive-neutral-100);
+  --surface-sunken:  var(--primitive-neutral-100);
+  --surface-accent:  var(--primitive-primary-50);
+
+  /* --- Text --- */
+  --text-primary:   var(--primitive-neutral-900);
+  --text-secondary: var(--primitive-neutral-500);
+  --text-tertiary:  var(--primitive-neutral-400);
+  --text-inverse:   var(--primitive-neutral-0);
+  --text-link:      var(--primitive-primary-600);
+  --text-link-hover: var(--primitive-primary-700);
+
+  /* --- Border --- */
+  --border-default: var(--primitive-neutral-200);
+  --border-strong:  var(--primitive-neutral-300);
+  --border-subtle:  var(--primitive-neutral-100);
+  --border-focus:   var(--primitive-primary-500);
+
+  /* --- Action --- */
+  --action-primary:       var(--primitive-primary-600);
+  --action-primary-hover: var(--primitive-primary-700);
+  --action-primary-active: var(--primitive-primary-800);
+  --action-primary-text:  var(--primitive-neutral-0);
+  --action-secondary:       var(--primitive-neutral-100);
+  --action-secondary-hover: var(--primitive-neutral-200);
+  --action-secondary-text:  var(--primitive-neutral-900);
+  --action-danger:       var(--primitive-error-600);
+  --action-danger-hover: var(--primitive-error-700);
+  --action-danger-text:  var(--primitive-neutral-0);
+  --action-ghost-hover:  var(--primitive-neutral-100);
+
+  /* --- Status --- */
+  --status-success-bg:   var(--primitive-success-50);
+  --status-success-text: var(--primitive-success-700);
+  --status-success-icon: var(--primitive-success-500);
+  --status-warning-bg:   var(--primitive-warning-50);
+  --status-warning-text: var(--primitive-warning-700);
+  --status-warning-icon: var(--primitive-warning-500);
+  --status-error-bg:     var(--primitive-error-50);
+  --status-error-text:   var(--primitive-error-700);
+  --status-error-icon:   var(--primitive-error-500);
+  --status-info-bg:      var(--primitive-info-50);
+  --status-info-text:    var(--primitive-primary-700);
+  --status-info-icon:    var(--primitive-info-500);
+
+  /* --- Focus Ring --- */
+  --ring-width:  2px;
+  --ring-offset: 2px;
+  --ring-color:  var(--primitive-primary-500);
+
+  /* ========================================================================
+     TIER 3: COMPONENT TOKENS (Specific to UI components)
+     Override these per-component for customization.
+     ======================================================================== */
+
+  /* --- Button --- */
+  --btn-radius:     var(--radius-lg);
+  --btn-font-weight: var(--weight-medium);
+  --btn-sm-height:  2rem;       /* 32px */
+  --btn-sm-px:      var(--space-3);
+  --btn-sm-text:    var(--text-sm);
+  --btn-md-height:  2.5rem;     /* 40px */
+  --btn-md-px:      var(--space-4);
+  --btn-md-text:    var(--text-sm);
+  --btn-lg-height:  2.75rem;    /* 44px */
+  --btn-lg-px:      var(--space-6);
+  --btn-lg-text:    var(--text-base);
+
+  /* --- Input --- */
+  --input-radius:       var(--radius-lg);
+  --input-border:       var(--border-default);
+  --input-border-focus: var(--border-focus);
+  --input-bg:           var(--surface-base);
+  --input-height:       2.5rem;   /* 40px */
+  --input-px:           var(--space-3);
+  --input-text:         var(--text-sm);
+
+  /* --- Card --- */
+  --card-radius:     var(--radius-xl);
+  --card-bg:         var(--surface-base);
+  --card-border:     var(--border-default);
+  --card-padding:    var(--space-6);
+  --card-shadow:     var(--shadow-xs);
+  --card-shadow-hover: var(--shadow-md);
+
+  /* --- Modal / Dialog --- */
+  --dialog-radius:    var(--radius-2xl);
+  --dialog-bg:        var(--surface-base);
+  --dialog-shadow:    var(--shadow-xl);
+  --dialog-padding:   var(--space-6);
+  --dialog-backdrop:  oklch(0% 0 0 / 0.5);
+  --dialog-sm-width:  28rem;     /* 448px */
+  --dialog-md-width:  32rem;     /* 512px */
+  --dialog-lg-width:  40rem;     /* 640px */
+
+  /* --- Navigation --- */
+  --nav-height:           3.5rem;  /* 56px — modern compact */
+  --sidebar-width:        15rem;   /* 240px */
+  --sidebar-width-collapsed: 4rem; /* 64px */
+  --sidebar-bg:           var(--surface-raised);
+
+  /* --- Toast --- */
+  --toast-radius:   var(--radius-xl);
+  --toast-shadow:   var(--shadow-lg);
+  --toast-padding:  var(--space-4);
 }
 
 /* ==========================================================================
-   DARK MODE TOKENS
+   DARK MODE — TIER 2 Semantic Overrides
+   Only semantic tokens change; primitive and component tokens stay the same.
    ========================================================================== */
 
 [data-theme="dark"],
 .dark {
-  --color-bg-primary: #111827;
-  --color-bg-secondary: #1f2937;
-  --color-bg-tertiary: #374151;
+  color-scheme: dark;
 
-  --color-text-primary: #f9fafb;
-  --color-text-secondary: #d1d5db;
-  --color-text-tertiary: #9ca3af;
-  --color-text-inverse: #111827;
+  /* --- Surface (Layered elevation: darker = lower, lighter = higher) --- */
+  --surface-base:    var(--primitive-neutral-950);
+  --surface-raised:  var(--primitive-neutral-900);
+  --surface-overlay: var(--primitive-neutral-800);
+  --surface-sunken:  oklch(10% 0.005 285.8);
+  --surface-accent:  oklch(22% 0.04 264);
 
-  --color-border-default: #374151;
-  --color-border-strong: #4b5563;
+  /* --- Text --- */
+  --text-primary:   var(--primitive-neutral-50);
+  --text-secondary: var(--primitive-neutral-400);
+  --text-tertiary:  var(--primitive-neutral-500);
+  --text-inverse:   var(--primitive-neutral-950);
+  --text-link:      var(--primitive-primary-400);
+  --text-link-hover: var(--primitive-primary-300);
+
+  /* --- Border --- */
+  --border-default: var(--primitive-neutral-800);
+  --border-strong:  var(--primitive-neutral-700);
+  --border-subtle:  var(--primitive-neutral-900);
+  --border-focus:   var(--primitive-primary-400);
+
+  /* --- Action (reduced chroma for dark backgrounds) --- */
+  --action-primary:       var(--primitive-primary-500);
+  --action-primary-hover: var(--primitive-primary-400);
+  --action-primary-active: var(--primitive-primary-300);
+  --action-primary-text:  var(--primitive-neutral-950);
+  --action-secondary:       var(--primitive-neutral-800);
+  --action-secondary-hover: var(--primitive-neutral-700);
+  --action-secondary-text:  var(--primitive-neutral-50);
+  --action-danger:       var(--primitive-error-500);
+  --action-danger-hover: var(--primitive-error-400);
+  --action-ghost-hover:  var(--primitive-neutral-800);
+
+  /* --- Status (darker backgrounds, lighter text for contrast) --- */
+  --status-success-bg:   oklch(22% 0.04 166);
+  --status-success-text: var(--primitive-success-100);
+  --status-warning-bg:   oklch(22% 0.04 70);
+  --status-warning-text: var(--primitive-warning-100);
+  --status-error-bg:     oklch(22% 0.04 25);
+  --status-error-text:   var(--primitive-error-100);
+  --status-info-bg:      oklch(22% 0.04 260);
+  --status-info-text:    var(--primitive-primary-100);
+
+  /* --- Focus Ring --- */
+  --ring-color: var(--primitive-primary-400);
+
+  /* --- Shadows (more prominent on dark backgrounds) --- */
+  --shadow-xs: 0 1px 2px 0 oklch(0% 0 0 / 0.15);
+  --shadow-sm: 0 1px 3px 0 oklch(0% 0 0 / 0.2), 0 1px 2px -1px oklch(0% 0 0 / 0.15);
+  --shadow-md: 0 4px 6px -1px oklch(0% 0 0 / 0.25), 0 2px 4px -2px oklch(0% 0 0 / 0.15);
+  --shadow-lg: 0 10px 15px -3px oklch(0% 0 0 / 0.3), 0 4px 6px -4px oklch(0% 0 0 / 0.15);
+  --shadow-xl: 0 20px 25px -5px oklch(0% 0 0 / 0.3), 0 8px 10px -6px oklch(0% 0 0 / 0.15);
+
+  /* --- Dialog backdrop --- */
+  --dialog-backdrop: oklch(0% 0 0 / 0.7);
 }
 
 /* ==========================================================================
-   RESPONSIVE BREAKPOINTS (Reference Only - Use in Media Queries)
+   REDUCED MOTION
+   Respect user's motion preferences.
+   ========================================================================== */
 
-   Mobile:  ~767px
-   Tablet:  768px ~ 1023px
-   Desktop: 1024px ~
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant:  0ms;
+    --duration-fast:     0ms;
+    --duration-normal:   0ms;
+    --duration-moderate: 0ms;
+    --duration-slow:     0ms;
+
+    --ease-spring-gentle: ease;
+    --ease-spring-bouncy: ease;
+    --ease-spring-snappy: ease;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   RESPONSIVE BREAKPOINTS (Reference — use in media/container queries)
+
+   Mobile:     ~639px       (xs/sm)
+   Tablet:     640~1023px   (md)
+   Desktop:    1024~1279px  (lg)
+   Wide:       1280~1535px  (xl)
+   Ultra-wide: 1536px~      (2xl)
 
    Usage:
-   @media (min-width: 768px) { ... }   tablet+
+   @media (min-width: 640px)  { ... }  tablet+
    @media (min-width: 1024px) { ... }  desktop+
+   @media (min-width: 1280px) { ... }  wide+
+   @media (min-width: 1536px) { ... }  ultra-wide+
+
+   Container Queries (component-level responsive):
+   @container card (min-width: 400px) { ... }
    ========================================================================== */
