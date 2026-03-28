@@ -269,13 +269,90 @@ Shut down the server process after testing is complete:
 
 Confirm with the user before shutting down the server.
 
-### Step 10: PR Review & Merge
+### Step 10: Determine Test Success/Failure
 
-After testing is complete, automatically trigger the `/pr-merge` workflow.
+Evaluate the overall test result based on the test report generated in Step 8:
 
-1. Use **AskUserQuestion** to confirm with the user whether to proceed with PR merge:
+**Success criteria (ALL must be met):**
+- Server Startup: PASS
+- Scenario Tests: 100% passed (all passed/total)
+- No Severity-Critical issues found
+- No Severity-High issues found (unless user explicitly acknowledged)
 
-> **Testing is complete. Would you like to proceed with PR Review & Merge?**
+**Failure criteria (ANY triggers failure):**
+- Server Startup: FAIL
+- Scenario Tests: any test failed
+- Severity-Critical issue detected
+- Server Log Errors with unhandled exceptions
+
+If **tests FAILED**:
+1. Provide the test report location
+2. List the failed items with brief descriptions
+3. End the workflow — do NOT proceed to branch creation or commit
+
+If **tests PASSED**: proceed to Step 11.
+
+### Step 11: Auto Branch Creation, Commit & Push
+
+When all tests pass, automatically create a branch, commit all changes, and push without asking the user.
+
+#### A. Detect Branch Context
+
+```
+1. Check current branch with `git branch --show-current`
+2. Check current sprint from `docs/sprints/` (scan sprint-{N}-{name}/ directories, find highest N)
+3. Check the primary feature name from test target or blueprint context
+```
+
+#### B. Create Feature Branch (if on main/dev/staging)
+
+If current branch is `main`, `dev`, `staging`, or `develop`, create a new branch:
+
+```bash
+# Branch naming: test/{sprint}-{feature}-{date}
+# Example: test/sprint-1-auth-20260328
+git checkout -b test/sprint-{N}-{feature-name}-{YYYYMMDD}
+```
+
+If already on a feature branch (not main/dev/staging/develop), stay on the current branch.
+
+#### C. Stage and Commit
+
+```bash
+# Stage all changes (test reports, test cases, and any fixes made during testing)
+git add docs/tests/ docs/sprints/
+
+# Also stage any source code changes made during test debugging
+git add -A
+
+# Commit with descriptive message
+git commit -m "test: sprint-{N} {feature-name} integration test passed
+
+- Scenario tests: {passed}/{total} passed
+- Console errors: {count}
+- Network failures: {count}
+- Test report: docs/tests/test-reports/{report-file}
+
+Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>"
+```
+
+#### D. Push to Remote
+
+```bash
+git push -u origin {branch-name}
+```
+
+After push completes, display the branch name and push result.
+
+### Step 12: PR Review & Merge (Optional)
+
+After successful push, ask the user whether to proceed with PR merge:
+
+1. Use **AskUserQuestion** to confirm:
+
+> **테스트 통과 → 브랜치 생성 → 커밋 → 푸시 완료!**
+> Branch: `{branch-name}`
+> **PR Review & Merge를 진행할까요?**
 > - Yes (default) — Run `/pr-merge`
 > - No — End workflow
 
@@ -287,7 +364,7 @@ Use Skill tool: invoke "pr-merge"
 
 > **Note**: If additional arguments are needed for `/pr-merge` (e.g., `--no-review`, `--draft`, `--staging`), ask the user for options.
 
-3. If the user declines, provide the test report location and end the workflow.
+3. If the user declines, provide the branch name and test report location and end the workflow.
 
 ## Quick Run Examples
 
