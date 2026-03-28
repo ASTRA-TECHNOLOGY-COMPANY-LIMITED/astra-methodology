@@ -70,7 +70,8 @@ astra-methodology/
 │   ├── ai-agent/
 │   │   └── system-design.md     # AI agent platform reference design (fect-api-agent)
 │   ├── ux/
-│   │   └── ux-interaction-patterns.md  # UX/UI interaction patterns guide (11 categories)
+│   │   ├── ux-interaction-patterns.md  # UX/UI interaction patterns guide (11 categories)
+│   │   └── mobile-design-guide.md     # Mobile app design guide (HIG, Material 3, touch, animation, haptics, accessibility, expert tips)
 │   ├── catalog/
 │   │   ├── catalog-expert-workflow.md     # Catalog design expert workflow & know-how
 │   │   ├── catalog-expert-workflow.ko.md  # Korean translation
@@ -112,6 +113,8 @@ The plugin auto-applies coding conventions when editing language-specific files:
 - **CSS/SCSS** (CSS Guidelines + Sass Guidelines): 2-space indent, 80-char limit, BEM naming, no ID selectors, max 3-level nesting, mobile-first media queries
 
 Reference files are in `skills/coding-convention/` (e.g., `java-coding-convention.md`, `typescript-coding-convention.md`, `react-native-coding-convention.md`).
+
+For mobile projects, the coding convention skill additionally references `docs/ux/mobile-design-guide.md` for UI/UX implementation decisions (platform guidelines, touch interaction, animation timing, haptic feedback, dark mode, accessibility).
 
 ### International Code Standards (ISO 3166-1/2, ITU-T E.164)
 
@@ -230,7 +233,8 @@ The `/ux-publish` skill generates production-grade HTML prototypes from planning
 - **Design quality**: Uses `/frontend-design` skill for production-grade, distinctive UI (avoids generic AI aesthetics)
 - **AI images**: Uses `fect-image` MCP (`mcp__fect-image__image_text2img`) for hero banners, empty state illustrations, avatars, backgrounds
 - **Interaction patterns**: References `docs/ux/ux-interaction-patterns.md` (11 categories: micro-interactions, navigation, feedback, scroll, form, transitions, onboarding, accessibility, delight, dark patterns to avoid)
-- **Design tokens**: Strictly references project's `src/styles/design-tokens.css` (no hardcoded values)
+- **Mobile design**: For mobile projects, additionally references `docs/ux/mobile-design-guide.md` (14 sections: platform guidelines, touch interaction, navigation, typography, color/dark mode, design tokens, forms, animation, haptics, onboarding, performance UX, accessibility, framework strategies, expert polish tips)
+- **Design tokens**: 3-tier architecture (Primitive → Semantic → Component), OKLCH color space, Geist Sans + Pretendard (Korean) font stack, fluid typography/spacing via `clamp()`, spring-based animation easings. Strictly references project's `src/styles/design-tokens.css` (no hardcoded values)
 - **Components**: Follows `docs/design-system/components.md` specifications
 - **Layout**: Implements `docs/design-system/layout-grid.md` grid system
 - **Features**: Responsive (mobile/tablet/desktop), dark mode, accessibility (WCAG AA), `prefers-reduced-motion` support
@@ -320,7 +324,7 @@ When the plugin initializes a target project, it creates:
 │       └── images/                    # Product & lifestyle images (fect-image)
 └── src/
     └── styles/
-        └── design-tokens.css         # CSS Custom Properties (source code)
+        └── design-tokens.css         # CSS Custom Properties — 3-tier tokens (OKLCH colors, Geist+Pretendard fonts, fluid typography, spring animations)
 ```
 
 ## Development Notes

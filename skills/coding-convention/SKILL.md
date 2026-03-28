@@ -22,6 +22,8 @@ Detect the language from the target file extension:
 
 > **React Native Detection**: If the project contains `react-native` or `expo` in `package.json` dependencies, apply the React Native convention as a complementary layer on top of the TypeScript convention for all `.tsx`/`.ts` files.
 
+> **Mobile Design Guide**: When working on a mobile project (React Native, Flutter, or KMP), additionally reference `$CLAUDE_PLUGIN_ROOT/docs/ux/mobile-design-guide.md` for UI/UX implementation decisions. This guide provides platform-specific guidelines (Apple HIG Liquid Glass, Material Design 3 Expressive), touch interaction patterns (thumb zone, gesture mapping), animation timing (50~400ms per type), haptic feedback mapping (iOS UIFeedbackGenerator / Android HapticFeedbackConstants), dark mode principles (surface elevation, #121212 not #000000), accessibility requirements (44pt/48dp touch targets, 4.5:1 contrast), and expert polish tips. Apply these standards when creating or modifying UI components, screens, navigation, forms, and animations.
+
 ## Java Convention Essentials (based on Google Java Style Guide)
 
 - **Encoding**: UTF-8
