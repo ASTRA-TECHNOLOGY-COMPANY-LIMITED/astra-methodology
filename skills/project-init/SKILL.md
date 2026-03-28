@@ -1,7 +1,7 @@
 ---
 name: project-init
-description: "ASTRA Sprint 0 project initial setup. Creates project directory structure, CLAUDE.md, design system templates, blueprint templates, and sprint templates."
-argument-hint: "[project-name] [backend-tech] [frontend-tech] [db-type]"
+description: "ASTRA Sprint 0 project initial setup. Supports Web and Mobile (React Native, Flutter, KMP) platforms. Creates project directory structure, CLAUDE.md, design system templates, blueprint templates, and sprint templates."
+argument-hint: "[project-name] [platform: web|mobile] [tech-stack]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Agent
 ---
 
@@ -35,9 +35,32 @@ Store the selected language and apply it to all subsequent steps. Every user-fac
 
 The selected language will be persisted in the target project's CLAUDE.md (see Step 4, `## Language` section) so that all team members sharing the repository automatically use the same language in every Claude Code session.
 
+### Step 0.5: Select Platform Type
+
+> **MANDATORY**: This step MUST always be executed. You MUST use AskUserQuestion to ask the user and wait for their response before proceeding.
+
+Use AskUserQuestion to ask the user which platform they are building for:
+
+> **IMPORTANT**: The option text below is in Korean. You MUST translate all option text into the language selected in Step 0 before presenting to the user.
+
+```
+프로젝트 플랫폼을 선택해 주세요:
+
+1. 웹 (Web) — 웹 애플리케이션 개발 (React, Next.js, Vue, Spring Boot, NestJS, FastAPI 등)
+2. 모바일 (Mobile) — Android/iOS 앱 개발 (React Native, Flutter, Kotlin Multiplatform 등)
+```
+
+Store the selected platform type (`web` or `mobile`). This selection determines the flow of all subsequent steps.
+
 ### Step 1: Gather Project Information
 
-If user arguments are insufficient, use AskUserQuestion to confirm the following (ask in the selected language):
+If user arguments are insufficient, use AskUserQuestion to confirm the following (ask in the selected language).
+
+If `$ARGUMENTS` is provided, parse and extract as much information as possible, and only ask additional questions for missing information.
+
+#### Step 1-A: Web Platform
+
+If the user selected **Web** in Step 0.5, gather:
 
 1. **Project name** (e.g., online-payment-system)
 2. **Project description** (one-line summary)
@@ -47,7 +70,50 @@ If user arguments are insufficient, use AskUserQuestion to confirm the following
 6. **Key modules** (e.g., member management, product management, orders, payments, notifications)
 7. **Team composition** (number of VA, PE, DE, DSA members)
 
-If `$ARGUMENTS` is provided, parse and extract as much information as possible, and only ask additional questions for missing information.
+#### Step 1-B: Mobile Platform
+
+If the user selected **Mobile** in Step 0.5, gather:
+
+1. **Project name** (e.g., my-delivery-app)
+2. **Project description** (one-line summary)
+3. **Mobile framework**: Use AskUserQuestion with the following options:
+
+> **IMPORTANT**: The option text below is in Korean. You MUST translate all option text into the language selected in Step 0 before presenting to the user.
+
+```
+모바일 프레임워크를 선택해 주세요:
+
+1. React Native / Expo — JavaScript/TypeScript 기반, 가장 큰 생태계 (★ 웹 개발 경험 활용)
+2. Flutter — Dart 기반, 뛰어난 커스텀 UI 성능 (★ 가장 빠르게 성장)
+3. Kotlin Multiplatform (KMP) — Kotlin 기반, 네이티브 UI + 공유 비즈니스 로직 (★ Google 공식 지지)
+```
+
+4. **Target platforms**: Use AskUserQuestion:
+
+```
+타겟 플랫폼을 선택해 주세요:
+
+1. Android + iOS (둘 다)
+2. Android만
+3. iOS만
+```
+
+5. **Backend strategy**: Use AskUserQuestion:
+
+```
+백엔드 전략을 선택해 주세요:
+
+1. 별도 API 서버 구축 (Spring Boot, NestJS, FastAPI 등)
+2. BaaS 사용 (Firebase / Supabase)
+3. 기존 API 연동 (이미 운영 중인 API 서버가 있음)
+```
+
+- If **option 1** (separate API server): additionally ask **backend tech stack** and **database** (same as Web Step 1-A items 3, 5)
+- If **option 2** (BaaS): ask which BaaS (`Firebase` or `Supabase`)
+- If **option 3** (existing API): ask for the API base URL or spec document location
+
+6. **Key modules** (e.g., authentication, push notifications, offline sync, chat, map/location)
+7. **Team composition** (number of VA, PE, DE, DSA members)
 
 ### Step 2: Select Design System
 
@@ -86,7 +152,24 @@ After gathering project info, use AskUserQuestion to ask the user which design s
 1. Tamagui — RN + Web 유니버설, 최적화 컴파일러
 2. Gluestack UI — NativeBase 후속, 트리쉐이킹 지원
 3. NativeWind — Tailwind CSS for React Native
+4. React Native Paper — Material Design 3 for RN, Google 공식 권장
+5. 추후 직접 구현 (디자인 시스템 템플릿만 생성)
+```
+
+**For Flutter projects:**
+
+```
+1. Material Design 3 — Flutter 기본 내장, Google 공식 디자인 시스템 (★ 가장 안정적)
+2. Cupertino (iOS-style) — iOS 네이티브 룩앤필, Apple HIG 준수
+3. Material + Cupertino 적응형 — 플랫폼별 자동 전환 (Android=Material, iOS=Cupertino)
 4. 추후 직접 구현 (디자인 시스템 템플릿만 생성)
+```
+
+**For Kotlin Multiplatform (Compose Multiplatform) projects:**
+
+```
+1. Material Design 3 (Compose) — Compose Material3, Jetpack Compose 기본 (★ 권장)
+2. 추후 직접 구현 (디자인 시스템 템플릿만 생성)
 ```
 
 **For other frameworks or no frontend:**
@@ -100,7 +183,11 @@ Store the user's selection. If the user chose a design system (not "추후 직�
 
 ### Step 3: Create Project Directory Structure
 
-Create the following structure in the current working directory (CWD):
+Create the following structure in the current working directory (CWD).
+
+#### Step 3 — Web Platform
+
+If the user selected **Web** in Step 0.5:
 
 ```
 {project-root}/
@@ -150,6 +237,221 @@ Create the following structure in the current working directory (CWD):
     └── .gitkeep
 ```
 
+#### Step 3 — Mobile Platform
+
+If the user selected **Mobile** in Step 0.5:
+
+**For React Native / Expo projects:**
+
+```
+{project-root}/
+├── CLAUDE.md
+├── .claude/
+│   └── settings.json
+│
+├── docs/
+│   ├── design-system/
+│   │   ├── components.md
+│   │   └── references/
+│   │       └── .gitkeep
+│   │
+│   ├── blueprints/
+│   │   ├── overview.md
+│   │   └── {NNN}-{feature-name}/
+│   │       └── blueprint.md
+│   │
+│   ├── planner/
+│   │   └── .gitkeep
+│   │
+│   ├── database/               # If separate API server or BaaS
+│   │   ├── database-design.md
+│   │   ├── naming-rules.md
+│   │   └── migration/
+│   │       └── .gitkeep
+│   │
+│   ├── tests/
+│   │   ├── test-strategy.md
+│   │   ├── test-cases/
+│   │   │   └── sprint-1/
+│   │   │       └── .gitkeep
+│   │   └── test-reports/
+│   │       └── .gitkeep
+│   │
+│   ├── sprints/
+│   │   └── sprint-1/
+│   │       └── .gitkeep
+│   │
+│   └── delivery/
+│       ├── android/
+│       │   └── .gitkeep
+│       └── ios/
+│           └── .gitkeep
+│
+├── src/
+│   ├── app/                    # Expo Router screens
+│   │   └── .gitkeep
+│   ├── components/             # Shared UI components
+│   │   └── .gitkeep
+│   ├── hooks/                  # Custom hooks
+│   │   └── .gitkeep
+│   ├── services/               # API clients, business logic
+│   │   └── .gitkeep
+│   ├── stores/                 # Zustand stores
+│   │   └── .gitkeep
+│   ├── styles/
+│   │   └── design-tokens.ts    # Design tokens (TS for RN)
+│   └── utils/
+│       └── .gitkeep
+│
+└── assets/                     # Static assets (images, fonts)
+    └── .gitkeep
+```
+
+**For Flutter projects:**
+
+```
+{project-root}/
+├── CLAUDE.md
+├── .claude/
+│   └── settings.json
+│
+├── docs/
+│   ├── design-system/
+│   │   ├── components.md
+│   │   └── references/
+│   │       └── .gitkeep
+│   │
+│   ├── blueprints/
+│   │   ├── overview.md
+│   │   └── {NNN}-{feature-name}/
+│   │       └── blueprint.md
+│   │
+│   ├── planner/
+│   │   └── .gitkeep
+│   │
+│   ├── database/
+│   │   ├── database-design.md
+│   │   ├── naming-rules.md
+│   │   └── migration/
+│   │       └── .gitkeep
+│   │
+│   ├── tests/
+│   │   ├── test-strategy.md
+│   │   ├── test-cases/
+│   │   │   └── sprint-1/
+│   │   │       └── .gitkeep
+│   │   └── test-reports/
+│   │       └── .gitkeep
+│   │
+│   ├── sprints/
+│   │   └── sprint-1/
+│   │       └── .gitkeep
+│   │
+│   └── delivery/
+│       ├── android/
+│       │   └── .gitkeep
+│       └── ios/
+│           └── .gitkeep
+│
+├── lib/                        # Flutter source code
+│   ├── app/                    # App configuration, routes
+│   │   └── .gitkeep
+│   ├── features/               # Feature modules
+│   │   └── .gitkeep
+│   ├── shared/                 # Shared widgets, utils
+│   │   ├── widgets/
+│   │   │   └── .gitkeep
+│   │   └── theme/
+│   │       └── design_tokens.dart  # Design tokens (Dart)
+│   ├── services/               # API clients, repositories
+│   │   └── .gitkeep
+│   └── main.dart               # Entry point (created in Step 3-B)
+│
+├── test/                       # Unit & widget tests
+│   └── .gitkeep
+│
+└── assets/                     # Static assets (images, fonts)
+    └── .gitkeep
+```
+
+**For Kotlin Multiplatform (KMP) projects:**
+
+```
+{project-root}/
+├── CLAUDE.md
+├── .claude/
+│   └── settings.json
+│
+├── docs/
+│   ├── design-system/
+│   │   ├── components.md
+│   │   └── references/
+│   │       └── .gitkeep
+│   │
+│   ├── blueprints/
+│   │   ├── overview.md
+│   │   └── {NNN}-{feature-name}/
+│   │       └── blueprint.md
+│   │
+│   ├── planner/
+│   │   └── .gitkeep
+│   │
+│   ├── database/
+│   │   ├── database-design.md
+│   │   ├── naming-rules.md
+│   │   └── migration/
+│   │       └── .gitkeep
+│   │
+│   ├── tests/
+│   │   ├── test-strategy.md
+│   │   ├── test-cases/
+│   │   │   └── sprint-1/
+│   │   │       └── .gitkeep
+│   │   └── test-reports/
+│   │       └── .gitkeep
+│   │
+│   ├── sprints/
+│   │   └── sprint-1/
+│   │       └── .gitkeep
+│   │
+│   └── delivery/
+│       ├── android/
+│       │   └── .gitkeep
+│       └── ios/
+│           └── .gitkeep
+│
+├── shared/                     # KMP shared module
+│   └── src/
+│       ├── commonMain/         # Shared business logic
+│       │   └── kotlin/
+│       │       └── .gitkeep
+│       ├── androidMain/        # Android-specific implementations
+│       │   └── kotlin/
+│       │       └── .gitkeep
+│       └── iosMain/            # iOS-specific implementations
+│           └── kotlin/
+│               └── .gitkeep
+│
+├── composeApp/                 # Compose Multiplatform UI
+│   └── src/
+│       ├── commonMain/
+│       │   └── kotlin/
+│       │       ├── theme/
+│       │       │   └── DesignTokens.kt  # Design tokens (Kotlin)
+│       │       └── .gitkeep
+│       ├── androidMain/
+│       │   └── kotlin/
+│       │       └── .gitkeep
+│       └── iosMain/
+│           └── kotlin/
+│               └── .gitkeep
+│
+└── assets/
+    └── .gitkeep
+```
+
+> **Note**: If the user selected "existing API integration" (backend strategy option 3), omit the `docs/database/` directory entirely. If the user selected BaaS, create `docs/database/` but adjust `database-design.md` to document Firestore collections or Supabase tables instead of traditional SQL schemas.
+
 ### Step 3-B: Create Project Scaffolding
 
 Based on the tech stack gathered in Step 1, create the basic project management files. This step ensures the project is immediately runnable after setup.
@@ -166,10 +468,31 @@ Based on the tech stack gathered in Step 1, create the basic project management 
 **For React Native / Expo projects:**
 - `package.json` — with expo, react-native, and selected design system dependencies
 - `tsconfig.json` — React Native TypeScript config
-- `app.json` or `app.config.ts` — Expo configuration
-- `.gitignore` — React Native standard ignores
+- `app.json` or `app.config.ts` — Expo configuration (includes app name, slug, target platforms from Step 1-B)
+- `babel.config.js` — Babel configuration for React Native
+- `eas.json` — EAS Build configuration for Android/iOS builds
+- `.gitignore` — React Native standard ignores (node_modules, .expo, android/, ios/, *.jks, *.keystore)
+- `.env.example` — environment variable template (API_BASE_URL, etc.)
+- Run `npx create-expo-app . --template blank-typescript` or `npx expo install` for dependencies
+
+**For Flutter projects:**
+- `pubspec.yaml` — project metadata, dependencies (flutter, provider/riverpod/bloc for state management, dio for HTTP, go_router for routing, freezed for code generation, selected design system packages)
+- `analysis_options.yaml` — Dart lint rules (flutter_lints)
+- `lib/main.dart` — Flutter app entry point with MaterialApp/CupertinoApp and router setup
+- `lib/shared/theme/design_tokens.dart` — Design tokens as Dart constants
+- `.gitignore` — Flutter standard ignores (.dart_tool, build/, .flutter-plugins, *.iml)
 - `.env.example` — environment variable template
-- Run `npx expo install` for dependencies if Expo, otherwise `npm install`
+- Run `flutter create . --org {org-domain} --project-name {project-name}` if not already a Flutter project, then `flutter pub get`
+
+**For Kotlin Multiplatform (KMP) projects:**
+- `build.gradle.kts` (root) — Kotlin Multiplatform plugin configuration, Compose Multiplatform plugin
+- `shared/build.gradle.kts` — shared module dependencies (Ktor for HTTP, Kotlinx Serialization, Koin for DI, SQLDelight for local DB)
+- `composeApp/build.gradle.kts` — Compose Multiplatform UI module, Material3 dependencies
+- `gradle.properties` — Kotlin/JVM/Android configuration
+- `settings.gradle.kts` — module include configuration
+- `.gitignore` — Kotlin/Gradle standard ignores (.gradle, build/, .idea/, *.iml, local.properties)
+- `.env.example` — environment variable template
+- Use the Kotlin Multiplatform Wizard template or `kmp-app-template` if available, then run `./gradlew build`
 
 **For Spring Boot projects (Java/Kotlin):**
 - `build.gradle` (Gradle) or `pom.xml` (Maven) — project coordinates, dependencies (Spring Web, Spring Data JPA, selected DB driver, Lombok, etc.)
@@ -201,6 +524,11 @@ Based on the tech stack gathered in Step 1, create the basic project management 
 | Tamagui | `tamagui`, `@tamagui/core`, `@tamagui/config` |
 | Gluestack UI | `@gluestack-ui/themed`, `@gluestack-style/react` |
 | NativeWind | `nativewind`, `tailwindcss` |
+| React Native Paper | `react-native-paper`, `react-native-vector-icons` |
+| Material Design 3 (Flutter) | `flutter` built-in (no extra pub dependency) |
+| Cupertino (Flutter) | `flutter` built-in (no extra pub dependency) |
+| Material + Cupertino Adaptive (Flutter) | `flutter_adaptive_scaffold`, `flutter_platform_widgets` |
+| Material Design 3 (Compose/KMP) | `compose.material3` (Compose Multiplatform BOM) |
 
 > **Important**:
 > - Before running any install command (`npm install`, `npx expo install`, etc.), verify that the CWD is the project root directory where `package.json` was created. Use `cd {project-root}` explicitly.
@@ -225,9 +553,20 @@ Customize the template below according to the project information and generate i
 - 기술 식별자(도구명, 파일 경로, 명령어명, 코드 주석)는 원래 언어를 유지합니다.
 
 ## Architecture
+
+**For Web projects (Step 0.5 = Web):**
+
 - Backend: {backend tech stack}
 - Frontend: {frontend tech stack}
 - Database: {DB type}
+
+**For Mobile projects (Step 0.5 = Mobile):**
+
+- Platform: Mobile ({target platforms: Android/iOS/Both})
+- Framework: {mobile framework} (e.g., React Native/Expo, Flutter, Kotlin Multiplatform)
+- Backend Strategy: {backend strategy} (e.g., 별도 API 서버 / Firebase / Supabase / 기존 API 연동)
+- Backend: {backend tech stack, if applicable}
+- Database: {DB type, if applicable}
 
 ## Key Modules
 {list modules as bullet points}
@@ -329,19 +668,43 @@ Customize the template below according to the project information and generate i
 - `/check-convention src/` 으로 컨벤션 준수 여부를 수동 검사 가능
 
 ## Design Rules (DSA 정의)
-- 디자인 토큰: src/styles/design-tokens.css를 반드시 참조할 것
-- 컬러는 CSS Variables (--color-*) 사용 필수, 하드코딩 금지
-- 폰트 크기는 토큰 스케일 (--font-size-*) 사용 필수
-- 스페이싱은 8px 그리드 시스템 (--spacing-*) 준수
-- 반응형 브레이크포인트: 모바일(~767px), 태블릿(768~1023px), 데스크톱(1024px~)
+
+**웹 프로젝트:**
+- 디자인 토큰: src/styles/design-tokens.css를 반드시 참조할 것 (3-tier: Primitive → Semantic → Component)
+- 컬러: OKLCH 색상 공간 기반, Semantic 토큰 (--surface-*, --text-*, --action-*, --status-*) 사용 필수, Primitive 직접 참조 금지
+- 폰트: Geist Sans + Pretendard(한글) 기본, 크기는 Fluid 토큰 (--fluid-*) 또는 Static 토큰 (--text-*) 사용 필수
+- 스페이싱: 4px 베이스 그리드, 토큰 스케일 (--space-*) 또는 Fluid (--fluid-space-*) 준수
+- 반응형: 5단계 브레이크포인트 (xs~2xl), Container Query로 컴포넌트 레벨 반응형 구현
+- 애니메이션: Spring 이징 (--ease-spring-*) 활용, `prefers-reduced-motion` 대응 필수
+- 다크 모드: Semantic 토큰 교체 방식 (순수 검정 사용 금지, 레이어드 엘리베이션)
 - 디자인 시스템 프리뷰 페이지로 토큰/컴포넌트를 시각적으로 검증
 - `design-token-validator` 에이전트로 자동 검증 (Gate 2.5)
+
+**모바일 프로젝트 (Step 0.5 = Mobile일 때 대체):**
+- **모바일 디자인 가이드 필독**: 모든 UI 구현 시 ASTRA 모바일 디자인 가이드를 참조할 것 (플랫폼 가이드라인, 터치 인터랙션, 애니메이션 타이밍, 햅틱 피드백, 접근성, 전문가 노하우)
+- React Native: `src/styles/design-tokens.ts`를 반드시 참조, StyleSheet 또는 NativeWind 유틸리티 사용
+- Flutter: `lib/shared/theme/design_tokens.dart`를 반드시 참조, `Theme.of(context)` 사용 필수
+- KMP: `composeApp/src/commonMain/kotlin/theme/DesignTokens.kt`를 반드시 참조, MaterialTheme 사용 필수
+- 디자인 토큰 3계층 구조 (Reference → Semantic → Component) 준수
+- 컬러, 폰트, 스페이싱 하드코딩 절대 금지 (토큰 상수/테마 참조)
+- 8dp 그리드 시스템 준수
+- 다크 모드 지원 필수 (시스템 설정 연동, 순수 검정(#000000) 대신 #121212 사용)
+- 접근성: 최소 터치 영역 44x44dp (iOS 44pt, Android 48dp), 스크린 리더 라벨 필수, 색상 대비 4.5:1
+- 애니메이션: 마이크로 피드백 50~150ms, 상태 전환 150~300ms, 화면 전환 250~400ms, `prefers-reduced-motion` 대응 필수
+- 햅틱 피드백: 상태 변경 인터랙션에 적절한 햅틱 유형 적용 (Selection, Impact, Notification)
+- 엄지 영역(Thumb Zone): CTA 버튼은 화면 하단 1/3에 배치
+- 디자인 시스템 프리뷰 화면으로 토큰/컴포넌트를 시각적으로 검증
 
 ## Prohibited Practices
 - console.log 금지 (logger 사용)
 - any 타입 금지
 - 직접 SQL 금지 (ORM 사용)
 - .env 파일 커밋 금지
+{모바일 프로젝트일 때 추가:}
+- 인라인 스타일 금지 (디자인 토큰/테마 사용)
+- 하드코딩된 API URL 금지 (환경 변수 사용)
+- 플랫폼 분기를 `Platform.OS === 'ios'`로 직접 하지 말고 추상화 레이어 사용
+- keystore/signing key 커밋 금지
 
 ## Testing Rules
 - 모든 서비스 레이어에 단위 테스트 작성
@@ -350,6 +713,10 @@ Customize the template below according to the project information and generate i
 - 테스트 케이스: `docs/tests/test-cases/sprint-N/` (스프린트별 관리)
 - 테스트 보고서: `docs/tests/test-reports/` (커버리지 달성률 포함)
 - `/test-scenario`로 E2E 시나리오 자동 생성, `/test-run`으로 Chrome MCP 통합 테스트
+{모바일 프로젝트일 때 추가:}
+- React Native: Jest + React Native Testing Library로 컴포넌트 테스트, Detox/Maestro로 E2E 테스트
+- Flutter: `flutter test`로 유닛/위젯 테스트, `integration_test/`로 통합 테스트
+- KMP: `commonTest`에 공유 로직 테스트, 플랫폼별 테스트는 `androidTest`/`iosTest`
 
 ## Commit Convention
 - Conventional Commits (feat:, fix:, refactor:, docs:, test:)
@@ -413,6 +780,7 @@ Customize the template below according to the project information and generate i
 
 **기술 스택별 커스텀 규칙:**
 
+**웹 프레임워크:**
 - **Spring Boot**: `@RestControllerAdvice` 전역 예외 처리, `@Valid` 입력 검증, Lombok 사용
 - **NestJS**: `ExceptionFilter` 전역 예외 처리, `class-validator` DTO 검증, Prisma ORM
 - **FastAPI**: `HTTPException` 사용, Pydantic 모델 검증, SQLAlchemy ORM
@@ -420,17 +788,36 @@ Customize the template below according to the project information and generate i
 - **React**: 함수형 컴포넌트만 사용, 커스텀 훅 패턴
 - **Vue 3**: Composition API 기본, `<script setup>` 사용
 
+**모바일 프레임워크 (Step 0.5 = Mobile일 때만 포함):**
+- **React Native / Expo**: 함수형 컴포넌트 + TypeScript 필수, Expo Router 기반 네비게이션, Zustand 상태 관리, TanStack Query 서버 상태, `kebab-case` 파일명, `StyleSheet.create()` 또는 NativeWind, 인라인 스타일 금지, `expo-secure-store`로 민감 데이터 저장
+- **Flutter**: Dart strict mode (`analysis_options.yaml`), Feature-first 디렉토리 구조, Riverpod/Bloc 상태 관리, GoRouter 네비게이션, Freezed 불변 모델, `snake_case` 파일명, Theme.of(context) 토큰 참조 필수, 하드코딩 컬러/폰트 금지, `flutter_secure_storage`로 민감 데이터 저장
+- **Kotlin Multiplatform (KMP)**: shared 모듈에 비즈니스 로직 집중, expect/actual 패턴으로 플랫폼 분기, Compose Multiplatform UI, Koin DI, Ktor HTTP 클라이언트, Kotlinx Serialization, SQLDelight 로컬 DB, `camelCase` 함수/변수, `PascalCase` 클래스
+
 ### Step 5: Create Design System Templates & Implement Components
 
 #### Step 5-A: Create design system files
 
-Create the design token source file and documentation files separately:
+Create the design token source file and documentation files separately.
 
-**`src/styles/design-tokens.css`**: Base design token set (colors, typography, spacing, shadows, responsive breakpoints). This is a source file consumed by components via `@import`, so it belongs in `src/styles/`, NOT in `docs/`.
+**For Web projects:**
 
-**`docs/design-system/components.md`**: Core component style guide template (buttons, inputs, cards, modals, tables, navigation)
+**`src/styles/design-tokens.css`**: 3-tier design token set (Primitive → Semantic → Component). OKLCH color space, Geist Sans + Pretendard Korean font stack, fluid typography with clamp(), 4px base grid spacing, spring-based animation easings, reduced-motion support, and dark mode via semantic token overrides. This is a source file consumed by components via `@import`, so it belongs in `src/styles/`, NOT in `docs/`.
 
-**`docs/design-system/layout-grid.md`**: Layout grid system definition (column system, containers, behavior per breakpoint)
+**`docs/design-system/components.md`**: Core component style guide (13 components: buttons, inputs, cards, modals, tables, navigation, toasts, badges, skeleton loading, avatar, sheet/drawer, command palette, toggle). All values reference Semantic or Component tokens only — never Primitive tokens directly. Includes transition/animation guidance per component.
+
+**`docs/design-system/layout-grid.md`**: Layout grid system with 5-tier breakpoints (xs~2xl), CSS Grid/Subgrid patterns, Container Queries for component-level responsiveness, fluid spacing with clamp()
+
+**For Mobile projects:**
+
+> **IMPORTANT**: When creating design tokens and components for mobile projects, you MUST read and follow the mobile design guide at `$CLAUDE_PLUGIN_ROOT/docs/ux/mobile-design-guide.md`. This guide contains platform-specific guidelines (Apple HIG, Material Design 3), touch interaction patterns, typography scales, color system & dark mode principles, haptic feedback mapping, animation timing, accessibility requirements, and expert-level polish tips. All design decisions below should align with this guide.
+
+Create the design token source file in the framework-appropriate location:
+
+- **React Native**: `src/styles/design-tokens.ts` — TypeScript object with colors, typography, spacing, shadows as constants. Export typed theme object. Follow the token hierarchy (Reference → Semantic → Component) from the mobile design guide.
+- **Flutter**: `lib/shared/theme/design_tokens.dart` — Dart class with static const values for ColorScheme, TextTheme, spacing. Includes `lightTheme()` and `darkTheme()` factory methods. Follow the token hierarchy from the mobile design guide.
+- **KMP**: `composeApp/src/commonMain/kotlin/theme/DesignTokens.kt` — Kotlin object with Material3 ColorScheme, Typography, spacing values. Follow the token hierarchy from the mobile design guide.
+
+**`docs/design-system/components.md`**: Core component style guide template adapted for mobile (buttons, text inputs, bottom sheet, bottom navigation, list items, cards, dialogs/alerts, snackbar/toast, avatar, loading indicators). Reference the mobile design guide's Section 14 ("전문가 노하우") for polish-level quality standards.
 
 #### Step 5-B: Implement Design System Components (if a design system was selected)
 
@@ -438,36 +825,80 @@ If the user selected a design system in Step 2 (not "추후 직접 구현"), inv
 
 > **IMPORTANT**: The prompt below is written in Korean as a reference. You MUST translate the entire prompt into the language selected in Step 0 BEFORE invoking the frontend-design skill.
 
-Use the Skill tool to invoke `frontend-design` with a prompt like:
+**For Web projects**, use the Skill tool to invoke `frontend-design` with a prompt like:
 
 ```
 "프로젝트 {project-name}의 디자인 시스템 공통 컴포넌트를 구현해 줘.
 
 - 디자인 시스템: {selected-design-system}
 - 프론트엔드: {frontend-tech-stack}
-- 디자인 토큰: src/styles/design-tokens.css 참조
+- 디자인 토큰: src/styles/design-tokens.css 참조 (3-tier: Primitive → Semantic → Component, OKLCH 색상)
 - 컴포넌트 가이드: docs/design-system/components.md 참조
+- 레이아웃 가이드: docs/design-system/layout-grid.md 참조
 
 아래 공통 컴포넌트를 구현해 줘:
-1. Button — Primary/Secondary/Danger/Ghost 변형, sm/md/lg 크기, 로딩/비활성 상태
+1. Button — Primary/Secondary/Danger/Ghost/Outline 변형, sm/md/lg 크기, 로딩/비활성 상태
 2. Input — 텍스트 입력, 라벨, 에러 상태, 헬퍼 텍스트, 비활성 상태
-3. Card — Default/Elevated/Outlined/Interactive 변형
-4. Modal — 헤더/바디/푸터 구조, 백드롭, 크기 변형 (sm/md/lg), 닫기 버튼
-5. Toast/Alert — Success/Warning/Error/Info 변형, 자동 닫힘
-6. Badge — 상태 뱃지, 카테고리 태그, sm/md 크기
-7. Table — 정렬, 호버 상태, 반응형 (모바일 카드 전환)
-8. Dropdown/Select — 옵션 목록, 검색, 다중 선택
-9. Tabs — 인디케이터, 활성/비활성 상태
-10. Sidebar Layout — 접기/펼치기, 활성 메뉴 하이라이트
+3. Card — Default/Elevated/Outlined/Interactive/Ghost 변형, Container Query 반응형
+4. Modal/Dialog — 헤더/바디/푸터 구조, 백드롭, sm/md/lg/full 크기, Spring 애니메이션
+5. Toast — Success/Warning/Error/Info 변형, Spring 진입 애니메이션, 자동 닫힘
+6. Badge — 상태 뱃지, 카테고리 태그, sm/md/lg 크기, dot 인디케이터
+7. Table — 정렬, 호버, sticky 헤더, 반응형 (모바일 카드 전환)
+8. Dropdown/Select — 옵션 목록, 검색, 다중 선택, Command Palette 스타일
+9. Tabs — 애니메이션 인디케이터, 활성/비활성 상태
+10. Sidebar Layout — 접기/펼치기, Spring 전환 애니메이션, 활성 메뉴 하이라이트
+11. Skeleton — 텍스트/아바타/카드/테이블 Shimmer 패턴
+12. Avatar — 이미지/이니셜/아이콘, xs~xl 크기, 온라인 인디케이터, 그룹 스태킹
+13. Toggle/Switch — sm/md 크기, Spring 바운스 전환
 
 모든 컴포넌트는:
-- 디자인 토큰(CSS Variables) 사용
-- 다크 모드 지원
-- 반응형 대응
-- 접근성(ARIA) 준수
+- Semantic/Component 토큰만 참조 (Primitive 직접 참조 금지)
+- OKLCH 기반 다크 모드 지원
+- 반응형 + Container Query 대응
+- 접근성(ARIA, 포커스 링, 키보드 내비게이션) 준수
+- Spring 이징 (--ease-spring-*) + prefers-reduced-motion 대응
 - 프로젝트의 코딩 컨벤션 준수
-- 디자인 시스템 프리뷰 페이지도 함께 생성해 줘 (모든 컴포넌트를 한 페이지에서 확인 가능)"
+- 디자인 시스템 프리뷰 페이지도 함께 생성해 줘 (모든 컴포넌트를 라이트/다크 모드로 확인 가능)"
 ```
+
+**For Mobile projects**, use the Skill tool to invoke `frontend-design` with a prompt adapted to the mobile framework:
+
+```
+"프로젝트 {project-name}의 모바일 디자인 시스템 공통 컴포넌트를 구현해 줘.
+
+- 디자인 시스템: {selected-design-system}
+- 모바일 프레임워크: {mobile-framework}
+- 디자인 토큰: {token-file-path} 참조
+- 컴포넌트 가이드: docs/design-system/components.md 참조
+- 모바일 디자인 가이드: $CLAUDE_PLUGIN_ROOT/docs/ux/mobile-design-guide.md 참조 (플랫폼 가이드라인, 터치 인터랙션, 애니메이션 타이밍, 햅틱 피드백, 접근성 기준)
+
+아래 공통 컴포넌트를 구현해 줘:
+1. Button — Primary/Secondary/Danger/Ghost 변형, sm/md/lg 크기, 로딩/비활성 상태, 햅틱 피드백
+2. TextInput — 텍스트 입력, 라벨, 에러 상태, 헬퍼 텍스트, 비활성 상태, 키보드 타입 지원
+3. Card — Default/Elevated/Outlined/Pressable 변형
+4. BottomSheet — 스냅 포인트, 드래그 핸들, 백드롭, 크기 변형
+5. Toast/Snackbar — Success/Warning/Error/Info 변형, 자동 닫힘, 스와이프 해제
+6. Badge — 상태 뱃지, 알림 카운트, sm/md 크기
+7. ListItem — 좌측 아이콘, 제목/부제목, 우측 액세서리, 스와이프 액션
+8. BottomNavigation — 탭 아이콘+라벨, 활성 인디케이터, 뱃지 지원
+9. Avatar — 이미지/이니셜/아이콘, sm/md/lg/xl 크기, 온라인 상태 인디케이터
+10. LoadingIndicator — Spinner/Skeleton/Shimmer 변형, 풀 스크린 오버레이
+11. Dialog/Alert — 제목/메시지/액션 버튼, 확인/취소 패턴
+12. SearchBar — 검색 아이콘, 클리어 버튼, 취소 버튼, 자동완성 지원
+
+모든 컴포넌트는:
+- 디자인 토큰(테마 시스템) 사용
+- 다크 모드 지원 (시스템 설정 연동)
+- 최소 터치 영역 44x44dp
+- 접근성(스크린 리더 라벨, 포커스 관리) 준수
+- 프로젝트의 코딩 컨벤션 준수
+- 디자인 시스템 프리뷰 화면도 함께 생성해 줘 (Storybook 또는 앱 내 프리뷰 스크린)"
+```
+
+> **Token file paths by framework:**
+> - React Native: `src/styles/design-tokens.ts`
+> - Flutter: `lib/shared/theme/design_tokens.dart`
+> - KMP: `composeApp/src/commonMain/kotlin/theme/DesignTokens.kt`
 
 If the user chose to implement later, skip Step 5-B entirely. Only the design system documentation templates (Step 5-A) are created.
 
@@ -502,6 +933,8 @@ If the user chose to implement later, skip Step 5-B entirely. Only the design sy
 > **MANDATORY**: This step MUST always be executed. You MUST use AskUserQuestion to present the module selection and wait for the user's response before proceeding. The module building itself is optional (the user may choose to skip), but the question MUST always be asked.
 
 After all templates and scaffolding are created, ask the user whether to auto-build common modules. These modules run the full pipeline: **Blueprint → Sprint Plan → Implementation → Test Scenarios → Test Run & Debug**.
+
+> **Mobile adaptation**: When the platform is Mobile, the module builders automatically adapt their output to the mobile framework and backend strategy selected in Step 1-B. For example, the auth module will generate mobile login screens (with biometric auth, social login SDKs) instead of web forms, and API integration code will use the appropriate HTTP client (Ktor for KMP, Dio for Flutter, Axios/fetch for React Native).
 
 > **IMPORTANT**: The option text below is in Korean. You MUST translate all option text into the language selected in Step 0 before presenting to the user.
 
@@ -608,22 +1041,27 @@ After all files are created, output the following summary.
 ### Generated File List
 - CLAUDE.md (project AI rules)
 - .claude/settings.json (project settings)
-- package.json / build.gradle / pyproject.toml (project dependencies & scripts)
-- tsconfig.json / .eslintrc / .prettierrc (dev tooling configs)
+- package.json / build.gradle / pubspec.yaml / pyproject.toml (project dependencies & scripts)
+- tsconfig.json / .eslintrc / .prettierrc / analysis_options.yaml (dev tooling configs)
 - .gitignore, .env.example (project essentials)
-- src/styles/design-tokens.css (design tokens — source code)
+- {design-token-file} (design tokens — source code)
 - docs/design-system/ (design system documentation)
 - docs/blueprints/ (design document templates)
-- docs/database/ (DB design documents, naming rules, migrations)
+- docs/database/ (DB design documents, naming rules, migrations — if applicable)
 - docs/tests/ (test strategy, test cases, test reports)
 - docs/sprints/ (sprint prompt maps, progress trackers, retrospectives)
 - docs/delivery/ (for release artifacts)
-- src/components/ (common UI components — if design system was selected)
+- {components-directory} (common UI components — if design system was selected)
+
+### Platform & Architecture
+- Platform: {Web or Mobile}
+{Mobile일 때: Framework: {React Native/Flutter/KMP}, Target: {Android/iOS/Both}, Backend: {strategy}}
 
 ### Design System
 - Selected: {design-system-name} (or "Implement later")
-- Common components implemented: Button, Input, Card, Modal, Toast, Badge, Table, Dropdown, Tabs, Sidebar Layout (if design system was selected)
-- Preview page: src/app/design-system/page.tsx (or equivalent path for the framework)
+- **Web**: Common components: Button, Input, Card, Modal, Toast, Badge, Table, Dropdown, Tabs, Sidebar Layout
+- **Mobile**: Common components: Button, TextInput, Card, BottomSheet, Toast, Badge, ListItem, BottomNavigation, Avatar, LoadingIndicator, Dialog, SearchBar
+- Preview: {preview-page-path} (if design system was selected)
 
 ### Module Auto-Build Results (if modules were selected)
 | Module | Status | Blueprint | Implementation | Tests |

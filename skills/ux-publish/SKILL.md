@@ -113,6 +113,30 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent, Skil
 
 각 화면 생성 시, **화면 유형과 사용자 시나리오에 맞는 인터랙션 패턴**을 선택하여 적용한다. 구체적인 적용 규칙은 Step 2에서 정의한다.
 
+#### E-1. 모바일 디자인 가이드 로드 (모바일 프로젝트만)
+
+프로젝트의 `CLAUDE.md`에서 기술 스택이 모바일(React Native, Expo, Flutter, Swift, Kotlin 등)인 경우에만 실행한다.
+
+`$CLAUDE_PLUGIN_ROOT/docs/ux/mobile-design-guide.md` 파일을 읽어 모바일 디자인 레퍼런스를 로드한다.
+
+이 가이드는 14개 섹션의 모바일 앱 디자인 원칙을 정의한다:
+- 플랫폼 가이드라인 (Apple HIG, Material Design 3)
+- 터치 인터랙션 (터치 타겟 44pt, 제스처 패턴, 엣지 스와이프)
+- 네비게이션 패턴 (탭 바, 스택, 모달, 드로어)
+- 타이포그래피 (Dynamic Type, 모바일 가독성)
+- 색상 & 다크 모드 (시스템 연동, 명암 대비)
+- 디자인 토큰 (플랫폼별 매핑)
+- 폼 & 입력 (키보드 타입, 터치 최적화)
+- 애니메이션 & 모션 (60fps, 스프링 물리, 감속 모션)
+- 햅틱 피드백 (성공/경고/에러 진동 패턴)
+- 온보딩 (점진적 공개, 권한 요청 타이밍)
+- 성능 UX (스켈레톤, 낙관적 업데이트, 오프라인)
+- 접근성 (VoiceOver/TalkBack, 최소 터치 타겟, 모션 감소)
+- 프레임워크별 전략 (React Native, Flutter, Swift, Kotlin)
+- 전문가 팁 (마이크로 인터랙션, 엣지 케이스, 플랫폼 차이)
+
+각 화면 생성 시, 모바일 플랫폼 가이드라인과 터치 최적화 원칙을 적용한다.
+
 #### F. 디자인 방향성 선택
 
 `AskUserQuestion`으로 프로토타입의 미학적 방향을 선택한다:
