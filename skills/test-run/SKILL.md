@@ -277,12 +277,13 @@ Evaluate the overall test result based on the test report generated in Step 8:
 - Server Startup: PASS
 - Scenario Tests: 100% passed (all passed/total)
 - No Severity-Critical issues found
-- No Severity-High issues found (unless user explicitly acknowledged)
+- No Severity-High issues found
 
 **Failure criteria (ANY triggers failure):**
 - Server Startup: FAIL
 - Scenario Tests: any test failed
 - Severity-Critical issue detected
+- Severity-High issue detected
 - Server Log Errors with unhandled exceptions
 
 If **tests FAILED**:
@@ -290,11 +291,18 @@ If **tests FAILED**:
 2. List the failed items with brief descriptions
 3. End the workflow — do NOT proceed to branch creation or commit
 
-If **tests PASSED**: proceed to Step 11.
+If **tests PASSED with Severity-High issues only** (no Critical):
+1. List the High-severity issues
+2. Use **AskUserQuestion** to ask the user whether to proceed despite High issues:
+   - **Proceed** — acknowledge and continue to Step 11
+   - **Stop** — end the workflow
+3. If user chooses to stop, end the workflow.
+
+If **tests PASSED** (no Critical or High issues): proceed to Step 11.
 
 ### Step 11: Auto Branch Creation, Commit & Push
 
-When all tests pass, automatically create a branch, commit all changes, and push without asking the user.
+When all tests pass, create a branch, commit changes, and push.
 
 #### A. Detect Branch Context
 
@@ -309,9 +317,9 @@ When all tests pass, automatically create a branch, commit all changes, and push
 If current branch is `main`, `dev`, `staging`, or `develop`, create a new branch:
 
 ```bash
-# Branch naming: test/{sprint}-{feature}-{date}
-# Example: test/sprint-1-auth-20260328
-git checkout -b test/sprint-{N}-{feature-name}-{YYYYMMDD}
+# Branch naming: feat/{sprint}-{feature}-{date}
+# Example: feat/sprint-1-auth-20260328
+git checkout -b feat/sprint-{N}-{feature-name}-{YYYYMMDD}
 ```
 
 If already on a feature branch (not main/dev/staging/develop), stay on the current branch.
@@ -319,12 +327,26 @@ If already on a feature branch (not main/dev/staging/develop), stay on the curre
 #### C. Stage and Commit
 
 ```bash
-# Stage all changes (test reports, test cases, and any fixes made during testing)
+# Stage test-related files
 git add docs/tests/ docs/sprints/
 
-# Also stage any source code changes made during test debugging
-git add -A
+# Stage source code changes made during test debugging (excluding sensitive files)
+git add src/ app/ pages/ components/ lib/ utils/ api/ --ignore-errors
 
+# IMPORTANT: Do NOT use `git add -A` — it may include .env, credentials, or build artifacts
+# Exclude sensitive files: .env*, credentials*, *.key, *.pem, node_modules/, dist/, build/
+```
+
+Show `git diff --staged --stat` to the user and use **AskUserQuestion** to confirm before committing:
+
+> **커밋할 변경사항을 확인해주세요:**
+> {staged file list}
+> - **Commit** — 커밋 진행
+> - **Cancel** — 워크플로우 중단
+
+After user confirms:
+
+```bash
 # Commit with descriptive message
 git commit -m "test: sprint-{N} {feature-name} integration test passed
 
@@ -333,7 +355,7 @@ git commit -m "test: sprint-{N} {feature-name} integration test passed
 - Network failures: {count}
 - Test report: docs/tests/test-reports/{report-file}
 
-Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>"
+🤖 Generated with Claude Code"
 ```
 
 #### D. Push to Remote
