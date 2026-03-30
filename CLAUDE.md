@@ -31,7 +31,7 @@ astra-methodology/
 │   ├── code-standard/     # Auto-applied international code standards (ISO/ITU)
 │   ├── sprint-progress/   # Auto-applied sprint progress tracking
 │   ├── service-planner/   # Design thinking based planning deliverables (/service-planner)
-│   ├── ux-publish/        # UX prototype publishing from planning docs (/ux-publish)
+│   ├── ux-publish/        # UX component publishing from planning docs (/ux-publish)
 │   ├── manual-generator/  # Service manual auto-generator with Chrome MCP screenshots (/manual-generator)
 │   └── catalog-generator/ # Product promotional catalog auto-generator (/catalog-generator)
 ├── agents/              # Specialized Claude Code subagents (read-only, auto-discovered)
@@ -70,8 +70,10 @@ astra-methodology/
 │   ├── ai-agent/
 │   │   └── system-design.md     # AI agent platform reference design (fect-api-agent)
 │   ├── ux/
-│   │   ├── ux-interaction-patterns.md  # UX/UI interaction patterns guide (11 categories)
-│   │   └── mobile-design-guide.md     # Mobile app design guide (HIG, Material 3, touch, animation, haptics, accessibility, expert tips)
+│   │   ├── vibe-coding-design-guide.md    # Vibe Coding design guide (anti-AI aesthetics, prompting techniques, tool comparison)
+│   │   ├── vibe-coding-animation-guide.md # Vibe Coding animation guide (CSS/Framer Motion/GSAP, micro-interactions, scroll, performance, accessibility)
+│   │   ├── ux-interaction-patterns.md     # UX/UI interaction patterns guide (11 categories)
+│   │   └── mobile-design-guide.md         # Mobile app design guide (HIG, Material 3, touch, animation, haptics, accessibility, expert tips)
 │   ├── catalog/
 │   │   ├── catalog-expert-workflow.md     # Catalog design expert workflow & know-how
 │   │   ├── catalog-expert-workflow.ko.md  # Korean translation
@@ -115,6 +117,15 @@ The plugin auto-applies coding conventions when editing language-specific files:
 Reference files are in `skills/coding-convention/` (e.g., `java-coding-convention.md`, `typescript-coding-convention.md`, `react-native-coding-convention.md`).
 
 For mobile projects, the coding convention skill additionally references `docs/ux/mobile-design-guide.md` for UI/UX implementation decisions (platform guidelines, touch interaction, animation timing, haptic feedback, dark mode, accessibility).
+
+### Vibe Coding Design & Animation Guides
+
+The plugin provides comprehensive design and animation guides under `docs/ux/` that should be referenced during all UI design and implementation work:
+
+- **`vibe-coding-design-guide.md`**: Expert-level Vibe Coding design practices — anti-AI aesthetics prompting, reference-anchored design, constraint-first approach, layered onion method, design token injection, tool comparison (v0/Bolt.new/Lovable/Cursor/Claude Code), DO/DON'T patterns, Korean market adoption insights
+- **`vibe-coding-animation-guide.md`**: Production-grade animation techniques — CSS native (View Transitions API, Scroll-Driven Animations, `@starting-style`, `linear()` springs), Framer Motion/GSAP/Lottie/Rive patterns, micro-interactions, scroll-based animations, page transitions, performance optimization (GPU acceleration, `will-change`), 3-tier motion accessibility, Disney 12 principles for UI, mobile gestures/haptics, animation design tokens
+
+These guides are automatically loaded by `/ux-publish` and should be referenced by any skill or workflow that involves UI component creation, design system work, or animation implementation.
 
 ### International Code Standards (ISO 3166-1/2, ITU-T E.164)
 
@@ -224,19 +235,25 @@ The plugin provides automatic sprint progress tracking through a hook + skill hy
 - **Tracker file**: `docs/sprints/sprint-{N}-{feature-name}/progress.md` — contains a feature progress table, summary statistics, and an activity log
 - Tracker is auto-created during `/sprint-plan` initialization, or created on-demand by the skill when an event is detected but no tracker exists
 
-### UX Prototype Publishing
+### UX Component Publishing
 
-The `/ux-publish` skill generates production-grade HTML prototypes from planning documents:
+The `/ux-publish` skill generates production-grade UI components from planning documents:
 
 - **Input**: `docs/planner/{NNN}-{feature-name}/` (requires `ia-screen-design.md` + `feature-definition.md` from `/service-planner`)
-- **Output**: `ux/{feature-name}/` — self-contained HTML prototype viewable in browser (no build required)
+- **Output**: `publish/{feature-name}/` — framework-specific components (React/Vue/Angular/Svelte) with copy guide for `src/` integration
+- **Component-based output**: Generates actual reusable components (common UI, layout, screen, hooks) instead of standalone HTML
+- **Staging directory**: `publish/` serves as a staging area — components are reviewed, then copied to their actual `src/` locations via `COPY-GUIDE.md`
+- **Framework detection**: Auto-detects project framework (React/Next.js/Vue/Nuxt/Angular/Svelte/React Native) and styling method (CSS Modules/Tailwind/CSS-in-JS/SCSS)
+- **Vibe Coding design guide**: References `docs/ux/vibe-coding-design-guide.md` for anti-AI aesthetics, reference-anchored prompting, constraint-first design, design token injection
+- **Vibe Coding animation guide**: References `docs/ux/vibe-coding-animation-guide.md` for spring physics, micro-interactions, scroll animations, page transitions, 3-tier motion accessibility
 - **Design quality**: Uses `/frontend-design` skill for production-grade, distinctive UI (avoids generic AI aesthetics)
 - **AI images**: Uses `fect-image` MCP (`mcp__fect-image__image_text2img`) for hero banners, empty state illustrations, avatars, backgrounds
 - **Interaction patterns**: References `docs/ux/ux-interaction-patterns.md` (11 categories: micro-interactions, navigation, feedback, scroll, form, transitions, onboarding, accessibility, delight, dark patterns to avoid)
-- **Mobile design**: For mobile projects, additionally references `docs/ux/mobile-design-guide.md` (14 sections: platform guidelines, touch interaction, navigation, typography, color/dark mode, design tokens, forms, animation, haptics, onboarding, performance UX, accessibility, framework strategies, expert polish tips)
-- **Design tokens**: 3-tier architecture (Primitive → Semantic → Component), OKLCH color space, Geist Sans + Pretendard (Korean) font stack, fluid typography/spacing via `clamp()`, spring-based animation easings. Strictly references project's `src/styles/design-tokens.css` (no hardcoded values)
+- **Mobile design**: For mobile projects, additionally references `docs/ux/mobile-design-guide.md` (14 sections)
+- **Design tokens**: Strictly references project's `src/styles/design-tokens.css` (no hardcoded values)
 - **Components**: Follows `docs/design-system/components.md` specifications
 - **Layout**: Implements `docs/design-system/layout-grid.md` grid system
+- **Browser preview**: `publish/{feature-name}/preview/` contains build-free HTML previews for design review
 - **Features**: Responsive (mobile/tablet/desktop), dark mode, accessibility (WCAG AA), `prefers-reduced-motion` support
 - **Design direction**: User selects aesthetic tone (Refined Minimal, Bold & Vibrant, Soft & Warm, Editorial, Professional Enterprise, or Auto)
 
@@ -252,7 +269,7 @@ The `/manual-generator` skill automatically creates professional online service 
 - **Features**: Dark mode, client-side full-text search (Cmd+K), keyboard navigation, print stylesheet, responsive layout
 - **Structure**: Cover + searchable TOC → Getting Started → Feature-by-feature guides (step-cards with screenshots) → FAQ/Troubleshooting → Glossary
 - **User interaction gates**: Manual scope selection → TOC approval → design tone selection (Professional Enterprise, Refined Minimal, Soft & Warm, Auto)
-- **Document-only mode**: If no URL provided, generates manual from blueprints/planner docs without screenshots (or uses `ux/` prototypes)
+- **Document-only mode**: If no URL provided, generates manual from blueprints/planner docs without screenshots (or uses `publish/` component previews)
 
 ### Catalog Generator
 
@@ -310,13 +327,21 @@ When the plugin initializes a target project, it creates:
 │           ├── assets/               # CSS (tokens, base, components, print)
 │           ├── screenshots/          # Captured screenshots (desktop/, tablet/, mobile/)
 │           └── shared/               # Common JS (nav, search, theme)
-├── ux/                                # UX prototypes (generated by /ux-publish)
-│   └── {feature-name}/               # Per-feature prototype
-│       ├── index.html                 # Screen index & navigation hub
-│       ├── assets/                    # CSS (tokens, base, components, interactions)
-│       ├── images/                    # AI-generated image assets (fect-image)
-│       ├── screens/                   # Individual screen HTML files
-│       └── shared/                    # Common JS (nav, interactions)
+├── publish/                            # UI component staging (generated by /ux-publish)
+│   └── {feature-name}/                # Per-feature component package
+│       ├── COPY-GUIDE.md              # Copy mapping guide (publish/ → src/)
+│       ├── components/                # Reusable UI components
+│       │   ├── common/                # Common UI (Button, Input, Card, Modal, etc.)
+│       │   ├── layout/                # Layout (GNB, Sidebar, PageLayout)
+│       │   └── {feature}/             # Feature-specific components
+│       ├── screens/                   # Screen/page components
+│       ├── hooks/                     # Custom hooks (useScrollAnimation, useTheme, etc.)
+│       ├── styles/                    # CSS (tokens, base, animations, modules)
+│       ├── utils/                     # Utilities (cn, constants)
+│       ├── assets/images/             # AI-generated image assets (fect-image)
+│       └── preview/                   # HTML previews for design review (no build required)
+│           ├── index.html             # Screen index & navigation hub
+│           └── screens/               # Individual screen HTML previews
 ├── catalog/                           # Product catalogs (generated by /catalog-generator)
 │   └── {catalog-name}/               # Per-catalog package
 │       ├── index.html                 # Catalog main page
