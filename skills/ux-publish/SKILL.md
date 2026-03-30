@@ -86,6 +86,9 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent, Skil
 > **검증**: `ia-screen-design.md`가 존재하지 않으면 사용자에게 알리고 중단한다:
 > "해당 디렉토리에 ia-screen-design.md가 없습니다. `/service-planner`로 기획 산출물을 먼저 생성해 주세요."
 
+> **검증**: `feature-definition.md`가 존재하지 않으면 사용자에게 알리고 중단한다:
+> "해당 디렉토리에 feature-definition.md가 없습니다. `/service-planner`로 기획 산출물을 먼저 생성해 주세요."
+
 #### C. 디자인 시스템 로드
 
 프로젝트의 디자인 시스템을 로드한다:
@@ -105,10 +108,10 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent, Skil
 
 | 감지 기준 | 프레임워크 | 컴포넌트 확장자 | 스타일 방식 |
 |-----------|-----------|----------------|-----------|
-| `package.json`에 `react` | React (TSX) | `.tsx` | CSS Modules / Tailwind / styled-components |
 | `package.json`에 `next` | Next.js (TSX) | `.tsx` | CSS Modules / Tailwind |
-| `package.json`에 `vue` | Vue (SFC) | `.vue` | `<style scoped>` / Tailwind |
 | `package.json`에 `nuxt` | Nuxt (Vue SFC) | `.vue` | `<style scoped>` / Tailwind |
+| `package.json`에 `react` | React (TSX) | `.tsx` | CSS Modules / Tailwind / styled-components |
+| `package.json`에 `vue` | Vue (SFC) | `.vue` | `<style scoped>` / Tailwind |
 | `package.json`에 `@angular/core` | Angular | `.ts` + `.html` + `.scss` | Component SCSS |
 | `package.json`에 `svelte` | Svelte | `.svelte` | `<style>` / Tailwind |
 | `package.json`에 `react-native` 또는 `expo` | React Native | `.tsx` | `StyleSheet.create()` / NativeWind |
@@ -340,8 +343,8 @@ publish/{feature-name}/
 }
 
 /* === 마이크로 인터랙션 — 버튼 피드백 (인터랙션 1.1) === */
-.btn { touch-action: manipulation; }
-.btn:active { transform: scale(0.95); transition: transform 150ms ease; }
+.btn { touch-action: manipulation; transition: transform 150ms ease; }
+.btn:active { transform: scale(0.95); }
 
 /* Ripple Effect */
 .ripple { position: relative; overflow: hidden; }
@@ -351,7 +354,7 @@ publish/{feature-name}/
   transform: scale(0); opacity: 0;
   transition: transform 400ms ease, opacity 400ms ease;
 }
-.ripple:active::after { transform: scale(2.5); opacity: 1; transition: 0ms; }
+.ripple:active::after { transform: scale(2.5); opacity: 1; transition: none; }
 
 /* === 스켈레톤 시머 (인터랙션 3.2) === */
 @keyframes shimmer {
@@ -854,7 +857,7 @@ const { sectionRef } = useScrollAnimation();
 
 **개별 화면 프리뷰** (`preview/screens/{screen-id}.html`):
 - 컴포넌트가 렌더링된 결과와 **완전히 동일한** 형태의 HTML — 실제 서비스와 구분이 안 될 정도의 완성도
-- `styles/` 디렉토리의 CSS를 참조 (`animations.css` 포함)
+- `../../styles/` 디렉토리의 CSS를 참조 (`../../styles/tokens.css`, `../../styles/base.css`, `../../styles/animations.css` 포함)
 - `assets/images/`의 **AI 생성 이미지를 실제로 참조** — 플레이스홀더 박스 절대 금지, 모든 이미지 슬롯에 fect-image 생성 이미지를 배치
 - 순수 JS로 **모든 애니메이션과 인터랙션 동작** 구현 (프레임워크 불필요):
   - 스크롤 기반 진입 애니메이션 (IntersectionObserver)
@@ -924,6 +927,7 @@ const { sectionRef } = useScrollAnimation();
 
 | 소스 (publish/) | 대상 (src/) | 비고 |
 |----------------|------------|------|
+| `styles/tokens.css` | — (복사 불필요) | 프로젝트의 `src/styles/design-tokens.css`와 동일 |
 | `styles/base.css` | `src/styles/base.css` | 기존 파일 있으면 병합 |
 | `styles/animations.css` | `src/styles/animations.css` | |
 | `styles/*.module.css` | 각 컴포넌트 옆으로 이동 | CSS Modules 방식일 때 |
