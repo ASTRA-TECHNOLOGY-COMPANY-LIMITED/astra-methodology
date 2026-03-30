@@ -2,7 +2,7 @@
 name: pr-merge
 description: "PR 생성부터 코드 리뷰, 이슈 수정, 머지까지 자동화된 반복 사이클을 실행합니다. 커밋→푸시→PR 생성→코드 리뷰→수정→재리뷰→머지 워크플로우를 단일 명령으로 처리합니다."
 argument-hint: "[max-iterations] [--no-review] [--draft] [--patch|--minor|--major] [--staging] [--main]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Task
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 ---
 
 # ASTRA PR Review & Merge Workflow
@@ -35,18 +35,13 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Task
 2. **클린 상태 확인**: `git status`로 현재 상태를 파악한다 (커밋되지 않은 변경사항, 스테이징된 파일 등).
    - 프로모션 모드에서 미커밋 변경사항이 있으면 경고하고 중단한다 (프로모션은 클린 상태에서만 실행).
 
-### Step 1.1: 대상 브랜치 선택 (기본 모드만)
+### Step 1.1: 대상 브랜치 자동 선택 (기본 모드만)
 
-프로모션 모드가 아닌 경우, **AskUserQuestion**으로 머지 대상 브랜치를 사용자에게 물어본다:
+프로모션 모드가 아닌 경우, 대상 브랜치를 **자동으로 `dev`**로 설정한다. 사용자에게 묻지 않는다.
 
-> **어떤 브랜치에 머지할까요?**
-> - `dev` — 피처 개발 (기본값)
-> - `staging` — 스테이징 버그픽스
-> - 기타 (직접 입력)
+`{target-branch}` = `dev`
 
-사용자의 선택을 `{target-branch}`로 저장한다. 입력이 없거나 기본값을 선택하면 `dev`를 사용한다.
-
-> **참고**: 이후 모든 단계에서 `{target-branch}`는 이 단계에서 선택된 브랜치를 참조한다.
+> **참고**: 이후 모든 단계에서 `{target-branch}`는 `dev` 브랜치를 참조한다.
 
 ### Step 2: 브랜치 동기화 (모든 모드 공통)
 
@@ -129,16 +124,17 @@ git fetch origin
 - **보호 브랜치 또는 `{target-branch}`에 있는 경우**: 작업 브랜치 자동 생성이 필요 → **Step 4.1**로 진행
 - **이미 작업 브랜치(feature, fix, docs 등)에 있는 경우**: 그대로 사용 → **Step 5**로 진행
 
-### Step 4.1: 작업 브랜치 생성
+### Step 4.1: 작업 브랜치 자동 생성
 
-1. `git status`와 `git log`로 현재 변경사항 및 최근 작업 컨텍스트를 분석하여 적절한 브랜치명을 추천한다 (예: `feat/user-auth`, `fix/login-error`).
-2. **AskUserQuestion**으로 브랜치명을 확인한다. 추천 브랜치명을 기본 옵션으로 제시한다.
-3. 사용자가 확인한 브랜치명으로 `{target-branch}`를 베이스로 작업 브랜치를 생성한다:
+1. `git status`와 `git log`로 현재 변경사항 및 최근 작업 컨텍스트를 분석하여 적절한 브랜치명을 **자동으로 결정**한다 (예: `feat/user-auth`, `fix/login-error`). 사용자에게 묻지 않는다.
+   - 변경사항의 성격을 분석하여 prefix를 결정: `feat/` (기능 추가), `fix/` (버그 수정), `docs/` (문서), `refactor/` (리팩토링), `chore/` (설정/빌드)
+   - 변경된 파일명, 커밋 로그, 디렉토리 구조에서 핵심 키워드를 추출하여 suffix를 결정
+2. 결정된 브랜치명으로 `{target-branch}`를 베이스로 작업 브랜치를 생성한다:
    ```bash
    git checkout -b {branch-name} {target-branch}
    ```
    미커밋 변경사항은 그대로 유지된다. 현재 브랜치가 이미 `{target-branch}`인 경우에도 명시적으로 `{target-branch}`를 베이스로 지정한다.
-4. 이후 단계에서 `{branch-name}`은 이 새로 생성된 브랜치를 참조한다.
+3. 이후 단계에서 `{branch-name}`은 이 새로 생성된 브랜치를 참조한다.
 
 ### Step 5: 대상 브랜치 동기화
 
@@ -207,12 +203,13 @@ EOF
 
 `--no-review` 옵션이 지정된 경우 이 단계를 건너뛰고 Step 8.3으로 진행한다.
 
-`feature-dev:code-reviewer` Task 에이전트를 스폰하여 코드 리뷰를 실행한다:
+`feature-dev:code-reviewer` Agent를 스폰하여 코드 리뷰를 실행한다:
 
 ```
-Task tool (subagent_type: "feature-dev:code-reviewer")
+Agent tool (subagent_type: "feature-dev:code-reviewer")
 - PR의 변경사항을 기준으로 코드 리뷰 실행
 - 버그, 로직 오류, 보안 취약점, 코드 품질 이슈를 분석
+- **중요**: kubernetes/ 디렉토리 하위의 파일을 제거하라는 제안은 하지 않는다
 ```
 
 리뷰 결과를 다음 4단계로 분류하여 출력한다:
@@ -237,14 +234,15 @@ Task tool (subagent_type: "feature-dev:code-reviewer")
 
 **머지 차단 조건**: Critical 이슈가 1건이라도 남아있으면 머지를 진행할 수 없다.
 
-### Step 8.2: 이슈 수정 & 재리뷰
+### Step 8.2: 이슈 자동 수정 & 재리뷰
 
 1. 이슈 목록을 사용자에게 표시한다.
-2. **AskUserQuestion**으로 자동 수정 진행 여부를 확인한다.
-3. 사용자 확인 후, 각 이슈를 순서대로 수정한다:
+2. **사용자 확인 없이 즉시 자동 수정을 진행한다.**
+3. 각 이슈를 순서대로 수정한다:
    - 해당 파일을 읽고 이슈 위치를 파악
    - Edit tool로 코드 수정
    - 수정 내용 요약 출력
+   - **금지 규칙**: `kubernetes/` 디렉토리 하위의 파일은 절대 삭제하지 않는다. 수정은 허용하되, 파일 제거 제안은 무시한다.
 4. 프로젝트에 테스트가 설정되어 있으면 테스트를 실행하여 수정이 기존 기능을 깨뜨리지 않았는지 확인한다.
 5. 수정된 파일을 `git add`로 스테이징
 6. 반복 횟수를 1 증가시킨다.
@@ -365,7 +363,12 @@ EOF
      - `--major`: `x.y.z` → `x+1.0.0`
    - 두 파일 모두 동일한 버전으로 업데이트한다.
    - `main`에 직접 커밋하고 푸시한다: "chore: bump version to {new-version}"
-6. 최종 요약을 출력한다:
+6. **`dev` 브랜치로 복귀**: 프로모션 완료 후 `dev` 브랜치로 전환하여 다음 개발 작업을 바로 이어갈 수 있도록 한다:
+   ```bash
+   git checkout dev
+   git pull --rebase origin dev
+   ```
+7. 최종 요약을 출력한다:
 
 ```
 ## Promotion 완료
@@ -419,12 +422,13 @@ EOF
 
 - **브랜치 전략**: `feature → dev → staging → main` 순서로 코드를 승격한다.
 - **공통 전처리**: 모든 모드에서 실행 전 `main` / `staging` / `dev`를 pull 받는다. 캐스케이드 머지는 모드와 `{target-branch}`에 따라 범위가 다르다: 기본 모드에서 `{target-branch}` = `dev`이면 전체(`main → staging → dev`), `{target-branch}` = `staging`이면 `main → staging`만, `--staging` 프로모션에서는 `main → staging`만, `--main` 프로모션에서는 건너뛴다.
-- **기본 모드**: 실행 시 머지 대상 브랜치를 사용자에게 물어본다 (`dev`, `staging`, 또는 기타). 스테이징 버그픽스는 `staging`에 직접 머지하고, 피처 개발은 `dev`에 머지할 수 있다. `main`/`master`/`staging`/`dev` 브랜치에서 실행하면 자동으로 작업 브랜치를 생성한다. 원격에 `{target-branch}`가 없으면 기본 브랜치로부터 자동 생성한다.
+- **기본 모드**: 머지 대상 브랜치는 자동으로 `dev`로 설정된다 (사용자에게 묻지 않음). `main`/`master`/`staging`/`dev` 브랜치에서 실행하면 자동으로 작업 브랜치를 생성한다. 브랜치명도 변경사항을 분석하여 자동 결정한다. 원격에 `{target-branch}`가 없으면 기본 브랜치로부터 자동 생성한다.
 - **프로모션 모드 (`--staging`)**: `dev` → `staging`으로 승격한다. 작업 브랜치 생성/커밋 단계를 건너뛰고 PR 기반 머지에 집중한다.
 - **프로모션 모드 (`--main`)**: `staging` → `main`으로 승격한다. 릴리스 프로모션이므로 버전 범프가 이 단계에서 실행된다.
-- 머지 완료 후 최종 체크아웃 위치는 `{target-branch}`이다.
+- 머지 완료 후 최종 체크아웃 위치: 기본 모드는 `{target-branch}` (`dev`), 프로모션 모드는 `dev` 브랜치로 복귀한다.
 - Critical 이슈가 남아있으면 머지가 차단된다.
 - 충돌 발생 시 자동 해결을 시도하지 않고, 사용자에게 안내 후 중단한다.
 - 버전 범프는 `--main` 프로모션에서만 실행되며, `.claude-plugin/plugin.json`이 존재하는 프로젝트에서만 적용된다.
-- 커밋, 자동 수정, 머지 전에는 반드시 사용자 확인을 거친다.
+- 커밋, 머지 전에는 반드시 사용자 확인을 거친다. 단, 코드 리뷰 후 이슈 수정은 사용자 확인 없이 자동으로 진행한다.
+- **kubernetes 보호 규칙**: 코드 리뷰 및 이슈 수정 시 `kubernetes/` 디렉토리 하위의 파일을 제거하지 않는다.
 - 프로모션 모드에서 소스 브랜치(`dev`, `staging`)는 삭제하지 않는다.
