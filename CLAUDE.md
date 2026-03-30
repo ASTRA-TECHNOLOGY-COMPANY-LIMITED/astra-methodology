@@ -19,7 +19,7 @@ astra-methodology/
 │   ├── sprint-plan/       # Sprint planning & initialization (/sprint-plan)
 │   ├── project-checklist/ # Sprint 0 completion verification (/project-checklist)
 │   ├── data-standard/     # Korean public data standard terminology (/data-standard)
-│   ├── test-run/          # Chrome MCP integration testing (/test-run)
+│   ├── test-run/          # Integration testing — cmux browser (primary) / Chrome MCP (fallback) (/test-run)
 │   ├── test-scenario/     # E2E test scenario generation (/test-scenario)
 │   ├── pr-merge/          # Commit→review→fix→merge full cycle (/pr-merge)
 │   ├── slack-to-sprint/   # Slack List → blueprint + sprint generation (/slack-to-sprint)
