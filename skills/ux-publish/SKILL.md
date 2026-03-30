@@ -858,7 +858,7 @@ const { sectionRef } = useScrollAnimation();
 **개별 화면 프리뷰** (`preview/screens/{screen-id}.html`):
 - 컴포넌트가 렌더링된 결과와 **완전히 동일한** 형태의 HTML — 실제 서비스와 구분이 안 될 정도의 완성도
 - `../../styles/` 디렉토리의 CSS를 참조 (`../../styles/tokens.css`, `../../styles/base.css`, `../../styles/animations.css` 포함)
-- `assets/images/`의 **AI 생성 이미지를 실제로 참조** — 플레이스홀더 박스 절대 금지, 모든 이미지 슬롯에 fect-image 생성 이미지를 배치
+- `../../assets/images/`의 **AI 생성 이미지를 실제로 참조** — 플레이스홀더 박스 절대 금지, 모든 이미지 슬롯에 fect-image 생성 이미지를 배치
 - 순수 JS로 **모든 애니메이션과 인터랙션 동작** 구현 (프레임워크 불필요):
   - 스크롤 기반 진입 애니메이션 (IntersectionObserver)
   - 버튼/카드 hover 효과
