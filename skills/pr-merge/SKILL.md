@@ -2,7 +2,7 @@
 name: pr-merge
 description: "PR 생성부터 코드 리뷰, 이슈 수정, 머지까지 자동화된 반복 사이클을 실행합니다. 커밋→푸시→PR 생성→코드 리뷰→수정→재리뷰→머지 워크플로우를 단일 명령으로 처리합니다."
 argument-hint: "[max-iterations] [--no-review] [--draft] [--patch|--minor|--major] [--staging] [--main]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Task
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 ---
 
 # ASTRA PR Review & Merge Workflow
@@ -203,10 +203,10 @@ EOF
 
 `--no-review` 옵션이 지정된 경우 이 단계를 건너뛰고 Step 8.3으로 진행한다.
 
-`feature-dev:code-reviewer` Task 에이전트를 스폰하여 코드 리뷰를 실행한다:
+`feature-dev:code-reviewer` Agent를 스폰하여 코드 리뷰를 실행한다:
 
 ```
-Task tool (subagent_type: "feature-dev:code-reviewer")
+Agent tool (subagent_type: "feature-dev:code-reviewer")
 - PR의 변경사항을 기준으로 코드 리뷰 실행
 - 버그, 로직 오류, 보안 취약점, 코드 품질 이슈를 분석
 - **중요**: kubernetes/ 디렉토리 하위의 파일을 제거하라는 제안은 하지 않는다

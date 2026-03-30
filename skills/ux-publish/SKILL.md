@@ -135,7 +135,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent, Skil
 
 ##### E-1. Vibe Coding 디자인 가이드 (필수)
 
-`$CLAUDE_PLUGIN_ROOT/docs/ux/vibe-coding-design-guide.md` 파일을 읽어 디자인 레퍼런스를 로드한다.
+`$CLAUDE_PLUGIN_ROOT/docs/ux/vibe-coding-design-guide.md` 파일을 읽어 디자인 레퍼런스를 로드한다. 파일이 존재하지 않으면 "⚠️ Vibe Coding 디자인 가이드 파일이 없습니다. 플러그인을 최신 버전으로 업데이트해 주세요." 경고를 출력하고, 가이드 없이 진행한다.
 
 이 가이드는 Vibe Coding 전문가들의 디자인 접근법을 정의한다:
 - Anti-AI 미학 프롬프팅 (제네릭 AI 슬롭 방지)
@@ -149,7 +149,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent, Skil
 
 ##### E-2. Vibe Coding 애니메이션 가이드 (필수)
 
-`$CLAUDE_PLUGIN_ROOT/docs/ux/vibe-coding-animation-guide.md` 파일을 읽어 애니메이션 레퍼런스를 로드한다.
+`$CLAUDE_PLUGIN_ROOT/docs/ux/vibe-coding-animation-guide.md` 파일을 읽어 애니메이션 레퍼런스를 로드한다. 파일이 존재하지 않으면 "⚠️ Vibe Coding 애니메이션 가이드 파일이 없습니다. 플러그인을 최신 버전으로 업데이트해 주세요." 경고를 출력하고, 가이드 없이 진행한다.
 
 이 가이드는 프로덕션급 애니메이션 구현 방법을 정의한다:
 - CSS 네이티브: View Transitions API, Scroll-Driven Animations, `@starting-style`, `linear()` 스프링
@@ -511,24 +511,74 @@ publish/{feature-name}/
 
 > **React Native 프로젝트**: 웹 훅 대신 `useAnimatedStyle`, `useSharedValue` (Reanimated), `Animated.spring` 등 네이티브 애니메이션 훅을 생성한다.
 
-#### H. AI 이미지 에셋 생성
+#### H. AI 이미지 에셋 생성 (fect-image 적극 활용)
 
-> **`fect-image` MCP 연동**: `mcp__fect-image__image_text2img` 도구가 사용 가능한 경우 AI 이미지를 생성한다. 불가능하면 CSS 그라디언트/SVG 플레이스홀더를 사용한다.
+> **필수**: `mcp__fect-image__image_text2img` 도구를 **적극적으로 활용**하여 세련되고 고급지며 가독성 높은 트렌디한 디자인을 구현한다. 이미지는 프로토타입의 완성도를 결정하는 핵심 요소이다. CSS 그라디언트/SVG 플레이스홀더는 fect-image가 완전히 불가능한 경우에만 최후 수단으로 사용한다.
 
-`publish/{feature-name}/assets/images/`에 프로토타입에 필요한 이미지를 생성한다.
+`publish/{feature-name}/assets/images/`에 프로토타입에 필요한 **모든 비주얼 에셋**을 생성한다.
 
-| 용도 | 프롬프트 패턴 | 비율 | 저장 경로 |
-|------|------------|------|---------|
-| 히어로/배너 | "{기능 설명} web application hero banner, modern {DESIGN_TONE} style, abstract geometric, professional" | 16:9 | `assets/images/hero-{name}.webp` |
-| 빈 상태 일러스트 | "Empty state illustration for {상황}, minimalist line art, soft pastel, no text" | 1:1 | `assets/images/empty-{name}.webp` |
-| 온보딩 일러스트 | "Onboarding step illustration showing {설명}, flat design, modern, no text" | 4:3 | `assets/images/onboarding-{step}.webp` |
-| 프로필 아바타 | "Professional avatar, diverse person, flat modern style, neutral background" | 1:1 | `assets/images/avatar-{n}.webp` |
-| 로그인 배경 | "Abstract background for login page, {DESIGN_TONE}, subtle gradient" | 16:9 | `assets/images/login-bg.webp` |
+##### H-1. 디자인 톤별 이미지 스타일 가이드
 
-**이미지 생성 규칙**:
-1. 화면 구성을 분석하여 **필요한 이미지만** 선별 생성 (과다 생성 금지)
-2. 모든 이미지는 `imageSize: "2K"` 사용
-3. 프롬프트는 영어로 작성
+`{DESIGN_TONE}`에 따라 이미지 프롬프트의 스타일 키워드를 결정한다:
+
+| 디자인 톤 | 스타일 키워드 | 색상 팔레트 | 분위기 |
+|-----------|------------|-----------|--------|
+| Refined Minimal | "clean lines, generous whitespace, monochromatic palette, Swiss design, editorial photography style, subtle grain texture" | 모노크롬 + 단일 액센트 | 정제된, 차분한 |
+| Bold & Vibrant | "vivid saturated colors, dynamic composition, energetic gradients, bold geometric shapes, pop art influence, high contrast" | 고채도 대비 팔레트 | 역동적, 강렬한 |
+| Soft & Warm | "soft pastels, organic shapes, warm golden light, watercolor texture, rounded corners, cozy atmosphere, hand-drawn feel" | 파스텔 + 웜톤 | 친근한, 부드러운 |
+| Editorial | "magazine layout, dramatic typography contrast, asymmetric grid, editorial photography, high fashion aesthetic, noir influence" | 흑백 + 강렬한 액센트 | 세련된, 대담한 |
+| Professional Enterprise | "corporate clean, trustworthy blue tones, isometric 3D icons, data visualization aesthetic, structured grid, professional photography" | 블루 + 뉴트럴 | 신뢰감, 안정적 |
+
+##### H-2. 이미지 카테고리별 프롬프트 패턴
+
+| 카테고리 | 프롬프트 패턴 | 비율 | 저장 경로 | 생성 조건 |
+|---------|------------|------|---------|----------|
+| **히어로 배너** | "Premium hero banner for {기능 설명}, {스타일 키워드}, ultra high quality, professional web design, 8k render, no text no letters no words" | 16:9 | `hero-{name}.webp` | 대시보드, 랜딩, 메인 화면 |
+| **섹션 배경** | "Abstract background texture, {스타일 키워드}, subtle pattern, seamless tileable, premium feel, no text" | 16:9 | `bg-{section}.webp` | CTA 영역, 강조 섹션 |
+| **빈 상태 일러스트** | "Elegant empty state illustration for {상황}, {스타일 키워드}, centered composition, metaphorical visual, no text no letters, premium quality" | 1:1 | `empty-{name}.webp` | 목록 빈 상태, 검색 결과 없음 |
+| **온보딩 일러스트** | "Onboarding step illustration showing {설명}, {스타일 키워드}, isometric or flat layered, storytelling visual, no text no letters" | 4:3 | `onboarding-{step}.webp` | 온보딩, 튜토리얼 |
+| **기능 소개 아이콘** | "Feature icon illustration for {기능명}, {스타일 키워드}, detailed 3D icon style, glass morphism, gradient lighting, no text" | 1:1 | `feature-{name}.webp` | 기능 카드, KPI 카드 |
+| **프로필 아바타** | "Professional portrait avatar, {성별/스타일}, modern flat illustration, {스타일 키워드}, neutral background, friendly expression" | 1:1 | `avatar-{n}.webp` | 사용자 목록, 프로필 |
+| **로그인/인증 배경** | "Premium authentication page background, {스타일 키워드}, abstract flowing shapes, depth of field effect, cinematic lighting, no text" | 16:9 | `auth-bg.webp` | 로그인, 가입, 비밀번호 |
+| **성공/완료 일러스트** | "Celebration success illustration, {스타일 키워드}, confetti or sparkle, achievement feeling, joyful composition, no text" | 1:1 | `success-{name}.webp` | 완료, 축하 화면 |
+| **에러/경고 일러스트** | "Friendly error illustration for {상황}, {스타일 키워드}, empathetic visual, not scary, solution-oriented, no text" | 1:1 | `error-{name}.webp` | 404, 에러, 접근 제한 |
+| **카드 썸네일** | "Content card thumbnail for {주제}, {스타일 키워드}, 16:9 composition, editorial quality, no text no letters" | 16:9 | `card-{name}.webp` | 콘텐츠 카드, 게시물 |
+| **배지/뱃지 아이콘** | "Achievement badge icon, {스타일 키워드}, metallic sheen, premium feel, centered, no text" | 1:1 | `badge-{name}.webp` | 등급, 성취, 상태 |
+
+##### H-3. 고급 프롬프트 작성 원칙 (Vibe Coding 디자인 가이드 기반)
+
+프롬프트 작성 시 다음 원칙을 반드시 준수한다:
+
+1. **Anti-AI 슬롭 방지**: 제네릭한 스톡 이미지 느낌을 배제한다
+   - ❌ "modern web design banner" (너무 일반적)
+   - ✅ "Bauhaus-inspired geometric composition with overlapping translucent shapes, muted earth tones with single coral accent, subtle paper grain texture" (구체적 레퍼런스)
+
+2. **레퍼런스 앵커링**: 실제 디자인 트렌드/스타일을 구체적으로 명시한다
+   - 스타일 레퍼런스: "Dribbble trending", "Behance featured", "Apple design language", "Stripe dashboard aesthetic"
+   - 아트 레퍼런스: "Bauhaus", "Swiss design", "Japanese minimalism", "Scandinavian clean"
+
+3. **제약 우선**: 원하지 않는 것을 명확히 배제한다
+   - 필수 네거티브: "no text, no letters, no words, no watermark, no stock photo feel"
+   - 추가 네거티브: "no generic clip art, no cheesy gradients, no oversaturated"
+
+4. **계층적 디테일**: 구도 → 색상 → 질감 → 조명 순서로 프롬프트를 구성한다
+   - 예: "[구도] centered isometric composition → [색상] deep navy and warm amber palette → [질감] subtle noise grain overlay → [조명] soft diffused top-right lighting"
+
+5. **일관된 시각 언어**: 같은 프로젝트 내 모든 이미지는 동일한 스타일 키워드 세트를 공유한다
+
+##### H-4. 이미지 생성 실행 규칙
+
+1. **화면 분석 기반 선별 생성**: `ia-screen-design.md`의 와이어프레임을 분석하여 이미지가 필요한 위치를 식별한다. 각 화면의 히어로, 카드 썸네일, 빈 상태, 아바타 등 **실제 UI에 배치될 이미지만** 생성한다.
+2. **최소 생성 기준**: 프로젝트당 최소 다음 이미지를 생성한다:
+   - 히어로/배너 1~2개 (메인 화면용)
+   - 빈 상태 일러스트 2~3개 (데이터 없음, 검색 결과 없음, 첫 사용)
+   - 기능 아이콘 3~5개 (주요 기능 카드용)
+   - 프로필 아바타 3~4개 (더미 사용자 데이터용)
+   - 인증 배경 1개 (로그인/가입 화면)
+3. **모든 이미지는 `imageSize: "2K"` 사용**
+4. **프롬프트는 영어로 작성** (한국어 기능명은 영어로 번역하여 사용)
+5. **일관된 스타일**: 같은 프로젝트 내 모든 이미지에 동일한 `{스타일 키워드}` 세트를 적용하여 시각적 통일감을 유지한다
+6. **생성 후 확인**: 이미지 파일이 정상적으로 저장되었는지 확인하고, 프리뷰 HTML에서 올바르게 참조되는지 검증한다
 
 #### I. 완료 보고
 
@@ -578,6 +628,7 @@ publish/{feature-name}/
 | 설정 (Settings) | 토글 애니메이션(1.2), 탭 전환(2.6), 토스트(3.5) | §8 토글 |
 | 로그인/가입 (Auth) | 플로팅 라벨(6.2), 인라인 유효성(6.1), 버튼 로딩(1.3) | §12 페이지 전환 |
 | 온보딩 (Onboarding) | 점진적 공개(8.1), 코치 마크(8.3), 스크롤 스냅(5.5) | §2 Scroll-Driven |
+| 랜딩 (Landing) | 패럴랙스(5.1), 스크롤 트리거(5.4), 시차 등장(7.5), 카운터(1.6), 스크롤 스냅(5.5), 스크롤 진행률(5.4) | §2 Scroll-Driven, §11 스크롤 기반, §12 페이지 전환 |
 
 **모든 화면 공통**:
 - 버튼 피드백(1.1): scale(0.95) + ripple
@@ -585,6 +636,32 @@ publish/{feature-name}/
 - 모션 감소 대응(9.3): `prefers-reduced-motion`
 - 포커스 관리(9.2): `focus-visible`
 - 터치 타겟(9.5): 최소 44px
+
+**화면 유형별 애니메이션 구현 세부 지침** (Vibe Coding 애니메이션 가이드 기반):
+
+| 화면 유형 | 진입 애니메이션 | 인터랙션 애니메이션 | 전환 애니메이션 |
+|-----------|--------------|-------------------|---------------|
+| 목록 (List) | 행 시차 등장 (stagger 50ms), 스켈레톤→콘텐츠 fade | 행 호버 하이라이트, 스와이프 액션 | 필터/정렬 시 레이아웃 morph |
+| 상세 (Detail) | 히어로 이미지 scale-in, 콘텐츠 cascade fadeInUp | 이미지 줌, 탭 슬라이드 전환 | 목록↔상세 공유 요소 전환 |
+| 폼 (Form) | 필드 순차 등장 (stagger 80ms) | 플로팅 라벨 rise, 유효성 shake, 포커스 glow | 단계별 슬라이드 전환 |
+| 대시보드 | KPI 카운터 rollup, 카드 시차 등장 | 차트 호버 tooltips, 카드 hover lift | 기간 전환 시 차트 morph |
+| 설정 | 섹션 accordion 펼침 | 토글 슬라이드, 선택 체크 bounce | 저장 성공 pulse |
+| 로그인/가입 | 폼 center-in + 배경 패럴랙스 | 입력 포커스 glow, 소셜 버튼 hover scale | 로그인→대시보드 페이지 전환 |
+| **랜딩** | 히어로 cinematic reveal (scale+fade), 섹션별 cascade fadeInUp, 숫자 카운터 rollup, 로고/파트너 infinite scroll | 패럴랙스 레이어(3~5단계), CTA 버튼 pulse+glow, 카드 hover 3D tilt, 이미지 reveal mask | 스크롤 스냅 섹션 전환, 스크롤 진행률 바, sticky 헤더 축소 |
+
+**프레임워크별 애니메이션 구현 방식 선택**:
+- **React/Next.js**: Framer Motion (`motion.div`, `AnimatePresence`, `useScroll`) 우선. 미설치 시 CSS 애니메이션 + `useRef`/`IntersectionObserver`
+- **Vue/Nuxt**: `<Transition>`, `<TransitionGroup>`, `v-motion` 디렉티브 우선. CSS 애니메이션 보조
+- **Angular**: `@angular/animations` (`trigger`, `transition`, `animate`) + CSS 애니메이션
+- **Svelte**: `svelte/transition` (`fade`, `slide`, `fly`, `scale`), `svelte/motion` (`spring`, `tweened`), `svelte/animate` (`flip`)
+- **React Native**: `react-native-reanimated` (`useAnimatedStyle`, `withSpring`, `withTiming`), `react-native-gesture-handler`
+- **공통 CSS 대안**: `@starting-style`, View Transitions API, Scroll-Driven Animations, CSS `linear()` 스프링
+
+**화면별 AI 이미지 연동 지침**:
+- 화면 구성 분석 중 이미지가 필요한 UI 영역(히어로, 카드, 빈 상태, 아바타 등)을 식별한다
+- Step 1.H에서 미리 생성한 이미지가 있으면 해당 이미지를 참조한다
+- **부족한 이미지는 즉시 `mcp__fect-image__image_text2img`로 추가 생성**한다 (Step 1.H의 프롬프트 원칙 적용)
+- 이미지 로딩 시 항상 블러 플레이스홀더 또는 스켈레톤을 표시한다 (CLS 방지)
 
 #### C. 화면 컴포넌트 생성
 
@@ -596,17 +673,42 @@ publish/{feature-name}/
 2. **기능 전용 컴포넌트 분리** — 화면 분석 중 특정 기능에서만 사용하는 복잡한 UI가 있으면 `components/{feature}/`에 별도 컴포넌트로 분리
 3. **와이어프레임 완전 구현** — ASCII 와이어프레임의 모든 UI 요소를 실제 컴포넌트로 변환
 4. **사실적 더미 데이터** — 테이블 5~10행, 카드 3~6개, 폼 placeholder, KPI 수치
-5. **상태(State) 표현 포함**:
-   - 빈 상태: AI 일러스트 + 설명 + CTA
-   - 로딩 상태: Skeleton 컴포넌트
-   - 에러 상태: 인라인 유효성 + 에러 메시지
-   - 성공 피드백: Toast 컴포넌트
-6. **반응형 레이아웃**:
+5. **AI 이미지 적극 활용** (fect-image 필수):
+   - 히어로/배너 영역: Step 1.H에서 생성한 `assets/images/hero-*.webp` 적용
+   - 빈 상태: AI 일러스트 (`empty-*.webp`) + 설명 + CTA
+   - 카드 썸네일: AI 이미지 (`card-*.webp`) 또는 기능 아이콘 (`feature-*.webp`) 적용
+   - 프로필 영역: AI 아바타 (`avatar-*.webp`) 적용
+   - 인증 배경: AI 배경 (`auth-bg.webp`) 적용
+   - **화면 분석 중 추가 이미지가 필요하면** 즉시 `mcp__fect-image__image_text2img`로 생성하여 `assets/images/`에 저장
+6. **상태(State) 표현 포함**:
+   - 빈 상태: AI 일러스트 + 설명 + CTA (플레이스홀더 절대 금지, 반드시 fect-image로 생성)
+   - 로딩 상태: Skeleton 컴포넌트 + 시머 애니메이션
+   - 에러 상태: AI 에러 일러스트 + 인라인 유효성 + 에러 메시지
+   - 성공 피드백: Toast 컴포넌트 + 성공 애니메이션 (축하 일러스트 포함 가능)
+7. **Vibe Coding 디자인 가이드 필수 적용**:
+   - Anti-AI 미학: 제네릭한 AI 슬롭을 배제하는 의도적 디자인 선택
+   - 레퍼런스 앵커링: 화면 유형에 맞는 실제 서비스 디자인 패턴 참조
+   - 디자인 토큰 전용: 모든 색상/타이포/스페이싱은 `var(--*)` 또는 Tailwind 토큰만 사용
+   - `{DESIGN_TONE}`에 맞는 시각적 디테일 (그라디언트, 텍스처, 그림자, 보더)
+   - 폰트 계층 구조: 제목/본문/캡션 간 명확한 크기+무게 대비
+   - 색상 대비: 정보 계층에 맞는 의도적 색상 사용 (강조/일반/보조)
+8. **Vibe Coding 애니메이션 가이드 필수 적용**:
+   - **모든 화면**에 최소 3가지 이상의 애니메이션을 적용한다:
+     - 진입 애니메이션: 페이지/섹션 등장 시 fadeInUp + 시차 등장 (stagger)
+     - 인터랙션 애니메이션: 버튼 피드백(scale), 호버 효과, 포커스 링
+     - 상태 전환 애니메이션: 로딩→콘텐츠, 열림/닫힘, 토글
+   - 스프링 물리학 기반 이징: CSS `linear()` 스프링 또는 프레임워크 spring 함수 사용
+   - GPU 가속 속성 우선: `transform`, `opacity` 위주 (layout 속성 피하기)
+   - 타이밍 가이드라인: 마이크로 인터랙션 100~300ms, 페이지 전환 300~500ms, 복잡한 시퀀스 500~800ms
+   - 이징 선택: 진입(ease-out/spring), 퇴장(ease-in), 강조(bounce/spring-bounce)
+   - Disney 12원칙 UI 적용: Squash & Stretch(버튼 누름), Anticipation(드래그 시작), Follow Through(목록 스크롤)
+   - **3-tier 모션 접근성 필수**: `prefers-reduced-motion: reduce`에서 애니메이션 비활성화
+9. **반응형 레이아웃**:
    - 모바일: 1열, 사이드바 숨김, 테이블→카드 전환
    - 태블릿: 2열, 사이드바 축소
    - 데스크톱: 12열 그리드, 사이드바 확장
-7. **다크 모드 대응**: 테마 전환 지원
-8. **접근성**: 시맨틱 HTML, ARIA, focus-visible, 터치 타겟
+10. **다크 모드 대응**: 테마 전환 지원 + AI 이미지는 다크모드에서도 조화롭게 보이도록 반투명 오버레이 또는 `mix-blend-mode` 적용
+11. **접근성**: 시맨틱 HTML, ARIA, focus-visible, 터치 타겟(44px), 색상 대비(4.5:1)
 
 **프레임워크별 화면 컴포넌트 패턴**:
 
