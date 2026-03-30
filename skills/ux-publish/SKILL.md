@@ -849,6 +849,7 @@ const { sectionRef } = useScrollAnimation();
 `publish/{feature-name}/preview/` — 컴포넌트를 브라우저에서 바로 확인할 수 있는 HTML 프리뷰를 생성한다. 빌드 없이 브라우저에서 열어 디자인/인터랙션을 검수할 수 있다.
 
 **프리뷰 인덱스** (`preview/index.html`):
+- CSS 참조 경로: `../styles/` (preview/index.html 기준), 이미지 참조 경로: `../assets/images/` (preview/index.html 기준)
 - 프로토타입 헤더 (기능명, 생성일, 화면 수, 기술 스택)
 - 화면 흐름도 시각화 (`ia-screen-design.md` 기반)
 - 화면 카드 그리드 (각 화면 클릭 시 프리뷰 이동) — fect-image 생성 이미지를 카드 썸네일로 활용
