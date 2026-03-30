@@ -165,7 +165,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent, Skil
 
 ##### E-3. UX 인터랙션 패턴 가이드 (필수)
 
-`$CLAUDE_PLUGIN_ROOT/docs/ux/ux-interaction-patterns.md` 파일을 읽어 인터랙션 패턴 레퍼런스를 로드한다.
+`$CLAUDE_PLUGIN_ROOT/docs/ux/ux-interaction-patterns.md` 파일을 읽어 인터랙션 패턴 레퍼런스를 로드한다. 파일이 존재하지 않으면 "⚠️ UX 인터랙션 패턴 가이드 파일이 없습니다. 플러그인을 최신 버전으로 업데이트해 주세요." 경고를 출력하고, 가이드 없이 진행한다.
 
 이 가이드는 11개 카테고리의 UX 인터랙션 패턴을 정의한다:
 
@@ -649,13 +649,30 @@ publish/{feature-name}/
 | 로그인/가입 | 폼 center-in + 배경 패럴랙스 | 입력 포커스 glow, 소셜 버튼 hover scale | 로그인→대시보드 페이지 전환 |
 | **랜딩** | 히어로 cinematic reveal (scale+fade), 섹션별 cascade fadeInUp, 숫자 카운터 rollup, 로고/파트너 infinite scroll | 패럴랙스 레이어(3~5단계), CTA 버튼 pulse+glow, 카드 hover 3D tilt, 이미지 reveal mask | 스크롤 스냅 섹션 전환, 스크롤 진행률 바, sticky 헤더 축소 |
 
-**프레임워크별 애니메이션 구현 방식 선택**:
-- **React/Next.js**: Framer Motion (`motion.div`, `AnimatePresence`, `useScroll`) 우선. 미설치 시 CSS 애니메이션 + `useRef`/`IntersectionObserver`
-- **Vue/Nuxt**: `<Transition>`, `<TransitionGroup>`, `v-motion` 디렉티브 우선. CSS 애니메이션 보조
-- **Angular**: `@angular/animations` (`trigger`, `transition`, `animate`) + CSS 애니메이션
-- **Svelte**: `svelte/transition` (`fade`, `slide`, `fly`, `scale`), `svelte/motion` (`spring`, `tweened`), `svelte/animate` (`flip`)
-- **React Native**: `react-native-reanimated` (`useAnimatedStyle`, `withSpring`, `withTiming`), `react-native-gesture-handler`
-- **공통 CSS 대안**: `@starting-style`, View Transitions API, Scroll-Driven Animations, CSS `linear()` 스프링
+**프레임워크별 애니메이션 라이브러리 설치 및 구현 방식**:
+
+> **필수**: 애니메이션 구현에 필요한 라이브러리가 프로젝트에 설치되어 있지 않으면 **즉시 설치**한 후 진행한다. `package.json`을 확인하여 미설치 시 `Bash`로 설치 명령을 실행한다.
+
+| 프레임워크 | 필수 라이브러리 | 설치 명령 | 주요 API |
+|-----------|--------------|----------|---------|
+| **React/Next.js** | `framer-motion` | `npm install framer-motion` | `motion.div`, `AnimatePresence`, `useScroll`, `useInView`, `useSpring` |
+| **Vue/Nuxt** | `@vueuse/motion` | `npm install @vueuse/motion` | `v-motion` 디렉티브, `useMotion`, 빌트인 `<Transition>`, `<TransitionGroup>` |
+| **Angular** | `@angular/animations` | `ng add @angular/animations` (보통 기본 포함) | `trigger`, `transition`, `animate`, `query`, `stagger` |
+| **Svelte** | (빌트인) | 추가 설치 불필요 | `svelte/transition`, `svelte/motion` (`spring`, `tweened`), `svelte/animate` |
+| **React Native** | `react-native-reanimated`, `react-native-gesture-handler` | `npx expo install react-native-reanimated react-native-gesture-handler` | `useAnimatedStyle`, `withSpring`, `withTiming`, `useSharedValue` |
+
+**라이브러리 설치 절차**:
+1. `package.json`에서 해당 라이브러리의 설치 여부를 확인한다
+2. 미설치 시 `Bash` 도구로 설치 명령을 실행한다 (프로젝트의 패키지 매니저에 맞게: `npm`, `yarn`, `pnpm`, `bun`)
+3. 필요 시 프레임워크 설정 파일을 업데이트한다 (예: React Native의 `babel.config.js`에 reanimated 플러그인 추가)
+4. 설치 완료 후 해당 라이브러리의 API를 사용하여 애니메이션을 구현한다
+5. **CSS만으로도 가능한 간단한 애니메이션**(hover, transition, keyframe)은 라이브러리 없이 구현하되, **복잡한 제스처/스프링/시퀀스/공유 요소 전환**은 반드시 라이브러리를 활용한다
+
+**공통 CSS 네이티브 (라이브러리 보조)**:
+- `@starting-style`: dialog/popover 진입 애니메이션
+- View Transitions API: 페이지 전환 (Next.js `unstable_ViewTransition` 등)
+- Scroll-Driven Animations: 스크롤 연동 (`animation-timeline: scroll()`)
+- CSS `linear()` 스프링: 커스텀 스프링 이징
 
 **화면별 AI 이미지 연동 지침**:
 - 화면 구성 분석 중 이미지가 필요한 UI 영역(히어로, 카드, 빈 상태, 아바타 등)을 식별한다
@@ -709,6 +726,42 @@ publish/{feature-name}/
    - 데스크톱: 12열 그리드, 사이드바 확장
 10. **다크 모드 대응**: 테마 전환 지원 + AI 이미지는 다크모드에서도 조화롭게 보이도록 반투명 오버레이 또는 `mix-blend-mode` 적용
 11. **접근성**: 시맨틱 HTML, ARIA, focus-visible, 터치 타겟(44px), 색상 대비(4.5:1)
+
+##### 랜딩 페이지 전용 지침 (이미지 + 애니메이션 집중 활용)
+
+랜딩 페이지(`landing`, `home`, `main`, `marketing` 유형)는 이미지, 일러스트, 애니메이션을 **최대한 효과적으로** 활용하여 몰입감 있는 경험을 제공해야 한다. 일반 CRUD 화면보다 **비주얼 밀도가 2배 이상** 높아야 한다.
+
+**필수 이미지 (fect-image로 모두 생성)**:
+| 섹션 | 이미지 종류 | 프롬프트 가이드 |
+|------|-----------|--------------|
+| Hero | 풀 블리드 히어로 배너 (16:9) | "Cinematic hero banner, {기능 설명}, {스타일 키워드}, ultra wide composition, dramatic lighting, depth layers, 8k, no text no letters" |
+| Features | 기능별 아이콘 일러스트 (1:1) × 3~6개 | "3D glassmorphism icon for {기능명}, {스타일 키워드}, floating on gradient, soft shadow, premium, no text" |
+| Social Proof | 사용자 아바타 (1:1) × 3~5개 | "Professional portrait avatar, {다양한 인물}, {스타일 키워드}, warm friendly expression, no text" |
+| CTA 배경 | 그라디언트 배경 또는 추상 이미지 (16:9) | "Abstract gradient background, {스타일 키워드}, vibrant flowing shapes, premium feel, no text" |
+| 제품 스크린샷 | 앱/대시보드 목업 (16:9) | "Clean UI mockup of {화면 설명}, {스타일 키워드}, floating device frame, shadow depth, no text" |
+| 파트너/로고 영역 | 로고 플레이스홀더 | CSS로 회색 로고 플레이스홀더 생성 (이미지 불필요) |
+
+**필수 애니메이션 (Vibe Coding 애니메이션 가이드 기반)**:
+1. **히어로 섹션**: cinematic reveal — 배경 이미지 slow scale(1.05→1.0, 2s) + 텍스트 cascade fadeInUp(stagger 100ms) + CTA 버튼 delayed bounce-in
+2. **스크롤 기반 진입**: 각 섹션이 뷰포트에 진입할 때 fadeInUp + stagger (Intersection Observer 또는 Scroll-Driven Animations)
+3. **패럴랙스 레이어**: 히어로 배경 이미지와 전경 요소 사이에 3~5단계 속도 차이
+4. **숫자 카운터**: 통계/KPI 섹션에서 카운터 rollup 애니메이션 (0 → 목표값, 1.5s, ease-out)
+5. **기능 카드**: hover 시 subtle 3D tilt (perspective + rotateY) + 아이콘 bounce
+6. **CTA 버튼**: 지속적 pulse glow + hover scale(1.05) + click scale(0.95)
+7. **이미지 reveal**: 이미지 등장 시 clip-path 또는 mask 애니메이션으로 드라마틱한 공개 효과
+8. **스크롤 진행률**: 상단에 스크롤 진행률 바 (CSS Scroll-Driven 또는 JS)
+9. **infinite scroll 배너**: 파트너 로고/사용자 후기를 marquee-style 무한 스크롤
+10. **모션 접근성**: `prefers-reduced-motion: reduce`에서 모든 애니메이션을 opacity 전환으로 대체
+
+**랜딩 페이지 섹션 구성 (권장 순서)**:
+1. **Hero** — 풀 블리드 이미지 + 헤드라인 + 서브카피 + CTA (cinematic reveal)
+2. **Social Proof Bar** — 파트너 로고/수치 infinite scroll
+3. **Features** — 3~6개 기능 카드 (아이콘 + 설명) (시차 등장)
+4. **Product Showcase** — 제품 스크린샷 + 하이라이트 기능 (패럴랙스 또는 스크롤 스냅)
+5. **Testimonials** — 사용자 후기 카드 (아바타 + 인용문) (캐러셀 또는 그리드)
+6. **Statistics** — 숫자 KPI 카운터 (카운터 rollup)
+7. **CTA** — 강조 배경 + CTA 버튼 (pulse glow)
+8. **Footer** — 링크 + 소셜 아이콘
 
 **프레임워크별 화면 컴포넌트 패턴**:
 
@@ -795,14 +848,25 @@ const { sectionRef } = useScrollAnimation();
 **프리뷰 인덱스** (`preview/index.html`):
 - 프로토타입 헤더 (기능명, 생성일, 화면 수, 기술 스택)
 - 화면 흐름도 시각화 (`ia-screen-design.md` 기반)
-- 화면 카드 그리드 (각 화면 클릭 시 프리뷰 이동)
+- 화면 카드 그리드 (각 화면 클릭 시 프리뷰 이동) — fect-image 생성 이미지를 카드 썸네일로 활용
 - 다크모드 토글
+- 인덱스 자체에도 시차 등장 + hover 애니메이션 적용 (실제 서비스처럼 보이도록)
 
 **개별 화면 프리뷰** (`preview/screens/{screen-id}.html`):
-- 컴포넌트가 렌더링된 결과와 동일한 형태의 HTML
-- `styles/` 디렉토리의 CSS를 참조
-- 순수 JS로 인터랙션 동작 (프레임워크 불필요)
-- 반응형, 다크모드 동작 확인 가능
+- 컴포넌트가 렌더링된 결과와 **완전히 동일한** 형태의 HTML — 실제 서비스와 구분이 안 될 정도의 완성도
+- `styles/` 디렉토리의 CSS를 참조 (`animations.css` 포함)
+- `assets/images/`의 **AI 생성 이미지를 실제로 참조** — 플레이스홀더 박스 절대 금지, 모든 이미지 슬롯에 fect-image 생성 이미지를 배치
+- 순수 JS로 **모든 애니메이션과 인터랙션 동작** 구현 (프레임워크 불필요):
+  - 스크롤 기반 진입 애니메이션 (IntersectionObserver)
+  - 버튼/카드 hover 효과
+  - 모달 열기/닫기 전환
+  - 카운터 rollup 애니메이션
+  - 패럴랙스 효과 (랜딩 페이지)
+  - 토스트 알림 데모
+- 반응형 (모바일/태블릿/데스크톱 전환 가능), 다크모드 토글 동작
+- `prefers-reduced-motion` 미디어 쿼리 대응
+
+> **품질 기준**: 프리뷰를 브라우저에서 열었을 때 **실제 출시된 서비스와 동일한 수준의 비주얼**이어야 한다. AI 이미지, 애니메이션, 타이포그래피, 색상이 모두 적용된 상태여야 하며, 빈 이미지 박스나 placeholder 텍스트가 보여서는 안 된다.
 
 > **주의**: 프리뷰는 디자인 검수용이다. 실제 프로젝트에서 사용하는 것은 컴포넌트 파일이다.
 
