@@ -180,23 +180,25 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 
 ### Step 1: 블루프린트 자동 작성
 
-#### 블루프린트 번호 결정
+#### A. 블루프린트 번호 결정
 
 `docs/blueprints/` 디렉토리를 스캔하여 기존 번호 중 가장 큰 값 + 1로 결정한다.
 
-#### 작업 브랜치 생성
+#### A-1. 작업 브랜치 생성
 
 블루프린트 파일을 생성하기 전에, `dev` 브랜치로부터 작업 브랜치를 생성한다.
 
 1. **현재 브랜치 확인**: `git branch --show-current`
 2. **이미 작업 브랜치인 경우 스킵**: 현재 브랜치가 `feat/` 접두사로 시작하면 브랜치 생성을 건너뛴다
-3. **dev 브랜치 최신화**: `git fetch origin dev && git checkout dev && git pull origin dev`
-4. **작업 브랜치 생성**: `git checkout -b feat/{NNN}-payment`
-5. **브랜치 충돌 시**: 동일 이름의 브랜치가 이미 존재하면 `-v2`, `-v3` 접미사를 붙인다
+3. **미커밋 변경사항 보존**: `git status --porcelain`으로 확인하여 변경사항이 있으면 `git stash`로 임시 저장한다
+4. **dev 브랜치 최신화**: `git fetch origin dev && git checkout dev && git pull origin dev`
+5. **작업 브랜치 생성**: `git checkout -b feat/{NNN}-payment`
+6. **stash 복원**: step 3에서 stash 했으면 `git stash pop`으로 복원한다
+7. **브랜치 충돌 시**: 동일 이름의 브랜치가 이미 존재하면 `-v2`, `-v3` 접미사를 붙인다
 
 > **참고**: `dev` 브랜치가 존재하지 않으면 `main` 또는 `master` 브랜치에서 생성한다. 어떤 기본 브랜치도 없으면 현재 브랜치에서 생성한다.
 
-#### 블루프린트 파일 생성
+#### B. 블루프린트 파일 생성
 
 `docs/blueprints/{NNN}-payment/blueprint.md` 파일을 생성한다.
 
