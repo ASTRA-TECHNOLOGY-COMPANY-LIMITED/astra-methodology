@@ -127,6 +127,18 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 NNN = (기존 최대 번호) + 1
 ```
 
+#### A-1. 작업 브랜치 생성
+
+블루프린트 파일을 생성하기 전에, `dev` 브랜치로부터 작업 브랜치를 생성한다.
+
+1. **현재 브랜치 확인**: `git branch --show-current`
+2. **이미 작업 브랜치인 경우 스킵**: 현재 브랜치가 `feat/` 접두사로 시작하면 브랜치 생성을 건너뛴다
+3. **dev 브랜치 최신화**: `git fetch origin dev && git checkout dev && git pull origin dev`
+4. **작업 브랜치 생성**: `git checkout -b feat/{NNN}-auth`
+5. **브랜치 충돌 시**: 동일 이름의 브랜치가 이미 존재하면 `-v2`, `-v3` 접미사를 붙인다
+
+> **참고**: `dev` 브랜치가 존재하지 않으면 `main` 또는 `master` 브랜치에서 생성한다. 어떤 기본 브랜치도 없으면 현재 브랜치에서 생성한다.
+
 #### B. 인증 모듈 블루프린트 생성
 
 `docs/blueprints/{NNN}-auth/blueprint.md` 파일을 생성한다.

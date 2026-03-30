@@ -281,6 +281,21 @@ List의 스키마에서 상태(status) 관련 컬럼을 식별한다:
 - 예: `001-auth/`, `002-payment/` 존재 시 → 다음은 `003`부터 시작
 - 3자리 zero-padded (예: `003`, `004`, ...)
 
+#### D. 작업 브랜치 생성
+
+블루프린트 파일을 생성하기 전에, `dev` 브랜치로부터 작업 브랜치를 생성한다.
+
+1. **현재 브랜치 확인**: `git branch --show-current`
+2. **이미 작업 브랜치인 경우 스킵**: 현재 브랜치가 `feat/` 접두사로 시작하면 브랜치 생성을 건너뛴다
+3. **dev 브랜치 최신화**: `git fetch origin dev && git checkout dev && git pull origin dev`
+4. **작업 브랜치 생성**:
+   - 생성할 블루프린트가 1개인 경우: `git checkout -b feat/{NNN}-{feature-name}`
+   - 생성할 블루프린트가 여러 개인 경우: 첫 번째 블루프린트 번호와 대표 기능명을 사용 — `git checkout -b feat/{NNN}-{feature-name}`
+     - 예: `003-auth`, `004-payment` 2개 생성 시 → `feat/003-auth`
+5. **브랜치 충돌 시**: 동일 이름의 브랜치가 이미 존재하면 `-v2`, `-v3` 접미사를 붙인다
+
+> **참고**: `dev` 브랜치가 존재하지 않으면 `main` 또는 `master` 브랜치에서 생성한다. 어떤 기본 브랜치도 없으면 현재 브랜치에서 생성한다.
+
 ### Step 7: 블루프린트 생성
 
 각 기능별로 `docs/blueprints/{NNN}-{feature-name}/blueprint.md`를 생성한다.
