@@ -223,6 +223,7 @@ Individual feature blueprints are organized as numbered directories under `docs/
 - **Main file**: `blueprint.md` inside each directory
 - **Related files**: Supplementary materials (diagrams, API specs, etc.) are placed in the same directory
 - **Numbering**: 3-digit zero-padded sequential numbers. Next number is determined by scanning existing directories.
+- **Work branch**: Blueprint creation automatically creates a `feat/{NNN}-{feature-name}` branch from `dev` (falls back to `main`/`master`). Skipped if already on a `feat/` branch. Branch name conflicts are resolved with `-v2`, `-v3` suffixes. When multiple blueprints are created simultaneously (e.g., via `/slack-to-sprint`), a single branch is created using the first blueprint's number and feature name.
 - `overview.md` remains at the root level as the project overview document
 
 ### Sprint Progress Tracking
