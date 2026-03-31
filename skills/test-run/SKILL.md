@@ -1,16 +1,96 @@
 ---
 name: test-run
-description: "Launches the server and performs integration testing with Chrome MCP. Automatically conducts server log monitoring, page verification, API behavior checks, and performance measurement."
-argument-hint: "[target URL or scenario]"
+description: "Launches the server and performs integration testing with a real browser. Supports cmux built-in browser (primary) and Chrome MCP (fallback). Automatically conducts server log monitoring, page verification, API behavior checks, and performance measurement."
+argument-hint: "[target URL or scenario] [크롬 MCP]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill, AskUserQuestion, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__fill_form, mcp__chrome-devtools__press_key, mcp__chrome-devtools__hover, mcp__chrome-devtools__list_console_messages, mcp__chrome-devtools__get_console_message, mcp__chrome-devtools__list_network_requests, mcp__chrome-devtools__get_network_request, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__emulate, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__new_page, mcp__chrome-devtools__handle_dialog, mcp__chrome-devtools__performance_start_trace, mcp__chrome-devtools__performance_stop_trace, mcp__chrome-devtools__performance_analyze_insight
 ---
 
 # ASTRA Integration Testing
 
-Launches the server and performs integration testing in a real browser environment through Chrome MCP (chrome-devtools).
+Launches the server and performs integration testing in a real browser environment.
+Supports two browser backends: **cmux built-in browser** (primary) and **Chrome MCP** (fallback).
 The LLM directly monitors server logs to detect errors and verifies page behavior.
 
 ## Execution Procedure
+
+### Step 0: Detect Browser Environment
+
+Determine which browser backend to use for testing:
+
+#### A. Check User Intent
+
+Parse `$ARGUMENTS` for explicit browser preference:
+- If arguments contain **"크롬 MCP"**, **"Chrome MCP"**, or **"chrome-devtools"** → force **Chrome MCP** mode
+- Otherwise → proceed to auto-detection
+
+#### B. Check Browser Necessity
+
+Not all test scenarios require a browser. Evaluate test targets:
+- **Browser required**: Page rendering, UI interactions, form submissions, responsive layout, visual verification, E2E scenarios
+- **Browser NOT required**: API-only testing, server health checks, database verification, log analysis only
+
+If browser is NOT required, skip browser initialization entirely and proceed with server-side testing only (Steps 1-3, 6, 8-12). Set `BROWSER_MODE=none`.
+
+#### C. Auto-detect cmux Availability
+
+```bash
+# Check if cmux is available and running
+which cmux >/dev/null 2>&1 && cmux ping >/dev/null 2>&1
+```
+
+- If cmux is available and responds to ping → set `BROWSER_MODE=cmux`
+- If cmux is not available → set `BROWSER_MODE=chrome-mcp`
+
+#### D. Browser Mode Summary
+
+| Mode | Condition | Browser Tool |
+|------|-----------|-------------|
+| `cmux` | cmux available + no explicit Chrome MCP request | cmux browser commands (Bash) |
+| `chrome-mcp` | cmux unavailable OR user requested "크롬 MCP" | Chrome DevTools MCP tools |
+| `none` | No browser testing needed | No browser launched |
+
+Display the detected mode to the user:
+> **🔍 브라우저 환경 감지**: {cmux 브라우저 / Chrome MCP / 브라우저 불필요}
+
+---
+
+### Browser Command Reference
+
+Use this mapping table throughout all browser interaction steps. Choose the correct column based on `BROWSER_MODE`:
+
+| Action | cmux Browser (Bash) | Chrome MCP Tool |
+|--------|---------------------|-----------------|
+| **Open browser** | `cmux new-pane --type browser --url {url}` | (auto-managed) |
+| **Navigate** | `cmux browser goto {url}` | `navigate_page` |
+| **Snapshot (DOM)** | `cmux browser snapshot` | `take_snapshot` |
+| **Screenshot** | `cmux browser screenshot` | `take_screenshot` |
+| **Click** | `cmux browser click '{selector}'` | `click` |
+| **Fill input** | `cmux browser fill '{selector}' '{text}'` | `fill` |
+| **Press key** | `cmux browser press {key}` | `press_key` |
+| **Hover** | `cmux browser hover '{selector}'` | `hover` |
+| **Wait** | `cmux browser wait --selector '{css}' --timeout-ms {ms}` | `wait_for` |
+| **Console errors** | `cmux browser console list` | `list_console_messages` |
+| **JS evaluate** | `cmux browser eval '{script}'` | `evaluate_script` |
+| **Dialog handle** | `cmux browser dialog accept` / `dismiss` | `handle_dialog` |
+| **Tab list** | `cmux browser tab list` | `list_pages` |
+| **Tab switch** | `cmux browser tab switch {index}` | `select_page` |
+| **New tab** | `cmux browser tab new` | `new_page` |
+| **Get URL** | `cmux browser get url` | (via evaluate_script) |
+| **Get text** | `cmux browser get text '{selector}'` | (via take_snapshot) |
+| **Check visible** | `cmux browser is visible '{selector}'` | (via take_snapshot) |
+| **Scroll** | `cmux browser scroll --dy {pixels}` | (via evaluate_script) |
+| **Highlight** | `cmux browser highlight '{selector}'` | (via evaluate_script) |
+| **Resize viewport** | `cmux browser eval 'window.resizeTo({w},{h})'` | `resize_page` |
+| **Network requests** | `cmux browser eval 'performance.getEntriesByType("resource")'` | `list_network_requests` |
+| **Performance trace** | ⚠️ Not available — fallback to Chrome MCP | `performance_start_trace` / `performance_stop_trace` |
+
+**cmux browser notes:**
+- cmux browser commands are executed via Bash tool
+- Use `--snapshot-after` flag on interaction commands (click, fill, type, press) to auto-capture DOM after action
+- For network request inspection, use `cmux browser eval` with Performance API or inject a fetch interceptor
+- For performance measurement (Step 7), always use Chrome MCP regardless of BROWSER_MODE — if Chrome MCP is unavailable, skip performance trace and note it in the report
+
+---
 
 ### Step 1: Assess Project Environment
 
@@ -114,18 +194,40 @@ After writing, show the test case list to the user and get confirmation.
 
 ### Step 4: Basic Page Verification
 
+If `BROWSER_MODE=none`, skip this step entirely.
+
+**First, open the browser** (cmux mode only):
+- cmux: `cmux new-pane --type browser --url {target-url}` — opens browser in a split pane
+- Chrome MCP: browser is auto-managed, just call `navigate_page`
+
 Automatically perform the following for each page:
 
 #### A. Page Load Verification
 
+**cmux mode:**
 ```
-1. Navigate to target URL with chrome-devtools navigate_page
+1. cmux browser goto {target-url}
+2. cmux browser wait --selector '{main-content-selector}' --timeout-ms 10000
+3. cmux browser snapshot
+```
+
+**Chrome MCP mode:**
+```
+1. Navigate to target URL with navigate_page
 2. Verify core content load with wait_for
 3. Check page structure with take_snapshot
 ```
 
 #### B. Console Error Check
 
+**cmux mode:**
+```
+1. cmux browser console list
+2. Parse output for error/warn entries
+3. Cross-reference with server logs to classify backend/frontend errors
+```
+
+**Chrome MCP mode:**
 ```
 1. list_console_messages (types: ["error", "warn"])
 2. If errors exist, get details with get_console_message
@@ -134,6 +236,15 @@ Automatically perform the following for each page:
 
 #### C. Network Request Verification
 
+**cmux mode:**
+```
+1. cmux browser eval 'JSON.stringify(performance.getEntriesByType("resource").filter(e => ["xmlhttprequest","fetch"].includes(e.initiatorType)).map(e => ({name:e.name, duration:e.duration, status:e.responseStatus})))'
+2. Detect failed requests from the output
+3. For detailed inspection, inject a fetch interceptor via cmux browser eval if needed
+4. Check backend processing logs for corresponding requests in server logs
+```
+
+**Chrome MCP mode:**
 ```
 1. list_network_requests (resourceTypes: ["xhr", "fetch"])
 2. Detect failed requests (4xx, 5xx)
@@ -143,19 +254,42 @@ Automatically perform the following for each page:
 
 #### D. Responsive Layout Verification
 
+**cmux mode:**
 ```
-1. Desktop (1280x720) → take_snapshot
-2. Tablet (768x1024) → take_snapshot
-3. Mobile (375x667) → take_snapshot
+1. Desktop: cmux browser eval 'window.resizeTo(1280,720)' → cmux browser snapshot
+2. Tablet: cmux browser eval 'window.resizeTo(768,1024)' → cmux browser snapshot
+3. Mobile: cmux browser eval 'window.resizeTo(375,667)' → cmux browser snapshot
+4. Check for layout breakage at each viewport
+```
+
+**Chrome MCP mode:**
+```
+1. Desktop (1280x720) → resize_page + take_snapshot
+2. Tablet (768x1024) → resize_page + take_snapshot
+3. Mobile (375x667) → resize_page + take_snapshot
 4. Check for layout breakage at each viewport
 ```
 
 ### Step 5: Scenario-based Integration Testing
 
-Execute test cases written in Step 3 in order:
+If `BROWSER_MODE=none`, skip browser-dependent scenarios. Only execute API-level and server-log tests.
+
+Execute test cases written in Step 3 in order. Use the **Browser Command Reference** table from Step 0 to select the correct tool for each action based on `BROWSER_MODE`.
 
 #### Form Input Testing
 
+**cmux mode:**
+```
+1. cmux browser snapshot → identify form element selectors
+2. cmux browser fill '{selector}' '{value}' --snapshot-after (repeat per field)
+3. cmux browser click '{submit-selector}' --snapshot-after
+4. cmux browser wait --selector '{result-selector}' --timeout-ms 10000
+5. Verify API calls: cmux browser eval 'performance.getEntriesByType("resource")...'
+6. Verify request processing in server logs
+7. cmux browser snapshot → verify result screen
+```
+
+**Chrome MCP mode:**
 ```
 1. Check form element uids with take_snapshot
 2. Enter test data with fill / fill_form
@@ -168,6 +302,17 @@ Execute test cases written in Step 3 in order:
 
 #### Authentication Flow Testing
 
+**cmux mode:**
+```
+1. cmux browser goto {login-url}
+2. cmux browser fill '{email-selector}' '{test-email}' → fill '{password-selector}' '{test-password}'
+3. cmux browser click '{login-button}' --snapshot-after
+4. Verify token: cmux browser eval 'document.cookie' or 'localStorage.getItem("token")'
+5. cmux browser goto {protected-page-url} → verify access
+6. Verify token refresh by manipulating token expiry via eval
+```
+
+**Chrome MCP mode:**
 ```
 1. Navigate to login page
 2. Attempt login with test account
@@ -178,6 +323,16 @@ Execute test cases written in Step 3 in order:
 
 #### API Integration Testing
 
+**cmux mode:**
+```
+1. cmux browser goto {feature-page-url}
+2. Verify data load: cmux browser eval 'performance.getEntriesByType("resource")...'
+3. Verify DB query execution in server logs
+4. cmux browser snapshot → verify response data matches screen
+5. Perform CRUD operations via UI interactions and verify server logs + screen
+```
+
+**Chrome MCP mode:**
 ```
 1. Navigate to feature page
 2. Verify data load requests (network)
@@ -205,13 +360,24 @@ Periodically check server logs during testing:
 
 ### Step 7: Performance Measurement (optional)
 
-When the user requests performance measurement, or for key pages:
+When the user requests performance measurement, or for key pages.
 
+> **Note**: Performance trace requires Chrome DevTools Protocol. If `BROWSER_MODE=cmux`, temporarily use Chrome MCP tools for this step only. If Chrome MCP is unavailable, skip this step and note "Performance trace unavailable (cmux mode, Chrome MCP not connected)" in the report.
+
+**Chrome MCP mode (or temporary fallback from cmux):**
 ```
 1. performance_start_trace (reload=true, autoStop=true)
 2. Analyze results after trace completion
 3. Check Core Web Vitals (LCP, FID, CLS)
 4. Identify bottlenecks and suggest improvements
+```
+
+**cmux mode (basic metrics only, when Chrome MCP unavailable):**
+```
+1. cmux browser eval 'JSON.stringify(performance.timing)'
+2. Calculate basic metrics: TTFB, DOM Content Loaded, Full Load
+3. cmux browser eval 'JSON.stringify(performance.getEntriesByType("navigation")[0])'
+4. Note: Full Core Web Vitals (LCP, FID, CLS) not available without Chrome MCP
 ```
 
 ### Step 8: Generate Test Result Report
@@ -224,7 +390,7 @@ Record test results in `docs/tests/test-reports/`:
 ## Test Environment
 - Date: {date}
 - Server: {tech stack + version}
-- Browser: Chrome (chrome-devtools MCP)
+- Browser: {cmux built-in browser / Chrome DevTools MCP / No browser (API-only)}
 
 ## Test Result Summary
 

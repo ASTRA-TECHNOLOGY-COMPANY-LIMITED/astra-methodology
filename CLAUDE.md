@@ -19,7 +19,7 @@ astra-methodology/
 │   ├── sprint-plan/       # Sprint planning & initialization (/sprint-plan)
 │   ├── project-checklist/ # Sprint 0 completion verification (/project-checklist)
 │   ├── data-standard/     # Korean public data standard terminology (/data-standard)
-│   ├── test-run/          # Chrome MCP integration testing (/test-run)
+│   ├── test-run/          # Integration testing — cmux browser (primary) / Chrome MCP (fallback) (/test-run)
 │   ├── test-scenario/     # E2E test scenario generation (/test-scenario)
 │   ├── pr-merge/          # Commit→review→fix→merge full cycle (/pr-merge)
 │   ├── slack-to-sprint/   # Slack List → blueprint + sprint generation (/slack-to-sprint)
@@ -223,6 +223,7 @@ Individual feature blueprints are organized as numbered directories under `docs/
 - **Main file**: `blueprint.md` inside each directory
 - **Related files**: Supplementary materials (diagrams, API specs, etc.) are placed in the same directory
 - **Numbering**: 3-digit zero-padded sequential numbers. Next number is determined by scanning existing directories.
+- **Work branch**: Blueprint creation automatically creates a `feat/{NNN}-{feature-name}` branch from `dev` (falls back to `main`/`master`). Skipped if already on a `feat/` branch. Branch name conflicts are resolved with `-v2`, `-v3` suffixes. When multiple blueprints are created simultaneously (e.g., via `/slack-to-sprint`), a single branch is created using the first blueprint's number and feature name.
 - `overview.md` remains at the root level as the project overview document
 
 ### Sprint Progress Tracking
