@@ -34,6 +34,19 @@ if echo "$MESSAGE" | tail -5 | grep -qE '(\?$|확인해|알려주|선택해|어�
   exit 0
 fi
 
+# 파일 수정 작업이 없는 응답은 스킵 (단순 질문 답변, 설명, 정보 제공)
+# 실제 작업을 수행했다면 파일 경로나 수정 관련 표현이 포함됨
+HAS_FILE_WORK=false
+if echo "$MESSAGE" | grep -qE '(파일을 (수정|생성|추가|삭제|업데이트|편집|작성)|파일에 (추가|반영)|wrote to|edited|created file|Write|Edit)'; then
+  HAS_FILE_WORK=true
+fi
+if echo "$MESSAGE" | grep -qE '\`[a-zA-Z0-9_./-]+\.(ts|js|tsx|jsx|java|py|md|json|yaml|yml|sh|css|scss|html|sql|xml|toml|gradle|kt|swift|dart)\`'; then
+  HAS_FILE_WORK=true
+fi
+if [ "$HAS_FILE_WORK" = "false" ]; then
+  exit 0
+fi
+
 # 이미 작업 요약/설명이 있는지 확인 (한국어 + 영어 + 일본어 마커)
 MESSAGE_LOWER=$(echo "$MESSAGE" | tr '[:upper:]' '[:lower:]')
 if echo "$MESSAGE" | grep -qE '(완료했습니다|수행했습니다|작업 요약|작업 설명|변경 사항|수정 사항|작업 내용|처리했습니다|적용했습니다|구현했습니다|생성했습니다|업데이트했습니다|추가했습니다|삭제했습니다|리팩토링했습니다|수정했습니다)'; then
