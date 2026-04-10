@@ -39,14 +39,16 @@ CURRENT_BRANCH=$(git branch --show-current)
 # 1. 변경사항 확인
 git status --short
 
-# 2. 변경사항이 있으면 커밋 (민감 파일 제외)
-git add src/ app/ pages/ components/ lib/ utils/ api/ docs/ --ignore-errors
+# 2. 변경사항이 있으면 커밋 (이미 추적 중인 파일만 스테이징 — .env, 빌드 아티팩트 등 untracked 파일 제외)
+git add -u
 git commit -m "wip: pre-test commit on {CURRENT_BRANCH}"
 ```
 
+> **Note**: `git add -u`는 이미 Git이 추적 중인 파일의 변경사항만 스테이징한다. 새로 생성된 untracked 파일은 포함되지 않으므로 `.env`, `node_modules/`, 빌드 결과물이 실수로 커밋되는 것을 방지한다.
+
 변경사항이 없으면 이 단계를 건너뛴다.
 
-#### D. Merge to dev
+#### D. Switch to dev and Merge
 
 현재 브랜치가 `dev`가 아닌 경우:
 
@@ -54,10 +56,16 @@ git commit -m "wip: pre-test commit on {CURRENT_BRANCH}"
 # 1. dev 브랜치로 전환
 git checkout dev
 
-# 2. dev 최신화 (remote가 있는 경우)
-git pull origin dev --no-edit 2>/dev/null || true
+# 2. dev 최신화 (원격 브랜치가 존재하는 경우에만)
+git ls-remote --heads origin dev | grep -q dev && git pull origin dev --no-edit
+```
 
-# 3. 작업 브랜치를 dev에 머지
+**`main`/`master` 브랜치인 경우**: dev로 전환만 하고, 머지는 수행하지 않는다. `main`/`master`를 dev에 머지하면 역방향 머지가 발생하므로 금지한다.
+
+**작업 브랜치 (`feat/*`, `fix/*` 등)인 경우에만 머지를 실행한다**:
+
+```bash
+# 3. 작업 브랜치를 dev에 머지 (main/master는 제외)
 git merge {CURRENT_BRANCH} --no-edit
 ```
 
