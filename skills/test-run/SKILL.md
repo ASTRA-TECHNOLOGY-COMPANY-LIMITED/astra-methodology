@@ -551,15 +551,14 @@ If **tests PASSED** (no Critical or High issues): proceed to Step 12.
 #### A. Stage Changes
 
 ```bash
-# Stage test-related files
+# Stage new test result files (untracked)
 git add docs/tests/ docs/sprints/
 
-# Stage source code changes made during test debugging (excluding sensitive files)
-git add src/ app/ pages/ components/ lib/ utils/ api/ --ignore-errors
-
-# IMPORTANT: Do NOT use `git add -A` — it may include .env, credentials, or build artifacts
-# Exclude sensitive files: .env*, credentials*, *.key, *.pem, node_modules/, dist/, build/
+# Stage modifications to existing tracked source files (safe: excludes .env, build artifacts)
+git add -u
 ```
+
+> **Note**: `git add -u`는 이미 추적 중인 파일의 변경사항만 스테이징한다. `git add -A`와 달리 `.env`, `credentials`, `node_modules/`, `dist/` 등 untracked 파일이 포함되지 않는다.
 
 Show `git diff --staged --stat` to the user and use **AskUserQuestion** to confirm before committing:
 
