@@ -281,24 +281,17 @@ List의 스키마에서 상태(status) 관련 컬럼을 식별한다:
 - 예: `001-auth/`, `002-payment/` 존재 시 → 다음은 `003`부터 시작
 - 3자리 zero-padded (예: `003`, `004`, ...)
 
-#### D. 작업 브랜치 생성
+#### D. dev 브랜치 전환 및 최신화
 
-블루프린트 파일을 생성하기 전에, `dev` 브랜치로부터 작업 브랜치를 생성한다.
+블루프린트 파일을 생성하기 전에, `dev` 브랜치로 전환하고 최신 상태로 동기화한다. 작업 브랜치는 생성하지 않으며, `dev`에서 직접 작업한다. 작업 브랜치 생성은 `/pr-merge` 실행 시 자동으로 처리된다.
 
 1. **현재 브랜치 확인**: `git branch --show-current`
-2. **이미 작업 브랜치인 경우 스킵**: 현재 브랜치가 `feat/` 접두사로 시작하면 아래 3~7단계를 모두 건너뛴다
+2. **이미 `dev` 브랜치인 경우 스킵**: 현재 브랜치가 `dev`이면 아래 3~5단계를 건너뛰고 pull만 실행한다 (`git pull origin dev`)
 3. **미커밋 변경사항 보존**: `git status --porcelain`으로 확인하여 변경사항이 있으면 `git stash`로 임시 저장한다
-4. **dev 브랜치 최신화**: `git fetch origin dev && git checkout dev && git pull origin dev`
-5. **작업 브랜치 생성**:
-   - 생성할 블루프린트가 1개인 경우: `git checkout -b feat/{NNN}-{feature-name}`
-   - 생성할 블루프린트가 여러 개인 경우: 첫 번째 블루프린트 번호와 대표 기능명을 사용 — `git checkout -b feat/{NNN}-{feature-name}`
-     - 예: `003-auth`, `004-payment` 2개 생성 시 → `feat/003-auth`
-6. **stash 복원**: step 3에서 stash 했으면 `git stash pop`으로 복원한다. 충돌 발생 시 충돌 파일 목록을 사용자에게 보고하고 수동 해결을 요청한다.
-7. **브랜치 충돌 시**: 동일 이름의 브랜치가 이미 존재하면 `-v2`, `-v3` 접미사를 붙인다
+4. **dev 브랜치 전환 및 최신화**: `git fetch origin dev && git checkout dev && git pull origin dev`
+5. **stash 복원**: step 3에서 stash 했으면 `git stash pop`으로 복원한다. 충돌 발생 시 충돌 파일 목록을 사용자에게 보고하고 수동 해결을 요청한다.
 
-> **참고**: `dev` 브랜치가 존재하지 않으면 `main` 또는 `master` 브랜치에서 생성한다. 어떤 기본 브랜치도 없으면 현재 브랜치에서 생성한다.
-
-> **다중 블루프린트 안내**: 여러 블루프린트가 하나의 브랜치(`feat/{NNN}-{first-feature-name}`)에 생성된다. 이후 `/pr-merge` 실행 시 모든 블루프린트가 하나의 PR에 포함된다.
+> **참고**: `dev` 브랜치가 존재하지 않으면 `main` 또는 `master` 브랜치에서 작업한다. 어떤 기본 브랜치도 없으면 현재 브랜치에서 작업한다.
 
 ### Step 7: 블루프린트 생성
 
