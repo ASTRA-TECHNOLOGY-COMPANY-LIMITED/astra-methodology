@@ -13,7 +13,73 @@ The LLM directly monitors server logs to detect errors and verifies page behavio
 
 ## Execution Procedure
 
-### Step 0: Detect Browser Environment
+### Step 0: Prepare dev Branch (Pre-merge)
+
+테스트는 **반드시 `dev` 브랜치에서 실행**한다. 현재 브랜치의 변경사항을 dev에 머지한 뒤 테스트를 진행한다.
+
+#### A. Check Current Branch
+
+```bash
+CURRENT_BRANCH=$(git branch --show-current)
+```
+
+#### B. Branch Handling
+
+| 현재 브랜치 | 처리 방법 |
+|------------|----------|
+| `dev` | 변경사항이 있으면 커밋 후 그대로 진행 |
+| `feat/*`, `fix/*` 등 작업 브랜치 | 변경사항 커밋 → dev에 머지 → dev 체크아웃 |
+| `main`, `master` | ⚠️ 경고 표시 후 dev 브랜치로 전환 |
+
+#### C. Commit Unstaged Changes (if any)
+
+현재 브랜치에 커밋되지 않은 변경사항이 있는 경우:
+
+```bash
+# 1. 변경사항 확인
+git status --short
+
+# 2. 변경사항이 있으면 커밋 (민감 파일 제외)
+git add src/ app/ pages/ components/ lib/ utils/ api/ docs/ --ignore-errors
+git commit -m "wip: pre-test commit on {CURRENT_BRANCH}"
+```
+
+변경사항이 없으면 이 단계를 건너뛴다.
+
+#### D. Merge to dev
+
+현재 브랜치가 `dev`가 아닌 경우:
+
+```bash
+# 1. dev 브랜치로 전환
+git checkout dev
+
+# 2. dev 최신화 (remote가 있는 경우)
+git pull origin dev --no-edit 2>/dev/null || true
+
+# 3. 작업 브랜치를 dev에 머지
+git merge {CURRENT_BRANCH} --no-edit
+```
+
+**머지 충돌 발생 시:**
+1. 충돌 파일 목록을 사용자에게 표시
+2. **AskUserQuestion**으로 처리 방법 확인:
+   - **직접 해결** — 충돌 해결 후 계속
+   - **머지 취소** — `git merge --abort` 후 워크플로우 종료
+3. 충돌이 해결되면 `git commit --no-edit`으로 머지 완료
+
+#### E. Confirm dev Branch
+
+```bash
+# dev 브랜치에 있는지 최종 확인
+git branch --show-current  # must be "dev"
+```
+
+> **📌 테스트 실행 브랜치**: `dev` (원래 작업 브랜치: `{CURRENT_BRANCH}`)
+
+---
+
+### Step 1: Detect Browser Environment
 
 Determine which browser backend to use for testing:
 
@@ -29,7 +95,7 @@ Not all test scenarios require a browser. Evaluate test targets:
 - **Browser required**: Page rendering, UI interactions, form submissions, responsive layout, visual verification, E2E scenarios
 - **Browser NOT required**: API-only testing, server health checks, database verification, log analysis only
 
-If browser is NOT required, skip browser initialization entirely and proceed with server-side testing only (Steps 1-3, 6, 8-12). Set `BROWSER_MODE=none`.
+If browser is NOT required, skip browser initialization entirely and proceed with server-side testing only (Steps 2-4, 7, 9-13). Set `BROWSER_MODE=none`.
 
 #### C. Auto-detect cmux Availability
 
@@ -54,7 +120,7 @@ Display the detected mode to the user:
 
 ---
 
-### Browser Command Reference
+### Step 1-A: Browser Command Reference
 
 Use this mapping table throughout all browser interaction steps. Choose the correct column based on `BROWSER_MODE`:
 
@@ -88,11 +154,11 @@ Use this mapping table throughout all browser interaction steps. Choose the corr
 - cmux browser commands are executed via Bash tool
 - Use `--snapshot-after` flag on interaction commands (click, fill, type, press) to auto-capture DOM after action
 - For network request inspection, use `cmux browser eval` with Performance API or inject a fetch interceptor
-- For performance measurement (Step 7), always use Chrome MCP regardless of BROWSER_MODE — if Chrome MCP is unavailable, skip performance trace and note it in the report
+- For performance measurement (Step 8), always use Chrome MCP regardless of BROWSER_MODE — if Chrome MCP is unavailable, skip performance trace and note it in the report
 
 ---
 
-### Step 1: Assess Project Environment
+### Step 2: Assess Project Environment
 
 Assess the current project's tech stack and server launch method:
 
@@ -112,7 +178,7 @@ Assess the current project's tech stack and server launch method:
 | FastAPI | `pyproject.toml` / `main.py` | `uvicorn main:app --reload` |
 | Django | `manage.py` | `python manage.py runserver` |
 
-### Step 2: Start Server and Monitor Logs
+### Step 3: Start Server and Monitor Logs
 
 **Launch the server in the background and capture logs:**
 
@@ -138,7 +204,7 @@ Assess the current project's tech stack and server launch method:
 | NestJS | `Nest application successfully started` | `Error:` / `Cannot find module` |
 | FastAPI | `Uvicorn running on` | `ERROR:` / `ModuleNotFoundError` |
 
-### Step 3: Write Test Cases
+### Step 4: Write Test Cases
 
 Analyze the project and write test cases directly.
 
@@ -162,7 +228,9 @@ Analyze the following to write test cases:
 
 #### C. Write Test Cases
 
-Write test cases in the `docs/tests/test-cases/sprint-{N}/` directory (where `{N}` is the current sprint number detected from `docs/sprints/` by scanning `sprint-{N}-{name}/` directories and finding the highest `{N}`):
+Write test cases in the `docs/tests/test-cases/sprint-{N}/` directory (where `{N}` is the current sprint number detected from `docs/sprints/` by scanning `sprint-{N}-{name}/` directories and finding the highest `{N}`).
+
+> **Note**: Test cases are written on the `dev` branch (merged in Step 0):
 
 ```markdown
 # {Feature Name} Test Cases
@@ -192,7 +260,7 @@ Write test cases in the `docs/tests/test-cases/sprint-{N}/` directory (where `{N
 
 After writing, show the test case list to the user and get confirmation.
 
-### Step 4: Basic Page Verification
+### Step 5: Basic Page Verification
 
 If `BROWSER_MODE=none`, skip this step entirely.
 
@@ -270,11 +338,11 @@ Automatically perform the following for each page:
 4. Check for layout breakage at each viewport
 ```
 
-### Step 5: Scenario-based Integration Testing
+### Step 6: Scenario-based Integration Testing
 
 If `BROWSER_MODE=none`, skip browser-dependent scenarios. Only execute API-level and server-log tests.
 
-Execute test cases written in Step 3 in order. Use the **Browser Command Reference** table from Step 0 to select the correct tool for each action based on `BROWSER_MODE`.
+Execute test cases written in Step 4 in order. Use the **Browser Command Reference** table from Step 1-A to select the correct tool for each action based on `BROWSER_MODE`.
 
 #### Form Input Testing
 
@@ -341,7 +409,7 @@ Execute test cases written in Step 3 in order. Use the **Browser Command Referen
 5. Perform CRUD operations and verify server logs and screen
 ```
 
-### Step 6: Server Log Analysis
+### Step 7: Server Log Analysis
 
 Periodically check server logs during testing:
 
@@ -358,7 +426,7 @@ Periodically check server logs during testing:
 # Search for error patterns: ERROR, Exception, WARN, FATAL
 ```
 
-### Step 7: Performance Measurement (optional)
+### Step 8: Performance Measurement (optional)
 
 When the user requests performance measurement, or for key pages.
 
@@ -380,7 +448,7 @@ When the user requests performance measurement, or for key pages.
 4. Note: Full Core Web Vitals (LCP, FID, CLS) not available without Chrome MCP
 ```
 
-### Step 8: Generate Test Result Report
+### Step 9: Generate Test Result Report
 
 Record test results in `docs/tests/test-reports/`:
 
@@ -424,7 +492,7 @@ Record test results in `docs/tests/test-reports/`:
 {Core Web Vitals results}
 ```
 
-### Step 9: Shut Down Server
+### Step 10: Shut Down Server
 
 Shut down the server process after testing is complete:
 
@@ -435,9 +503,9 @@ Shut down the server process after testing is complete:
 
 Confirm with the user before shutting down the server.
 
-### Step 10: Determine Test Success/Failure
+### Step 11: Determine Test Success/Failure
 
-Evaluate the overall test result based on the test report generated in Step 8:
+Evaluate the overall test result based on the test report generated in Step 9:
 
 **Success criteria (ALL must be met):**
 - Server Startup: PASS
@@ -460,37 +528,19 @@ If **tests FAILED**:
 If **tests PASSED with Severity-High issues only** (no Critical):
 1. List the High-severity issues
 2. Use **AskUserQuestion** to ask the user whether to proceed despite High issues:
-   - **Proceed** — acknowledge and continue to Step 11
+   - **Proceed** — acknowledge and continue to Step 12
    - **Stop** — end the workflow
 3. If user chooses to stop, end the workflow.
 
-If **tests PASSED** (no Critical or High issues): proceed to Step 11.
+If **tests PASSED** (no Critical or High issues): proceed to Step 12.
 
-### Step 11: Auto Branch Creation, Commit & Push
+### Step 12: Commit & Push on dev Branch
 
-When all tests pass, create a branch, commit changes, and push.
+테스트가 통과했으므로 dev 브랜치에서 테스트 결과를 커밋하고 푸시한다.
 
-#### A. Detect Branch Context
+> **Note**: Step 0에서 이미 dev 브랜치로 전환된 상태이다. 테스트 중 생성된 파일(테스트 리포트 등)도 dev에 커밋한다.
 
-```
-1. Check current branch with `git branch --show-current`
-2. Check current sprint from `docs/sprints/` (scan sprint-{N}-{name}/ directories, find highest N)
-3. Check the primary feature name from test target or blueprint context
-```
-
-#### B. Create Feature Branch (if on main/dev/staging)
-
-If current branch is `main`, `dev`, `staging`, or `develop`, create a new branch:
-
-```bash
-# Branch naming: feat/{sprint}-{feature}-{date}
-# Example: feat/sprint-1-auth-20260328
-git checkout -b feat/sprint-{N}-{feature-name}-{YYYYMMDD}
-```
-
-If already on a feature branch (not main/dev/staging/develop), stay on the current branch.
-
-#### C. Stage and Commit
+#### A. Stage Changes
 
 ```bash
 # Stage test-related files
@@ -510,9 +560,12 @@ Show `git diff --staged --stat` to the user and use **AskUserQuestion** to confi
 > - **커밋 진행** (기본값)
 > - **취소** — 워크플로우 중단
 
+#### B. Commit
+
 After user confirms:
 
 ```bash
+# Detect current sprint from docs/sprints/
 # Determine commit type based on staged files:
 # - If only docs/tests/ and docs/sprints/ changed → use "test:"
 # - If src/ or other source directories also changed → use "fix:"
@@ -526,27 +579,30 @@ git commit -m "{type}: sprint-{N} {feature-name} integration test passed
 🤖 Generated with Claude Code"
 ```
 
-#### D. Push to Remote
+#### C. Push dev to Remote
 
 ```bash
-git push -u origin {branch-name}
+git push origin dev
 ```
 
 **Push failure handling:**
-- If push fails due to branch already existing on remote (e.g., re-run on the same day), append a counter suffix: `{branch-name}-v2`, `{branch-name}-v3`, etc.
+- If push fails due to non-fast-forward (remote dev has new commits), pull and re-push:
+  ```bash
+  git pull origin dev --no-edit && git push origin dev
+  ```
 - If push fails due to authentication or network error, display the error and end the workflow.
 
-After push completes, display the branch name and push result.
+After push completes, display the push result.
 
-### Step 12: PR Review & Merge (Optional)
+### Step 13: PR Review & Merge (Optional)
 
-After successful push, ask the user whether to proceed with PR merge:
+After successful push, ask the user whether to create a PR from `dev` to `main`:
 
 1. Use **AskUserQuestion** to confirm:
 
-> **테스트 통과 → 브랜치 생성 → 커밋 → 푸시 완료!**
-> Branch: `{branch-name}`
-> **PR Review & Merge를 진행할까요?**
+> **테스트 통과 → dev 커밋 → 푸시 완료!**
+> Branch: `dev`
+> **dev → main PR Review & Merge를 진행할까요?**
 > - **예** (기본값) — `/pr-merge` 실행
 > - **아니오** — 워크플로우 종료
 
@@ -556,9 +612,9 @@ After successful push, ask the user whether to proceed with PR merge:
 Use Skill tool: invoke "pr-merge"
 ```
 
-> **Note**: If additional arguments are needed for `/pr-merge` (e.g., `--no-review`, `--draft`, `--staging`), ask the user for options.
+> **Note**: PR은 `dev → main` 방향으로 생성된다. 추가 옵션이 필요한 경우 (`--no-review`, `--draft` 등) 사용자에게 확인한다.
 
-3. If the user declines, provide the branch name and test report location and end the workflow.
+3. If the user declines, provide the test report location and end the workflow.
 
 ## Quick Run Examples
 
