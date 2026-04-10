@@ -603,23 +603,23 @@ After push completes, display the push result.
 
 ### Step 13: PR Review & Merge (Optional)
 
-After successful push, ask the user whether to create a PR from `dev` to `main`:
+After successful push, ask the user whether to promote `dev` to `staging`:
 
 1. Use **AskUserQuestion** to confirm:
 
 > **테스트 통과 → dev 커밋 → 푸시 완료!**
 > Branch: `dev`
-> **dev → main PR Review & Merge를 진행할까요?**
-> - **예** (기본값) — `/pr-merge` 실행
+> **dev → staging 프로모션을 진행할까요?**
+> - **예** (기본값) — `/pr-merge --staging` 실행
 > - **아니오** — 워크플로우 종료
 
-2. If the user approves, invoke `pr-merge` using the Skill tool:
+2. If the user approves, invoke `pr-merge --staging` using the Skill tool:
 
 ```
-Use Skill tool: invoke "pr-merge"
+Use Skill tool: invoke "pr-merge" with arguments "--staging"
 ```
 
-> **Note**: PR은 `dev → main` 방향으로 생성된다. 추가 옵션이 필요한 경우 (`--no-review`, `--draft` 등) 사용자에게 확인한다.
+> **Note**: PR은 `dev → staging` 방향으로 생성된다. 추가 옵션이 필요한 경우 (`--no-review`, `--draft` 등) 사용자에게 확인한다.
 
 3. If the user declines, provide the test report location and end the workflow.
 
