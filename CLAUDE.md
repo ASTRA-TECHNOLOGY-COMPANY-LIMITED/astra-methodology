@@ -49,6 +49,7 @@ astra-methodology/
 │   ├── check-convention.md      # /check-convention — coding convention compliance check
 │   ├── lookup-term.md           # /lookup-term — standard term dictionary lookup
 │   ├── lookup-code.md           # /lookup-code — international code lookup (ISO/ITU)
+│   ├── select-language.md       # /select-language — workflow language selection (ko/vi/en), reusable across skills
 │   └── slack-backlog.md         # /slack-backlog — extract backlog items from Slack
 ├── hooks/               # PostToolUse hooks (hooks.json)
 ├── scripts/             # Shell scripts for hooks and verification

@@ -14,26 +14,24 @@ You configure the initial setup tailored to the user's project.
 
 ### Step 0: Select Language
 
-Use AskUserQuestion to ask the user which language to use for the setup process. Present the options as follows:
+Use the `Skill` tool to invoke the `select-language` command. This command presents the trilingual prompt and returns the selected language in a structured format.
 
 ```
-프로젝트 초기 설정에 사용할 언어를 선택해 주세요.
-Vui lòng chọn ngôn ngữ để thiết lập dự án.
-Please select a language for project setup.
-
-1. 한국어 (Korean)
-2. Tiếng Việt (Vietnamese)
-3. English
+Skill tool invocation:
+- skill: "select-language"
+- args: ""   (empty — let the user choose interactively)
 ```
 
-Based on the user's selection:
-- **한국어**: All generated documents (CLAUDE.md, templates, messages) are written in Korean (default behavior)
-- **Tiếng Việt**: All generated documents (CLAUDE.md, templates, messages) are written in Vietnamese
-- **English**: All generated documents (CLAUDE.md, templates, messages) are written in English
+Parse the `## Selected Language` block from the command's output and extract:
+- **Language Name** — used in CLAUDE.md `## Language` section and the result summary
+- **Language Code** (`ko` / `vi` / `en`) — used internally for template selection
+- **Locale** (`ko-KR` / `vi-VN` / `en-US`) — used for date/number formatting if needed
 
-Store the selected language and apply it to all subsequent steps. Every user-facing text, template content, and output message must use the selected language throughout the entire setup process.
+Store the selection and apply it to **all subsequent steps**. Every user-facing text, template content, and output message must use the selected language throughout the entire setup process.
 
 The selected language will be persisted in the target project's CLAUDE.md (see Step 4, `## Language` section) so that all team members sharing the repository automatically use the same language in every Claude Code session.
+
+> **Note**: If `$ARGUMENTS` to `/project-init` already includes an explicit language hint (e.g., `--lang=ko`), pass that value through to `select-language` as the argument (e.g., `Skill(skill: "select-language", args: "ko")`) to skip the interactive prompt.
 
 ### Step 0.5: Select Platform Type
 
