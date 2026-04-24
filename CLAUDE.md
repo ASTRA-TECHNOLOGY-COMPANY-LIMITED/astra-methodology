@@ -32,6 +32,7 @@ astra-methodology/
 │   ├── sprint-progress/   # Auto-applied sprint progress tracking
 │   ├── service-planner/   # Design thinking based planning deliverables (/service-planner)
 │   ├── ux-publish/        # UX component publishing from planning docs (/ux-publish)
+│   ├── handoff-publish/   # UX/UI/Dev/QA handoff package generator — Screen ID based (/handoff-publish)
 │   ├── manual-generator/  # Service manual auto-generator with Chrome MCP screenshots (/manual-generator)
 │   └── catalog-generator/ # Product promotional catalog auto-generator (/catalog-generator)
 ├── agents/              # Specialized Claude Code subagents (read-only, auto-discovered)
@@ -258,6 +259,31 @@ The `/ux-publish` skill generates production-grade UI components from planning d
 - **Browser preview**: `publish/{feature-name}/preview/` contains build-free HTML previews for design review
 - **Features**: Responsive (mobile/tablet/desktop), dark mode, accessibility (WCAG AA), `prefers-reduced-motion` support
 - **Design direction**: User selects aesthetic tone (Refined Minimal, Bold & Vibrant, Soft & Warm, Editorial, Professional Enterprise, or Auto)
+
+### Handoff Package (UX/UI/Dev/QA 협업 패키지)
+
+The `/handoff-publish` skill generates a Screen ID based collaboration package for long-lived product features, following the FECT `HANDOFF_PROCESS_GUIDE v1.1` (see `docs/workflow/HANDOFF_PROCESS_GUIDE.pdf`):
+
+- **Output location**: Branch root `{feature-name}-handoff/` (intentional — designers/QA clone without navigating into engineering code)
+- **Screen ID format**: `{DOMAIN}-{PAGE}-{SECTION}-UC{NN}` (e.g., `ACAD-EXPERT-DETAIL-UC03`). Domain code is project-wide (2–6 uppercase chars). State suffixes: `-LOADING`, `-EMPTY`, `-ERROR`.
+- **Single Source of Truth**: `1-screen-registry.md` is the authoritative ID list. **UX holds exclusive issuance rights** — UI/Dev/QA cannot create new IDs (they must request via UX).
+- **14 output files**:
+  - `0-README.md` (guide + Quick Start), `1-screen-registry.md` (SSoT)
+  - `2-flows.md`, `3-state-matrix.md`, `4-edge-cases.md`, `5-responsive-guide.md`
+  - `6-component-specs.md`, `7-business-rules.md`, `8-content-guide.md`
+  - `9-ia-sitemap.md`, `10-personas.md`, `11-decision-log.md`
+  - `DoD-CHECKLIST.md` (role-based Definition of Done)
+  - `walkthrough.loom.md` (manual recording link)
+  - `screenshots/` (ID-named capture folder, populated by UI)
+- **Design principle**: Every screen = State (LOADING/EMPTY/DEFAULT/ERROR/PARTIAL) × Permission × Device combination
+- **Integration with existing assets**:
+  - Reads `docs/planner/{NNN}-{feature}/ia-screen-design.md` if present → auto-converts `SCR-NNN` to 4-segment Screen IDs, records conversion in `11-decision-log.md`
+  - Reads `interview-report.md` → populates `10-personas.md`
+  - Reads `feature-definition.md` → seeds `3-state-matrix.md` permission matrix + `7-business-rules.md`
+  - Reads `blueprint.md` → seeds API/data policy in `7-business-rules.md`
+- **Out of scope (PDF §24)**: One-off marketing pages, prototypes/A-B tests, external embeds (Notion/Slack), admin back-offices not requiring UX collaboration. Skill prompts user at Step 0 and exits early.
+- **Legacy code policy (PDF §26)**: Not auto-applied to existing features. Only new features or major renewals adopt Handoff. No retroactive enforcement hooks.
+- **DoD automation (Developer stage)**: Lint + tsc + Lighthouse + axe-core CLI checks are scripted; Loom walkthrough, Figma↔code parity, screen reader test remain manual.
 
 ### Manual Generator
 
