@@ -100,7 +100,7 @@ Sprint Progress:
 
 Planning:
   /service-planner [feature]     Design Thinking planning (6 deliverables: market analysis, interview, requirements+KPI, use cases+journey map, IA+wireframe, features+risk)
-  /handoff-publish [feature]     Generate UX/UI/Dev/QA handoff package ({feature}-handoff/ with 11 files)
+  /handoff-publish [feature]     Generate UX/UI/Dev/QA handoff package ({feature}-handoff/ with 14 files)
 
 Slack Integration:
   /slack-to-sprint [channel]     Slack messages → blueprints + sprint plan

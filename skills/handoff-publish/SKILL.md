@@ -16,7 +16,7 @@ HANDOFF_PROCESS_GUIDE v1.1 기반의 **Screen ID 중심 협업 패키지**를 �
 
 **생성 위치**: 브랜치 루트의 `{feature}-handoff/` 폴더 (PDF §8 구조 그대로)
 
-**출력물 (11개 파일 + screenshots/ + walkthrough.loom.md)**:
+**출력물 (14개 파일 + screenshots/)**:
 
 | # | 파일 | 역할 |
 |---|------|------|
@@ -32,8 +32,9 @@ HANDOFF_PROCESS_GUIDE v1.1 기반의 **Screen ID 중심 협업 패키지**를 �
 | 9 | `9-ia-sitemap.md` | 정보 구조 / 사이트맵 |
 | 10 | `10-personas.md` | 페르소나 / 핵심 시나리오 |
 | 11 | `11-decision-log.md` | 디자인 결정 이력 |
-| — | `screenshots/` | 화면 ID 기준 캡처 디렉토리 |
+| — | `DoD-CHECKLIST.md` | 역할별 Definition of Done 체크리스트 |
 | — | `walkthrough.loom.md` | 설명 영상 링크 (수동 기록) |
+| — | `screenshots/` | 화면 ID 기준 캡처 디렉토리 |
 
 > **LANGUAGE RULE**: Before executing this skill, read the project's `CLAUDE.md` and check the `## Language` section to detect the project language. If the project language is NOT Korean (`ko`), translate ALL user-facing output — prompts, messages, generated headers, table labels, descriptions — into the project language. Technical identifiers (Screen IDs, file names, code snippets) remain untranslated.
 
@@ -198,9 +199,9 @@ Registry에 플레이스홀더로 추가하고 "🔄 미착수"로 표기합니�
 
 ### Step 3: 템플릿 복사 및 변수 치환
 
-`$CLAUDE_PLUGIN_ROOT/skills/handoff-publish/templates/` 의 모든 파일(13개 템플릿)을 `{HANDOFF_DIR}`에 복사하고, 다음 변수를 치환한다:
+`$CLAUDE_PLUGIN_ROOT/skills/handoff-publish/templates/` 의 모든 파일(14개 템플릿)을 `{HANDOFF_DIR}`에 복사하고, 다음 변수를 치환한다:
 
-> 복사 대상: `0-README.md`, `1-screen-registry.md` ~ `11-decision-log.md` (11개), `DoD-CHECKLIST.md`, `walkthrough.loom.md`
+> 복사 대상: `0-README.md` (1개), `1-screen-registry.md` ~ `11-decision-log.md` (11개), `DoD-CHECKLIST.md`, `walkthrough.loom.md`
 
 | 변수 | 값 |
 |------|-----|
@@ -211,7 +212,7 @@ Registry에 플레이스홀더로 추가하고 "🔄 미착수"로 표기합니�
 | `{{PROJECT_NAME}}` | CLAUDE.md의 프로젝트명 |
 | `{{LANGUAGE_POLICY}}` | 프로젝트 i18n 언어 목록 (기본: `ko / en / vi`) |
 
-또한 `screenshots/` 빈 디렉토리와 `walkthrough.loom.md` 스켈레톤을 생성한다.
+또한 `screenshots/` 빈 디렉토리를 생성한다 (`walkthrough.loom.md`는 이미 템플릿으로 복사됨).
 
 ---
 
@@ -298,18 +299,11 @@ PDF §16~17의 전체 내용을 템플릿으로 그대로 반영:
 
 ---
 
-### Step 12: 0-README.md 및 walkthrough 파일 생성
+### Step 12: 0-README.md 변수 치환 확인
 
-- **0-README.md**: 템플릿 그대로 (PDF §7 Quick Start + 역할별 5분 가이드). `{{FEATURE_NAME}}`/`{{DOMAIN_CODE}}` 치환만 적용.
-- **walkthrough.loom.md**: 다음 내용만:
-  ```markdown
-  # Walkthrough 영상 (Loom)
-
-  - **녹화 담당**: UX (PDF §19.1 DoD)
-  - **길이**: 5~10분
-  - **내용**: Handoff 패키지 주요 파일 설명 + 핵심 화면 시나리오 데모
-  - **링크**: _(녹화 후 여기에 Loom URL 추가)_
-  ```
+- **0-README.md**: 템플릿 그대로 (PDF §7 Quick Start + 역할별 5분 가이드). Step 3의 `{{FEATURE_NAME}}`/`{{DOMAIN_CODE}}` 치환이 정상 반영되었는지만 확인한다.
+- **walkthrough.loom.md**: Step 3에서 템플릿으로 이미 복사되었으므로 별도 생성 불필요. UX가 녹화 후 Loom URL을 수동으로 추가한다.
+- **DoD-CHECKLIST.md**: Step 3에서 템플릿으로 이미 복사되었으며, 역할별(UX/UI/Dev/QA) 체크리스트 포맷 그대로 유지한다.
 
 ---
 
@@ -337,8 +331,9 @@ PDF §16~17의 전체 내용을 템플릿으로 그대로 반영:
   9-ia-sitemap.md
   10-personas.md ({N}개 페르소나)
   11-decision-log.md (변환 이력 {N}건)
-  screenshots/
+  DoD-CHECKLIST.md
   walkthrough.loom.md
+  screenshots/
 
 ⚠️ 자동 채움이 제한적인 섹션 (UX가 직접 보완 필요):
   - 1-screen-registry.md: 상태/트리거 정합성 검토
