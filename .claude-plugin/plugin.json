@@ -1,7 +1,7 @@
 {
   "name": "astra-methodology",
-  "version": "2.22.3",
-  "description": "ASTRA(AI-augmented Sprint Through Rapid Assembly) methodology plugin. Sprint 0 project initialization, coding convention enforcement (Java/TypeScript/React Native/Python/CSS/SCSS), Korean public data standard, international code standards (ISO 3166-1/2, ITU-T E.164), naming validation, quality gates, Slack integration, AI agent platform auto-builder, and service manual auto-generator.",
+  "version": "2.23.1",
+  "description": "ASTRA(AI-augmented Sprint Through Rapid Assembly) methodology plugin. Sprint 0 project initialization, coding convention enforcement (Java/TypeScript/React Native/Python/CSS/SCSS), Korean public data standard, international code standards (ISO 3166-1/2, ITU-T E.164), naming validation, quality gates, Slack integration, AI agent platform auto-builder, service manual auto-generator, and UX/UI/Dev/QA Screen-ID based handoff package generator (HANDOFF_PROCESS_GUIDE v1.1).",
   "author": {
     "name": "Zeans.L",
     "email": "zeans@astravision.co.kr"
@@ -46,6 +46,10 @@
     "rag",
     "manual",
     "documentation",
-    "screenshot"
+    "screenshot",
+    "handoff",
+    "screen-id",
+    "ux-ui-dev-collab",
+    "design-handoff"
   ]
 }

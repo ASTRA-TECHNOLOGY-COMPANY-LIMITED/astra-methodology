@@ -1,7 +1,7 @@
 ---
 name: astra-guide
-description: "ASTRA methodology quick reference guide. Displays workflow, command, and quality gate summaries."
-argument-hint: "[sprint|review|release|commands|gates|roles]"
+description: "ASTRA methodology quick reference guide. Displays workflow, command, quality gate, and handoff process summaries."
+argument-hint: "[sprint|review|release|commands|gates|roles|handoff|dod]"
 allowed-tools: Read
 ---
 
@@ -100,6 +100,7 @@ Sprint Progress:
 
 Planning:
   /service-planner [feature]     Design Thinking planning (6 deliverables: market analysis, interview, requirements+KPI, use cases+journey map, IA+wireframe, features+risk)
+  /handoff-publish [feature]     Generate UX/UI/Dev/QA handoff package ({feature}-handoff/ with 14 files)
 
 Slack Integration:
   /slack-to-sprint [channel]     Slack messages → blueprints + sprint plan
@@ -152,8 +153,107 @@ DSA (Design System Architect) - 1 designer
   Design system building + AI-generated UI inspection
 ```
 
+### handoff - UX / UI / Dev / QA Handoff Process (v1.1)
+
+```
+HANDOFF_PROCESS_GUIDE v1.1 — Screen ID 기반 협업
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3 Core Principles:
+  1. Screen ID 기반 협업 (DOMAIN-PAGE-SECTION-UC)
+       예: ACAD-EXPERT-DETAIL-UC03
+  2. Single Source of Truth
+       1-screen-registry.md이 유일한 ID 기준
+       UX만 발행 권한 — UI/Dev/QA는 임의 생성 금지
+  3. 상태 기반 설계
+       State (LOADING/EMPTY/DEFAULT/ERROR) × Permission × Device
+
+RACI:
+  Screen ID 발행    → UX (Owner)
+  Handoff 패키지 작성 → UX (Owner)
+  Figma 프레임       → UI Designer (Owner)
+  코드 구현          → Developer (Owner)
+  ID 변경/추가 결정   → UX (Owner)
+  검증/누락 체크      → QA (Owner)
+
+Handoff Package (branch root: {feature}-handoff/):
+  0-README.md              (가이드 + Quick Start)
+  1-screen-registry.md     ★ SSoT — 화면 등록부
+  2-flows.md               사용자 흐름
+  3-state-matrix.md        상태 + 권한 정의
+  4-edge-cases.md          예외/주의 케이스
+  5-responsive-guide.md    반응형 기준
+  6-component-specs.md     카드/컴포넌트 명세
+  7-business-rules.md      화면별 비즈니스 규칙
+  8-content-guide.md       UX Writing + 데이터 표시
+  9-ia-sitemap.md          정보 구조 / 사이트맵
+  10-personas.md           페르소나 / 핵심 시나리오
+  11-decision-log.md       디자인 결정 이력
+  DoD-CHECKLIST.md         단계별 완료 조건
+  walkthrough.loom.md      설명 영상 링크
+  screenshots/             화면 ID 기준 캡처
+
+Workflow:
+  /service-planner feature   → 기획 산출물 (docs/planner/...)
+  /handoff-publish feature   → Handoff 패키지 생성
+  UX: 1-screen-registry.md 보완 + Loom 녹화
+  UI: Figma 프레임명 = Screen ID
+  Dev: // @feature: SCREEN-ID 주석 + 상태 분기 + i18n 3개국어
+  QA: DoD-CHECKLIST.md 기반 ID × 상태 × 권한 검증
+
+Out of Scope (적용 안 함):
+  - 1회성 마케팅/이벤트 페이지
+  - 빠른 프로토타입 / A-B 테스트
+  - 외부 임베드 (Notion/Slack)
+  - 백오피스 어드민 (UX 협업 불필요)
+  - 기존 기능 (큰 리뉴얼 시점에만 점진 적용)
+
+Anti-patterns (PDF §23):
+  모달/에러 누락, DEFAULT만 디자인, Mobile 누락,
+  권한 UI 미반영, Figma/코드 ID 따로, 변경 통보 누락,
+  카드 anatomy 제각각, 노출 조건 임의, 베트남어 잘림, a11y 미준수
+```
+
+### dod - Definition of Done (단계별 완료 조건)
+
+```
+19.1 UX DoD:
+  [ ] Screen Registry 등록
+  [ ] State Matrix 작성
+  [ ] Permission Matrix 작성
+  [ ] Business Rules 작성
+  [ ] Edge Cases 정리
+  [ ] Component Specs (신규 컴포넌트 시)
+  [ ] Decision Log 갱신 (변경 발생 시)
+  [ ] Loom 워크스루 녹화 (5~10분)
+
+19.2 UI Designer DoD:
+  [ ] 모든 ID에 Figma 프레임 생성 (프레임명 = ID)
+  [ ] 모든 상태 (LOADING/EMPTY/DEFAULT/ERROR) 디자인
+  [ ] 권한별 UI 차이 반영
+  [ ] Mobile / Tablet 분기점 디자인
+  [ ] 색상 대비 검증 (WCAG AA)
+  [ ] Focus state 디자인
+  [ ] 디자인 시스템 토큰만 사용
+
+19.3 Developer DoD:
+  [ ] // @feature: {SCREEN-ID} 주석
+  [ ] 상태 분기 처리 (isLoading / isEmpty / isError)
+  [ ] i18n 3개국어 (ko/en/vi) 등록
+  [ ] 키보드 / Focus / ARIA 검증
+  [ ] Lighthouse 90+ (모바일)
+  [ ] npm run lint / npx tsc --noEmit 통과
+
+19.4 QA DoD:
+  [ ] 모든 ID × 상태 × 권한 검증
+  [ ] 디바이스 매트릭스 (Chrome/Safari × Desktop/Tablet/Mobile)
+  [ ] 다국어 3개 검증 (베트남어 길이 잘림)
+  [ ] 접근성 (키보드 + 스크린 리더)
+  [ ] 회귀 테스트
+```
+
 ## Guide Display Rules
 
-- If `$ARGUMENTS` matches one of the section names above, display only that section
+- If `$ARGUMENTS` matches one of the section names above (sprint, review, release, commands, gates, roles, handoff, dod), display only that section
 - If `$ARGUMENTS` is empty, display the full summary + commands section
 - If `$ARGUMENTS` is "all", display all sections
