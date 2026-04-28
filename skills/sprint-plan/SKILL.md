@@ -23,6 +23,18 @@ If the sprint name is not provided in `$ARGUMENTS`, ask the user for the primary
 
 When scanning existing directories, extract the sprint number from directory names matching pattern `sprint-{N}-{name}` (e.g., `sprint-1-auth` → number `1`).
 
+### Step 1.5: Switch to dev Branch
+
+Before generating output files, switch to the `dev` branch and sync with the latest state. Do not create a work branch — work directly on `dev`. Work branch creation is handled automatically by `/pr-merge`.
+
+1. **Check current branch**: `git branch --show-current`
+2. **Skip if already on `dev`**: If the current branch is `dev`, skip steps 3–5 and run only the pull (`git pull origin dev`)
+3. **Preserve uncommitted changes**: Check with `git status --porcelain`; if there are changes, save them with `git stash --include-untracked` (includes untracked files)
+4. **Switch to dev and sync**: `git fetch origin dev && git checkout dev && git pull origin dev`
+5. **Restore stash**: If step 3 stashed changes, restore them with `git stash pop`. On conflict, report the conflicting files to the user and request manual resolution.
+
+> **Note**: If the `dev` branch does not exist, fall back to `main` or `master`. If no default branch exists, work on the current branch.
+
 ### Step 2: Create Sprint Prompt Map
 
 Create the `docs/sprints/sprint-{N}-{sprint-name}/prompt-map.md` file.
