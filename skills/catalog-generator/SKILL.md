@@ -169,15 +169,15 @@ Additional visual sections (auto-included when applicable):
 
 #### G. Switch to dev Branch
 
-산출물 파일을 생성하기 전에, `dev` 브랜치로 전환하고 최신 상태로 동기화한다. 작업 브랜치는 생성하지 않으며, `dev`에서 직접 작업한다. 작업 브랜치 생성은 `/pr-merge` 실행 시 자동으로 처리된다.
+Before generating output files, switch to the `dev` branch and sync with the latest state. Do not create a work branch — work directly on `dev`. Work branch creation is handled automatically by `/pr-merge`.
 
-1. **현재 브랜치 확인**: `git branch --show-current`
-2. **이미 `dev` 브랜치인 경우 스킵**: 현재 브랜치가 `dev`이면 아래 3~5단계를 건너뛰고 pull만 실행한다 (`git pull origin dev`)
-3. **미커밋 변경사항 보존**: `git status --porcelain`으로 확인하여 변경사항이 있으면 `git stash --include-untracked`로 임시 저장한다 (untracked 파일도 포함)
-4. **dev 브랜치 전환 및 최신화**: `git fetch origin dev && git checkout dev && git pull origin dev`
-5. **stash 복원**: step 3에서 stash 했으면 `git stash pop`으로 복원한다. 충돌 발생 시 충돌 파일 목록을 사용자에게 보고하고 수동 해결을 요청한다.
+1. **Check current branch**: `git branch --show-current`
+2. **Skip if already on `dev`**: If the current branch is `dev`, skip steps 3–5 and run only the pull (`git pull origin dev`)
+3. **Preserve uncommitted changes**: Check with `git status --porcelain`; if there are changes, save them with `git stash --include-untracked` (includes untracked files)
+4. **Switch to dev and sync**: `git fetch origin dev && git checkout dev && git pull origin dev`
+5. **Restore stash**: If step 3 stashed changes, restore them with `git stash pop`. On conflict, report the conflicting files to the user and request manual resolution.
 
-> **참고**: `dev` 브랜치가 존재하지 않으면 `main` 또는 `master` 브랜치에서 작업한다. 어떤 기본 브랜치도 없으면 현재 브랜치에서 작업한다.
+> **Note**: If the `dev` branch does not exist, fall back to `main` or `master`. If no default branch exists, work on the current branch.
 
 ---
 
