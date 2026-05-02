@@ -1,6 +1,7 @@
 ---
 name: astra-setup
 description: "Sets up the ASTRA methodology global development environment (Step 0.0). Configures ~/.claude/settings.json, MCP servers, and required plugins."
+argument-hint: "[--reinstall] (optional — re-runs setup even if already configured)"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 ---
 

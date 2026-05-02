@@ -1,6 +1,7 @@
 ---
 name: project-checklist
 description: "Verifies the ASTRA Sprint 0 completion checklist. Checks required files, settings, and quality gate configurations."
+argument-hint: "[project-root-path] (optional — defaults to current working directory)"
 allowed-tools: Read, Bash, Glob, Grep
 ---
 

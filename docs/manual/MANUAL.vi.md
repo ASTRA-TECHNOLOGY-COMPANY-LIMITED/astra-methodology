@@ -507,13 +507,13 @@ Chưa áp dụng vào DB thực."
 
 ## 8. Tạo Sprint dựa trên Blueprint
 
-Khi Blueprint hoàn tất, lập kế hoạch Sprint dựa trên đó. Khởi tạo tài liệu Sprint bằng lệnh `/sprint-plan` và phân bổ các tính năng từ Blueprint vào Sprint backlog.
+Khi Blueprint hoàn tất, lập kế hoạch Sprint dựa trên đó. Khởi tạo tài liệu Sprint bằng lệnh `/sprint-init` và phân bổ các tính năng từ Blueprint vào Sprint backlog.
 
 ### 8.1 Khởi tạo Sprint
 
 ```
 # Tạo tài liệu Sprint (prompt map, theo dõi tiến độ, template hồi cứu)
-/sprint-plan 1
+/sprint-init 1
 ```
 
 > Các file được tạo:
@@ -1161,7 +1161,16 @@ Chưa sửa code."
 | Hướng dẫn tham chiếu nhanh | `/astra-guide` | Tóm tắt workflow, lệnh, Quality Gate |
 | Thiết lập ban đầu dự án | `/project-init [tên dự án]` | Tạo cấu trúc thư mục Sprint 0 + template |
 | Checklist Sprint 0 | `/project-checklist` | Xác minh hoàn thành Sprint 0 |
-| Khởi tạo Sprint | `/sprint-plan [N]` | Tạo prompt map, theo dõi tiến độ, template hồi cứu |
+| Khởi tạo Sprint | `/sprint-init [N]` | Tạo prompt map, theo dõi tiến độ, template hồi cứu |
+| Lập kế hoạch theo Design Thinking | `/service-planner` | 6 sản phẩm: phân tích thị trường/phỏng vấn persona/yêu cầu/use case/IA·màn hình/định nghĩa tính năng |
+| Xuất bản component UI | `/ux-publish` | Tạo component nhận biết framework trong `publish/` |
+| Gói handoff UX/UI/Dev/QA | `/handoff-publish` | Gói cộng tác dựa trên Screen ID (HANDOFF_PROCESS_GUIDE v1.1) |
+| Tạo cẩm nang dịch vụ tự động | `/manual-generator` | Cẩm nang HTML với ảnh chụp từ Chrome MCP |
+| Tạo catalog sản phẩm tự động | `/catalog-generator` | Catalog HTML đơn lẻ với hình ảnh AI |
+| Pipeline tự động hoàn toàn | `/autorun [mô tả tính năng]` | Lập kế hoạch → kiểm thử với vòng lặp tự cải thiện tối đa N lần |
+| Tạo Sprint từ Slack | `/slack-import` | Slack List → blueprint + prompt map sprint |
+| Trích xuất backlog từ Slack | `/extract-backlog [#kênh]` | Bảng backlog có cấu trúc từ tin nhắn Slack |
+| Chọn ngôn ngữ workflow | `/select-language` | Tiếng Hàn/Việt/Anh |
 | Bắt đầu thiết kế tính năng | `/feature-dev [mô tả]` | Workflow tự động 7 bước |
 | Kiểm tra thuật ngữ chuẩn | `/lookup-term [thuật ngữ tiếng Hàn]` | Viết tắt tiếng Anh/domain/type |
 | Tra cứu mã quốc tế | `/lookup-code [mã]` | ISO 3166-1/2, E.164 (quốc gia/vùng/số điện thoại) |
@@ -1182,16 +1191,29 @@ Chưa sửa code."
 
 ### Phụ lục A-2: Tham chiếu nhanh Agent
 
+#### Agent Validator (có thể tự kích hoạt, chỉ đọc)
+
 | Agent | Model | Gate | Vai trò |
 |----------|------|--------|------|
-| `astra-verifier` | Haiku | - | Kiểm tra tuân thủ phương pháp luận ASTRA |
+| `astra-validator` | Haiku | Setup | Kiểm tra cấu trúc dự án ASTRA |
 | `naming-validator` | Haiku | Gate 1/3 | Xác minh tiêu chuẩn naming DB (Gate 1: cảnh báo tự động hook, Gate 3: xác minh agent) |
 | `convention-validator` | Haiku | Gate 1/2 | Xác minh coding convention (Gate 1: skill tự động áp dụng, Gate 2: xác minh agent) |
+| `design-token-validator` | Haiku | Gate 2.5 | Xác minh tự động tuân thủ hệ thống design token |
+| `planner-reviewer` | Sonnet | Gate 1.5 | Tính đầy đủ của 6 tài liệu kế hoạch, truy nguyên KPI/OKR, khả năng chuyển đổi Handoff |
 | `blueprint-reviewer` | Sonnet | Gate 2 | Xác minh chất lượng/nhất quán tài liệu thiết kế |
 | `test-coverage-analyzer` | Haiku | Gate 2 | Phân tích chiến lược/coverage kiểm thử |
-| `design-token-validator` | Haiku | Gate 2.5 | Xác minh tự động tuân thủ hệ thống design token |
-| `sprint-analyzer` | Sonnet | - | Phân tích tự động tiến độ/hồi cứu Sprint |
+| `sprint-analyzer` | Sonnet | Daily/Retro | Phân tích tự động tiến độ/hồi cứu Sprint |
 | `quality-gate-runner` | Sonnet | Gate 3 | Thực thi tích hợp Gate 1~3 |
+
+#### Agent Persona (chỉ gọi rõ ràng)
+
+> **Quan trọng**: Agent persona **không bao giờ tự kích hoạt**. Hãy gọi rõ ràng (ví dụ: "đánh giá theo góc nhìn QA", "với tư cách designer") hoặc thông qua các skill điều phối. Họ chỉ phân tích và đề xuất — mọi chỉnh sửa file được thực hiện ở context cha.
+
+| Agent | Model | Khi gọi | Trả về |
+|----------|------|---------|--------|
+| `tester-persona` | Sonnet | Tìm edge case, phân tích lỗ hổng kịch bản, ưu tiên theo rủi ro, kiểm tra mức sẵn sàng phát hành | Phát hiện được ưu tiên + đề xuất kiểm thử Given-When-Then |
+| `designer-persona` | Sonnet | Audit hệ thống thiết kế, phê bình thẩm mỹ Vibe Coding, kiểm tra WCAG 2.1 AA, phân tích chuyển động, audit handoff Screen ID | Phát hiện được ưu tiên + đề xuất token/component |
+| `developer-persona` | Sonnet | Đánh giá kiến trúc, audit 4 nguyên tắc ASTRA, code smell, audit bảo mật OWASP, ưu tiên nợ kỹ thuật | Phát hiện được ưu tiên + tuân thủ nguyên tắc ASTRA |
 
 > Tất cả agent đều **chỉ đọc** (không thể Write/Edit) — chỉ thực hiện phân tích và báo cáo.
 

@@ -52,7 +52,15 @@ claude plugin install astra-methodology@astra
 | `/astra-guide` | ASTRA methodology quick reference (sprint, review, release, gates, roles) |
 | `/project-init` | Sprint 0 project structure generation — CLAUDE.md, design system, DB design docs, test strategy templates |
 | `/project-checklist` | Sprint 0 completion verification — checks project structure, CLAUDE.md, design tokens, DB design, test strategy |
-| `/sprint-plan` | New sprint initialization — auto-generates prompt map, progress tracker, retrospective templates |
+| `/sprint-init` | New sprint initialization — auto-generates prompt map, progress tracker, retrospective templates |
+| `/service-planner` | Design Thinking based planning automation — 6 deliverables (market analysis, persona interview, requirements, use cases, IA/screen, feature definition) |
+| `/ux-publish` | UI component publishing from planning docs — framework-aware reusable components in `publish/` |
+| `/handoff-publish` | UX/UI/Dev/QA Screen-ID based handoff package (HANDOFF_PROCESS_GUIDE v1.1) |
+| `/manual-generator` | Service manual auto-generator with Chrome MCP screenshots — self-contained HTML |
+| `/catalog-generator` | Product promotional catalog auto-generator — self-contained HTML, AI imagery |
+| `/autorun` | Zero-interaction full pipeline (planning → testing) with up-to-N self-improvement loop |
+| `/slack-import` | Slack List → blueprint + sprint generation pipeline |
+| `/pr-merge` | Commit → review → fix → merge full PR cycle (feature → dev → staging → main) |
 | `/test-run` | Chrome MCP-based E2E integration test — server startup, scenario execution, report generation |
 | `/test-scenario` | E2E test scenario generation — analyzes blueprints, DB design, routes, and API endpoints |
 | `/data-standard` | Korean public data standard term application guide |
@@ -62,10 +70,11 @@ claude plugin install astra-methodology@astra
 | Skill | Trigger |
 |-------|---------|
 | `coding-convention` | When editing Java, TypeScript, React Native, Python, CSS/SCSS files |
-| `code-standard` | When implementing phone number inputs, country/region selectors |
+| `data-standard` | When working with DB entities, SQL, DTOs containing Korean terms |
+| `code-standard` | When implementing phone number inputs, country/region selectors, address forms |
 | `sprint-progress` | When writing sprint-related files (blueprints, DB design, tests, src/) |
 
-## Commands (Data Standard Tools)
+## Commands (Data Standard & Workflow Tools)
 
 | Command | Description | Usage Example |
 |--------|------|-----------|
@@ -74,6 +83,8 @@ claude plugin install astra-methodology@astra
 | `/generate-entity` | Korean definition -> Entity code generation | `/generate-entity 고객 테이블: 고객명, 고객번호, 생년월일` |
 | `/check-naming` | DB naming standard compliance check | `/check-naming src/entity/Customer.java` |
 | `/check-convention` | Coding convention compliance check | `/check-convention src/` |
+| `/select-language` | Workflow language selection (ko/vi/en) — reusable across skills | `/select-language` |
+| `/extract-backlog` | Extract backlog items from a Slack channel as a structured table | `/extract-backlog #project-channel` |
 
 ### `/lookup-term` Example
 
@@ -118,16 +129,31 @@ public class Customer {
 
 ## Agents
 
+ASTRA uses a **hybrid agent strategy** — auto-triggerable validators paired with explicit-only persona agents.
+
+### Validator Agents (auto-triggerable, read-only)
+
 | Agent | Model | Description |
 |----------|------|------|
-| `naming-validator` | haiku | DB entity naming standard validation — column names, suffix patterns, domain rules, forbidden word detection |
-| `astra-verifier` | haiku | ASTRA methodology compliance verification (read-only) — project structure, CLAUDE.md, design document checks |
+| `astra-validator` | haiku | ASTRA project structure compliance (Setup) |
+| `naming-validator` | haiku | DB entity naming standard validation — column names, suffix patterns, domain rules, forbidden word detection (Gate 1) |
 | `convention-validator` | haiku | Coding convention validation (Java/TS/RN/Python/CSS/SCSS) — Gate 1/2 |
-| `blueprint-reviewer` | sonnet | Design document quality & consistency — Gate 2 |
 | `design-token-validator` | haiku | Design token system compliance — Gate 2.5 |
-| `sprint-analyzer` | sonnet | Sprint progress & retrospective analysis |
-| `quality-gate-runner` | sonnet | Integrated quality gate execution — Gate 3 |
+| `planner-reviewer` | sonnet | `docs/planner/` 6-doc completeness, KPI/OKR traceability, Handoff convertibility — Gate 1.5 |
+| `blueprint-reviewer` | sonnet | Design document quality & consistency — Gate 2 |
 | `test-coverage-analyzer` | haiku | Test strategy & coverage analysis — Gate 2 |
+| `sprint-analyzer` | sonnet | Sprint progress & retrospective analysis (Daily/Retro) |
+| `quality-gate-runner` | sonnet | Integrated quality gate execution — Gate 3 |
+
+### Persona Agents (explicit invocation only)
+
+Role-based mindset agents — never auto-trigger; invoke explicitly (e.g., "테스터 관점에서 검토").
+
+| Agent | Model | Description |
+|----------|------|------|
+| `tester-persona` | sonnet | QA engineer perspective — edge case discovery, scenario gaps, risk-based prioritization |
+| `designer-persona` | sonnet | UX/UI designer perspective — design system audit, Vibe Coding aesthetic, WCAG 2.1 AA |
+| `developer-persona` | sonnet | Senior developer perspective — architecture review, ASTRA principle audit, OWASP, tech debt |
 
 ## Hooks (Automatic Quality Verification)
 
@@ -228,7 +254,7 @@ Step 0.3  /project-checklist      → Sprint 0 completion verification
 ### Sprint N (Feature Development)
 
 ```
-Mon  Sprint Planning    → /sprint-plan N → Write prompt map
+Mon  Sprint Planning    → /sprint-init N → Write prompt map
 Tue  Feature Dev        → /feature-dev → Design → Implement → Test
 Wed  Feature Dev        → Hook auto-verification (forbidden words, naming)
 Thu  Review             → /check-naming → Code review → Design review
@@ -248,33 +274,47 @@ Fri  Release            → /test-run → Deploy
 
 ```
 astra-methodology/
-├── skills/                        # 11 Claude Code skills
+├── skills/                        # 19 Claude Code skills
 │   ├── astra-setup/               #   Global dev environment setup (/astra-setup)
 │   ├── astra-guide/               #   Methodology quick reference (/astra-guide)
 │   ├── project-init/              #   Sprint 0 project initialization (/project-init)
 │   ├── project-checklist/         #   Sprint 0 completion verification (/project-checklist)
-│   ├── sprint-plan/               #   Sprint planning & initialization (/sprint-plan)
+│   ├── sprint-init/               #   Sprint planning & initialization (/sprint-init)
 │   ├── sprint-progress/           #   Sprint progress auto-tracking (auto-applied)
+│   ├── service-planner/           #   Design Thinking based planning (/service-planner)
+│   ├── ux-publish/                #   UI component publishing (/ux-publish)
+│   ├── handoff-publish/           #   UX/UI/Dev/QA Screen-ID handoff (/handoff-publish)
+│   ├── manual-generator/          #   Service manual auto-generator (/manual-generator)
+│   ├── catalog-generator/         #   Product catalog auto-generator (/catalog-generator)
+│   ├── autorun/                   #   Zero-interaction full pipeline (/autorun)
+│   ├── slack-import/              #   Slack List → blueprint + sprint (/slack-import)
+│   ├── pr-merge/                  #   Commit → review → merge full cycle (/pr-merge)
 │   ├── test-run/                  #   Chrome MCP integration test (/test-run)
 │   ├── test-scenario/             #   E2E test scenario generation (/test-scenario)
 │   ├── data-standard/             #   Public data standard guide (/data-standard, auto-applied)
 │   ├── coding-convention/         #   Coding convention (auto-applied)
 │   └── code-standard/             #   International code standards (auto-applied)
-├── agents/                        # 8 specialized agents
-│   ├── astra-verifier.md          #   ASTRA compliance verification
+├── agents/                        # 12 specialized agents (9 validators + 3 personas)
+│   ├── astra-validator.md         #   ASTRA project structure compliance
 │   ├── naming-validator.md        #   DB naming standard validation
-│   ├── convention-validator.md     #   Coding convention validation
-│   ├── blueprint-reviewer.md      #   Design document quality & consistency
+│   ├── convention-validator.md    #   Coding convention validation
 │   ├── design-token-validator.md  #   Design token system compliance
+│   ├── planner-reviewer.md        #   Planning deliverables quality (Gate 1.5)
+│   ├── blueprint-reviewer.md      #   Design document quality & consistency
+│   ├── test-coverage-analyzer.md  #   Test strategy & coverage analysis
 │   ├── sprint-analyzer.md         #   Sprint progress & retrospective analysis
 │   ├── quality-gate-runner.md     #   Integrated quality gate execution
-│   └── test-coverage-analyzer.md  #   Test strategy & coverage analysis
-├── commands/                      # 6 slash commands
+│   ├── tester-persona.md          #   QA engineer mindset (explicit only)
+│   ├── designer-persona.md        #   UX/UI designer mindset (explicit only)
+│   └── developer-persona.md       #   Senior developer mindset (explicit only)
+├── commands/                      # 7 slash commands
 │   ├── generate-entity.md         #   /generate-entity
 │   ├── check-naming.md            #   /check-naming
 │   ├── check-convention.md        #   /check-convention
 │   ├── lookup-term.md             #   /lookup-term
-│   └── lookup-code.md             #   /lookup-code
+│   ├── lookup-code.md             #   /lookup-code
+│   ├── select-language.md         #   /select-language
+│   └── extract-backlog.md         #   /extract-backlog
 ├── hooks/                         # PostToolUse hooks
 │   └── hooks.json
 ├── scripts/                       # Shell scripts
@@ -282,7 +322,8 @@ astra-methodology/
 │   ├── init-project.sh            #   Directory structure generation
 │   ├── validate-naming.sh         #   Table name prefix validation
 │   ├── check-forbidden-words.sh   #   Forbidden word detection
-│   └── track-sprint-progress.sh   #   Sprint progress tracking
+│   ├── track-sprint-progress.sh   #   Sprint progress tracking
+│   └── notify-design-doc-edit.sh  #   Design doc edit notification
 ├── data/                          # Public data standard & international code dictionary
 │   ├── standard_terms.json        #   13,176 standard terms
 │   ├── standard_words.json        #   3,284 standard words
@@ -291,7 +332,8 @@ astra-methodology/
 │   ├── iso_3166_2_regions.json    #   653 ISO 3166-2 region codes
 │   └── country_calling_codes.json #   245 ITU-T E.164 calling codes
 ├── .claude-plugin/
-│   └── plugin.json                # Plugin manifest
+│   ├── plugin.json                # Plugin manifest
+│   └── marketplace.json           # Marketplace manifest
 └── CLAUDE.md                      # Project AI rules
 ```
 
