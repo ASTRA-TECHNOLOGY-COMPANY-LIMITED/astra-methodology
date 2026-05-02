@@ -507,13 +507,13 @@ Don't apply to the actual DB yet."
 
 ## 8. Blueprint-based Sprint Creation
 
-Once the blueprint is complete, plan the sprint based on it. Use the `/sprint-plan` command to initialize sprint documents and distribute the blueprint's features into the sprint backlog.
+Once the blueprint is complete, plan the sprint based on it. Use the `/sprint-init` command to initialize sprint documents and distribute the blueprint's features into the sprint backlog.
 
 ### 8.1 Sprint Initialization
 
 ```
 # Generate sprint documents (prompt map, progress tracker, retrospective template)
-/sprint-plan 1
+/sprint-init 1
 ```
 
 > Generated files:
@@ -1155,7 +1155,7 @@ Don't modify any code yet."
 | Quick reference guide | `/astra-guide` | Workflow, commands, quality gate summary |
 | Project initial setup | `/project-init [project-name]` | Sprint 0 directory structure + template generation |
 | Sprint 0 checklist | `/project-checklist` | Sprint 0 completion verification |
-| Sprint initialization | `/sprint-plan [N]` | Generate prompt map, progress tracker, retrospective template |
+| Sprint initialization | `/sprint-init [N]` | Generate prompt map, progress tracker, retrospective template |
 | Start feature design | `/feature-dev [description]` | 7-step automated workflow |
 | Standard term lookup | `/lookup-term [Korean term]` | English abbreviation/domain/type |
 | International code lookup | `/lookup-code [code]` | ISO 3166-1/2, E.164 (country/region/phone) |
@@ -1178,7 +1178,7 @@ Don't modify any code yet."
 
 | Agent | Model | Gate | Role |
 |-------|-------|------|------|
-| `astra-verifier` | Haiku | - | ASTRA methodology compliance check |
+| `astra-validator` | Haiku | - | ASTRA methodology compliance check |
 | `naming-validator` | Haiku | Gate 1/3 | DB naming standard verification (Gate 1: hook auto-warning, Gate 3: agent verification) |
 | `convention-validator` | Haiku | Gate 1/2 | Coding convention verification (Gate 1: skill auto-apply, Gate 2: agent verification) |
 | `blueprint-reviewer` | Sonnet | Gate 2 | Design document quality/consistency verification |

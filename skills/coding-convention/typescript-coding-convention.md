@@ -1,4 +1,5 @@
-# TypeScript Coding Convention
+⚠ Large CLAUDE.md will impact performance (43.1k chars > 40.0k) · /memory to edit                                                                                                                                                                                             
+  ⎿  SessionStart:startup hook error  # TypeScript Coding Convention
 
 > **Based on Google TypeScript Style Guide**
 >

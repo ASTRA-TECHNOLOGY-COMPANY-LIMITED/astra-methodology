@@ -1,7 +1,7 @@
 {
   "name": "astra-methodology",
-  "version": "2.23.2",
-  "description": "ASTRA(AI-augmented Sprint Through Rapid Assembly) methodology plugin. Sprint 0 project initialization, coding convention enforcement (Java/TypeScript/React Native/Python/CSS/SCSS), Korean public data standard, international code standards (ISO 3166-1/2, ITU-T E.164), naming validation, quality gates, Slack integration, AI agent platform auto-builder, service manual auto-generator, and UX/UI/Dev/QA Screen-ID based handoff package generator (HANDOFF_PROCESS_GUIDE v1.1).",
+  "version": "3.2.0",
+  "description": "ASTRA(AI-augmented Sprint Through Rapid Assembly) methodology plugin. Sprint 0 project initialization, coding convention enforcement (Java/TypeScript/React Native/Python/CSS/SCSS), Korean public data standard, international code standards (ISO 3166-1/2, ITU-T E.164), naming validation, quality gates, Slack integration, service manual auto-generator, UX/UI/Dev/QA Screen-ID based handoff package generator (HANDOFF_PROCESS_GUIDE v1.1), role-based persona agents (planner-reviewer, tester-persona, designer-persona, developer-persona), and /autorun self-improving pipeline (planning → testing with up-to-N iteration loop, early exit on test pass, failure-classification-based stage re-entry).",
   "author": {
     "name": "Zeans.L",
     "email": "zeans@astravision.co.kr"
@@ -40,16 +40,18 @@
     "code-standard",
     "slack",
     "mcp-server",
-    "ai-agent",
-    "llm",
-    "sse",
-    "rag",
     "manual",
     "documentation",
     "screenshot",
     "handoff",
     "screen-id",
     "ux-ui-dev-collab",
-    "design-handoff"
+    "design-handoff",
+    "persona-agent",
+    "role-based-delegation",
+    "hybrid-architecture",
+    "autorun",
+    "auto-pipeline",
+    "zero-interaction"
   ]
 }

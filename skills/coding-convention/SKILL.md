@@ -11,6 +11,41 @@ description: >
 When writing or modifying code, you must follow the conventions below.
 For detailed rules for each language, refer to the reference documents in this directory.
 
+## Behavioral Guardrails (행동 가드레일)
+
+The following four principles apply to ALL coding work. They are derived from observations on common LLM coding pitfalls (Andrej Karpathy / forrestchang) and bias toward **caution over speed**. For trivial tasks (typo fixes, obvious one-liners), use judgment.
+
+### 1. Think Before Coding — 가정을 명시화하라
+- 불확실하면 추측하지 말고 **질문한다**.
+- 여러 해석이 존재하면 침묵 속에서 하나를 고르지 말고 **모두 제시한다**.
+- 더 단순한 접근이 보이면 **푸시백한다**.
+- 무엇이 혼란스러운지 명명한 뒤 멈추고 물어라. *"If something is unclear, stop. Name what's confusing. Ask."*
+
+### 2. Simplicity First — 추측성 코드 금지
+- 요청되지 않은 기능, 추상화, "유연성", "설정 가능성"은 도입하지 않는다.
+- 일어날 수 없는 시나리오에 대한 에러 처리는 작성하지 않는다.
+- **자가 점검**: *"시니어 엔지니어가 이걸 보면 과설계라 말할까?"* → 그렇다면 단순화하라.
+- 200줄로 작성한 것이 50줄로 가능했다면 다시 써라.
+
+### 3. Surgical Changes — 외과적 변경
+- 인접한 코드, 주석, 포매팅을 "개선"하지 않는다.
+- 망가지지 않은 것을 리팩토링하지 않는다.
+- 본인 취향과 다르더라도 **기존 스타일을 따른다**.
+- 무관한 데드 코드는 **언급은 하되 삭제하지 않는다**.
+- 본인 변경으로 발생한 미사용 import/변수만 제거한다 (사전부터 존재하던 데드 코드는 명시 요청 없이 제거 금지).
+- **테스트 기준**: *변경된 모든 라인은 사용자 요청에 직접 추적 가능해야 한다.*
+
+### 4. Goal-Driven Execution — 검증 가능한 성공 기준
+- 명령형 작업을 검증 가능한 목표로 변환한다:
+  - "검증 추가" → "잘못된 입력 테스트를 작성하고 통과시킨다"
+  - "버그 수정" → "버그를 재현하는 테스트를 작성하고 통과시킨다"
+  - "리팩토링" → "리팩토링 전후 모두 테스트가 통과함을 보장한다"
+- 다단계 작업은 검증 체크포인트가 있는 간단한 계획을 진술한다.
+
+> **출처**: [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills) (MIT) — [Karpathy의 LLM 코딩 함정 관찰](https://x.com/karpathy/status/2015883857489522876)
+>
+> **ASTRA 자동 빌더 예외**: `/service-planner`, `/manual-generator`, `/catalog-generator`, `/ux-publish`, `/handoff-publish`, `/project-init`, `/sprint-init`, `/autorun` 등 *광범위 산출물 생성형 skill*은 사용자가 명시적으로 요청한 풀 스택 산출물이므로 "Simplicity First"의 범위 제한을 받지 않는다 — 다만 그 내부에서 작성하는 *개별 코드*는 4원칙을 그대로 따른다.
+
 ## Language Detection
 
 Detect the language from the target file extension:

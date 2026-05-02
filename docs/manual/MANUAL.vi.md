@@ -507,13 +507,13 @@ Chưa áp dụng vào DB thực."
 
 ## 8. Tạo Sprint dựa trên Blueprint
 
-Khi Blueprint hoàn tất, lập kế hoạch Sprint dựa trên đó. Khởi tạo tài liệu Sprint bằng lệnh `/sprint-plan` và phân bổ các tính năng từ Blueprint vào Sprint backlog.
+Khi Blueprint hoàn tất, lập kế hoạch Sprint dựa trên đó. Khởi tạo tài liệu Sprint bằng lệnh `/sprint-init` và phân bổ các tính năng từ Blueprint vào Sprint backlog.
 
 ### 8.1 Khởi tạo Sprint
 
 ```
 # Tạo tài liệu Sprint (prompt map, theo dõi tiến độ, template hồi cứu)
-/sprint-plan 1
+/sprint-init 1
 ```
 
 > Các file được tạo:
@@ -1161,7 +1161,7 @@ Chưa sửa code."
 | Hướng dẫn tham chiếu nhanh | `/astra-guide` | Tóm tắt workflow, lệnh, Quality Gate |
 | Thiết lập ban đầu dự án | `/project-init [tên dự án]` | Tạo cấu trúc thư mục Sprint 0 + template |
 | Checklist Sprint 0 | `/project-checklist` | Xác minh hoàn thành Sprint 0 |
-| Khởi tạo Sprint | `/sprint-plan [N]` | Tạo prompt map, theo dõi tiến độ, template hồi cứu |
+| Khởi tạo Sprint | `/sprint-init [N]` | Tạo prompt map, theo dõi tiến độ, template hồi cứu |
 | Bắt đầu thiết kế tính năng | `/feature-dev [mô tả]` | Workflow tự động 7 bước |
 | Kiểm tra thuật ngữ chuẩn | `/lookup-term [thuật ngữ tiếng Hàn]` | Viết tắt tiếng Anh/domain/type |
 | Tra cứu mã quốc tế | `/lookup-code [mã]` | ISO 3166-1/2, E.164 (quốc gia/vùng/số điện thoại) |
@@ -1184,7 +1184,7 @@ Chưa sửa code."
 
 | Agent | Model | Gate | Vai trò |
 |----------|------|--------|------|
-| `astra-verifier` | Haiku | - | Kiểm tra tuân thủ phương pháp luận ASTRA |
+| `astra-validator` | Haiku | - | Kiểm tra tuân thủ phương pháp luận ASTRA |
 | `naming-validator` | Haiku | Gate 1/3 | Xác minh tiêu chuẩn naming DB (Gate 1: cảnh báo tự động hook, Gate 3: xác minh agent) |
 | `convention-validator` | Haiku | Gate 1/2 | Xác minh coding convention (Gate 1: skill tự động áp dụng, Gate 2: xác minh agent) |
 | `blueprint-reviewer` | Sonnet | Gate 2 | Xác minh chất lượng/nhất quán tài liệu thiết kế |

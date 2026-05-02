@@ -52,7 +52,7 @@ claude plugin install astra-methodology@astra
 | `/astra-guide` | ASTRA methodology quick reference (sprint, review, release, gates, roles) |
 | `/project-init` | Sprint 0 project structure generation — CLAUDE.md, design system, DB design docs, test strategy templates |
 | `/project-checklist` | Sprint 0 completion verification — checks project structure, CLAUDE.md, design tokens, DB design, test strategy |
-| `/sprint-plan` | New sprint initialization — auto-generates prompt map, progress tracker, retrospective templates |
+| `/sprint-init` | New sprint initialization — auto-generates prompt map, progress tracker, retrospective templates |
 | `/test-run` | Chrome MCP-based E2E integration test — server startup, scenario execution, report generation |
 | `/test-scenario` | E2E test scenario generation — analyzes blueprints, DB design, routes, and API endpoints |
 | `/data-standard` | Korean public data standard term application guide |
@@ -121,7 +121,7 @@ public class Customer {
 | Agent | Model | Description |
 |----------|------|------|
 | `naming-validator` | haiku | DB entity naming standard validation — column names, suffix patterns, domain rules, forbidden word detection |
-| `astra-verifier` | haiku | ASTRA methodology compliance verification (read-only) — project structure, CLAUDE.md, design document checks |
+| `astra-validator` | haiku | ASTRA methodology compliance validation (read-only) — project structure, CLAUDE.md, design document checks |
 | `convention-validator` | haiku | Coding convention validation (Java/TS/RN/Python/CSS/SCSS) — Gate 1/2 |
 | `blueprint-reviewer` | sonnet | Design document quality & consistency — Gate 2 |
 | `design-token-validator` | haiku | Design token system compliance — Gate 2.5 |
@@ -228,7 +228,7 @@ Step 0.3  /project-checklist      → Sprint 0 completion verification
 ### Sprint N (Feature Development)
 
 ```
-Mon  Sprint Planning    → /sprint-plan N → Write prompt map
+Mon  Sprint Planning    → /sprint-init N → Write prompt map
 Tue  Feature Dev        → /feature-dev → Design → Implement → Test
 Wed  Feature Dev        → Hook auto-verification (forbidden words, naming)
 Thu  Review             → /check-naming → Code review → Design review
@@ -253,7 +253,7 @@ astra-methodology/
 │   ├── astra-guide/               #   Methodology quick reference (/astra-guide)
 │   ├── project-init/              #   Sprint 0 project initialization (/project-init)
 │   ├── project-checklist/         #   Sprint 0 completion verification (/project-checklist)
-│   ├── sprint-plan/               #   Sprint planning & initialization (/sprint-plan)
+│   ├── sprint-init/               #   Sprint planning & initialization (/sprint-init)
 │   ├── sprint-progress/           #   Sprint progress auto-tracking (auto-applied)
 │   ├── test-run/                  #   Chrome MCP integration test (/test-run)
 │   ├── test-scenario/             #   E2E test scenario generation (/test-scenario)
@@ -261,7 +261,7 @@ astra-methodology/
 │   ├── coding-convention/         #   Coding convention (auto-applied)
 │   └── code-standard/             #   International code standards (auto-applied)
 ├── agents/                        # 8 specialized agents
-│   ├── astra-verifier.md          #   ASTRA compliance verification
+│   ├── astra-validator.md         #   ASTRA compliance validation
 │   ├── naming-validator.md        #   DB naming standard validation
 │   ├── convention-validator.md     #   Coding convention validation
 │   ├── blueprint-reviewer.md      #   Design document quality & consistency

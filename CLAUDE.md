@@ -16,34 +16,35 @@ astra-methodology/
 │   ├── astra-setup/     # Global dev environment setup (/astra-setup)
 │   ├── astra-guide/     # Quick reference guide (/astra-guide)
 │   ├── project-init/    # Sprint 0 project scaffolding (/project-init)
-│   ├── sprint-plan/       # Sprint planning & initialization (/sprint-plan)
+│   ├── sprint-init/       # Sprint planning & initialization (/sprint-init)
 │   ├── project-checklist/ # Sprint 0 completion verification (/project-checklist)
 │   ├── data-standard/     # Korean public data standard terminology (/data-standard)
 │   ├── test-run/          # Integration testing — cmux browser (primary) / Chrome MCP (fallback) (/test-run)
 │   ├── test-scenario/     # E2E test scenario generation (/test-scenario)
 │   ├── pr-merge/          # Commit→review→fix→merge full cycle (/pr-merge)
-│   ├── slack-to-sprint/   # Slack List → blueprint + sprint generation (/slack-to-sprint)
+│   ├── slack-import/   # Slack List → blueprint + sprint generation (/slack-import)
 │   ├── coding-convention/ # Auto-applied coding convention (Java/TS/Python/CSS/SCSS)
-│   ├── auth-module/       # Auth module auto-builder (/auth-module)
-│   ├── workspace-module/  # Workspace module auto-builder (/workspace-module)
-│   ├── payment-module/    # Payment module auto-builder (/payment-module)
-│   ├── ai-agent-module/   # AI agent platform auto-builder (/ai-agent-module)
 │   ├── code-standard/     # Auto-applied international code standards (ISO/ITU)
 │   ├── sprint-progress/   # Auto-applied sprint progress tracking
 │   ├── service-planner/   # Design thinking based planning deliverables (/service-planner)
 │   ├── ux-publish/        # UX component publishing from planning docs (/ux-publish)
 │   ├── handoff-publish/   # UX/UI/Dev/QA handoff package generator — Screen ID based (/handoff-publish)
 │   ├── manual-generator/  # Service manual auto-generator with Chrome MCP screenshots (/manual-generator)
-│   └── catalog-generator/ # Product promotional catalog auto-generator (/catalog-generator)
+│   ├── catalog-generator/ # Product promotional catalog auto-generator (/catalog-generator)
+│   └── autorun/           # Zero-interaction full pipeline: planning → testing (/autorun)
 ├── agents/              # Specialized Claude Code subagents (read-only, auto-discovered)
-│   ├── astra-verifier.md        # ASTRA methodology compliance checker (haiku)
-│   ├── naming-validator.md      # DB naming standard validation (haiku)
-│   ├── convention-validator.md   # Coding convention validation (haiku)
-│   ├── blueprint-reviewer.md    # Design document quality & consistency (sonnet) — Gate 2
-│   ├── design-token-validator.md # Design token system compliance (haiku) — Gate 2.5
-│   ├── sprint-analyzer.md       # Sprint progress & retrospective analysis (sonnet)
-│   ├── quality-gate-runner.md   # Integrated quality gate execution (sonnet) — Gate 3
-│   └── test-coverage-analyzer.md # Test strategy & coverage analysis (haiku) — Gate 2
+│   ├── astra-validator.md           # ASTRA methodology compliance checker (haiku)
+│   ├── naming-validator.md          # DB naming standard validation (haiku)
+│   ├── convention-validator.md      # Coding convention validation (haiku)
+│   ├── blueprint-reviewer.md        # Design document quality & consistency (sonnet) — Gate 2
+│   ├── design-token-validator.md    # Design token system compliance (haiku) — Gate 2.5
+│   ├── sprint-analyzer.md           # Sprint progress & retrospective analysis (sonnet)
+│   ├── quality-gate-runner.md       # Integrated quality gate execution (sonnet) — Gate 3
+│   ├── test-coverage-analyzer.md    # Test strategy & coverage analysis (haiku) — Gate 2
+│   ├── planner-reviewer.md          # Planning deliverables quality & traceability (sonnet) — Gate 1.5
+│   ├── tester-persona.md            # QA engineer role-based delegation (sonnet) — explicit only
+│   ├── designer-persona.md          # UX/UI designer role-based delegation (sonnet) — explicit only
+│   └── developer-persona.md         # Senior developer role-based delegation (sonnet) — explicit only
 ├── commands/            # Slash commands
 │   ├── generate-entity.md       # /generate-entity — entity code from Korean definitions
 │   ├── check-naming.md          # /check-naming — DB naming standard compliance check
@@ -51,7 +52,7 @@ astra-methodology/
 │   ├── lookup-term.md           # /lookup-term — standard term dictionary lookup
 │   ├── lookup-code.md           # /lookup-code — international code lookup (ISO/ITU)
 │   ├── select-language.md       # /select-language — workflow language selection (ko/vi/en), reusable across skills
-│   └── slack-backlog.md         # /slack-backlog — extract backlog items from Slack
+│   └── extract-backlog.md         # /extract-backlog — extract backlog items from Slack
 ├── hooks/               # PostToolUse hooks (hooks.json)
 ├── scripts/             # Shell scripts for hooks and verification
 ├── data/                # Standard dictionary and international code JSON files
@@ -62,15 +63,6 @@ astra-methodology/
 │   ├── iso_3166_2_regions.json    # 653 ISO 3166-2 region codes (21 countries)
 │   └── country_calling_codes.json # 245 ITU-T E.164 calling codes
 ├── docs/                # Reference design & UX documents
-│   ├── auth/
-│   │   └── system-design.md     # Auth module reference design (AMA project)
-│   ├── workspace/
-│   │   ├── system-design.md     # Workspace module reference design (AMA project)
-│   │   └── flow.md              # Workspace → subscription payment flow
-│   ├── payment/
-│   │   └── system-design.md     # Payment module reference design (AMA project)
-│   ├── ai-agent/
-│   │   └── system-design.md     # AI agent platform reference design (fect-api-agent)
 │   ├── ux/
 │   │   ├── vibe-coding-design-guide.md    # Vibe Coding design guide (anti-AI aesthetics, prompting techniques, tool comparison)
 │   │   ├── vibe-coding-animation-guide.md # Vibe Coding animation guide (CSS/Framer Motion/GSAP, micro-interactions, scroll, performance, accessibility)
@@ -152,51 +144,41 @@ Data files: `iso_3166_1_countries.json` (249 countries), `iso_3166_2_regions.jso
 3. **track-sprint-progress.sh** — detects sprint-related file events (blueprints, DB design, test cases, implementation, test reports) and appends activity log entries to the sprint progress tracker
 4. All PostToolUse hooks are non-blocking (exit 0) — they emit warnings only
 
-### Auth Module Auto-Builder
+### Hybrid Agent Architecture (Validators + Personas)
 
-The `/auth-module` skill automates the entire authentication module development lifecycle:
+ASTRA uses a **hybrid agent strategy** that pairs workflow-driven skills with two distinct agent types:
 
-- **Reference**: `docs/auth/system-design.md` — AMA project auth design (Next.js 14 + Firebase + PostgreSQL)
-- **Pipeline**: Blueprint → Sprint Plan → Implementation → Test Scenarios → Test Run & Debug
-- **Features**: signup (email + social), login/logout, token management (JWT + Token Rotation), terms management (CRUD + versioning + consent), user management (profile + admin), security (Rate Limiting, CSRF, XSS)
-- **Tech adaptation**: Automatically adapts the reference design to the target project's tech stack (Spring Boot, NestJS, FastAPI, React, Vue, Angular, etc.)
-- **Auto-debug**: Up to 5 retry cycles for test failures before requesting user assistance
+#### Validator Agents (auto-triggerable, read-only)
+Stateless quality checkers that report violations without modifying files. Activated automatically by skills or quality gates.
 
-### Workspace Module Auto-Builder
+| Agent | Model | Gate | Purpose |
+|-------|-------|------|---------|
+| `astra-validator` | haiku | Setup | ASTRA project structure compliance |
+| `naming-validator` | haiku | Gate 1 | DB naming standard (TB_/TC_/TH_/TL_/TR_, _YMD/_DT/_AMT...) |
+| `convention-validator` | haiku | Gate 1 | Java/TS/Python/RN/CSS/SCSS coding convention |
+| `design-token-validator` | haiku | Gate 2.5 | Hardcoded colors/fonts/spacing detection |
+| `planner-reviewer` | sonnet | Gate 1.5 | `docs/planner/` 6-doc completeness, KPI/OKR traceability, Handoff convertibility |
+| `blueprint-reviewer` | sonnet | Gate 2 | Blueprint quality + design-implementation consistency |
+| `test-coverage-analyzer` | haiku | Gate 2 | Test strategy adherence + coverage gaps |
+| `sprint-analyzer` | sonnet | Daily/Retro | Commit pattern + sprint progress analysis |
+| `quality-gate-runner` | sonnet | Gate 3 | Integrated Gate 1/2/3 execution |
 
-The `/workspace-module` skill automates the entire workspace management module development lifecycle:
+#### Persona Agents (explicit invocation only, read-only orchestrators)
+Role-based mindset agents that bring senior-practitioner perspective to analysis. **Never auto-trigger** — must be explicitly invoked by user (e.g., "테스터 관점에서", "디자이너로서") or by orchestrating skills.
 
-- **Reference**: `docs/workspace/system-design.md`, `flow.md` — AMA project workspace design (Next.js 14 + PostgreSQL + Drizzle ORM)
-- **Pipeline**: Blueprint → Sprint Plan → Implementation → Test Scenarios → Test Run & Debug
-- **Features**: workspace CRUD (create/read/update/delete), member management (list/role-change/remove/leave/transfer-ownership), invitation system (email + link invite, accept/decline/cancel), workspace switching (WorkspaceSwitcher + default workspace), auth integration (signup → personal WS auto-creation, withdrawal → WS cleanup), billing integration (subscription ↔ member count sync)
-- **DB tables**: TB_COMM_WKSPC, TR_COMM_WKSPC_MBR, TB_COMM_WKSPC_INVT + TB_COMM_USER.BSC_WKSPC_ID extension
-- **Auth dependency**: Requires auth module (TB_COMM_USER, JWT authentication). Prompts user to build auth module first if not detected.
-- **Tech adaptation**: Automatically adapts the reference design to the target project's tech stack
-- **Auto-debug**: Up to 5 retry cycles for test failures before requesting user assistance
+| Persona | Model | When to Invoke | Returns |
+|---------|-------|----------------|---------|
+| `tester-persona` | sonnet | Edge case discovery, scenario gap analysis, risk-based prioritization, production readiness | Prioritized findings + Given-When-Then test suggestions; hands back to `/test-scenario` or `/test-run` |
+| `designer-persona` | sonnet | Design system audit, Vibe Coding aesthetic critique, WCAG 2.1 AA review, motion analysis, Screen ID handoff audit | Prioritized findings + token/component suggestions; hands back to `/ux-publish` or `/handoff-publish` |
+| `developer-persona` | sonnet | Architecture review, ASTRA 4-principle audit, code smell, OWASP security audit, tech debt prioritization | Prioritized findings + ASTRA principle compliance; hands back to `/pr-merge` or `/generate-entity` |
 
-### Payment Module Auto-Builder
+**Architectural principle**: Persona agents are **orchestrators, not executors**. They analyze and recommend, but all file edits happen back in the parent context — this preserves auto-applied skills (`coding-convention`, `data-standard`, `code-standard`) which only trigger on parent-context Write/Edit operations.
 
-The `/payment-module` skill automates the entire subscription payment module development lifecycle:
-
-- **Reference**: `docs/payment/system-design.md` — AMA project payment design (Next.js 14 + PostgreSQL + Drizzle ORM + TossPayments)
-- **Pipeline**: Blueprint → Sprint Plan → Implementation → Test Scenarios → Test Run & Debug
-- **Features**: plan management (CRUD + features/limits), payment methods (billing key issuance + AES-256 encryption), subscription management (start/change/cancel/pause/resume + proration), invoices (auto-generation + manual payment + refund), PG integration (PG-Agnostic abstraction + TossPayments/KCP adapters), webhooks (signature verification + idempotency), recurring payment scheduler (cron-based auto-renewal), dunning (4-step retry strategy), credit management (allocate/deduct/expire/adjust + atomic processing)
-- **DB tables**: TB_PAY_PLAN, TB_PAY_PLAN_FNC, TB_PAY_STLM_MTHD, TB_PAY_SBSC, TH_PAY_SBSC, TB_PAY_INVC, TB_PAY_INVC_ARTCL, TB_PAY_STLM, TL_PAY_BILNG_EVNT, TL_PAY_WBHK_EVNT, TH_PAY_STLM_RTRY, TB_PAY_CRDT_BLNC, TL_PAY_CRDT_TRNS (13 tables)
-- **Module dependency**: Requires auth module (TB_COMM_USER, JWT) and workspace module (TB_COMM_WKSPC, TR_COMM_WKSPC_MBR). Prompts user to build prerequisite modules first if not detected.
-- **Tech adaptation**: Automatically adapts the reference design to the target project's tech stack (including PG provider: TossPayments/Stripe/KCP)
-- **Auto-debug**: Up to 5 retry cycles for test failures before requesting user assistance
-
-### AI Agent Module Auto-Builder
-
-The `/ai-agent-module` skill automates the entire AI agent platform module development lifecycle:
-
-- **Reference**: `docs/ai-agent/system-design.md` — fect-api-agent design (Next.js 14 + PostgreSQL + Drizzle ORM + Anthropic/OpenAI)
-- **Pipeline**: Blueprint → Sprint Plan → Implementation → Test Scenarios → Test Run & Debug
-- **Features**: multi-provider LLM client (Anthropic/OpenAI/Ollama via native fetch), SSE real-time streaming (20+ event types), Agent Core Loop (executeLoop with 4 safety guards), Context Building (10-step pipeline), Plugin-based tool system (PLUGIN.md → PluginManager → 20+ built-in tools), Skill system (GLOBAL/WORKSPACE/Agent mapping with on-demand + direct injection), HITL (hitl_prompt + SSE + loop interruption), Memory (pgvector flat + Neo4j graph hybrid ranking), RAG (Agentic query classification + HyDE + reranking), Sub-agent orchestration (spawn/steer/kill with depth/child limits), Model routing (complexity-based SIMPLE/VAGUE/COMPLEX) + multi-provider fallback, Conversation management (CRUD + compaction + auto-title), Secret management (AES-256-GCM + OAuth PKCE), Channel integration (Slack/Teams/Discord webhooks)
-- **DB tables**: TB_AI_AGNT_CTGRY, TB_AI_AGNT, TB_AI_CNVRSTN, TH_AI_MSG, TB_AI_MMRY, TB_AI_KNWLDG_BS, TB_AI_KNWLDG_DOC, TB_AI_EMBDNG_CHNK, TB_AI_SKILL_DEF, TR_AI_CNFG_SKILL, TB_AI_MCP_SRVR, TR_AI_CNFG_MCP_SRVR, TB_AI_SBAGNT_RUN, TL_AI_SBAGNT_LOG, TL_AI_TKN_USG, TB_AI_WKSPC_SCRT, TB_AI_SYS_CRED, TH_AI_OAUTH_SESSION, TL_AI_SCRT_ACCS_LOG, TB_AI_CHNL_CNFG, TL_AI_CHNL_MSG_LOG, TB_AI_PRJCT, TL_AI_MCP_SRVR_LOG, TB_AI_SGGSTN_TMPL (24 tables)
-- **Module dependency**: Requires auth module (TB_COMM_USER, JWT) and workspace module (TB_COMM_WKSPC). Optionally integrates with payment module for credit-based billing.
-- **Tech adaptation**: Automatically adapts the reference design to the target project's tech stack (SSE: WebFlux/NestJS @Sse/FastAPI StreamingResponse, LLM: native fetch vs SDK, Vector DB: pgvector/Pinecone/Qdrant)
-- **Auto-debug**: Up to 5 retry cycles for test failures before requesting user assistance
+**When to use which**:
+- Stateful multi-turn workflow with user interaction → **Skill** (e.g., `/service-planner`'s 10-step pipeline)
+- Stateless validation against rules → **Validator agent** (e.g., naming check)
+- Senior-practitioner mindset on a specific artifact → **Persona agent** (e.g., "tester reviews edge cases")
+- Parallel role-based work → Multiple personas via `Task()` calls in parallel
 
 ### Service Planner (Design Thinking Based)
 
@@ -236,7 +218,7 @@ The plugin provides automatic sprint progress tracking through a hook + skill hy
 - **Auto-applied skill** (`sprint-progress/SKILL.md`): Guides the LLM to intelligently update the progress table columns (Blueprint, DB Design, Test Cases, Implementation, Test Report) based on the event type
 - **Sprint directory format**: `sprint-{N}-{feature-name}/` (e.g., `sprint-1-auth/`, `sprint-2-workspace/`) — includes the primary blueprint name for traceability
 - **Tracker file**: `docs/sprints/sprint-{N}-{feature-name}/progress.md` — contains a feature progress table, summary statistics, and an activity log
-- Tracker is auto-created during `/sprint-plan` initialization, or created on-demand by the skill when an event is detected but no tracker exists
+- Tracker is auto-created during `/sprint-init` initialization, or created on-demand by the skill when an event is detected but no tracker exists
 
 ### UX Component Publishing
 
@@ -314,12 +296,26 @@ The `/catalog-generator` skill automatically produces professional product promo
 - **Features**: Responsive (mobile/tablet/desktop), dark mode, print stylesheet, accessibility (WCAG AA)
 - **Fully autonomous**: All decisions (design tone, layout, copy, product placement) are made by AI based on product characteristics — zero user interaction required
 
+### Autorun (Zero-Interaction Full Pipeline)
+
+The `/autorun` skill orchestrates the entire ASTRA workflow from planning through testing without any user input, stopping just before `/pr-merge`:
+
+- **Input**: Feature description (Korean or English)
+- **Pipeline**: `/service-planner` → planner-reviewer (Gate 1.5) → `/ux-publish` → design-token-validator (Gate 2.5) → blueprint generation → blueprint-reviewer (Gate 2) → `/sprint-init` → implementation (`/generate-entity` + blueprint-driven) → `/test-scenario` → `/test-run` (with 5-retry auto-debug) → final report
+- **Auto-defaults**: All interactive decision points (mode selection, actor selection, idea selection, design tone, sprint number) are filled with smart defaults — no `AskUserQuestion` calls.
+- **Fail-safe**: Hard-stops on output file missing, blocked dependencies, or test failures after 5 auto-debug retries. Continues with warnings on validator P0 issues (recorded in final report).
+- **Idempotent resume**: Re-running with the same feature slug detects completed stages by output file existence and resumes from the failed/missing stage.
+- **`/pr-merge` is never invoked** — the skill ends with an explicit instruction for the user to review outputs and run `/pr-merge` manually.
+- **Final report**: Generates `docs/sprints/sprint-{N}-{feature-slug}/pipeline-report.md` summarizing all stage outcomes, P0 issues, and recommended persona reviews.
+- **Use cases**: Rapid prototyping, full-stack module bootstrap, demo environment setup, post-Sprint-0 first feature seeding
+- **Anti-use cases**: Bug fixes, sensitive business logic, legacy integration, compliance-impacting changes (require manual review gates)
+
 ### Slack Integration
 
 The plugin integrates with Slack via the `fect-slack` MCP server to collect requirements directly from team communication channels:
 
-- **`/slack-to-sprint`** (skill): Full interactive workflow — list channels → select channel → select List → select Items → update status → analyze requirements → generate blueprints + sprint prompt map + progress tracker
-- **`/slack-backlog`** (command): Quick extraction — fetch messages from a channel and output a structured backlog table with priorities
+- **`/slack-import`** (skill): Full interactive workflow — list channels → select channel → select List → select Items → update status → analyze requirements → generate blueprints + sprint prompt map + progress tracker
+- **`/extract-backlog`** (command): Quick extraction — fetch messages from a channel and output a structured backlog table with priorities
 - **MCP tools used**: `slack_list_channels`, `slack_get_history`, `slack_search_channels`, `slack_get_user_info`, `slack_post_message`, `slack_add_reaction`, `slack_file_list`, `slack_list_items_list`, `slack_list_items_info`, `slack_list_items_update`
 - **Environment**: Requires `SLACK_BOT_TOKEN` environment variable
 - **MCP config**: Defined in `.mcp.json` (auto-configured by plugin manifest `mcpServers` field)
@@ -389,6 +385,25 @@ When the plugin initializes a target project, it creates:
 - All user-facing text is in Korean (code comments excluded)
 - The `data/` JSON files are large (13K+ terms) — use targeted `jq` queries rather than loading entirely
 
+## Behavioral Guardrails (LLM 코딩 4원칙)
+
+Four behavioral principles apply to all coding work in target projects, derived from observations on common LLM coding pitfalls (Andrej Karpathy / forrestchang). They bias toward **caution over speed** — for trivial tasks, use judgment.
+
+These principles are inlined into the relevant skills rather than being a standalone skill:
+
+| Principle | Inlined location | Trigger |
+|-----------|-----------------|---------|
+| **Think Before Coding** | `skills/service-planner/SKILL.md` (Step 0.A.1 모호성 검증) | 기획 시작 시 모호한 기능 설명 → 해석 선택지 제시 |
+| **Simplicity First** | `skills/coding-convention/SKILL.md` (Behavioral Guardrails) | 모든 코드 작성/수정 시 자동 적용 |
+| **Surgical Changes** | `skills/coding-convention/SKILL.md` + `skills/pr-merge/SKILL.md` (Step 8.2) | 코드 편집 + PR 리뷰 이슈 수정 시 |
+| **Goal-Driven Execution** | `skills/pr-merge/SKILL.md` (Step 8.2 자동 디버그 루프) | 검증 가능한 성공 기준 기반 반복 |
+
+**Quick reference**: `/astra-guide principles`
+
+**ASTRA 자동 빌더 예외**: `/service-planner`, `/manual-generator`, `/catalog-generator`, `/ux-publish`, `/handoff-publish`, `/project-init`, `/sprint-init`, `/autorun` 같은 *광범위 산출물 생성형 skill*은 사용자가 명시적으로 요청한 풀 스택 산출물을 생성하므로 "Simplicity First"의 범위 제한을 받지 않는다. 다만 그 내부에서 작성하는 *개별 코드*는 4원칙을 그대로 따른다.
+
+**Source**: [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills) (MIT) — adapted into existing skills with Korean translation and ASTRA-specific scope clauses. Original inspiration: [Karpathy's LLM coding pitfall observations](https://x.com/karpathy/status/2015883857489522876).
+
 ## Scripts
 
 ```bash
@@ -407,10 +422,16 @@ When the plugin initializes a target project, it creates:
 ## Conventions
 
 - **버전업 필수**: main 브랜치에 푸시하기 전 반드시 `.claude-plugin/plugin.json`과 `.claude-plugin/marketplace.json`의 `version` 필드를 업데이트해야 한다. SemVer 규칙을 따른다 — 버그 수정은 patch(x.x.+1), 기능 추가는 minor(x.+1.0), 호환성 깨지는 변경은 major(+1.0.0).
+- **Skill description 언어 정책**:
+  - **영어 사용**: auto-trigger 스킬(`coding-convention`, `data-standard`, `code-standard`, `sprint-progress`), 검증/유틸 스킬(`project-checklist`, `astra-setup`, `sprint-init`, `astra-guide`, `test-run`, `test-scenario`, `project-init`, `catalog-generator`). LLM의 영어 description 매칭 정확도가 더 높아 자동 트리거/유틸 호출에 유리.
+  - **한국어 사용**: 사용자 워크플로우 진입점인 인터랙티브 도메인 스킬(`service-planner`, `ux-publish`, `handoff-publish`, `manual-generator`, `pr-merge`, `slack-import`, `autorun`). 한국 사용자가 `/help`로 발견할 때 의도가 즉시 이해되어야 함.
+  - **frontmatter 형식**: auto-trigger 스킬은 `description: >` 블록 형식(여러 줄로 트리거 조건을 명시), 명시 호출 스킬은 `description: "..."` 단일 라인 형식.
+- **Agent description 가드**: 페르소나 에이전트(`tester-persona`, `designer-persona`, `developer-persona`)는 description 첫 줄에 `[EXPLICIT-INVOCATION-ONLY — DO NOT AUTO-MATCH]` 가드 prefix를 필수로 둔다. 자동 매칭 신호 약화 + 사용자 의도 명시 호출만 허용.
 - Skill SKILL.md files follow a strict procedural format (단계: step-by-step instructions)
 - Commands are simpler than skills — they define input/output format and delegate to data files
 - All agents are read-only (`disallowedTools: Write, Edit`) — they analyze and report but never modify files
 - Agent model selection: `haiku` for rule-based validation (fast), `sonnet` for complex analysis (accurate)
+- Agent naming convention: `*-validator` (haiku, 규칙 검증), `*-reviewer` (sonnet, 산출물 품질 검토), `*-runner` (sonnet, 통합 실행), `*-analyzer` (sonnet, 패턴/메트릭), `*-persona` (sonnet, 시니어 관점 위임 — 명시 호출 전용)
 - Hook scripts must always `exit 0` to avoid blocking the user's workflow
 - `standard_terms.json` fields: `공통표준용어명` (Korean term), `공통표준용어영문약어명` (English abbreviation), `공통표준도메인명` (domain)
 - `standard_words.json` fields: `공통표준단어명` (word), `공통표준단어영문약어명` (abbreviation), `금칙어목록` (forbidden words), `이음동의어목록` (synonyms)
