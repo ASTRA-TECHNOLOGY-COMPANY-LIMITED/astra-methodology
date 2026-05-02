@@ -288,17 +288,28 @@ docs/tests/test-cases/sprint-{N}-{feature-slug}/
 1. **Iteration 시작 시 (한 번만)**: `{ITER_DIR}/iter-{CURRENT_ITER}-baseline.txt` 생성:
    ```bash
    # 추적 대상 디렉토리의 mtime 포함 파일 목록 스냅샷
+   # macOS(BSD)/Linux(GNU) find 모두 호환되도록 -exec stat 사용
+   # (BSD find는 -printf 미지원이므로 stat -f '%N %m' 사용)
    find docs/planner/{NNN}-{slug} docs/blueprints/{NNN}-{slug} \
         publish/{slug} src docs/tests/test-cases/sprint-{N}-{slug} \
-        -type f -printf '%p %T@\n' 2>/dev/null \
+        -type f 2>/dev/null \
+        -exec stat -f '%N %m' {} \; 2>/dev/null \
         | sort > {ITER_DIR}/iter-{CURRENT_ITER}-baseline.txt
+   # Linux 환경(GNU coreutils stat)에서는 위 명령이 실패할 수 있다.
+   # 그 경우 다음 fallback 사용: -exec stat -c '%n %Y' {} \;
    ```
    - iteration 1에서는 baseline이 비어 있을 수 있다 (정상).
    - autorun이 직접 Edit으로 수정한 파일도 mtime 변화로 감지된다.
+   - **플랫폼 감지**: `uname -s`로 Darwin/Linux 분기 처리 가능 (macOS는 `stat -f '%N %m'`, Linux는 `stat -c '%n %Y'`).
 
 2. **Iteration 종료 시**: 동일 명령으로 현재 스냅샷을 떠서 baseline과 diff:
    ```bash
-   diff {ITER_DIR}/iter-{CURRENT_ITER}-baseline.txt <(find ... 동일조건) \
+   # 현재 스냅샷을 동일 방식으로 생성 후 비교
+   diff {ITER_DIR}/iter-{CURRENT_ITER}-baseline.txt \
+        <(find docs/planner/{NNN}-{slug} docs/blueprints/{NNN}-{slug} \
+               publish/{slug} src docs/tests/test-cases/sprint-{N}-{slug} \
+               -type f 2>/dev/null \
+               -exec stat -f '%N %m' {} \; 2>/dev/null | sort) \
         | grep '^>' | awk '{print $2}' > /tmp/changed_files.txt
    ```
    - 결과를 summary의 "변경된 산출물" 섹션에 기록.

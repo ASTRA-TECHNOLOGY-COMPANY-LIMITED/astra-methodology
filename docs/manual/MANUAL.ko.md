@@ -1159,6 +1159,15 @@ DE와 이해관계자가 스테이징 환경에서 직접 테스트합니다.
 | 프로젝트 초기 셋업 | `/project-init [프로젝트명]` | Sprint 0 디렉토리 구조 + 템플릿 생성 |
 | Sprint 0 체크리스트 | `/project-checklist` | Sprint 0 완료 여부 검증 |
 | 스프린트 초기화 | `/sprint-init [N]` | 프롬프트 맵, 진행 추적, 회고 템플릿 생성 |
+| 디자인씽킹 기반 기획 | `/service-planner` | 6개 산출물: 시장분석/페르소나 인터뷰/요구사항/유스케이스/IA·화면/기능정의 |
+| UI 컴포넌트 퍼블리시 | `/ux-publish` | 프레임워크 인지 컴포넌트를 `publish/`에 생성 |
+| UX/UI/Dev/QA 핸드오프 패키지 | `/handoff-publish` | Screen ID 기반 협업 패키지 (HANDOFF_PROCESS_GUIDE v1.1) |
+| 서비스 매뉴얼 자동 생성 | `/manual-generator` | Chrome MCP 스크린샷 기반 HTML 매뉴얼 |
+| 제품 카탈로그 자동 생성 | `/catalog-generator` | AI 이미지 포함 단일 HTML 카탈로그 |
+| 무인 풀 파이프라인 | `/autorun [기능 설명]` | 기획→테스트, 최대 N회 자가 개선 루프 |
+| Slack 기반 스프린트 생성 | `/slack-import` | Slack List → 블루프린트 + 스프린트 프롬프트 맵 |
+| Slack 백로그 추출 | `/extract-backlog [#채널]` | Slack 메시지에서 구조화된 백로그 표 |
+| 워크플로우 언어 선택 | `/select-language` | 한국어/베트남어/영어 |
 | 기능 설계 시작 | `/feature-dev [설명]` | 7단계 자동 워크플로우 |
 | 표준 용어 확인 | `/lookup-term [한글 용어]` | 영문 약어/도메인/타입 |
 | 국제 코드 조회 | `/lookup-code [코드]` | ISO 3166-1/2, E.164 (국가/지역/전화번호) |
@@ -1179,16 +1188,29 @@ DE와 이해관계자가 스테이징 환경에서 직접 테스트합니다.
 
 ### 부록 A-2: 에이전트 빠른 참조
 
+#### 검증 에이전트 (자동 트리거 가능, 읽기 전용)
+
 | 에이전트 | 모델 | 게이트 | 역할 |
 |----------|------|--------|------|
-| `astra-validator` | Haiku | - | ASTRA 방법론 준수 여부 점검 |
+| `astra-validator` | Haiku | Setup | ASTRA 프로젝트 구조 준수 여부 점검 |
 | `naming-validator` | Haiku | Gate 1/3 | DB 네이밍 표준 검증 (Gate 1: 훅 자동 경고, Gate 3: 에이전트 검증) |
 | `convention-validator` | Haiku | Gate 1/2 | 코딩 컨벤션 검증 (Gate 1: 스킬 자동 적용, Gate 2: 에이전트 검증) |
+| `design-token-validator` | Haiku | Gate 2.5 | 디자인 토큰 시스템 준수 자동 검증 |
+| `planner-reviewer` | Sonnet | Gate 1.5 | 기획 산출물 6종 완결성, KPI/OKR 추적성, Handoff 변환성 |
 | `blueprint-reviewer` | Sonnet | Gate 2 | 설계 문서 품질/일관성 검증 |
 | `test-coverage-analyzer` | Haiku | Gate 2 | 테스트 전략/커버리지 분석 |
-| `design-token-validator` | Haiku | Gate 2.5 | 디자인 토큰 시스템 준수 자동 검증 |
-| `sprint-analyzer` | Sonnet | - | 스프린트 진척/회고 자동 분석 |
+| `sprint-analyzer` | Sonnet | Daily/Retro | 스프린트 진척/회고 자동 분석 |
 | `quality-gate-runner` | Sonnet | Gate 3 | Gate 1~3 통합 실행 |
+
+#### 페르소나 에이전트 (명시 호출 전용)
+
+> **중요**: 페르소나 에이전트는 **자동 트리거되지 않습니다**. "테스터 관점에서 검토", "디자이너로서 평가" 등으로 명시 호출하거나 오케스트레이션 스킬을 통해 위임합니다. 분석과 추천만 수행하며, 모든 파일 편집은 부모 컨텍스트에서 이루어집니다.
+
+| 에이전트 | 모델 | 호출 시점 | 결과 |
+|----------|------|-----------|------|
+| `tester-persona` | Sonnet | 엣지 케이스 발굴, 시나리오 갭 분석, 리스크 기반 우선순위, 출시 준비도 점검 | 우선순위가 매겨진 발견사항 + Given-When-Then 테스트 제안 |
+| `designer-persona` | Sonnet | 디자인 시스템 감사, Vibe Coding 미적 비평, WCAG 2.1 AA, 모션 분석, Screen ID 핸드오프 감사 | 우선순위가 매겨진 발견사항 + 토큰/컴포넌트 제안 |
+| `developer-persona` | Sonnet | 아키텍처 리뷰, ASTRA 4원칙 감사, 코드 스멜, OWASP 보안 감사, 기술 부채 우선순위 | 우선순위가 매겨진 발견사항 + ASTRA 원칙 준수도 |
 
 > 모든 에이전트는 **읽기 전용** (Write/Edit 불가) — 분석과 보고만 수행합니다.
 
