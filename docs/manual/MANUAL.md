@@ -507,13 +507,13 @@ Don't apply to the actual DB yet."
 
 ## 8. Blueprint-based Sprint Creation
 
-Once the blueprint is complete, plan the sprint based on it. Use the `/sprint-plan` command to initialize sprint documents and distribute the blueprint's features into the sprint backlog.
+Once the blueprint is complete, plan the sprint based on it. Use the `/sprint-init` command to initialize sprint documents and distribute the blueprint's features into the sprint backlog.
 
 ### 8.1 Sprint Initialization
 
 ```
 # Generate sprint documents (prompt map, progress tracker, retrospective template)
-/sprint-plan 1
+/sprint-init 1
 ```
 
 > Generated files:
@@ -1155,7 +1155,16 @@ Don't modify any code yet."
 | Quick reference guide | `/astra-guide` | Workflow, commands, quality gate summary |
 | Project initial setup | `/project-init [project-name]` | Sprint 0 directory structure + template generation |
 | Sprint 0 checklist | `/project-checklist` | Sprint 0 completion verification |
-| Sprint initialization | `/sprint-plan [N]` | Generate prompt map, progress tracker, retrospective template |
+| Sprint initialization | `/sprint-init [N]` | Generate prompt map, progress tracker, retrospective template |
+| Design Thinking based planning | `/service-planner` | 6 deliverables: market analysis, persona interview, requirements, use cases, IA/screen, feature definition |
+| UI component publishing | `/ux-publish` | Framework-aware reusable components in `publish/` |
+| UX/UI/Dev/QA handoff package | `/handoff-publish` | Screen-ID based collaboration package (HANDOFF_PROCESS_GUIDE v1.1) |
+| Service manual generation | `/manual-generator` | Auto-generated HTML manual with Chrome MCP screenshots |
+| Product catalog generation | `/catalog-generator` | Self-contained HTML catalog with AI imagery |
+| Zero-interaction full pipeline | `/autorun [feature description]` | Planning → testing with up-to-N self-improvement loop |
+| Slack-based sprint generation | `/slack-import` | Slack List → blueprint + sprint prompt map |
+| Slack backlog extraction | `/extract-backlog [#channel]` | Structured backlog table from Slack messages |
+| Workflow language selection | `/select-language` | Korean/Vietnamese/English |
 | Start feature design | `/feature-dev [description]` | 7-step automated workflow |
 | Standard term lookup | `/lookup-term [Korean term]` | English abbreviation/domain/type |
 | International code lookup | `/lookup-code [code]` | ISO 3166-1/2, E.164 (country/region/phone) |
@@ -1176,16 +1185,29 @@ Don't modify any code yet."
 
 ### Appendix A-2: Agents Quick Reference
 
+#### Validator Agents (auto-triggerable, read-only)
+
 | Agent | Model | Gate | Role |
 |-------|-------|------|------|
-| `astra-verifier` | Haiku | - | ASTRA methodology compliance check |
+| `astra-validator` | Haiku | Setup | ASTRA project structure compliance |
 | `naming-validator` | Haiku | Gate 1/3 | DB naming standard verification (Gate 1: hook auto-warning, Gate 3: agent verification) |
 | `convention-validator` | Haiku | Gate 1/2 | Coding convention verification (Gate 1: skill auto-apply, Gate 2: agent verification) |
+| `design-token-validator` | Haiku | Gate 2.5 | Design token system compliance auto-verification |
+| `planner-reviewer` | Sonnet | Gate 1.5 | Planning deliverables quality, KPI/OKR traceability, Handoff convertibility |
 | `blueprint-reviewer` | Sonnet | Gate 2 | Design document quality/consistency verification |
 | `test-coverage-analyzer` | Haiku | Gate 2 | Test strategy/coverage analysis |
-| `design-token-validator` | Haiku | Gate 2.5 | Design token system compliance auto-verification |
-| `sprint-analyzer` | Sonnet | - | Sprint progress/retrospective auto-analysis |
+| `sprint-analyzer` | Sonnet | Daily/Retro | Sprint progress/retrospective auto-analysis |
 | `quality-gate-runner` | Sonnet | Gate 3 | Gate 1-3 integrated execution |
+
+#### Persona Agents (explicit invocation only)
+
+> **Important**: Persona agents **never auto-trigger**. Invoke them explicitly (e.g., "테스터 관점에서 검토", "디자이너로서 평가") or via orchestrating skills. They are orchestrators that analyze and recommend — all file edits happen back in the parent context.
+
+| Agent | Model | When to Invoke | Returns |
+|-------|-------|----------------|---------|
+| `tester-persona` | Sonnet | Edge case discovery, scenario gap analysis, risk-based prioritization, production readiness | Prioritized findings + Given-When-Then test suggestions |
+| `designer-persona` | Sonnet | Design system audit, Vibe Coding aesthetic critique, WCAG 2.1 AA review, motion analysis, Screen-ID handoff audit | Prioritized findings + token/component suggestions |
+| `developer-persona` | Sonnet | Architecture review, ASTRA 4-principle audit, code smell, OWASP security audit, tech debt prioritization | Prioritized findings + ASTRA principle compliance |
 
 > All agents are **read-only** (Write/Edit disabled) -- they only perform analysis and reporting.
 

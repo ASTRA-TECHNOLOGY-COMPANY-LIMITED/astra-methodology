@@ -1,11 +1,11 @@
 ---
-name: slack-to-sprint
+name: slack-import
 description: "Slack 채널의 List 항목을 분석하여 블루프린트와 스프린트 프롬프트 맵을 자동 생성합니다. 채널 선택 → List 선택 → Item 선택 → 상태 업데이트 → 요구사항 분석 → 블루프린트/스프린트 생성의 워크플로우를 제공합니다."
 argument-hint: "[channel-name or channel-id]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, mcp__fect-slack__slack_list_channels, mcp__fect-slack__slack_get_history, mcp__fect-slack__slack_search_channels, mcp__fect-slack__slack_get_user_info, mcp__fect-slack__slack_add_reaction, mcp__fect-slack__slack_post_message, mcp__fect-slack__slack_file_list, mcp__fect-slack__slack_list_items_list, mcp__fect-slack__slack_list_items_info, mcp__fect-slack__slack_list_items_update
 ---
 
-# Slack to Sprint: 슬랙 List 기반 블루프린트/스프린트 생성
+# Slack Import: 슬랙 List 기반 블루프린트/스프린트 생성
 
 Slack 채널에 공유된 List의 항목을 수집하고 분석하여 ASTRA 블루프린트와 스프린트 프롬프트 맵을 자동 생성합니다.
 
@@ -399,7 +399,7 @@ Slack List "{LIST_NAME}" 에서 수집된 요구사항 기반 — {기능 요약
 
 ## Feature {F}: {feature-name}
 
-> **번호 규칙**: `{F}`는 Feature 순번 (1, 2, 3, ...). 서브섹션도 `{F}.1`, `{F}.2` 형태로 Feature 번호와 일치시킨다. 이는 `sprint-plan` 스킬의 프롬프트 맵 형식과 동일하다.
+> **번호 규칙**: `{F}`는 Feature 순번 (1, 2, 3, ...). 서브섹션도 `{F}.1`, `{F}.2` 형태로 Feature 번호와 일치시킨다. 이는 `sprint-init` 스킬의 프롬프트 맵 형식과 동일하다.
 
 ### {F}.1 Design Prompt
 /feature-dev "docs/blueprints/{NNN}-{feature-name}/blueprint.md의 설계를
@@ -495,7 +495,7 @@ docs/tests/test-reports/에 결과를 보고해줘."
 
 #### D. 회고 템플릿 생성
 
-새 스프린트인 경우 `docs/sprints/sprint-{N}-{sprint-name}/retrospective.md`를 생성한다 (sprint-plan 스킬과 동일한 포맷).
+새 스프린트인 경우 `docs/sprints/sprint-{N}-{sprint-name}/retrospective.md`를 생성한다 (sprint-init 스킬과 동일한 포맷).
 
 ### Step 9: Slack 피드백 (선택)
 
@@ -543,7 +543,7 @@ Slack #{CHANNEL_NAME} 채널에 처리 결과를 게시할까요? (y/n)
 
 ### 다음 단계
 1. 생성된 블루프린트를 검토하고 DE와 함께 요구사항 확인
-2. `/sprint-plan {N}`으로 스프린트 세부 계획 조정
+2. `/sprint-init {N}`으로 스프린트 세부 계획 조정
 3. 프롬프트 맵의 각 단계를 순서대로 실행
 4. `/test-scenario`로 E2E 테스트 시나리오 생성
 ```
@@ -552,13 +552,13 @@ Slack #{CHANNEL_NAME} 채널에 처리 결과를 게시할까요? (y/n)
 
 ```
 # 대화형 모드 — 채널 목록에서 선택
-/slack-to-sprint
+/slack-import
 
 # 채널 이름으로 직접 지정
-/slack-to-sprint project-tasks
+/slack-import project-tasks
 
 # 채널 ID로 직접 지정
-/slack-to-sprint C01234567890
+/slack-import C01234567890
 ```
 
 ## 주의사항

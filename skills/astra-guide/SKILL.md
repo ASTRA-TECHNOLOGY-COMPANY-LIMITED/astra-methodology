@@ -1,7 +1,7 @@
 ---
 name: astra-guide
-description: "ASTRA methodology quick reference guide. Displays workflow, command, quality gate, and handoff process summaries."
-argument-hint: "[sprint|review|release|commands|gates|roles|handoff|dod]"
+description: "ASTRA methodology quick reference guide. Displays workflow, command, quality gate, handoff process, and behavioral guardrail summaries."
+argument-hint: "[sprint|review|release|commands|gates|roles|handoff|dod|principles]"
 allowed-tools: Read
 ---
 
@@ -96,20 +96,20 @@ Quality Rules:
 
 Sprint Progress:
   (automatic)                    Sprint progress auto-tracking on file events
-  /sprint-plan [number]           Sprint plan init (includes progress tracker)
+  /sprint-init [number]           Sprint plan init (includes progress tracker)
 
 Planning:
   /service-planner [feature]     Design Thinking planning (6 deliverables: market analysis, interview, requirements+KPI, use cases+journey map, IA+wireframe, features+risk)
   /handoff-publish [feature]     Generate UX/UI/Dev/QA handoff package ({feature}-handoff/ with 14 files)
 
 Slack Integration:
-  /slack-to-sprint [channel]     Slack messages → blueprints + sprint plan
-  /slack-backlog [channel]       Extract backlog items from Slack channel
+  /slack-import [channel]     Slack messages → blueprints + sprint plan
+  /extract-backlog [channel]       Extract backlog items from Slack channel
 
 ASTRA Tools:
   /project-init [project info]   Sprint 0 initial setup
   /astra-setup                   Global dev environment setup
-  /sprint-plan [number]           Sprint planning & initialization
+  /sprint-init [number]           Sprint planning & initialization
   /test-run [URL/scenario]         Server launch + Chrome MCP integration testing
   /project-checklist             Sprint 0 completion verification
   /astra-guide [section]         Quick reference guide
@@ -252,8 +252,57 @@ Anti-patterns (PDF §23):
   [ ] 회귀 테스트
 ```
 
+### principles - Behavioral Guardrails (LLM 코딩 4원칙)
+
+```
+LLM 코딩 실수를 줄이기 위한 행동 원칙
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+출처: forrestchang/andrej-karpathy-skills (MIT)
+영감: Andrej Karpathy의 LLM 코딩 함정 관찰
+트레이드오프: 속도보다 신중함 (caution over speed)
+
+1. Think Before Coding (생각 먼저)
+   - 가정을 명시화한다. 불확실하면 질문한다.
+   - 여러 해석이 존재하면 침묵 속에 한 해석을 고르지 않는다.
+   - 단순한 접근이 보이면 푸시백한다.
+   - 불명확하면 멈추고 무엇이 혼란스러운지 명명한다.
+
+2. Simplicity First (단순함 먼저)
+   - 요청되지 않은 기능, 추상화, 유연성, 설정 가능성 금지
+   - 일어날 수 없는 시나리오의 에러 처리 금지
+   - 자가 점검: "시니어 엔지니어가 보면 과설계라 할까?"
+   - 200줄로 작성한 것이 50줄로 가능했다면 다시 써라
+
+3. Surgical Changes (외과적 변경)
+   - 인접 코드 "개선" 금지, 무관한 리팩토링 금지
+   - 기존 스타일을 따르라 (본인 취향 우선시 금지)
+   - 무관한 데드 코드는 언급은 하되 삭제하지 말 것
+   - 본인 변경으로 발생한 미사용 import만 제거
+   - 변경된 모든 라인은 사용자 요청에 직접 추적 가능해야 함
+
+4. Goal-Driven Execution (목표 기반 실행)
+   - "검증 추가" → "잘못된 입력 테스트 작성하고 통과시켜라"
+   - "버그 수정" → "재현 테스트 작성하고 통과시켜라"
+   - "리팩토링" → "전후 모두 테스트 통과 보장하라"
+   - 강한 성공 기준이 있으면 LLM이 독립 루프 가능
+   - 약한 기준 ("일단 동작하게")은 발산을 부른다
+
+적용 위치 (이 플러그인 내):
+  - skills/coding-convention      모든 코드 작성/수정에 자동 적용
+  - skills/pr-merge Step 8.2      이슈 자동 수정 시 외과적 변경
+  - skills/service-planner Step 0  기획 시작 시 모호성 검증
+
+적용 제외 (자동 빌더):
+  /service-planner, /manual-generator, /catalog-generator,
+  /ux-publish, /handoff-publish, /project-init,
+  /sprint-init, /autorun
+  → 사용자가 명시 요청한 풀 스택 산출물이므로
+     "Simplicity First" 범위 제한을 받지 않음
+  → 단, 그 내부 개별 코드 작성에는 4원칙 그대로 적용
+```
+
 ## Guide Display Rules
 
-- If `$ARGUMENTS` matches one of the section names above (sprint, review, release, commands, gates, roles, handoff, dod), display only that section
+- If `$ARGUMENTS` matches one of the section names above (sprint, review, release, commands, gates, roles, handoff, dod, principles), display only that section
 - If `$ARGUMENTS` is empty, display the full summary + commands section
 - If `$ARGUMENTS` is "all", display all sections

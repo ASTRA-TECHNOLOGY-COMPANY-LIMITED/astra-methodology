@@ -608,7 +608,7 @@ Customize the template below according to the project information and generate i
 | 디자인 시스템 | `src/styles/design-tokens.css`, `docs/design-system/` | `/frontend-design` |
 | 블루프린트 작성 | `docs/blueprints/{NNN}-{feature-name}/` | `/feature-dev` (아직 코드는 수정하지 마) |
 | DB 설계 | `docs/database/database-design.md` | `/feature-dev`, `/lookup-term` |
-| 스프린트 계획 | `docs/sprints/sprint-N/prompt-map.md` | `/sprint-plan` |
+| 스프린트 계획 | `docs/sprints/sprint-N/prompt-map.md` | `/sprint-init` |
 | 구현 | `src/` | `/feature-dev` (블루프린트+DB 설계 기반) |
 | 테스트 시나리오 | `docs/tests/test-cases/sprint-N/` | `/test-scenario` |
 | 테스트 실행 | `docs/tests/test-reports/` | `/test-run` |
@@ -736,7 +736,7 @@ Customize the template below according to the project information and generate i
 |------|--------|
 | 프로젝트 초기 셋업 | `/project-init` |
 | Sprint 0 체크리스트 | `/project-checklist` |
-| 스프린트 초기화 | `/sprint-plan [N]` |
+| 스프린트 초기화 | `/sprint-init [N]` |
 | 기능 설계/구현 | `/feature-dev [설명]` |
 | 표준 용어 확인 | `/lookup-term [한글 용어]` |
 | 국제 코드 조회 | `/lookup-code [코드]` |
@@ -749,8 +749,8 @@ Customize the template below according to the project information and generate i
 | 커밋+푸시+PR 일괄 | `/commit-push-pr` |
 | PR→리뷰→머지 자동화 | `/pr-merge` |
 | 코드 리뷰 | `/code-review` |
-| Slack→블루프린트+스프린트 | `/slack-to-sprint [채널]` |
-| Slack 백로그 추출 | `/slack-backlog [채널]` |
+| Slack→블루프린트+스프린트 | `/slack-import [채널]` |
+| Slack 백로그 추출 | `/extract-backlog [채널]` |
 | 훅 규칙 생성 | `/hookify [설명]` |
 | 빠른 참조 가이드 | `/astra-guide` |
 
@@ -926,108 +926,7 @@ If the user chose to implement later, skip Step 5-B entirely. Only the design sy
 
 **.claude/settings.json**: Project-specific Claude Code settings
 
-### Step 11: Module Auto-Builder (Multi-Agent)
-
-> **MANDATORY**: This step MUST always be executed. You MUST use AskUserQuestion to present the module selection and wait for the user's response before proceeding. The module building itself is optional (the user may choose to skip), but the question MUST always be asked.
-
-After all templates and scaffolding are created, ask the user whether to auto-build common modules. These modules run the full pipeline: **Blueprint → Sprint Plan → Implementation → Test Scenarios → Test Run & Debug**.
-
-> **Mobile adaptation**: When the platform is Mobile, the module builders automatically adapt their output to the mobile framework and backend strategy selected in Step 1-B. For example, the auth module will generate mobile login screens (with biometric auth, social login SDKs) instead of web forms, and API integration code will use the appropriate HTTP client (Ktor for KMP, Dio for Flutter, Axios/fetch for React Native).
-
-> **IMPORTANT**: The option text below is in Korean. You MUST translate all option text into the language selected in Step 0 before presenting to the user.
-
-Use AskUserQuestion:
-
-```
-## 공통 모듈 자동 구축
-
-프로젝트 초기 설정이 완료되었습니다. 다음 공통 모듈을 자동으로 구축할 수 있습니다.
-각 모듈은 블루프린트 작성 → 스프린트 생성 → 구현 → 테스트 시나리오 → 테스트 실행까지 전체 파이프라인을 자동 실행합니다.
-
-구축할 모듈을 선택해 주세요 (복수 선택 가능, 쉼표로 구분):
-
-1. 인증 모듈 — 회원가입, 로그인/로그아웃, JWT 토큰, 약관 관리, 사용자 관리
-2. 워크스페이스 모듈 — 워크스페이스 CRUD, 멤버 관리, 초대 시스템, 전환기 (인증 모듈 필요)
-3. 결제 모듈 — 구독/플랜, 빌링키, PG 연동, 정기결제, Dunning, 크레딧 (인증+워크스페이스 필요)
-4. 전체 선택 (1→2→3 순서로 자동 실행)
-5. 건너뛰기 (나중에 /auth-module, /workspace-module, /payment-module로 개별 실행)
-```
-
-If the user selects option 5, skip to Step 12.
-
-#### Step 11-A: Execute module builders respecting dependency order
-
-Module dependency chain: **Auth → Workspace → Payment**
-
-- Workspace requires Auth (TB_COMM_USER, JWT)
-- Payment requires Auth + Workspace (TB_COMM_WKSPC, TR_COMM_WKSPC_MBR)
-
-**Prerequisite confirmation (before execution):**
-
-If the user selects a module that has missing prerequisites (e.g., Workspace without Auth), use **AskUserQuestion** to confirm before adding prerequisites:
-
-```
-워크스페이스 모듈은 인증 모듈(TB_COMM_USER, JWT)에 의존합니다.
-인증 모듈을 먼저 자동 구축한 후 워크스페이스 모듈을 실행합니다. 계속하시겠습니까?
-
-1. 예 — 인증 모듈을 먼저 구축 후 워크스페이스 모듈 실행
-2. 아니오 — 모듈 구축을 건너뛰기
-```
-
-If the user declines, skip module building and proceed to Step 12.
-
-**Execution strategy (after prerequisite confirmation):**
-
-| User Selection | Execution Plan |
-|---|---|
-| Auth only | Auth |
-| Workspace only | Auth (confirmed prerequisite) → Workspace |
-| Payment only | Auth → Workspace (confirmed prerequisites) → Payment |
-| Auth + Workspace | Auth → Workspace |
-| Auth + Payment | Auth → Workspace (confirmed prerequisite) → Payment |
-| Workspace + Payment | Auth (confirmed prerequisite) → Workspace → Payment |
-| All (option 4) | Auth → Workspace → Payment |
-
-**Agent invocation pattern:**
-
-For each module, invoke the corresponding skill using the Skill tool. After each dependency completes, immediately launch the next module.
-
-```
-Phase 1 — Auth (if selected or required as dependency):
-  Use Skill tool: invoke "auth-module"
-
-Phase 2 — Workspace (if selected or required as dependency, after Auth completes):
-  Use Skill tool: invoke "workspace-module"
-
-Phase 3 — Payment (if selected, after Workspace completes):
-  Use Skill tool: invoke "payment-module"
-```
-
-Each skill internally handles the full pipeline:
-1. Reference design document loading
-2. Blueprint generation (`docs/blueprints/{NNN}-{module}/blueprint.md`)
-3. Sprint plan generation
-4. Implementation (backend API + frontend screens)
-5. Test scenario generation
-6. Test run & auto-debug (up to 5 retry cycles)
-
-#### Step 11-B: Module build progress reporting
-
-After each module completes, output a brief status update:
-
-```
-## 모듈 자동 구축 진행 상황
-
-| 모듈 | 상태 | 블루프린트 | 구현 | 테스트 |
-|------|------|-----------|------|--------|
-| 인증 | ✅ 완료 | docs/blueprints/001-auth/ | src/... | ✅ Pass |
-| 워크스페이스 | 🔄 진행중 | - | - | - |
-| 결제 | ⏳ 대기 | - | - | - |
-```
-
-When all selected modules are complete, proceed to Step 12.
-
-### Step 12: Output Result Summary
+### Step 11: Output Result Summary
 
 After all files are created, output the following summary.
 
@@ -1060,15 +959,6 @@ After all files are created, output the following summary.
 - **Web**: Common components: Button, Input, Card, Modal, Toast, Badge, Table, Dropdown, Tabs, Sidebar Layout
 - **Mobile**: Common components: Button, TextInput, Card, BottomSheet, Toast, Badge, ListItem, BottomNavigation, Avatar, LoadingIndicator, Dialog, SearchBar
 - Preview: {preview-page-path} (if design system was selected)
-
-### Module Auto-Build Results (if modules were selected)
-| Module | Status | Blueprint | Implementation | Tests |
-|--------|--------|-----------|----------------|-------|
-| Auth | {status} | {path} | {path} | {result} |
-| Workspace | {status} | {path} | {path} | {result} |
-| Payment | {status} | {path} | {path} | {result} |
-
-(Only include rows for modules that were selected. Omit this section entirely if the user chose "Skip".)
 
 ### Next Steps (Sprint 0 progress)
 1. [ ] Review CLAUDE.md and customize for the project
