@@ -1,5 +1,5 @@
 ---
-name: sprint-plan
+name: sprint-init
 description: "Initializes a new ASTRA sprint. Creates sprint prompt maps, progress trackers, and retrospective templates."
 argument-hint: "[sprint-number]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion

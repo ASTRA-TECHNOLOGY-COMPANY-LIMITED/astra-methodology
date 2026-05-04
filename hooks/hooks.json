@@ -34,7 +34,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(echo $CLAUDE_TOOL_INPUT | jq -r '.file_path // .filePath // empty' 2>/dev/null); if [ -n \"$FILE\" ] && echo \"$FILE\" | grep -qE '(database-design\\.md|blueprints/[0-9]{3}-.*/.*\\.md)$'; then echo '[ASTRA] 설계 문서가 수정되었습니다. VA 검토 후 코드 반영을 진행하세요.'; fi"
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/notify-design-doc-edit.sh",
+            "timeout": 5,
+            "statusMessage": "설계 문서 수정 감지 중..."
           },
           {
             "type": "command",

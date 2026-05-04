@@ -6,7 +6,7 @@ allowed-tools: AskUserQuestion
 
 # Language Selection for ASTRA Workflow
 
-Select the language to use for all generated documents, templates, and user-facing messages in the current ASTRA workflow. This command is intended to be reusable across any skill that produces multilingual deliverables (e.g., `/project-init`, `/sprint-plan`, `/manual-generator`, `/catalog-generator`, `/service-planner`).
+Select the language to use for all generated documents, templates, and user-facing messages in the current ASTRA workflow. This command is intended to be reusable across any skill that produces multilingual deliverables (e.g., `/project-init`, `/sprint-init`, `/manual-generator`, `/catalog-generator`, `/service-planner`).
 
 ## Procedure
 
@@ -76,7 +76,7 @@ Invoke this command via the `Skill` tool, then parse the `## Selected Language` 
 
 Example call sites:
 - `/project-init` — Step 0
-- `/sprint-plan` — initial language confirmation
+- `/sprint-init` — initial language confirmation
 - `/manual-generator` — manual writing language
 - `/catalog-generator` — catalog copy language
 - `/service-planner` — planning deliverable language

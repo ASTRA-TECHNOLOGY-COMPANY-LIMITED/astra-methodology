@@ -27,6 +27,17 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 
 > **🌐 LANGUAGE RULE**: Before executing this skill, read the project's `CLAUDE.md` and check the `## Language` section to detect the project language. If the project language is NOT Korean (`ko`), you MUST translate ALL user-facing output — including prompts, messages, generated document content, section headers, table headers, and descriptions — into the project language. Technical identifiers (tool names, file paths, command names, DB table/column names) remain untranslated. If no `CLAUDE.md` exists or no `## Language` section is found, default to Korean.
 
+## 행동 원칙: Think Before Coding (생각 먼저, 작성은 그 다음)
+
+기획 산출물 6종은 향후 수개월의 개발 방향을 결정한다. 따라서 첫 단계의 가정 오류가 가장 큰 비용을 초래한다. 다음 원칙을 기획 전 과정에서 적용한다:
+
+- **가정을 명시화한다**: 기능 범위, 사용자 정의, 비즈니스 모델, 기술 제약 등 중요한 가정은 산출물에 명시 기록한다 (특히 `requirements-definition.md`의 "전제 조건" 섹션).
+- **여러 해석이 존재하면 모두 제시한다**: 모호한 기능 설명("결제 시스템")에 대해 침묵 속에서 하나의 해석(예: B2C 구독 결제)을 골라 진행하지 않는다. `AskUserQuestion`으로 사용자에게 해석 선택지를 제시한다.
+- **불명확하면 멈추고 묻는다**: 단계별 산출물 생성 도중에도 결정적 가정이 모호하면 즉시 사용자에게 확인한다. 잘못된 페르소나·액터·우선순위로 6종 산출물을 작성한 뒤 폐기하는 비용보다 훨씬 적다.
+- **단순한 접근이 보이면 푸시백한다**: 사용자가 과도하게 복잡한 기능 범위를 요청하면 "MVP에서는 X만 포함하고 Y는 후속 스프린트로 분리하는 게 어떨까요?"라고 제안한다.
+
+> 출처: [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills) (MIT)
+
 ## 실행 절차
 
 ### Step 0: 사전 준비 및 컨텍스트 수집
@@ -37,8 +48,30 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 
 | 인자 형태 | 동작 |
 |-----------|------|
-| 기능 설명 문자열 (예: `인증 기능`, `결제 시스템`) | 해당 설명을 기반으로 진행 |
+| 기능 설명 문자열 (예: `인증 기능`, `결제 시스템`) | 해당 설명을 기반으로 진행. 단 모호하면 A.1에서 해석 확인 |
 | _(없음)_ | `AskUserQuestion`으로 기능 정보를 질문 |
+
+##### A.1: 모호성 검증 (Think Before Coding)
+
+기능 설명이 다음 중 하나에 해당하면 침묵 속에서 한 해석을 고르지 말고 `AskUserQuestion`으로 해석 선택지를 사용자에게 제시한다:
+
+- **범용 키워드**: "결제 시스템", "인증", "관리자 페이지" 등 다중 해석이 가능한 키워드 (B2C/B2B, 일회성/구독, 소셜/이메일 등)
+- **타깃 미상**: 누구를 위한 기능인지 명확하지 않은 경우 (일반 사용자 vs 운영자 vs 외부 파트너)
+- **범위 미상**: MVP/풀 스택 여부가 모호한 경우
+
+예시 질문:
+```
+"결제 시스템"으로 입력하셨습니다. 다음 중 어떤 해석에 가까운가요?
+
+(a) B2C 일회성 결제 (단건 상품 구매)
+(b) B2C 구독 결제 (월/년 정기 결제)
+(c) B2B 청구서 결제 (인보이스 + 후불)
+(d) 위 (a)~(c) 통합 멀티 결제 플랫폼
+
+선택:
+```
+
+명확한 입력(예: "B2C 구독 결제, TossPayments 연동")이면 이 단계를 건너뛴다.
 
 인자가 없으면 다음을 질문한다:
 

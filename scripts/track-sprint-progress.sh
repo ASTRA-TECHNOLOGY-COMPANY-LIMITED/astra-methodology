@@ -114,7 +114,7 @@ if [ -n "$SPRINT_FROM_PATH" ]; then
     SPRINT_NUM="$SPRINT_FROM_PATH"
     SPRINT_DIR="$FOUND_DIR"
   else
-    echo "[ASTRA] Warning: test case file is under sprint-${SPRINT_FROM_PATH} but no docs/sprints/sprint-${SPRINT_FROM_PATH}-*/ directory exists. Progress will be logged to sprint-${SPRINT_NUM} tracker. Run /sprint-plan to initialize the sprint."
+    echo "[ASTRA] Warning: test case file is under sprint-${SPRINT_FROM_PATH} but no docs/sprints/sprint-${SPRINT_FROM_PATH}-*/ directory exists. Progress will be logged to sprint-${SPRINT_NUM} tracker. Run /sprint-init to initialize the sprint."
   fi
 fi
 

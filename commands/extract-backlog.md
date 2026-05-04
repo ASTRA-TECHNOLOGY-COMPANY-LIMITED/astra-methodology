@@ -8,7 +8,7 @@ allowed-tools: mcp__fect-slack__slack_list_channels, mcp__fect-slack__slack_get_
 
 Slack 채널의 메시지를 분석하여 개발 백로그 항목으로 정리합니다.
 
-> 블루프린트와 스프린트까지 생성하려면 `/slack-to-sprint` 스킬을 사용하세요.
+> 블루프린트와 스프린트까지 생성하려면 `/slack-import` 스킬을 사용하세요.
 
 ## 입력
 
@@ -47,7 +47,7 @@ Slack 채널의 메시지를 분석하여 개발 백로그 항목으로 정리�
 | 3 | 관리자 대시보드 | 관리자 권한별 대시보드 분리 | @park | 03-06 | Medium | [원문 첫 30자...] |
 
 ### 추천 다음 단계
-- `/slack-to-sprint {channel}` — 선택한 항목으로 블루프린트 + 스프린트 자동 생성
+- `/slack-import {channel}` — 선택한 항목으로 블루프린트 + 스프린트 자동 생성
 - `/feature-dev "{기능 설명}"` — 개별 기능 설계/구현
 ```
 
