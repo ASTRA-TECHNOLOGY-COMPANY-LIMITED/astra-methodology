@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/enforce-work-summary.sh",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/enforce-work-summary.sh\"",
             "timeout": 5,
             "statusMessage": "작업 설명 확인 중..."
           }
@@ -34,25 +34,25 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/notify-design-doc-edit.sh",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/notify-design-doc-edit.sh\"",
             "timeout": 5,
             "statusMessage": "설계 문서 수정 감지 중..."
           },
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/check-forbidden-words.sh",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/check-forbidden-words.sh\"",
             "timeout": 30,
             "statusMessage": "금칙어 검사 중..."
           },
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/validate-naming.sh",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/validate-naming.sh\"",
             "timeout": 30,
             "statusMessage": "네이밍 규칙 검사 중..."
           },
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/track-sprint-progress.sh",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/track-sprint-progress.sh\"",
             "timeout": 15,
             "statusMessage": "스프린트 진행 추적 중..."
           }
