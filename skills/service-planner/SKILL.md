@@ -1,19 +1,19 @@
 ---
 name: service-planner
-description: "기능에 대한 기획 산출물을 자동 생성합니다. 디자인씽킹 방법론 기반으로 시장분석 → 액터 도출 → 페르소나 인터뷰 → 페인포인트 분석 → 아이디어 도출(HMW/SCAMPER/JTBD) → 요구사항 정의(KPI/OKR) → 유즈케이스 정의(여정맵) → IA/화면설계 → 기능 정의서(스토리맵/리스크)까지 전체 기획 파이프라인을 실행합니다."
+description: "기능에 대한 기획 산출물을 자동 생성합니다. 디자인씽킹 방법론 기반으로 시장분석 → 액터 도출 → 페르소나 인터뷰 → 페인포인트 분석 → 아이디어 도출(HMW/SCAMPER/JTBD) → 요구사항 정의(KPI/OKR) → 유즈케이스 정의(여정맵) → IA/화면설계 → 디자인 시스템 적용 HTML 기획화면 생성 → 기능 정의서(스토리맵/리스크)까지 전체 기획 파이프라인을 실행합니다."
 argument-hint: "[기능 설명 또는 서비스 키워드]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 ---
 
 # ASTRA 서비스 기획 산출물 자동 생성
 
-디자인씽킹(Design Thinking) 방법론을 기반으로 기능에 대한 기획 산출물 6종을 자동 생성합니다.
+디자인씽킹(Design Thinking) 방법론을 기반으로 기능에 대한 기획 산출물 6종 + HTML 기획화면을 자동 생성합니다.
 
 **방법론 매핑**:
 - **Empathize**: 시장/경쟁사 분석 + 페르소나 인터뷰
 - **Define**: 페인포인트 분석 + JTBD + 요구사항 정의
 - **Ideate**: HMW + SCAMPER + 아이디어 도출
-- **Prototype**: IA 구조 + 화면 설계 + 기능 정의
+- **Prototype**: IA 구조 + 화면 설계 + HTML 기획화면 + 기능 정의
 
 **산출물 목록**:
 1. `market-analysis.md` — 시장/경쟁사 분석서
@@ -21,9 +21,10 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 3. `requirements-definition.md` — 요구사항 정의서 (KPI/OKR + JTBD 포함)
 4. `usecase-definition.md` — 유즈케이스 정의서 (다이어그램 + 고객 여정맵 포함)
 5. `ia-screen-design.md` — IA 구조 및 화면 설계서 (와이어프레임 포함)
-6. `feature-definition.md` — 기능 정의서 (스토리맵 + 리스크 + 정책 포함)
+6. **HTML 기획화면 세트** — `index.html` + `styles.css` + `SCR-NNN.html` (디자인 시스템 토큰 적용 정적 목업, 반응형/다크모드)
+7. `feature-definition.md` — 기능 정의서 (스토리맵 + 리스크 + 정책 포함)
 
-**산출물 위치**: `docs/planner/{NNN}-{feature-name}/`
+**산출물 위치**: `docs/planner/{NNN}-{feature-name}/` (markdown 6종 + HTML 세트가 모두 같은 디렉토리에 위치)
 
 > **🌐 LANGUAGE RULE**: Before executing this skill, read the project's `CLAUDE.md` and check the `## Language` section to detect the project language. If the project language is NOT Korean (`ko`), you MUST translate ALL user-facing output — including prompts, messages, generated document content, section headers, table headers, and descriptions — into the project language. Technical identifiers (tool names, file paths, command names, DB table/column names) remain untranslated. If no `CLAUDE.md` exists or no `## Language` section is found, default to Korean.
 
@@ -744,9 +745,9 @@ graph LR
 
 ---
 
-### Step 6: IA 구조 및 화면 설계서 생성
+### Step 6: IA 구조 및 화면 설계서 + HTML 기획화면 생성
 
-유즈케이스 정의서와 요구사항 정의서를 기반으로 정보구조(IA)를 설계하고 주요 화면의 와이어프레임을 작성한다.
+유즈케이스 정의서와 요구사항 정의서를 기반으로 정보구조(IA)를 설계하고 주요 화면의 와이어프레임(markdown)과 디자인 시스템 토큰이 적용된 정적 HTML 목업을 함께 작성한다. 산출 흐름은 A→D(markdown 작성) → E(디자인 시스템/톤 결정) → F(HTML 생성) 순이다.
 
 #### A. IA (Information Architecture) 설계
 
@@ -886,7 +887,199 @@ flowchart LR
 | SCR-001 | {화면명} | UC-001 | FR-001, FR-002 | {액터} |
 ~~~
 
-> **중요**: IA/화면설계서를 작성한 후 사용자에게 "IA/화면설계서가 생성되었습니다. 다음 단계(기능 정의서)로 진행할까요?"라고 확인한다.
+#### E. 디자인 시스템 로드 및 디자인 톤 자동 결정
+
+HTML 기획화면 생성에 사용할 디자인 토큰과 디자인 톤을 결정한다.
+
+##### E.1 디자인 토큰 로드
+
+다음 우선순위로 토큰 소스를 결정한다:
+
+| 우선순위 | 경로 | 사용 조건 |
+|---------|------|---------|
+| 1 | `src/styles/design-tokens.css` | 프로젝트 토큰 파일 존재 시 |
+| 2 | `$CLAUDE_PLUGIN_ROOT/skills/project-init/templates/design-tokens.css` | 프로젝트 토큰이 없는 경우 (Sprint 0 직후 등) |
+
+선택된 토큰 파일을 읽어 사용 가능한 CSS 변수 목록(`--color-*`, `--font-*`, `--space-*`, `--radius-*`, `--shadow-*` 등)을 추출한다.
+
+##### E.2 컴포넌트/레이아웃 가이드 로드 (선택)
+
+존재 시에만 로드하여 HTML 구조 결정에 참고한다:
+
+- `docs/design-system/components.md` — 버튼/입력/카드 등 컴포넌트 스펙
+- `docs/design-system/layout-grid.md` — 그리드/브레이크포인트 시스템
+
+##### E.3 Vibe Coding 가이드 로드 (필수)
+
+`$CLAUDE_PLUGIN_ROOT/docs/ux/vibe-coding-design-guide.md` (Anti-AI 미학, 레퍼런스 앵커링) 와 `$CLAUDE_PLUGIN_ROOT/docs/ux/vibe-coding-animation-guide.md` (스프링 이징, 마이크로 인터랙션) 를 로드한다. 파일 부재 시 경고 후 가이드 없이 진행한다.
+
+##### E.4 디자인 톤 자동 결정 ({DESIGN_TONE})
+
+사용자에게 묻지 않고, 기능 설명 + 시장분석 + 페르소나 정보를 종합하여 다음 중 1개를 자동 선택한다 (`AskUserQuestion` 호출 금지). 결정 근거(1줄)는 HTML 파일 주석에 명시한다.
+
+| 디자인 톤 | 적합 도메인 |
+|----------|----------|
+| Refined Minimal | SaaS, 생산성 도구, 어드민 대시보드 |
+| Bold & Vibrant | 소비자 앱, 마케팅, 캠페인 페이지 |
+| Soft & Warm | 커뮤니티, 교육, 헬스케어 |
+| Editorial | 콘텐츠, 미디어, 커머스 큐레이션 |
+| Professional Enterprise | B2B, 금융, 공공/엔터프라이즈 |
+
+#### F. HTML 기획화면 생성 (디자인 시스템 적용 정적 목업)
+
+**목적**: 텍스트 와이어프레임을 보완하여 사용자가 브라우저에서 즉시 확인 가능한 시각적 기획화면을 제공한다. 프로덕션 컴포넌트가 아닌 **정적 HTML/CSS 목업**으로, 디자인 토큰을 적용한 고완성도 와이어프레임이다.
+
+**핵심 원칙**:
+- 정적 HTML/CSS만 사용 (JS 프레임워크/번들러 불필요, 브라우저에서 바로 열림)
+- 디자인 토큰 100% 사용 (하드코딩 색상/사이즈 금지, `var(--*)` 또는 fallback 값)
+- 반응형(mobile/tablet/desktop) + 다크모드(`prefers-color-scheme`) 자동 지원
+- 마이크로 인터랙션(hover/focus/active) CSS로만 구현
+- 더미 데이터는 페르소나 정보 기반의 자연스러운 한국어 콘텐츠
+- AI 이미지 생성 호출 금지 (기획 단계에서 비효율) — 아이콘은 인라인 SVG 또는 CSS gradient
+
+##### F.1 출력 위치
+
+**모든 HTML/CSS 파일은 markdown 산출물과 동일한 디렉토리(`{OUTPUT_DIR}/`)에 직접 생성**한다. 별도 하위 폴더를 만들지 않는다.
+
+```
+{OUTPUT_DIR}/
+├── market-analysis.md
+├── interview-report.md
+├── requirements-definition.md
+├── usecase-definition.md
+├── ia-screen-design.md
+├── feature-definition.md            # Step 7에서 생성
+├── styles.css                       # 공통 스타일 (디자인 토큰 + 컴포넌트 + 애니메이션)
+├── index.html                       # 화면 인덱스 (네비게이션 허브)
+├── SCR-001.html                     # 화면별 정적 HTML 목업
+├── SCR-002.html
+└── ...
+```
+
+##### F.2 공통 스타일(styles.css) 생성
+
+다음 구조로 `{OUTPUT_DIR}/styles.css`를 생성한다:
+
+1. **`:root` 디자인 토큰** — Step E.1에서 로드한 토큰을 그대로 정의 (없는 항목은 fallback 토큰으로 보충)
+2. **다크모드 토큰 오버라이드** — `@media (prefers-color-scheme: dark) :root { ... }`
+3. **CSS Reset** — `box-sizing: border-box`, margin/padding 초기화
+4. **베이스 타이포그래피** — body 폰트, 헤딩 스케일, 라인 높이
+5. **레이아웃 유틸리티** — `.container` (max-width 반응형), `.grid-N` (12-column), 브레이크포인트 (mobile-first)
+6. **컴포넌트 스타일** — `{DESIGN_TONE}`에 맞춘 스타일:
+   - `.btn` (primary/secondary/ghost) + hover/focus/active/disabled
+   - `.input` + 플로팅 라벨, 포커스 링
+   - `.card` (default/elevated/interactive) + hover lift
+   - `.gnb`, `.sidebar`, `.page-layout`
+   - `.table`, `.modal`, `.toast`, `.badge`, `.skeleton`
+7. **애니메이션** — 스프링 이징 변수, fadeInUp/shimmer 키프레임
+8. **접근성** — `:focus-visible` 포커스 링, `prefers-reduced-motion` 처리
+9. **인쇄 스타일** (선택) — `@media print` 기본 설정
+
+##### F.3 화면별 HTML 생성 (`SCR-NNN.html`)
+
+`ia-screen-design.md` Section 4(화면 목록) + Section 5(와이어프레임)을 기반으로, **화면 목록의 모든 SCR-NNN을 각각 별도 HTML 파일로 생성**한다.
+
+각 `SCR-NNN.html`의 구조:
+
+```html
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SCR-NNN — {화면명} | {기능명}</title>
+  <!--
+    화면 ID: SCR-NNN
+    관련 UC: UC-XXX
+    관련 FR: FR-XXX
+    디자인 톤: {DESIGN_TONE}
+    톤 결정 근거: {1줄 근거}
+  -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="gnb"> ... </header>          <!-- 필요 시 -->
+  <aside class="sidebar"> ... </aside>         <!-- 필요 시 -->
+  <main class="page-content">
+    <!-- 와이어프레임의 UI 요소를 시멘틱 HTML로 구현 -->
+  </main>
+  <footer> ... </footer>                       <!-- 필요 시 -->
+  <a href="index.html" class="back-to-index">← 전체 화면 목록</a>
+</body>
+</html>
+```
+
+생성 규칙:
+
+| 규칙 | 내용 |
+|------|------|
+| 시멘틱 HTML | `header`, `nav`, `main`, `section`, `article`, `aside`, `footer` 사용 |
+| 디자인 토큰 | 모든 색상/사이즈/간격은 `var(--*)`로만 (하드코딩 금지) |
+| 반응형 | 모바일(<768px) / 태블릿(768-1023px) / 데스크톱(≥1024px) 대응 |
+| 다크모드 | styles.css의 토큰 오버라이드로 자동 지원 (별도 작업 불필요) |
+| 접근성 | `aria-*` 속성, `alt` 텍스트, focus 관리, 충분한 대비, 44px 터치 타겟 |
+| 더미 데이터 | 인터뷰결과서의 페르소나 이름/특성 활용한 자연스러운 한국어 콘텐츠 |
+| 비활성 상호작용 | `<button>`/링크의 `onclick` 절대 작성 금지 (정적 목업) — `href="#"` 또는 `disabled` 사용 |
+| 아이콘 | 인라인 SVG 또는 CSS pseudo-element. 외부 폰트/이미지 의존성 금지 |
+| 페이지 간 이동 | 상단/하단에 "← 전체 화면 목록" 링크로 `index.html` 복귀 동선 제공 |
+
+##### F.4 화면 인덱스(`index.html`) 생성
+
+모든 SCR-NNN 화면을 한눈에 보고 이동할 수 있는 네비게이션 허브를 생성한다.
+
+```html
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{기능명} 기획화면 인덱스</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="page-header">
+    <h1>{기능명} 기획화면</h1>
+    <p class="meta">디자인 톤: {DESIGN_TONE} · 화면 수: {N}개 · 작성일: {YYYY-MM-DD}</p>
+  </header>
+  <main class="screen-grid">
+    <!-- 각 화면을 카드로 -->
+    <a href="SCR-001.html" class="screen-card">
+      <div class="screen-card__id">SCR-001</div>
+      <div class="screen-card__title">{화면명}</div>
+      <div class="screen-card__type">{유형}</div>
+      <div class="screen-card__meta">UC-XXX · FR-XXX</div>
+    </a>
+    ...
+  </main>
+  <footer class="legend">
+    <p>관련 문서: <a href="ia-screen-design.md">ia-screen-design.md</a> · <a href="feature-definition.md">feature-definition.md</a></p>
+  </footer>
+</body>
+</html>
+```
+
+##### F.5 IA/화면설계서 보강
+
+`ia-screen-design.md` 본문에 HTML 프리뷰 안내 섹션을 추가한다 (Section 6 말미 또는 별도 섹션):
+
+```markdown
+## 7. HTML 기획화면 프리뷰
+
+브라우저에서 `index.html`을 열면 모든 화면을 시각적으로 확인할 수 있습니다.
+
+| 화면ID | HTML 파일 | 화면명 |
+|--------|----------|--------|
+| SCR-001 | [SCR-001.html](SCR-001.html) | {화면명} |
+| SCR-002 | [SCR-002.html](SCR-002.html) | {화면명} |
+| ... | ... | ... |
+
+- 디자인 톤: **{DESIGN_TONE}** ({선택 근거 1줄})
+- 디자인 토큰 출처: `{토큰 경로}`
+- 반응형 대응: 모바일/태블릿/데스크톱
+- 다크모드: `prefers-color-scheme` 기반 자동 전환
+```
+
+> **중요**: IA/화면설계서 + HTML 기획화면(`index.html`, `styles.css`, `SCR-NNN.html`)이 모두 생성된 후 사용자에게 "IA/화면설계서와 HTML 기획화면이 생성되었습니다. 브라우저에서 `{OUTPUT_DIR}/index.html`을 열어 확인할 수 있습니다. 다음 단계(기능 정의서)로 진행할까요?"라고 확인한다.
 
 ---
 
@@ -1086,7 +1279,12 @@ flowchart LR
 | 3 | 요구사항정의서 | requirements-definition.md | ✅ 완료 |
 | 4 | 유즈케이스정의서 | usecase-definition.md | ✅ 완료 |
 | 5 | IA/화면설계서 | ia-screen-design.md | ✅ 완료 |
-| 6 | 기능정의서 | feature-definition.md | ✅ 완료 |
+| 6 | HTML 기획화면 인덱스 | index.html | ✅ 완료 |
+| 7 | 공통 스타일 | styles.css | ✅ 완료 |
+| 8 | 화면별 HTML 목업 | SCR-001.html ~ SCR-{N}.html | ✅ 완료 ({N}개) |
+| 9 | 기능정의서 | feature-definition.md | ✅ 완료 |
+
+▶︎ 브라우저에서 `{OUTPUT_DIR}/index.html`을 열어 HTML 기획화면을 확인하세요.
 
 ### 요약
 - 기획 모드: {신규 서비스 기획 / 기존 서비스 개선}
@@ -1100,11 +1298,12 @@ flowchart LR
 - 정의된 유즈케이스: {N}개
 - 고객 여정맵: {N}개
 - IA 메뉴 항목: {N}개
-- 와이어프레임: {N}개 화면
+- 와이어프레임: {N}개 화면 (markdown + HTML)
+- HTML 기획화면: {N}개 SCR-NNN.html (디자인 톤 {DESIGN_TONE} 적용, 반응형 + 다크모드)
 - 정의된 기능: 대기능 {N}개, 중기능 {N}개, 소기능 {N}개
 - User Story Map: MVP {N}개, v1.1 {N}개, v1.2 {N}개
 - 리스크: {N}개 식별
 - 서비스 정책: {N}개 정의
 
-다음 단계로 `/project-init` 또는 블루프린트 작성을 진행할 수 있습니다.
+다음 단계로 `/project-init`(프로젝트 초기 셋업) 또는 청사진(`docs/blueprints/{NNN}-{feature}/blueprint.md`) 작성을 진행할 수 있습니다. 디자이너/QA 협업이 필요한 장기 운영 기능이라면 `/handoff-publish`로 Screen ID 기반 협업 패키지를 추가 생성할 수 있습니다.
 ```

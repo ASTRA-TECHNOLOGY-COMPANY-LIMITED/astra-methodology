@@ -294,8 +294,7 @@ LLM 코딩 실수를 줄이기 위한 행동 원칙
 
 적용 제외 (자동 빌더):
   /service-planner, /manual-generator, /catalog-generator,
-  /ux-publish, /handoff-publish, /project-init,
-  /sprint-init, /autorun
+  /handoff-publish, /project-init, /sprint-init, /autorun
   → 사용자가 명시 요청한 풀 스택 산출물이므로
      "Simplicity First" 범위 제한을 받지 않음
   → 단, 그 내부 개별 코드 작성에는 4원칙 그대로 적용
