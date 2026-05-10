@@ -1,7 +1,7 @@
 {
   "name": "astra-methodology",
-  "version": "3.1.0",
-  "description": "ASTRA(AI-augmented Sprint Through Rapid Assembly) methodology plugin. Sprint 0 project initialization, coding convention enforcement (Java/TypeScript/React Native/Python/CSS/SCSS), Korean public data standard, international code standards (ISO 3166-1/2, ITU-T E.164), naming validation, quality gates, Slack integration, service manual auto-generator, UX/UI/Dev/QA Screen-ID based handoff package generator (HANDOFF_PROCESS_GUIDE v1.1), role-based persona agents (planner-reviewer, tester-persona, designer-persona, developer-persona), and /autorun self-improving pipeline (planning → testing with up-to-N iteration loop, early exit on test pass, failure-classification-based stage re-entry).",
+  "version": "4.0.0",
+  "description": "ASTRA(AI-augmented Sprint Through Rapid Assembly) methodology plugin. Sprint 0 project initialization, coding convention enforcement (Java/TypeScript/React Native/Python/CSS/SCSS), Korean public data standard, international code standards (ISO 3166-1/2, ITU-T E.164), naming validation, quality gates, Slack integration, service manual auto-generator, UX/UI/Dev/QA Screen-ID based handoff package generator (HANDOFF_PROCESS_GUIDE v1.1), role-based persona agents (planner-reviewer, tester-persona, designer-persona, developer-persona), and /autorun self-improving pipeline (planning → testing with up-to-N iteration loop, early exit on test pass, failure-classification-based stage re-entry). v4.0.0 BREAKING: /ux-publish skill removed; HTML 기획화면(design-system tokens applied static mockups) is now generated inline by /service-planner Step 6 alongside markdown deliverables in the same docs/planner/{NNN}-{feature}/ directory.",
   "author": {
     "name": "Zeans.L",
     "email": "zeans@astravision.co.kr"

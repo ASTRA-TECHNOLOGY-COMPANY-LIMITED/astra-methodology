@@ -53,8 +53,7 @@ claude plugin install astra-methodology@astra
 | `/project-init` | Sprint 0 project structure generation — CLAUDE.md, design system, DB design docs, test strategy templates |
 | `/project-checklist` | Sprint 0 completion verification — checks project structure, CLAUDE.md, design tokens, DB design, test strategy |
 | `/sprint-init` | New sprint initialization — auto-generates prompt map, progress tracker, retrospective templates |
-| `/service-planner` | Design Thinking based planning automation — 6 deliverables (market analysis, persona interview, requirements, use cases, IA/screen, feature definition) |
-| `/ux-publish` | UI component publishing from planning docs — framework-aware reusable components in `publish/` |
+| `/service-planner` | Design Thinking based planning automation — 6 markdown deliverables + design-system HTML mockups (index.html, styles.css, SCR-NNN.html) co-located in `docs/planner/{NNN}-{feature}/` |
 | `/handoff-publish` | UX/UI/Dev/QA Screen-ID based handoff package (HANDOFF_PROCESS_GUIDE v1.1) |
 | `/manual-generator` | Service manual auto-generator with Chrome MCP screenshots — self-contained HTML |
 | `/catalog-generator` | Product promotional catalog auto-generator — self-contained HTML, AI imagery |
@@ -274,15 +273,14 @@ Fri  Release            → /test-run → Deploy
 
 ```
 astra-methodology/
-├── skills/                        # 19 Claude Code skills
+├── skills/                        # 18 Claude Code skills
 │   ├── astra-setup/               #   Global dev environment setup (/astra-setup)
 │   ├── astra-guide/               #   Methodology quick reference (/astra-guide)
 │   ├── project-init/              #   Sprint 0 project initialization (/project-init)
 │   ├── project-checklist/         #   Sprint 0 completion verification (/project-checklist)
 │   ├── sprint-init/               #   Sprint planning & initialization (/sprint-init)
 │   ├── sprint-progress/           #   Sprint progress auto-tracking (auto-applied)
-│   ├── service-planner/           #   Design Thinking based planning (/service-planner)
-│   ├── ux-publish/                #   UI component publishing (/ux-publish)
+│   ├── service-planner/           #   Design Thinking based planning + design-system HTML mockups (/service-planner)
 │   ├── handoff-publish/           #   UX/UI/Dev/QA Screen-ID handoff (/handoff-publish)
 │   ├── manual-generator/          #   Service manual auto-generator (/manual-generator)
 │   ├── catalog-generator/         #   Product catalog auto-generator (/catalog-generator)

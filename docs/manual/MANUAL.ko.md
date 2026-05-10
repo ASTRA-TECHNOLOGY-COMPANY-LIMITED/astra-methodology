@@ -1159,8 +1159,7 @@ DE와 이해관계자가 스테이징 환경에서 직접 테스트합니다.
 | 프로젝트 초기 셋업 | `/project-init [프로젝트명]` | Sprint 0 디렉토리 구조 + 템플릿 생성 |
 | Sprint 0 체크리스트 | `/project-checklist` | Sprint 0 완료 여부 검증 |
 | 스프린트 초기화 | `/sprint-init [N]` | 프롬프트 맵, 진행 추적, 회고 템플릿 생성 |
-| 디자인씽킹 기반 기획 | `/service-planner` | 6개 산출물: 시장분석/페르소나 인터뷰/요구사항/유스케이스/IA·화면/기능정의 |
-| UI 컴포넌트 퍼블리시 | `/ux-publish` | 프레임워크 인지 컴포넌트를 `publish/`에 생성 |
+| 디자인씽킹 기반 기획 + HTML 기획화면 | `/service-planner` | markdown 6종(시장분석/페르소나 인터뷰/요구사항/유스케이스/IA·화면/기능정의) + 디자인 시스템 토큰 적용 HTML 기획화면(index.html, styles.css, SCR-NNN.html) 자동 생성 |
 | UX/UI/Dev/QA 핸드오프 패키지 | `/handoff-publish` | Screen ID 기반 협업 패키지 (HANDOFF_PROCESS_GUIDE v1.1) |
 | 서비스 매뉴얼 자동 생성 | `/manual-generator` | Chrome MCP 스크린샷 기반 HTML 매뉴얼 |
 | 제품 카탈로그 자동 생성 | `/catalog-generator` | AI 이미지 포함 단일 HTML 카탈로그 |

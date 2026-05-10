@@ -1156,8 +1156,7 @@ Don't modify any code yet."
 | Project initial setup | `/project-init [project-name]` | Sprint 0 directory structure + template generation |
 | Sprint 0 checklist | `/project-checklist` | Sprint 0 completion verification |
 | Sprint initialization | `/sprint-init [N]` | Generate prompt map, progress tracker, retrospective template |
-| Design Thinking based planning | `/service-planner` | 6 deliverables: market analysis, persona interview, requirements, use cases, IA/screen, feature definition |
-| UI component publishing | `/ux-publish` | Framework-aware reusable components in `publish/` |
+| Design Thinking based planning + HTML mockups | `/service-planner` | 6 markdown deliverables (market analysis, persona interview, requirements, use cases, IA/screen, feature definition) + design-system HTML mockups (index.html, styles.css, SCR-NNN.html) auto-generated alongside |
 | UX/UI/Dev/QA handoff package | `/handoff-publish` | Screen-ID based collaboration package (HANDOFF_PROCESS_GUIDE v1.1) |
 | Service manual generation | `/manual-generator` | Auto-generated HTML manual with Chrome MCP screenshots |
 | Product catalog generation | `/catalog-generator` | Self-contained HTML catalog with AI imagery |

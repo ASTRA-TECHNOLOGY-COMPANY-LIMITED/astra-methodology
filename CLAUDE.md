@@ -12,74 +12,17 @@ This is NOT an application codebase — it is a Claude Code plugin consisting of
 
 ```
 astra-methodology/
-├── skills/              # Claude Code skills (invoked via /command or auto-applied)
-│   ├── astra-setup/     # Global dev environment setup (/astra-setup)
-│   ├── astra-guide/     # Quick reference guide (/astra-guide)
-│   ├── project-init/    # Sprint 0 project scaffolding (/project-init)
-│   ├── sprint-init/       # Sprint planning & initialization (/sprint-init)
-│   ├── project-checklist/ # Sprint 0 completion verification (/project-checklist)
-│   ├── data-standard/     # Korean public data standard terminology (/data-standard)
-│   ├── test-run/          # Integration testing — cmux browser (primary) / Chrome MCP (fallback) (/test-run)
-│   ├── test-scenario/     # E2E test scenario generation (/test-scenario)
-│   ├── pr-merge/          # Commit→review→fix→merge full cycle (/pr-merge)
-│   ├── slack-import/   # Slack List → blueprint + sprint generation (/slack-import)
-│   ├── coding-convention/ # Auto-applied coding convention (Java/TS/Python/CSS/SCSS)
-│   ├── code-standard/     # Auto-applied international code standards (ISO/ITU)
-│   ├── sprint-progress/   # Auto-applied sprint progress tracking
-│   ├── service-planner/   # Design thinking based planning deliverables (/service-planner)
-│   ├── ux-publish/        # UX component publishing from planning docs (/ux-publish)
-│   ├── handoff-publish/   # UX/UI/Dev/QA handoff package generator — Screen ID based (/handoff-publish)
-│   ├── manual-generator/  # Service manual auto-generator with Chrome MCP screenshots (/manual-generator)
-│   ├── catalog-generator/ # Product promotional catalog auto-generator (/catalog-generator)
-│   └── autorun/           # Zero-interaction full pipeline: planning → testing (/autorun)
-├── agents/              # Specialized Claude Code subagents (read-only, auto-discovered)
-│   ├── astra-validator.md           # ASTRA methodology compliance checker (haiku)
-│   ├── naming-validator.md          # DB naming standard validation (haiku)
-│   ├── convention-validator.md      # Coding convention validation (haiku)
-│   ├── blueprint-reviewer.md        # Design document quality & consistency (sonnet) — Gate 2
-│   ├── design-token-validator.md    # Design token system compliance (haiku) — Gate 2.5
-│   ├── sprint-analyzer.md           # Sprint progress & retrospective analysis (sonnet)
-│   ├── quality-gate-runner.md       # Integrated quality gate execution (sonnet) — Gate 3
-│   ├── test-coverage-analyzer.md    # Test strategy & coverage analysis (haiku) — Gate 2
-│   ├── planner-reviewer.md          # Planning deliverables quality & traceability (sonnet) — Gate 1.5
-│   ├── tester-persona.md            # QA engineer role-based delegation (sonnet) — explicit only
-│   ├── designer-persona.md          # UX/UI designer role-based delegation (sonnet) — explicit only
-│   └── developer-persona.md         # Senior developer role-based delegation (sonnet) — explicit only
-├── commands/            # Slash commands
-│   ├── generate-entity.md       # /generate-entity — entity code from Korean definitions
-│   ├── check-naming.md          # /check-naming — DB naming standard compliance check
-│   ├── check-convention.md      # /check-convention — coding convention compliance check
-│   ├── lookup-term.md           # /lookup-term — standard term dictionary lookup
-│   ├── lookup-code.md           # /lookup-code — international code lookup (ISO/ITU)
-│   ├── select-language.md       # /select-language — workflow language selection (ko/vi/en), reusable across skills
-│   └── extract-backlog.md         # /extract-backlog — extract backlog items from Slack
+├── skills/              # Claude Code skills (each subdir has SKILL.md with full details)
+├── agents/              # Specialized subagents (read-only, *-validator/*-reviewer/*-runner/*-analyzer/*-persona)
+├── commands/            # Slash commands (lighter than skills)
 ├── hooks/               # PostToolUse hooks (hooks.json)
 ├── scripts/             # Shell scripts for hooks and verification
-├── data/                # Standard dictionary and international code JSON files
-│   ├── standard_terms.json        # 13,176 standard terms (Korean→English abbreviation)
-│   ├── standard_words.json        # 3,284 standard words (abbreviations, forbidden words)
-│   ├── standard_domains.json      # 123 standard domains (type codes, lengths)
-│   ├── iso_3166_1_countries.json  # 249 ISO 3166-1 country codes
-│   ├── iso_3166_2_regions.json    # 653 ISO 3166-2 region codes (21 countries)
-│   └── country_calling_codes.json # 245 ITU-T E.164 calling codes
-├── docs/                # Reference design & UX documents
-│   ├── ux/
-│   │   ├── vibe-coding-design-guide.md    # Vibe Coding design guide (anti-AI aesthetics, prompting techniques, tool comparison)
-│   │   ├── vibe-coding-animation-guide.md # Vibe Coding animation guide (CSS/Framer Motion/GSAP, micro-interactions, scroll, performance, accessibility)
-│   │   ├── ux-interaction-patterns.md     # UX/UI interaction patterns guide (11 categories)
-│   │   └── mobile-design-guide.md         # Mobile app design guide (HIG, Material 3, touch, animation, haptics, accessibility, expert tips)
-│   ├── catalog/
-│   │   ├── catalog-expert-workflow.md     # Catalog design expert workflow & know-how
-│   │   ├── catalog-expert-workflow.ko.md  # Korean translation
-│   │   └── catalog-expert-workflow.vi.md  # Vietnamese translation
-│   ├── manual/                            # Service methodology manuals
-│   │   ├── MANUAL.md                      # English manual
-│   │   ├── MANUAL.ko.md                   # Korean manual
-│   │   └── MANUAL.vi.md                   # Vietnamese manual
-│   └── plugin/                            # Plugin development guides
-│       └── claude-code-plugins-guide.md   # Claude Code plugins guide
+├── data/                # Standard dictionary + ISO/ITU code JSON files (large — use jq queries)
+├── docs/                # Reference design/UX/dev guides (ux/, catalog/, manual/, plugin/, development/)
 └── .claude-plugin/      # Plugin manifest (plugin.json, marketplace.json)
 ```
+
+For per-skill details, read each `skills/{name}/SKILL.md`. For per-agent capabilities, read each `agents/{name}.md`. For full data file inventory, see `data/`.
 
 ## Key Concepts
 
@@ -108,18 +51,16 @@ The plugin auto-applies coding conventions when editing language-specific files:
 - **Python** (PEP 8): 4-space indent, 79-char limit, `snake_case` functions, `CapWords` classes, `is None` required, no bare `except:`
 - **CSS/SCSS** (CSS Guidelines + Sass Guidelines): 2-space indent, 80-char limit, BEM naming, no ID selectors, max 3-level nesting, mobile-first media queries
 
-Reference files are in `skills/coding-convention/` (e.g., `java-coding-convention.md`, `typescript-coding-convention.md`, `react-native-coding-convention.md`).
-
-For mobile projects, the coding convention skill additionally references `docs/ux/mobile-design-guide.md` for UI/UX implementation decisions (platform guidelines, touch interaction, animation timing, haptic feedback, dark mode, accessibility).
+Reference files are in `skills/coding-convention/` (e.g., `java-coding-convention.md`, `typescript-coding-convention.md`, `react-native-coding-convention.md`). For mobile projects, the coding convention skill additionally references `docs/ux/mobile-design-guide.md`.
 
 ### Vibe Coding Design & Animation Guides
 
 The plugin provides comprehensive design and animation guides under `docs/ux/` that should be referenced during all UI design and implementation work:
 
-- **`vibe-coding-design-guide.md`**: Expert-level Vibe Coding design practices — anti-AI aesthetics prompting, reference-anchored design, constraint-first approach, layered onion method, design token injection, tool comparison (v0/Bolt.new/Lovable/Cursor/Claude Code), DO/DON'T patterns, Korean market adoption insights
-- **`vibe-coding-animation-guide.md`**: Production-grade animation techniques — CSS native (View Transitions API, Scroll-Driven Animations, `@starting-style`, `linear()` springs), Framer Motion/GSAP/Lottie/Rive patterns, micro-interactions, scroll-based animations, page transitions, performance optimization (GPU acceleration, `will-change`), 3-tier motion accessibility, Disney 12 principles for UI, mobile gestures/haptics, animation design tokens
+- **`vibe-coding-design-guide.md`**: anti-AI aesthetics prompting, reference-anchored design, constraint-first approach, design token injection, tool comparison, DO/DON'T patterns
+- **`vibe-coding-animation-guide.md`**: CSS native (View Transitions API, Scroll-Driven Animations, `@starting-style`, `linear()` springs), Framer Motion/GSAP/Lottie/Rive, micro-interactions, performance, 3-tier motion accessibility, Disney 12 principles
 
-These guides are automatically loaded by `/ux-publish` and should be referenced by any skill or workflow that involves UI component creation, design system work, or animation implementation.
+These guides are automatically loaded by `/service-planner` (Step 6 HTML mockup generation) and should be referenced by any skill or workflow that involves UI design, design system work, or animation implementation.
 
 ### International Code Standards (ISO 3166-1/2, ITU-T E.164)
 
@@ -135,13 +76,10 @@ Data files: `iso_3166_1_countries.json` (249 countries), `iso_3166_2_regions.jso
 
 `hooks/hooks.json` defines hooks that run automatically:
 
-**Stop hooks** (run when Claude finishes responding):
-1. **enforce-work-summary.sh** — ensures Claude provides a work summary in the user's language after completing tasks. Uses `decision: "block"` with `reason` to make Claude continue if summary is missing. Checks `stop_hook_active` to prevent infinite loops. Skips short responses (<80 words) and question-only responses.
-
 **PostToolUse hooks** (run after Write/Edit operations):
 1. **check-forbidden-words.sh** — scans DB-related files for forbidden words from the standard dictionary
 2. **validate-naming.sh** — checks table name prefixes in SQL, Java (@Table), TypeScript (@Entity), Python (__tablename__)
-3. **track-sprint-progress.sh** — detects sprint-related file events (blueprints, DB design, test cases, implementation, test reports) and appends activity log entries to the sprint progress tracker
+3. **track-sprint-progress.sh** — detects sprint-related file events and appends activity log entries to the sprint progress tracker
 4. All PostToolUse hooks are non-blocking (exit 0) — they emit warnings only
 
 ### Hybrid Agent Architecture (Validators + Personas)
@@ -164,217 +102,43 @@ Stateless quality checkers that report violations without modifying files. Activ
 | `quality-gate-runner` | sonnet | Gate 3 | Integrated Gate 1/2/3 execution |
 
 #### Persona Agents (explicit invocation only, read-only orchestrators)
-Role-based mindset agents that bring senior-practitioner perspective to analysis. **Never auto-trigger** — must be explicitly invoked by user (e.g., "테스터 관점에서", "디자이너로서") or by orchestrating skills.
+Role-based mindset agents that bring senior-practitioner perspective. **Never auto-trigger** — must be explicitly invoked by user (e.g., "테스터 관점에서", "디자이너로서") or by orchestrating skills.
 
-| Persona | Model | When to Invoke | Returns |
-|---------|-------|----------------|---------|
-| `tester-persona` | sonnet | Edge case discovery, scenario gap analysis, risk-based prioritization, production readiness | Prioritized findings + Given-When-Then test suggestions; hands back to `/test-scenario` or `/test-run` |
-| `designer-persona` | sonnet | Design system audit, Vibe Coding aesthetic critique, WCAG 2.1 AA review, motion analysis, Screen ID handoff audit | Prioritized findings + token/component suggestions; hands back to `/ux-publish` or `/handoff-publish` |
-| `developer-persona` | sonnet | Architecture review, ASTRA 4-principle audit, code smell, OWASP security audit, tech debt prioritization | Prioritized findings + ASTRA principle compliance; hands back to `/pr-merge` or `/generate-entity` |
+| Persona | Model | When to Invoke | Hands back to |
+|---------|-------|----------------|---------------|
+| `tester-persona` | sonnet | Edge case discovery, scenario gap analysis, risk-based prioritization | `/test-scenario` or `/test-run` |
+| `designer-persona` | sonnet | Design system audit, Vibe Coding aesthetic critique, WCAG 2.1 AA review, Screen ID handoff audit | `/service-planner` or `/handoff-publish` |
+| `developer-persona` | sonnet | Architecture review, ASTRA 4-principle audit, code smell, OWASP security audit | `/pr-merge` or `/generate-entity` |
 
 **Architectural principle**: Persona agents are **orchestrators, not executors**. They analyze and recommend, but all file edits happen back in the parent context — this preserves auto-applied skills (`coding-convention`, `data-standard`, `code-standard`) which only trigger on parent-context Write/Edit operations.
 
 **When to use which**:
-- Stateful multi-turn workflow with user interaction → **Skill** (e.g., `/service-planner`'s 10-step pipeline)
-- Stateless validation against rules → **Validator agent** (e.g., naming check)
-- Senior-practitioner mindset on a specific artifact → **Persona agent** (e.g., "tester reviews edge cases")
+- Stateful multi-turn workflow with user interaction → **Skill**
+- Stateless validation against rules → **Validator agent**
+- Senior-practitioner mindset on a specific artifact → **Persona agent**
 - Parallel role-based work → Multiple personas via `Task()` calls in parallel
 
-### Service Planner (Design Thinking Based)
+### Skill Catalog (per-skill details in each SKILL.md)
 
-The `/service-planner` skill automates the planning phase using Design Thinking methodology:
+| Skill | Purpose |
+|-------|---------|
+| `/service-planner` | Design Thinking 기반 기획 (markdown 6종 + HTML 기획화면). 모드: 신규/개선. 자동 결정: 디자인 톤 5종 중 페르소나 기반 선택. |
+| `/handoff-publish` | UX/UI/Dev/QA 협업 패키지 — Screen ID 기반 14파일. UX가 ID 발급 단독 권한. `{feature-name}-handoff/`에 출력. |
+| `/manual-generator` | Service URL + 프로젝트 docs → self-contained HTML 매뉴얼. Chrome MCP 스크린샷 + 어노테이션. |
+| `/catalog-generator` | 제품 데이터 → self-contained HTML 카탈로그. AI 이미지(fect-image) + 영업 전략 자동 적용. |
+| `/autorun` | 무인 풀 파이프라인: `/service-planner` → planner-reviewer → design-token-validator → blueprint → blueprint-reviewer → `/sprint-init` → 구현 → `/test-scenario` → `/test-run` (5회 자동 디버그). `/pr-merge` 직전 정지. |
+| `/slack-import` | Slack List/메시지 → 청사진 + 스프린트 프롬프트 맵 + 진행 트래커. `SLACK_BOT_TOKEN` 필요. |
+| `/extract-backlog` | Slack 채널 메시지 → 우선순위 백로그 표 (가벼운 명령). |
 
-- **Methodology**: Design Thinking (Empathize → Define → Ideate → Prototype)
-- **Modes**: New service planning (from scratch) / Existing service improvement (data-driven, leverages existing analytics, CS logs, and user feedback)
-- **Pipeline**: Mode Selection → Market Analysis(PEST/SWOT) → Actor Derivation → Persona Interview → Pain Point Analysis → Idea Generation(HMW/SCAMPER/JTBD) → Requirements(KPI/OKR) → Use Cases(Journey Map) → IA/Screen Design(Wireframe) → Feature Definition(Story Map/Risk/Policy)
-- **Interactive**: Mode select, actor multi-select, idea multi-select with user confirmation at each major step
-- **Deliverables** (6 files under `docs/planner/{NNN}-{feature-name}/`):
-  1. `market-analysis.md` — Market/competitor analysis with PEST, benchmarking, SWOT
-  2. `interview-report.md` — Persona interview results with pain point analysis
-  3. `requirements-definition.md` — Requirements with KPI/OKR, JTBD, traceability
-  4. `usecase-definition.md` — Use case definitions with Mermaid diagrams and customer journey maps
-  5. `ia-screen-design.md` — Information Architecture, screen flow, text-based wireframes
-  6. `feature-definition.md` — Feature definition with User Story Map, MoSCoW, risk analysis, service policies
-- **Persona generation**: 3 personas per selected actor type with realistic interview simulation
-- **Idea generation**: HMW + SCAMPER + JTBD Job Statements, 10-15 ideas with implementation difficulty and expected impact
-- **Business alignment**: OKR/KPI metrics linked to features for strategy-to-execution traceability
-- **Risk management**: Risk register with likelihood/impact scoring and mitigation strategies
+### Blueprint & Sprint Conventions
 
-### Blueprint Directory Convention
+- **Blueprint directory**: `docs/blueprints/{NNN}-{feature-name}/blueprint.md` (3-digit zero-padded). Related files (diagrams, API specs) in same directory. Created on `dev` branch (falls back to `main`/`master`); work branches auto-created by `/pr-merge`.
+- **Sprint directory**: `docs/sprints/sprint-{N}-{feature-name}/progress.md` — auto-tracked by `track-sprint-progress.sh` hook + `sprint-progress` skill. Updates Blueprint/DB Design/Test Cases/Implementation/Test Report columns based on file event type.
+- **`overview.md`** stays at `docs/blueprints/overview.md` root level.
 
-Individual feature blueprints are organized as numbered directories under `docs/blueprints/`:
-- **Directory format**: `{NNN}-{feature-name}/` (e.g., `001-auth/`, `002-payment/`, `003-payment-dashboard/`)
-- **Main file**: `blueprint.md` inside each directory
-- **Related files**: Supplementary materials (diagrams, API specs, etc.) are placed in the same directory
-- **Numbering**: 3-digit zero-padded sequential numbers. Next number is determined by scanning existing directories.
-- **Work branch**: Blueprint creation works directly on the `dev` branch (falls back to `main`/`master`). Work branches (`feat/`, `fix/`, etc.) are not created during blueprint creation — they are automatically created by `/pr-merge` when committing and opening a PR.
-- `overview.md` remains at the root level as the project overview document
+### Target Project Structure
 
-### Sprint Progress Tracking
-
-The plugin provides automatic sprint progress tracking through a hook + skill hybrid system:
-
-- **Hook** (`track-sprint-progress.sh`): Detects file write events matching sprint-related paths (blueprints, DB design, test cases, implementation files, test reports), appends activity log entries to the tracker file, and emits a message prompting the LLM to update the progress table
-- **Auto-applied skill** (`sprint-progress/SKILL.md`): Guides the LLM to intelligently update the progress table columns (Blueprint, DB Design, Test Cases, Implementation, Test Report) based on the event type
-- **Sprint directory format**: `sprint-{N}-{feature-name}/` (e.g., `sprint-1-auth/`, `sprint-2-workspace/`) — includes the primary blueprint name for traceability
-- **Tracker file**: `docs/sprints/sprint-{N}-{feature-name}/progress.md` — contains a feature progress table, summary statistics, and an activity log
-- Tracker is auto-created during `/sprint-init` initialization, or created on-demand by the skill when an event is detected but no tracker exists
-
-### UX Component Publishing
-
-The `/ux-publish` skill generates production-grade UI components from planning documents:
-
-- **Input**: `docs/planner/{NNN}-{feature-name}/` (requires `ia-screen-design.md` + `feature-definition.md` from `/service-planner`)
-- **Output**: `publish/{feature-name}/` — framework-specific components (React/Vue/Angular/Svelte) with copy guide for `src/` integration
-- **Component-based output**: Generates actual reusable components (common UI, layout, screen, hooks) instead of standalone HTML
-- **Staging directory**: `publish/` serves as a staging area — components are reviewed, then copied to their actual `src/` locations via `COPY-GUIDE.md`
-- **Framework detection**: Auto-detects project framework (React/Next.js/Vue/Nuxt/Angular/Svelte/React Native) and styling method (CSS Modules/Tailwind/CSS-in-JS/SCSS)
-- **Vibe Coding design guide**: References `docs/ux/vibe-coding-design-guide.md` for anti-AI aesthetics, reference-anchored prompting, constraint-first design, design token injection
-- **Vibe Coding animation guide**: References `docs/ux/vibe-coding-animation-guide.md` for spring physics, micro-interactions, scroll animations, page transitions, 3-tier motion accessibility
-- **Design quality**: Uses `/frontend-design` skill for production-grade, distinctive UI (avoids generic AI aesthetics)
-- **AI images**: Uses `fect-image` MCP (`mcp__fect-image__image_text2img`) for hero banners, empty state illustrations, avatars, backgrounds
-- **Interaction patterns**: References `docs/ux/ux-interaction-patterns.md` (11 categories: micro-interactions, navigation, feedback, scroll, form, transitions, onboarding, accessibility, delight, dark patterns to avoid)
-- **Mobile design**: For mobile projects, additionally references `docs/ux/mobile-design-guide.md` (14 sections)
-- **Design tokens**: Strictly references project's `src/styles/design-tokens.css` (no hardcoded values)
-- **Components**: Follows `docs/design-system/components.md` specifications
-- **Layout**: Implements `docs/design-system/layout-grid.md` grid system
-- **Browser preview**: `publish/{feature-name}/preview/` contains build-free HTML previews for design review
-- **Features**: Responsive (mobile/tablet/desktop), dark mode, accessibility (WCAG AA), `prefers-reduced-motion` support
-- **Design direction**: User selects aesthetic tone (Refined Minimal, Bold & Vibrant, Soft & Warm, Editorial, Professional Enterprise, or Auto)
-
-### Handoff Package (UX/UI/Dev/QA 협업 패키지)
-
-The `/handoff-publish` skill generates a Screen ID based collaboration package for long-lived product features, following the FECT `HANDOFF_PROCESS_GUIDE v1.1` (see `docs/workflow/HANDOFF_PROCESS_GUIDE.pdf`):
-
-- **Output location**: Branch root `{feature-name}-handoff/` (intentional — designers/QA clone without navigating into engineering code)
-- **Screen ID format**: `{DOMAIN}-{PAGE}-{SECTION}-UC{NN}` (e.g., `ACAD-EXPERT-DETAIL-UC03`). Domain code is project-wide (2–6 uppercase chars). State suffixes: `-LOADING`, `-EMPTY`, `-ERROR`.
-- **Single Source of Truth**: `1-screen-registry.md` is the authoritative ID list. **UX holds exclusive issuance rights** — UI/Dev/QA cannot create new IDs (they must request via UX).
-- **14 output files**:
-  - `0-README.md` (guide + Quick Start), `1-screen-registry.md` (SSoT)
-  - `2-flows.md`, `3-state-matrix.md`, `4-edge-cases.md`, `5-responsive-guide.md`
-  - `6-component-specs.md`, `7-business-rules.md`, `8-content-guide.md`
-  - `9-ia-sitemap.md`, `10-personas.md`, `11-decision-log.md`
-  - `DoD-CHECKLIST.md` (role-based Definition of Done)
-  - `walkthrough.loom.md` (manual recording link)
-  - `screenshots/` (ID-named capture folder, populated by UI)
-- **Design principle**: Every screen = State (LOADING/EMPTY/DEFAULT/ERROR/PARTIAL) × Permission × Device combination
-- **Integration with existing assets**:
-  - Reads `docs/planner/{NNN}-{feature}/ia-screen-design.md` if present → auto-converts `SCR-NNN` to 4-segment Screen IDs, records conversion in `11-decision-log.md`
-  - Reads `interview-report.md` → populates `10-personas.md`
-  - Reads `feature-definition.md` → seeds `3-state-matrix.md` permission matrix + `7-business-rules.md`
-  - Reads `blueprint.md` → seeds API/data policy in `7-business-rules.md`
-- **Out of scope (PDF §24)**: One-off marketing pages, prototypes/A-B tests, external embeds (Notion/Slack), admin back-offices not requiring UX collaboration. Skill prompts user at Step 0 and exits early.
-- **Legacy code policy (PDF §26)**: Not auto-applied to existing features. Only new features or major renewals adopt Handoff. No retroactive enforcement hooks.
-- **DoD automation (Developer stage)**: Lint + tsc + Lighthouse + axe-core CLI checks are scripted; Loom walkthrough, Figma↔code parity, screen reader test remain manual.
-
-### Manual Generator
-
-The `/manual-generator` skill automatically creates professional online service manuals as self-contained HTML packages:
-
-- **Input sources**: Running service URL (Chrome MCP screenshots) + project docs (`docs/blueprints/`, `docs/planner/`)
-- **Output**: `docs/manual/{feature-name}/` — self-contained HTML manual viewable in browser (no build required)
-- **Chrome MCP integration**: Navigates real service, injects CSS highlights on target UI elements, adds step number overlays, captures annotated screenshots (desktop/tablet/mobile)
-- **Writing quality**: Expert-level manual writing — 2nd person polite form, plain language, step-by-step format, visual-first approach (references `references/manual-writing-guide.md`)
-- **Design quality**: Uses `/frontend-design` skill for polished reading-optimized layout (references `references/manual-css-template.md`)
-- **Features**: Dark mode, client-side full-text search (Cmd+K), keyboard navigation, print stylesheet, responsive layout
-- **Structure**: Cover + searchable TOC → Getting Started → Feature-by-feature guides (step-cards with screenshots) → FAQ/Troubleshooting → Glossary
-- **User interaction gates**: Manual scope selection → TOC approval → design tone selection (Professional Enterprise, Refined Minimal, Soft & Warm, Auto)
-- **Document-only mode**: If no URL provided, generates manual from blueprints/planner docs without screenshots (or uses `publish/` component previews)
-
-### Catalog Generator
-
-The `/catalog-generator` skill automatically produces professional product promotional catalogs as self-contained HTML packages:
-
-- **Input**: Product data file (CSV/JSON/text), URL, or product description
-- **Output**: `catalog/{catalog-name}/` — self-contained HTML catalog viewable in browser (no build required)
-- **Expert workflow**: Based on `docs/catalog/catalog-expert-workflow.md` — professional catalog designers' workflows and know-how
-- **Design quality**: Uses `/frontend-design` skill for polished, production-grade design (avoids generic AI aesthetics)
-- **AI images**: Uses `fect-image` MCP for hero banners, lifestyle images, editorial illustrations, and category visuals
-- **Chrome MCP integration**: Captures real product/service screenshots for "See it in action" showcases
-- **Built-in sales strategies**: Cross-selling, upselling, price anchoring, and CTA placement applied automatically
-- **Professional copywriting**: Benefit-driven, sensory language, storytelling, social proof techniques
-- **Features**: Responsive (mobile/tablet/desktop), dark mode, print stylesheet, accessibility (WCAG AA)
-- **Fully autonomous**: All decisions (design tone, layout, copy, product placement) are made by AI based on product characteristics — zero user interaction required
-
-### Autorun (Zero-Interaction Full Pipeline)
-
-The `/autorun` skill orchestrates the entire ASTRA workflow from planning through testing without any user input, stopping just before `/pr-merge`:
-
-- **Input**: Feature description (Korean or English)
-- **Pipeline**: `/service-planner` → planner-reviewer (Gate 1.5) → `/ux-publish` → design-token-validator (Gate 2.5) → blueprint generation → blueprint-reviewer (Gate 2) → `/sprint-init` → implementation (`/generate-entity` + blueprint-driven) → `/test-scenario` → `/test-run` (with 5-retry auto-debug) → final report
-- **Auto-defaults**: All interactive decision points (mode selection, actor selection, idea selection, design tone, sprint number) are filled with smart defaults — no `AskUserQuestion` calls.
-- **Fail-safe**: Hard-stops on output file missing, blocked dependencies, or test failures after 5 auto-debug retries. Continues with warnings on validator P0 issues (recorded in final report).
-- **Idempotent resume**: Re-running with the same feature slug detects completed stages by output file existence and resumes from the failed/missing stage.
-- **`/pr-merge` is never invoked** — the skill ends with an explicit instruction for the user to review outputs and run `/pr-merge` manually.
-- **Final report**: Generates `docs/sprints/sprint-{N}-{feature-slug}/pipeline-report.md` summarizing all stage outcomes, P0 issues, and recommended persona reviews.
-- **Use cases**: Rapid prototyping, full-stack module bootstrap, demo environment setup, post-Sprint-0 first feature seeding
-- **Anti-use cases**: Bug fixes, sensitive business logic, legacy integration, compliance-impacting changes (require manual review gates)
-
-### Slack Integration
-
-The plugin integrates with Slack via the `fect-slack` MCP server to collect requirements directly from team communication channels:
-
-- **`/slack-import`** (skill): Full interactive workflow — list channels → select channel → select List → select Items → update status → analyze requirements → generate blueprints + sprint prompt map + progress tracker
-- **`/extract-backlog`** (command): Quick extraction — fetch messages from a channel and output a structured backlog table with priorities
-- **MCP tools used**: `slack_list_channels`, `slack_get_history`, `slack_search_channels`, `slack_get_user_info`, `slack_post_message`, `slack_add_reaction`, `slack_file_list`, `slack_list_items_list`, `slack_list_items_info`, `slack_list_items_update`
-- **Environment**: Requires `SLACK_BOT_TOKEN` environment variable
-- **MCP config**: Defined in `.mcp.json` (auto-configured by plugin manifest `mcpServers` field)
-
-### Target Project Structure (generated by /astra-methodology)
-
-When the plugin initializes a target project, it creates:
-```
-{project}/
-├── CLAUDE.md                          # Project-specific AI rules
-├── docs/
-│   ├── design-system/                 # Component guides, layout grid (documentation only)
-│   ├── blueprints/                    # Feature design documents
-│   │   ├── overview.md                # Project overview
-│   │   ├── {NNN}-{feature-name}/      # Numbered feature directories (e.g., 001-auth/)
-│   │   │   └── blueprint.md           # Main design document + related files
-│   ├── planner/                       # Planning deliverables (Design Thinking)
-│   │   └── {NNN}-{feature-name}/      # Numbered feature directories (e.g., 001-auth/)
-│   │       ├── market-analysis.md     # Market/competitor analysis (PEST, SWOT, benchmarking)
-│   │       ├── interview-report.md    # Persona interview results
-│   │       ├── requirements-definition.md # Requirements (KPI/OKR, JTBD, traceability)
-│   │       ├── usecase-definition.md  # Use cases with customer journey maps
-│   │       ├── ia-screen-design.md    # IA structure, screen flow, wireframes
-│   │       └── feature-definition.md  # Features with story map, risk, policies
-│   ├── database/                      # DB design (SSoT), naming rules, migrations
-│   ├── tests/                         # Test strategy, test cases (per sprint), test reports
-│   ├── sprints/                       # Sprint documents (prompt maps, progress trackers, retrospectives)
-│   ├── delivery/                     # Release artifacts
-│   └── manual/                       # Service manuals (generated by /manual-generator)
-│       └── {feature-name}/           # Per-feature manual
-│           ├── index.html            # Cover + TOC + search
-│           ├── chapters/             # Chapter HTML files (01-getting-started.html, etc.)
-│           ├── assets/               # CSS (tokens, base, components, print)
-│           ├── screenshots/          # Captured screenshots (desktop/, tablet/, mobile/)
-│           └── shared/               # Common JS (nav, search, theme)
-├── publish/                            # UI component staging (generated by /ux-publish)
-│   └── {feature-name}/                # Per-feature component package
-│       ├── COPY-GUIDE.md              # Copy mapping guide (publish/ → src/)
-│       ├── components/                # Reusable UI components
-│       │   ├── common/                # Common UI (Button, Input, Card, Modal, etc.)
-│       │   ├── layout/                # Layout (GNB, Sidebar, PageLayout)
-│       │   └── {feature}/             # Feature-specific components
-│       ├── screens/                   # Screen/page components
-│       ├── hooks/                     # Custom hooks (useScrollAnimation, useTheme, etc.)
-│       ├── styles/                    # CSS (tokens, base, animations, modules)
-│       ├── utils/                     # Utilities (cn, constants)
-│       ├── assets/images/             # AI-generated image assets (fect-image)
-│       └── preview/                   # HTML previews for design review (no build required)
-│           ├── index.html             # Screen index & navigation hub
-│           └── screens/               # Individual screen HTML previews
-├── catalog/                           # Product catalogs (generated by /catalog-generator)
-│   └── {catalog-name}/               # Per-catalog package
-│       ├── index.html                 # Catalog main page
-│       ├── assets/                    # CSS, JS, fonts
-│       └── images/                    # Product & lifestyle images (fect-image)
-└── src/
-    └── styles/
-        └── design-tokens.css         # CSS Custom Properties — 3-tier tokens (OKLCH colors, Geist+Pretendard fonts, fluid typography, spring animations)
-```
+When the plugin initializes a target project, it creates a structured layout under `docs/`, `catalog/`, and `src/styles/`. See [`docs/development/target-project-structure.md`](docs/development/target-project-structure.md) for the full tree and per-skill output locations.
 
 ## Development Notes
 
@@ -400,9 +164,13 @@ These principles are inlined into the relevant skills rather than being a standa
 
 **Quick reference**: `/astra-guide principles`
 
-**ASTRA 자동 빌더 예외**: `/service-planner`, `/manual-generator`, `/catalog-generator`, `/ux-publish`, `/handoff-publish`, `/project-init`, `/sprint-init`, `/autorun` 같은 *광범위 산출물 생성형 skill*은 사용자가 명시적으로 요청한 풀 스택 산출물을 생성하므로 "Simplicity First"의 범위 제한을 받지 않는다. 다만 그 내부에서 작성하는 *개별 코드*는 4원칙을 그대로 따른다.
+**ASTRA 자동 빌더 예외**: `/service-planner`, `/manual-generator`, `/catalog-generator`, `/handoff-publish`, `/project-init`, `/sprint-init`, `/autorun` 같은 *광범위 산출물 생성형 skill*은 사용자가 명시적으로 요청한 풀 스택 산출물을 생성하므로 "Simplicity First"의 범위 제한을 받지 않는다. 다만 그 내부에서 작성하는 *개별 코드*는 4원칙을 그대로 따른다.
 
-**Source**: [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills) (MIT) — adapted into existing skills with Korean translation and ASTRA-specific scope clauses. Original inspiration: [Karpathy's LLM coding pitfall observations](https://x.com/karpathy/status/2015883857489522876).
+**Source**: [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills) (MIT) — adapted into existing skills with Korean translation and ASTRA-specific scope clauses.
+
+## Skill Authoring
+
+새 SKILL.md를 작성하거나 기존 스킬을 수정할 때는 [`docs/development/skill-authoring-guide.md`](docs/development/skill-authoring-guide.md)를 참조한다 — 핵심 원칙, frontmatter 필드, description 7원칙, progressive disclosure, 안티패턴, ASTRA 체크리스트.
 
 ## Scripts
 
@@ -424,9 +192,9 @@ These principles are inlined into the relevant skills rather than being a standa
 - **버전업 필수**: main 브랜치에 푸시하기 전 반드시 `.claude-plugin/plugin.json`과 `.claude-plugin/marketplace.json`의 `version` 필드를 업데이트해야 한다. SemVer 규칙을 따른다 — 버그 수정은 patch(x.x.+1), 기능 추가는 minor(x.+1.0), 호환성 깨지는 변경은 major(+1.0.0).
 - **Skill description 언어 정책**:
   - **영어 사용**: auto-trigger 스킬(`coding-convention`, `data-standard`, `code-standard`, `sprint-progress`), 검증/유틸 스킬(`project-checklist`, `astra-setup`, `sprint-init`, `astra-guide`, `test-run`, `test-scenario`, `project-init`, `catalog-generator`). LLM의 영어 description 매칭 정확도가 더 높아 자동 트리거/유틸 호출에 유리.
-  - **한국어 사용**: 사용자 워크플로우 진입점인 인터랙티브 도메인 스킬(`service-planner`, `ux-publish`, `handoff-publish`, `manual-generator`, `pr-merge`, `slack-import`, `autorun`). 한국 사용자가 `/help`로 발견할 때 의도가 즉시 이해되어야 함.
-  - **frontmatter 형식**: auto-trigger 스킬은 `description: >` 블록 형식(여러 줄로 트리거 조건을 명시), 명시 호출 스킬은 `description: "..."` 단일 라인 형식.
-- **Agent description 가드**: 페르소나 에이전트(`tester-persona`, `designer-persona`, `developer-persona`)는 description 첫 줄에 `[EXPLICIT-INVOCATION-ONLY — DO NOT AUTO-MATCH]` 가드 prefix를 필수로 둔다. 자동 매칭 신호 약화 + 사용자 의도 명시 호출만 허용.
+  - **한국어 사용**: 사용자 워크플로우 진입점인 인터랙티브 도메인 스킬(`service-planner`, `handoff-publish`, `manual-generator`, `pr-merge`, `slack-import`, `autorun`). 한국 사용자가 `/help`로 발견할 때 의도가 즉시 이해되어야 함.
+  - **frontmatter 형식**: auto-trigger 스킬은 `description: >` 블록 형식, 명시 호출 스킬은 `description: "..."` 단일 라인 형식.
+- **Agent description 가드**: 페르소나 에이전트(`tester-persona`, `designer-persona`, `developer-persona`)는 description 첫 줄에 `[EXPLICIT-INVOCATION-ONLY — DO NOT AUTO-MATCH]` 가드 prefix를 필수로 둔다.
 - Skill SKILL.md files follow a strict procedural format (단계: step-by-step instructions)
 - Commands are simpler than skills — they define input/output format and delegate to data files
 - All agents are read-only (`disallowedTools: Write, Edit`) — they analyze and report but never modify files
