@@ -44,7 +44,7 @@ The following four principles apply to ALL coding work. They are derived from ob
 
 > **출처**: [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills) (MIT) — [Karpathy의 LLM 코딩 함정 관찰](https://x.com/karpathy/status/2015883857489522876)
 >
-> **ASTRA 자동 빌더 예외**: `/service-planner`, `/manual-generator`, `/catalog-generator`, `/ux-publish`, `/handoff-publish`, `/project-init`, `/sprint-init`, `/autorun` 등 *광범위 산출물 생성형 skill*은 사용자가 명시적으로 요청한 풀 스택 산출물이므로 "Simplicity First"의 범위 제한을 받지 않는다 — 다만 그 내부에서 작성하는 *개별 코드*는 4원칙을 그대로 따른다.
+> **ASTRA 자동 빌더 예외**: `/service-planner`, `/manual-generator`, `/catalog-generator`, `/handoff-publish`, `/project-init`, `/sprint-init`, `/autorun` 등 *광범위 산출물 생성형 skill*은 사용자가 명시적으로 요청한 풀 스택 산출물이므로 "Simplicity First"의 범위 제한을 받지 않는다 — 다만 그 내부에서 작성하는 *개별 코드*는 4원칙을 그대로 따른다.
 
 ## Language Detection
 
