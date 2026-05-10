@@ -273,7 +273,7 @@ Fri  Release            → /test-run → Deploy
 
 ```
 astra-methodology/
-├── skills/                        # 19 Claude Code skills
+├── skills/                        # 18 Claude Code skills
 │   ├── astra-setup/               #   Global dev environment setup (/astra-setup)
 │   ├── astra-guide/               #   Methodology quick reference (/astra-guide)
 │   ├── project-init/              #   Sprint 0 project initialization (/project-init)
