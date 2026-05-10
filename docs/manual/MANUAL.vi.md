@@ -1162,8 +1162,7 @@ Chưa sửa code."
 | Thiết lập ban đầu dự án | `/project-init [tên dự án]` | Tạo cấu trúc thư mục Sprint 0 + template |
 | Checklist Sprint 0 | `/project-checklist` | Xác minh hoàn thành Sprint 0 |
 | Khởi tạo Sprint | `/sprint-init [N]` | Tạo prompt map, theo dõi tiến độ, template hồi cứu |
-| Lập kế hoạch theo Design Thinking | `/service-planner` | 6 sản phẩm: phân tích thị trường/phỏng vấn persona/yêu cầu/use case/IA·màn hình/định nghĩa tính năng |
-| Xuất bản component UI | `/ux-publish` | Tạo component nhận biết framework trong `publish/` |
+| Lập kế hoạch Design Thinking + màn hình HTML | `/service-planner` | 6 sản phẩm markdown (phân tích thị trường/phỏng vấn persona/yêu cầu/use case/IA·màn hình/định nghĩa tính năng) + màn hình HTML áp dụng design system (index.html, styles.css, SCR-NNN.html) tự động sinh kèm |
 | Gói handoff UX/UI/Dev/QA | `/handoff-publish` | Gói cộng tác dựa trên Screen ID (HANDOFF_PROCESS_GUIDE v1.1) |
 | Tạo cẩm nang dịch vụ tự động | `/manual-generator` | Cẩm nang HTML với ảnh chụp từ Chrome MCP |
 | Tạo catalog sản phẩm tự động | `/catalog-generator` | Catalog HTML đơn lẻ với hình ảnh AI |

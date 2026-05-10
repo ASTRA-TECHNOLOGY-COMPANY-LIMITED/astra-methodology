@@ -1,6 +1,6 @@
 ---
 name: autorun
-description: "ASTRA 풀 자동 실행 — 사용자 입력 없이 기획부터 테스트까지 자동 진행하며, 테스트 통과 시까지 최대 N회 자동 반복합니다. /service-planner → /ux-publish → blueprint → /sprint-init → 구현(/generate-entity + 청사진 기반) → /test-scenario → /test-run을 순차 실행하고, 테스트 실패 시 실패 원인을 분류해 적절한 단계부터 재진입(자가 개선 루프)합니다. 모든 사용자 선택 단계는 스마트 디폴트로 자동 결정되며, 시작 시 최대 반복 횟수만 1회 입력받습니다. /pr-merge 직전에 정지합니다. 한 번의 명령으로 1주일치 작업을 무인 실행하고자 할 때 사용합니다."
+description: "ASTRA 풀 자동 실행 — 사용자 입력 없이 기획부터 테스트까지 자동 진행하며, 테스트 통과 시까지 최대 N회 자동 반복합니다. /service-planner(HTML 기획화면 포함) → blueprint → /sprint-init → 구현(/generate-entity + 청사진 기반) → /test-scenario → /test-run을 순차 실행하고, 테스트 실패 시 실패 원인을 분류해 적절한 단계부터 재진입(자가 개선 루프)합니다. 모든 사용자 선택 단계는 스마트 디폴트로 자동 결정되며, 시작 시 최대 반복 횟수만 1회 입력받습니다. /pr-merge 직전에 정지합니다. 한 번의 명령으로 1주일치 작업을 무인 실행하고자 할 때 사용합니다."
 argument-hint: "[기능 설명] [--max-iter=N] (N 미지정 시 기본 3회, 1회로 지정하면 단일 패스)"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, TodoWrite, Skill, AskUserQuestion
 ---
@@ -52,18 +52,17 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, TodoWrite, Skill, AskU
 ### 0.3 진행 추적 초기화
 `TodoWrite`로 다음 todos를 생성:
 1. Stage 0.5: 최대 반복 횟수 결정
-2. Stage 1: 기획 (/service-planner)
+2. Stage 1: 기획 + HTML 기획화면 (/service-planner)
 3. Stage 1.5: 기획 검증 (planner-reviewer)
-4. Stage 2: UX 컴포넌트 (/ux-publish)
-5. Stage 2.5: 디자인 토큰 검증 (design-token-validator)
-6. Stage 3: 청사진 작성 (blueprint.md)
-7. Stage 3.5: 청사진 검증 (blueprint-reviewer)
-8. Stage 4: 스프린트 계획 (/sprint-init)
-9. Stage 5: 구현 (/generate-entity + 청사진 기반)
-10. Stage 6: 테스트 시나리오 (/test-scenario)
-11. Stage 7: 테스트 실행 (/test-run)
-12. Stage 7.5: Iteration 루프 (실패 시 재진입, early exit on pass)
-13. Stage 8: 최종 보고서 + /pr-merge 안내
+4. Stage 2.5: 디자인 토큰 검증 (design-token-validator) — 기획화면 styles.css 대상
+5. Stage 3: 청사진 작성 (blueprint.md)
+6. Stage 3.5: 청사진 검증 (blueprint-reviewer)
+7. Stage 4: 스프린트 계획 (/sprint-init)
+8. Stage 5: 구현 (/generate-entity + 청사진 기반)
+9. Stage 6: 테스트 시나리오 (/test-scenario)
+10. Stage 7: 테스트 실행 (/test-run)
+11. Stage 7.5: Iteration 루프 (실패 시 재진입, early exit on pass)
+12. Stage 8: 최종 보고서 + /pr-merge 안내
 
 ## 단계 0.5: 최대 반복 횟수(N) 결정
 
@@ -131,34 +130,12 @@ Task(planner-reviewer, "{PLANNER_DIR} 검증")
 
 검증 결과를 진행 로그에 기록하되, **P0 이슈가 있어도 다음 단계로 진행**한다 (무인 실행 원칙). P0 이슈는 최종 보고서에서 강조한다.
 
-## 단계 2: UX 컴포넌트 자동 생성 (`/ux-publish`)
-
-### 2.1 자동 결정 디폴트
-
-| 결정 지점 | 자동 디폴트 |
-|---|---|
-| 입력 디렉토리 | Stage 1의 `PLANNER_DIR` 자동 전달 |
-| 디자인 톤 선택 | **Auto** (AI가 콘텐츠 기반으로 결정) |
-| 진행 확인 | **무조건 Y** |
-| AI 이미지 생성 여부 | **활성화** (`fect-image` MCP 사용 가능 시) |
-
-### 2.2 실행
-`Skill('ux-publish', '{기능 설명}')` 호출. PLANNER_DIR을 명시적으로 전달.
-
-### 2.3 성공 기준
-```
-publish/{feature-slug}/
-├── COPY-GUIDE.md
-├── components/
-├── screens/
-└── preview/
-```
-디렉토리와 핵심 파일 존재 확인. 없으면 **STOP**.
-
 ## 단계 2.5: 디자인 토큰 검증 (자동, 비차단)
 
+`/service-planner`가 생성한 HTML 기획화면(`{PLANNER_DIR}/styles.css`, `{PLANNER_DIR}/SCR-*.html`, `{PLANNER_DIR}/index.html`)을 대상으로 토큰 준수 여부를 검증한다.
+
 ```
-Task(design-token-validator, "publish/{feature-slug} 검증")
+Task(design-token-validator, "{PLANNER_DIR} 검증 — styles.css, SCR-*.html, index.html에서 하드코딩 색상/사이즈가 var(--*) 토큰을 우회하지 않는지 확인")
 ```
 
 P0 이슈는 최종 보고서에 기록하고 진행.
@@ -291,7 +268,7 @@ docs/tests/test-cases/sprint-{N}-{feature-slug}/
    # macOS(BSD)/Linux(GNU) find 모두 호환되도록 -exec stat 사용
    # (BSD find는 -printf 미지원이므로 stat -f '%N %m' 사용)
    find docs/planner/{NNN}-{slug} docs/blueprints/{NNN}-{slug} \
-        publish/{slug} src docs/tests/test-cases/sprint-{N}-{slug} \
+        src docs/tests/test-cases/sprint-{N}-{slug} \
         -type f 2>/dev/null \
         -exec stat -f '%N %m' {} \; 2>/dev/null \
         | sort > {ITER_DIR}/iter-{CURRENT_ITER}-baseline.txt
@@ -307,7 +284,7 @@ docs/tests/test-cases/sprint-{N}-{feature-slug}/
    # 현재 스냅샷을 동일 방식으로 생성 후 비교
    diff {ITER_DIR}/iter-{CURRENT_ITER}-baseline.txt \
         <(find docs/planner/{NNN}-{slug} docs/blueprints/{NNN}-{slug} \
-               publish/{slug} src docs/tests/test-cases/sprint-{N}-{slug} \
+               src docs/tests/test-cases/sprint-{N}-{slug} \
                -type f 2>/dev/null \
                -exec stat -f '%N %m' {} \; 2>/dev/null | sort) \
         | grep '^>' | awk '{print $2}' > /tmp/changed_files.txt
@@ -385,7 +362,7 @@ Task(tester-persona, "
 
 ### 7.5.5 다음 iteration 진입 — Direct Patch 방식 (sub-skill 재호출 금지)
 
-**중요한 설계 결정**: sub-skill(`/service-planner`, `/ux-publish`, `/sprint-init` 등)은 patch/modify 모드가 없다. 재호출 시 전체 재생성하거나 idempotency 충돌로 예측 불가능한 동작을 한다. 따라서 **iteration ≥ 2에서는 sub-skill을 호출하지 않고 autorun이 직접 Read/Edit/Write로 in-place 패치**한다. Sub-skill 호출은 iteration 1에서만 발생한다.
+**중요한 설계 결정**: sub-skill(`/service-planner`, `/sprint-init` 등)은 patch/modify 모드가 없다. 재호출 시 전체 재생성하거나 idempotency 충돌로 예측 불가능한 동작을 한다. 따라서 **iteration ≥ 2에서는 sub-skill을 호출하지 않고 autorun이 직접 Read/Edit/Write로 in-place 패치**한다. Sub-skill 호출은 iteration 1에서만 발생한다.
 
 1. `CURRENT_ITER += 1`
 2. 안내 출력:
@@ -404,7 +381,7 @@ Task(tester-persona, "
    | target_stage | 직접 패치 대상 | 수행 작업 |
    |---|---|---|
    | **1** (기획) | `docs/planner/{NNN}-{slug}/feature-definition.md` 등 summary가 지목한 파일 | Edit으로 해당 섹션 수정. Stage 4(/sprint-init)는 **재호출 안 함** (이미 sprint dir 존재). Stage 5는 Direct Patch로 계속. |
-   | **2** (UX) | `publish/{slug}/components/...` summary가 지목한 파일 | Edit으로 컴포넌트/스타일 수정. preview HTML 재생성은 변경 파일에 한정. |
+   | **2** (UX HTML 기획화면) | `docs/planner/{NNN}-{slug}/styles.css`, `SCR-*.html`, `index.html` summary가 지목한 파일 | Edit으로 토큰/마크업 수정. 디자인 톤 변경 시 styles.css만 갱신. |
    | **3** (청사진) | `docs/blueprints/{NNN}-{slug}/blueprint.md` | Edit으로 데이터 모델/API 명세 수정. data-standard 자동 적용 스킬은 그대로 발동. |
    | **5** (구현) | `src/...` 코드 파일 — summary가 지목한 모듈/메서드 | Edit으로 직접 코드 패치. coding-convention 자동 적용. `/generate-entity` **재호출 안 함** (테이블 정의 변동 없으면). |
 
@@ -484,10 +461,9 @@ Task(tester-persona, "
 🔁 Iterations: {final_iter}/{MAX_ITER} ({early-exit on PASS / max reached / abort})
 
 📁 산출물 위치:
-  - 기획: docs/planner/{NNN}-{feature-slug}/
+  - 기획 + HTML 기획화면: docs/planner/{NNN}-{feature-slug}/ (markdown 6종 + index.html + styles.css + SCR-*.html)
   - 청사진: docs/blueprints/{NNN}-{feature-slug}/
   - 스프린트: docs/sprints/sprint-{N}-{feature-slug}/
-  - UI 컴포넌트: publish/{feature-slug}/
   - 테스트: docs/tests/test-cases/sprint-{N}-{feature-slug}/
   - Iteration 요약: docs/sprints/sprint-{N}-{feature-slug}/iterations/
   - 보고서: docs/sprints/sprint-{N}-{feature-slug}/pipeline-report.md
@@ -551,12 +527,11 @@ Task(tester-persona, "
    - `LAST_ITER`의 summary가 FAIL → `CURRENT_ITER = LAST_ITER + 1` 로 시작, summary의 `target_stage`로 점프.
    - summary 파일 없음 → 일반 Stage 단위 재개 (아래 2~7).
 
-2. `docs/planner/{NNN}-{feature-slug}/` 6개 파일 모두 존재 → Stage 1 건너뛰기
-3. `publish/{feature-slug}/` 존재 → Stage 2 건너뛰기
-4. `docs/blueprints/{NNN}-{feature-slug}/blueprint.md` 존재 → Stage 3 건너뛰기
-5. `docs/sprints/sprint-{N}-{feature-slug}/` 존재 → Stage 4 건너뛰기
-6. 구현 산출물 감지 (모듈별 시그니처 파일 존재) → Stage 5 건너뛰기
-7. `docs/tests/test-cases/sprint-{N}-{feature-slug}/` 존재 → Stage 6 건너뛰기
+2. `docs/planner/{NNN}-{feature-slug}/` 6개 markdown + `index.html` + `styles.css` + `SCR-*.html` 모두 존재 → Stage 1 건너뛰기
+3. `docs/blueprints/{NNN}-{feature-slug}/blueprint.md` 존재 → Stage 3 건너뛰기
+4. `docs/sprints/sprint-{N}-{feature-slug}/` 존재 → Stage 4 건너뛰기
+5. 구현 산출물 감지 (모듈별 시그니처 파일 존재) → Stage 5 건너뛰기
+6. `docs/tests/test-cases/sprint-{N}-{feature-slug}/` 존재 → Stage 6 건너뛰기
 
 `MAX_ITER`는 재실행 시 처리:
 - `--max-iter=N` 인자가 있으면 그 값을 그대로 사용 (Stage 0.5.1 규칙 준수, 프롬프트 안 함).
@@ -594,8 +569,7 @@ Task(tester-persona, "
 
 | 스킬 | `/autorun`과의 관계 |
 |---|---|
-| `/service-planner` | Stage 1에서 호출 (디폴트 자동 적용) |
-| `/ux-publish` | Stage 2에서 호출 |
+| `/service-planner` | Stage 1에서 호출 (디폴트 자동 적용 + HTML 기획화면 동시 생성) |
 | `/handoff-publish` | **호출 안 함** (선택적 산출물, 사용자 명시 시만) |
 | `/sprint-init` | Stage 4에서 호출 |
 | `/generate-entity` | Stage 5에서 호출 (청사진 데이터 모델 기반 엔티티 생성) |
