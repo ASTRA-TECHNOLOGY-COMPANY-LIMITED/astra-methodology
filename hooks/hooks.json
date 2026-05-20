@@ -45,6 +45,19 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/inject-feature-dev-cwd.sh\"",
+            "timeout": 5,
+            "statusMessage": "sprint worktree 컨텍스트 주입 중..."
+          }
+        ]
+      }
     ]
   }
 }
