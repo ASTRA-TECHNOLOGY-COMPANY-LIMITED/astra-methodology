@@ -69,18 +69,31 @@ fi
 
 #### D. Pre-launch Port Availability Check
 
-서버 기동 전 포트가 이미 사용 중이면 abort 한다 (다른 worktree나 외부 프로세스를 종료하지 않도록):
+서버 기동 전 env 파일에 정의된 *모든* 스택별 포트가 사용 가능한지 확인하고, 하나라도 점유 중이면 abort 한다 (다른 worktree나 외부 프로세스를 종료하지 않도록). 단일 `PORT`만 검사하면 Spring Boot(`SERVER_PORT`)·Django/FastAPI(`DJANGO_PORT`/`FASTAPI_PORT`)·Vite(`VITE_PORT`) 스택에서 런타임 충돌을 선제 감지할 수 없다.
 
 ```bash
-TEST_PORT="${PORT:-3000}"   # PORT가 비어 있으면 기본 3000
+# 기본 PORT가 비어 있으면 3000으로 보정 (env 미로드 케이스 폴백)
+: "${PORT:=3000}"
 
-if astra_port_in_use "$TEST_PORT"; then
-  echo "ERROR: 포트 $TEST_PORT가 이미 사용 중입니다." >&2
+# env에 정의된 후보 포트를 모두 검사. 미정의/빈 값은 건너뛴다.
+PORT_CHECK_FAILED=0
+for var in PORT SERVER_PORT DJANGO_PORT FASTAPI_PORT VITE_PORT; do
+  port_val="${!var:-}"
+  [ -z "$port_val" ] && continue
+  if astra_port_in_use "$port_val"; then
+    echo "ERROR: $var=$port_val 가 이미 사용 중입니다." >&2
+    PORT_CHECK_FAILED=1
+  fi
+done
+
+if [ "$PORT_CHECK_FAILED" = "1" ]; then
   echo "       다른 worktree의 dev 서버나 외부 프로세스를 먼저 종료한 뒤 재실행하세요." >&2
-  echo "       점유 프로세스 확인: lsof -i :$TEST_PORT" >&2
+  echo "       점유 프로세스 확인: lsof -i :<PORT>" >&2
   exit 1
 fi
-echo "✅ 포트 $TEST_PORT 사용 가능"
+
+TEST_PORT="$PORT"   # Step 2 이후에서 사용하는 대표 포트 (스택별 실제 포트는 Step 2 표 참조)
+echo "✅ 포트 사용 가능 확인 (PORT=$PORT, SERVER_PORT=${SERVER_PORT:-—}, DJANGO_PORT=${DJANGO_PORT:-—}, FASTAPI_PORT=${FASTAPI_PORT:-—}, VITE_PORT=${VITE_PORT:-—})"
 ```
 
 > **📌 테스트 실행 브랜치**: `${CURRENT_BRANCH}` (worktree: `$(pwd)`, 포트: `$TEST_PORT`)

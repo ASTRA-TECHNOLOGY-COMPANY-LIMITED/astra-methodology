@@ -363,7 +363,7 @@ Agent tool (subagent_type: "feature-dev:code-reviewer")
 2. `git fetch origin`으로 원격 최신 상태를 가져온다.
 3. `git checkout dev`로 전환한다 (`{target-branch}`가 dev가 아닌 경우에도 종료 위치는 dev로 통일).
 4. `git pull --rebase origin dev`로 최신 상태 동기화.
-5. **격리 worktree 제거**: `STARTED_FROM_ISOLATED=1`인 경우(`--start`로 미리 만들었거나 Step 4.1에서 자동 생성된 격리 worktree에서 시작한 경우)에만 제거한다:
+5. **격리 worktree 제거**: `STARTED_FROM_ISOLATED=1`인 경우(sprint worktree 안에서 호출되었거나 Step 4.1에서 자동 생성된 임시 worktree에서 시작한 경우)에만 제거한다:
    ```bash
    if [ "${STARTED_FROM_ISOLATED:-0}" = "1" ] && [ -n "${BRANCH_NAME:-}" ]; then
      astra_remove_worktree "$BRANCH_NAME"
