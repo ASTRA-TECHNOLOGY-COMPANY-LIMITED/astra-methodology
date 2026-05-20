@@ -143,7 +143,12 @@ Screen ID의 첫 segment(`DOMAIN`)는 **프로덕트 약어**다. 예:
 
 0. **메인 worktree 가드**: 격리 worktree(`.astra-worktrees/<slug>/`) 안에서 호출된 경우 중단한다. dev-sync는 메인 worktree에서만 실행한다:
    ```bash
-   source "$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh"
+   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+   if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$PLUGIN_ROOT/scripts/worktree-helpers.sh" ]; then
+     echo "ERROR: CLAUDE_PLUGIN_ROOT를 찾을 수 없습니다. 플러그인 캐시 경로를 확인하세요." >&2
+     exit 1
+   fi
+   source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
    astra_ensure_main_worktree || exit 1
    ```
 1. **현재 브랜치 확인**: `git branch --show-current`

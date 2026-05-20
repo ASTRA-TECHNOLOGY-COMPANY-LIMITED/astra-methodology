@@ -40,7 +40,12 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
    - 프로모션 모드에서 미커밋 변경사항이 있으면 경고하고 중단한다 (클린 상태에서만 실행). 미커밋 변경사항이 있다면 먼저 commit, stash, 또는 discard 후 재실행하도록 안내한다.
 3. **Worktree 헬퍼 로드**: 모든 Bash 단계에서 worktree 헬퍼를 source 한다:
    ```bash
-   source "$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh"
+   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+   if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$PLUGIN_ROOT/scripts/worktree-helpers.sh" ]; then
+     echo "ERROR: CLAUDE_PLUGIN_ROOT를 찾을 수 없습니다. 플러그인 캐시 경로를 확인하세요." >&2
+     exit 1
+   fi
+   source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
    ```
    이후 `astra_*` 함수를 사용한다.
 
