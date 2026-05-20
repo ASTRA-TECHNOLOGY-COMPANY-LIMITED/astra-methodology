@@ -49,7 +49,7 @@ HANDOFF_PROCESS_GUIDE v1.1 기반의 **Screen ID 중심 협업 패키지**를 �
 - 외부 임베드 페이지 (Notion/Slack 임베드 등)
 - 백오피스 어드민 화면 (UX 협업 불필요한 경우)
 
-해당 사례에 해당하면 이 스킬을 조기 종료하고, 대신 단순한 블루프린트(`/feature-dev`) 또는 바로 구현을 권장한다.
+해당 사례에 해당하면 이 스킬을 조기 종료하고, 대신 `/blueprint` 또는 바로 구현을 권장한다.
 
 또한 **기존 기능에는 자동 적용하지 않는다** (PDF §26). 큰 리뉴얼 시점에만 점진 적용한다.
 
@@ -78,8 +78,8 @@ HANDOFF_PROCESS_GUIDE v1.1 기반의 **Screen ID 중심 협업 패키지**를 �
 ```
 Handoff 프로세스는 해당 화면에 적용하지 않습니다.
 대신 아래 워크플로우를 권장합니다:
-- 빠른 개발: /feature-dev "{feature-description}"
-- 블루프린트만 생성: docs/blueprints/{NNN}-{feature}/blueprint.md 직접 작성
+- 청사진 작성: /blueprint {feature-slug}
+- sprint 시작 후 구현: /sprint-init → /feature-dev "..."
 종료합니다.
 ```
 → 스킬 종료.
