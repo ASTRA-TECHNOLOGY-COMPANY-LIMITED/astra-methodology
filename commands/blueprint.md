@@ -1,7 +1,7 @@
 ---
 description: 청사진(설계 문서)을 데이터 플로우·스키마·로직 설계 중심으로 작성합니다 (구현 코드 제외)
 argument-hint: "[feature-slug-or-blueprint-path] [--auto] [--from-planner=<planner-dir>]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Agent, TodoWrite
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Task, TodoWrite
 ---
 
 # /blueprint — 청사진 작성 슬래시 커맨드

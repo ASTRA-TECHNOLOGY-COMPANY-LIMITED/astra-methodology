@@ -2,7 +2,7 @@
 name: blueprint
 description: "기능에 대한 청사진(설계 문서)을 작성합니다. 구현 예제 코드를 포함하지 않고 데이터 플로우, 스키마 정의, API 계약, 시퀀스 다이어그램, 로직 설계, 그리고 구현 단계에서 사용자 결정이 필요한 HITL 트리거 조건에 집중한 10개 표준 섹션을 생성합니다. /service-planner 산출물(docs/planner/{NNN}-{slug}/)이 있으면 자동으로 로드하여 초안을 만들고, 청사진 작성 시 사람의 판단이 꼭 필요한 핵심 결정 1-3개(PK 전략, 트랜잭션 경계, 외부 의존성 동기/비동기)만 AskUserQuestion으로 묻습니다. 청사진 안에 명시된 'Section 10: HITL Triggers'는 이후 /feature-dev가 구현할 때 참조하여 꼭 필요한 결정에서만 사용자에게 묻게 만듭니다. 작성 완료 후 blueprint-reviewer 에이전트를 호출해 품질을 검증합니다. /feature-dev로 청사진을 만들 때 발생하던 코드 혼입과 과도한 HITL 문제를 해결한 전용 스킬입니다."
 argument-hint: "[feature-slug-or-blueprint-path] [--auto] [--from-planner=<planner-dir>]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Agent, TodoWrite
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Task, TodoWrite
 ---
 
 # Blueprint Skill — 청사진 작성 전용
@@ -343,7 +343,7 @@ FUNCTION registerUser(userName, emailAddress):
 | HITL-01 | T1 비즈니스 | {예: "이메일 인증 코드 유효 시간"} | {답: Section 2.3 BR-03에 "10분"으로 명시} → **자동** |
 | HITL-02 | T2 보안 | {예: "비밀번호 해싱 알고리즘 선택"} | {청사진 미명시} → **사용자 질문 필요** |
 | HITL-03 | T3 외부 의존성 | {예: "이메일 발송 라이브러리"} | {예: SendGrid/AWS SES/Mailgun} → **사용자 질문 필요** |
-| HITL-04 | T4 파괴적 | {예: "기존 TB_USER에 EMAIL_ADDR 컬럼 추가"} | {NULL 허용 → 백필 → NOT NULL 3단계로 진행} → **자동** |
+| HITL-04 | T4 파괴적 | {예: "기존 TB_USER의 USER_NM 컬럼을 FULL_NM으로 RENAME 또는 GET /api/users 응답 필드 제거"} | {청사진 미명시 — 다운스트림 호출자/마이그레이션 영향 검토 필요} → **사용자 질문 필요** |
 
 ### 10.3 HITL 질문 작성 규칙
 
@@ -458,10 +458,16 @@ options:
 ### Step 5: blueprint-reviewer 호출
 
 ```
-Task(blueprint-reviewer, "{BLUEPRINT_PATH} 품질 검증 — 10개 표준 섹션 완전성, 데이터 모델 일관성, API 계약 명확성을 확인. 코드 혼입(Section 6 외 실제 언어 코드 블록) 여부 추가 검증. Section 10의 HITL Triggers 표가 비어 있거나 미명시 결정이 누락되었는지 확인.")
+REVIEW_OUTPUT=$(Task(blueprint-reviewer, "{BLUEPRINT_PATH} 품질 검증 — 10개 표준 섹션 완전성, 데이터 모델 일관성, API 계약 명확성을 확인. 코드 혼입(Section 6 외 실제 언어 코드 블록) 여부 추가 검증. Section 10의 HITL Triggers 표가 비어 있거나 미명시 결정이 누락되었는지 확인. 응답은 Overall Score, P0/P1/P2 이슈 목록, 권장 조치를 포함한 마크다운 리포트로 작성하여 반환."))
 ```
 
-리뷰 결과를 `BLUEPRINT_DIR/review.md`에 저장하고 P0 이슈를 사용자에게 요약 보고.
+`blueprint-reviewer` 에이전트는 `disallowedTools: Write, Edit`이므로 직접 파일을 쓸 수 없다. 스킬(부모 컨텍스트)이 위 `Task()` 호출의 반환값을 받아 `Write` 도구로 `$BLUEPRINT_DIR/review.md`에 저장한다.
+
+```
+Write("$BLUEPRINT_DIR/review.md", REVIEW_OUTPUT)
+```
+
+`review.md` 작성 후 P0 이슈를 사용자에게 요약 보고. Step 6.2.5에서 `Overall Score: NN` 라인을 grep해 `REVIEW_SCORE`로 추출한다.
 
 ### Step 6: dev 브랜치 자동 커밋 (worktree 가시성 보장)
 
