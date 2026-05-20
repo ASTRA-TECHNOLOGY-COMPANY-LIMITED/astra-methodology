@@ -1,18 +1,20 @@
 ---
 name: pr-merge
-description: "PR 생성부터 코드 리뷰, 이슈 수정, 머지까지 자동화된 반복 사이클을 실행합니다. 커밋→푸시→PR 생성→코드 리뷰→수정→재리뷰→머지 워크플로우를 단일 명령으로 처리합니다."
-argument-hint: "[max-iterations] [--no-review] [--draft] [--patch|--minor|--major] [--staging] [--main] [--start <branch>]"
+description: "PR 생성부터 코드 리뷰, 이슈 수정, 머지까지 자동화된 반복 사이클을 실행합니다. 커밋→푸시→PR 생성→코드 리뷰→수정→재리뷰→머지→worktree 제거 워크플로우를 단일 명령으로 처리합니다."
+argument-hint: "[max-iterations] [--no-review] [--draft] [--patch|--minor|--major] [--staging] [--main]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 ---
 
-# ASTRA PR Review & Merge Workflow
+# ASTRA PR Review & Merge Workflow (v5.0+)
 
-커밋부터 코드 리뷰, 이슈 수정, 머지까지 전체 사이클을 자동화합니다.
+커밋부터 코드 리뷰, 이슈 수정, 머지, worktree 제거까지 전체 사이클을 자동화합니다.
 리뷰 → 수정 → 재리뷰 반복 사이클을 최대 반복 횟수까지 자동 실행합니다.
 
 **브랜치 전략**: `feature → dev → staging → main`
 
-**Worktree 격리 정책 (v4.1+)**: 작업 브랜치(feat/*, fix/*, docs/*, refactor/*, chore/* 등 공유 브랜치 외 모든 브랜치)는 `.astra-worktrees/<slug>/` 격리 디렉토리에서 작업한다. 메인 worktree는 항상 공유 브랜치(main/staging/dev/master) 중 하나를 유지하므로, 동일 저장소에서 작업하는 다른 Claude Code 세션이 브랜치 전환의 영향을 받지 않는다. 헬퍼는 `$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh`에서 source 한다.
+**Worktree 격리 정책 (v5.0+)**: sprint 단위 작업은 `/sprint-init`이 만든 `.astra-worktrees/sprint-<N>-<name>/`에서 진행한다. `/pr-merge`는 해당 worktree 안에서 호출되어야 하며, 공유 브랜치(dev)에 머지를 완료한 직후 worktree를 자동 제거하고 메인 worktree(dev)로 복귀한다. 메인 worktree는 항상 공유 브랜치(main/staging/dev/master)를 유지하므로 다른 Claude Code 세션이 브랜치 전환 영향을 받지 않는다. 헬퍼는 `$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh`에서 source 한다.
+
+> **v5.0+ 변경**: `--start` 모드는 제거됨. 모든 worktree 생성은 `/sprint-init`이 담당한다. sprint 없이 단발성으로 작업하던 사용자가 메인 worktree에서 직접 변경 후 `/pr-merge`를 호출한 경우의 폴백은 Step 4.1에서 자동 처리한다.
 
 ## Execution Procedure
 
@@ -26,18 +28,16 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 - **--patch / --minor / --major**: 버전 범프 유형 (기본값: --patch)
 - **--staging**: 프로모션 모드 — `dev` → `staging`으로 머지
 - **--main**: 프로모션 모드 — `staging` → `main`으로 머지
-- **--start <branch-name>**: Start 모드 — `dev`에서 격리 worktree만 생성하고 종료한다 (커밋·푸시·리뷰 사이클 없음). 구현 시작 전 호출용. `<branch-name>`은 `feat/`, `fix/`, `docs/`, `refactor/`, `chore/` prefix 필수. 다른 모드 옵션과 조합 불가.
 
 **모드 결정**:
-- `--start` → Start 모드 (격리 worktree 생성 후 종료)
 - `--staging` 또는 `--main` → 프로모션 모드
-- 그 외 → 기본 모드 (feature → 대상 브랜치, Step 1.1에서 결정)
+- 그 외 → 기본 모드 (sprint worktree → dev 머지)
 
 다음 사전 조건을 검증한다:
 
 1. **gh CLI 인증**: `gh auth status`를 실행하여 GitHub CLI 인증 상태를 확인한다. 인증되지 않은 경우 `gh auth login`을 안내하고 중단한다.
 2. **클린 상태 확인**: `git status`로 현재 상태를 파악한다 (커밋되지 않은 변경사항, 스테이징된 파일 등).
-   - 프로모션 모드 또는 Start 모드에서 미커밋 변경사항이 있으면 경고하고 중단한다 (둘 다 클린 상태에서만 실행). 미커밋 변경사항이 있다면 먼저 commit, stash, 또는 discard 후 재실행하도록 안내한다.
+   - 프로모션 모드에서 미커밋 변경사항이 있으면 경고하고 중단한다 (클린 상태에서만 실행). 미커밋 변경사항이 있다면 먼저 commit, stash, 또는 discard 후 재실행하도록 안내한다.
 3. **Worktree 헬퍼 로드**: 모든 Bash 단계에서 worktree 헬퍼를 source 한다:
    ```bash
    source "$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh"
@@ -45,11 +45,11 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
    이후 `astra_*` 함수를 사용한다.
 
    **모드별 worktree 위치 가드**:
-   - **Start 모드 / 프로모션 모드 (`--start`, `--staging`, `--main`)**: 메인 worktree에서만 실행 가능. 격리 worktree 안에서 호출되면 메인 worktree로 이동 후 재실행을 안내하고 중단한다:
+   - **프로모션 모드 (`--staging`, `--main`)**: 메인 worktree에서만 실행 가능. 격리 worktree 안에서 호출되면 메인 worktree로 이동 후 재실행을 안내하고 중단한다:
      ```bash
      astra_ensure_main_worktree || exit 1
      ```
-   - **기본 모드**: 격리 worktree 안에서도 실행 가능 (`--start`로 미리 만든 worktree에서 호출하는 정상 흐름). 메인 worktree에서 호출되면 Step 4.1에서 새 격리 worktree를 자동 생성한다. 격리 worktree 안에서 호출되면 Step 4에서 현재 브랜치를 작업 브랜치로 인식하고 Step 5로 직행한다.
+   - **기본 모드**: sprint worktree 안에서 호출되는 것이 정상 흐름이다. 메인 worktree에서 호출되면 Step 4.1에서 폴백으로 임시 격리 worktree를 자동 생성한다. sprint worktree 안에서 호출되면 Step 4에서 현재 브랜치를 sprint 브랜치로 인식하고 Step 5로 직행한다.
 
 ### Step 1.1: 대상 브랜치 자동 선택 (기본 모드만)
 
@@ -93,7 +93,6 @@ git fetch origin
 - **기본 모드**: 전체 캐스케이드 실행 (`main → staging → dev`)
 - **`--staging` 프로모션**: `main → staging`까지만 실행 (dev는 머지 대상이 아님)
 - **`--main` 프로모션**: 캐스케이드를 건너뛴다 (staging → main 방향이므로 역방향 동기화 불필요)
-- **Start 모드 (`--start`)**: 캐스케이드를 건너뛴다 (작업 시작 전이므로 Step 2.1의 dev pull만으로 충분)
 
 캐스케이드 실행 대상인 경우:
 
@@ -127,7 +126,6 @@ git fetch origin
 
 ### Step 3: 모드별 분기
 
-- **Start 모드** (`--start`): **Step 12**로 진행
 - **프로모션 모드** (`--staging` / `--main`): **Step 10**으로 진행
 - **기본 모드**: **Step 4**로 진행
 
@@ -145,21 +143,24 @@ CURRENT_BRANCH=$(git branch --show-current)
 
 세 가지 분기 케이스:
 
-- **격리 worktree 안 + 작업 브랜치** (`astra_is_isolated_worktree`가 true이고 현재 브랜치가 공유 브랜치가 아닌 경우): `--start`로 미리 만든 worktree에서 호출된 정상 흐름. 다음 변수를 설정하고 **Step 5**로 진행:
+- **sprint worktree 안 + 작업 브랜치** (`astra_is_isolated_worktree`가 true이고 현재 브랜치가 공유 브랜치가 아닌 경우): `/sprint-init`으로 만든 sprint worktree에서 호출된 *정상 흐름*. 다음 변수를 설정하고 **Step 5**로 진행:
   ```bash
   WT_PATH="$(pwd)"
   BRANCH_NAME="$CURRENT_BRANCH"
   STARTED_FROM_ISOLATED=1
   ```
-- **메인 worktree + 공유 브랜치(main/master/staging/dev)**: 격리 worktree 자동 생성이 필요 → **Step 4.1**로 진행.
-- **메인 worktree + 작업 브랜치(feat/fix/docs 등)**: v4.1 정책 도입 전부터 메인 worktree에서 작업 중이던 호환성 케이스. 강제 마이그레이션 없이 다음 변수를 설정하고 **Step 5**로 진행:
+  > **참고**: sprint worktree의 브랜치명은 `feat/sprint-<N>-<name>` 형식이지만, 다른 prefix(`fix/`, `docs/` 등)로 시작하는 격리 worktree도 동일하게 처리된다.
+- **메인 worktree + 공유 브랜치(main/master/staging/dev)**: `/sprint-init` 없이 dev에서 직접 변경한 폴백 케이스. 임시 격리 worktree 자동 생성 → **Step 4.1**로 진행.
+- **메인 worktree + 작업 브랜치(feat/fix/docs 등)**: v4.1 이전 정책에서 메인 worktree에서 작업 중이던 호환성 케이스. 강제 마이그레이션 없이 다음 변수를 설정하고 **Step 5**로 진행:
   ```bash
   WT_PATH="$(pwd)"
   BRANCH_NAME="$CURRENT_BRANCH"
   STARTED_FROM_ISOLATED=0
   ```
 
-### Step 4.1: 격리 worktree 작업 브랜치 자동 생성
+### Step 4.1: 폴백 — 임시 격리 worktree 자동 생성
+
+> **언제 도달하는가**: `/sprint-init` 없이 메인 worktree(dev)에서 직접 변경 후 `/pr-merge`를 호출한 사용자를 위한 폴백 경로. 정상 흐름은 `/sprint-init`이 미리 sprint worktree를 만들어두고 거기서 작업하는 것이다.
 
 1. `git status`와 `git log`로 현재 변경사항 및 최근 작업 컨텍스트를 분석하여 적절한 *희망* 브랜치명을 **자동으로 결정**한다 (예: `feat/user-auth`, `fix/login-error`). 사용자에게 묻지 않는다.
    - 변경사항의 성격을 분석하여 prefix를 결정: `feat/` (기능 추가), `fix/` (버그 수정), `docs/` (문서), `refactor/` (리팩토링), `chore/` (설정/빌드)
@@ -362,7 +363,7 @@ Agent tool (subagent_type: "feature-dev:code-reviewer")
 2. `git fetch origin`으로 원격 최신 상태를 가져온다.
 3. `git checkout dev`로 전환한다 (`{target-branch}`가 dev가 아닌 경우에도 종료 위치는 dev로 통일).
 4. `git pull --rebase origin dev`로 최신 상태 동기화.
-5. **격리 worktree 제거**: `STARTED_FROM_ISOLATED=1`인 경우(`--start`로 미리 만들었거나 Step 4.1에서 자동 생성된 격리 worktree에서 시작한 경우)에만 제거한다:
+5. **격리 worktree 제거**: `STARTED_FROM_ISOLATED=1`인 경우(sprint worktree 안에서 호출되었거나 Step 4.1에서 자동 생성된 임시 worktree에서 시작한 경우)에만 제거한다:
    ```bash
    if [ "${STARTED_FROM_ISOLATED:-0}" = "1" ] && [ -n "${BRANCH_NAME:-}" ]; then
      astra_remove_worktree "$BRANCH_NAME"
@@ -484,51 +485,6 @@ EOF
 
 ---
 
-## Start 모드 (`--start <branch>`)
-
-### Step 12: 격리 worktree 생성 및 안내
-
-구현 시작 전 격리 worktree를 미리 만들어 코드 변경이 처음부터 격리 디렉토리에서 일어나도록 한다. 커밋·푸시·리뷰 사이클은 수행하지 않으며, 경로 안내 후 종료한다. Step 1 (메인 worktree 가드 + 클린 상태 검증) 및 Step 2.1 (dev fetch+pull)은 이미 통과한 상태이다.
-
-1. **브랜치명 확보**: Step 1에서 파싱한 `--start <branch-name>` 값을 확인한다. 인자가 없으면 **AskUserQuestion**으로 사용자에게 묻는다 (예: "구현할 기능의 작업 브랜치명을 입력하세요. prefix는 feat/, fix/, docs/, refactor/, chore/ 중 하나여야 합니다").
-
-2. **브랜치명 검증**: prefix는 `feat/`, `fix/`, `docs/`, `refactor/`, `chore/` 중 하나여야 한다. 공유 브랜치명(`main`, `master`, `staging`, `dev`)은 거부한다. 그 외는 사용자에게 재입력을 요청한다.
-
-3. **격리 worktree 생성**: 헬퍼는 이미 존재하는 브랜치/디렉토리를 만나면 `-2`, `-3` suffix를 자동 부여한다.
-   ```bash
-   if ! out=$(astra_create_worktree_new "{branch-name}" "origin/dev"); then
-     exit 1
-   fi
-   IFS=$'\t' read -r BRANCH_NAME WT_PATH <<< "$out"
-   if [ -z "$WT_PATH" ] || [ ! -d "$WT_PATH" ]; then
-     echo "ERROR: worktree 경로를 확정할 수 없습니다. 헬퍼 출력: '$out'" >&2
-     exit 1
-   fi
-   ```
-   **반환된 `$BRANCH_NAME`이 실제 생성된 이름**이므로 사용자 안내에 사용한다.
-
-4. **안내 출력 후 종료** — 커밋·푸시·리뷰 사이클(Step 6 이후)에는 진입하지 않는다:
-
-   ```
-   ## 격리 worktree 생성 완료
-
-   ### worktree 정보
-   - 브랜치: {BRANCH_NAME}
-   - 경로: {WT_PATH}
-   - 베이스: origin/dev (최신)
-
-   ### 다음 단계
-   1. cd {WT_PATH}
-   2. /feature-dev "구현 프롬프트..."   # worktree 안에서 코드 작성
-   3. /pr-merge                          # 구현 완료 후 호출 → 커밋·리뷰·머지 사이클
-   ```
-
-   사용자가 새 Claude Code 세션을 격리 worktree에서 시작하거나, 동일 세션에서 작업 디렉토리를 이동해 후속 명령을 실행한다. 기본 모드 `/pr-merge`는 격리 worktree 안에서 호출하면 Step 4에서 현재 브랜치를 작업 브랜치로 인식하고 Step 5로 직행한다.
-
-> **참고**: `/sprint-init`이 생성한 prompt-map의 1.4 단계가 이 명령 호출을 자동으로 안내한다.
-
----
-
 ## Quick Run Examples
 
 ```
@@ -561,19 +517,13 @@ EOF
 
 # 프로모션 + 리뷰 스킵
 /pr-merge --staging --no-review
-
-# Start 모드 — 구현 시작 전 격리 worktree 생성
-/pr-merge --start feat/user-auth
-
-# Start 모드 — 인자 없이 (대화형 입력)
-/pr-merge --start
 ```
 
 ## Notes
 
 - **브랜치 전략**: `feature → dev → staging → main` 순서로 코드를 승격한다.
-- **Worktree 격리 (v4.1+)**: 작업 브랜치는 메인 저장소 루트의 `.astra-worktrees/<slug>/`에서 작업하므로, 메인 worktree의 다른 Claude Code 세션이 브랜치 전환 영향을 받지 않는다. 공유 브랜치(main/staging/dev/master) 간 캐스케이드 머지·프로모션은 메인 worktree에서 직접 수행한다. 작업 종료(머지 완료) 후 격리 worktree는 자동 제거되고, 메인 worktree는 `dev`로 복귀한다. 충돌 등으로 워크플로우가 중단되면 사용자가 격리 worktree에 남는다(자동 정리되지 않음) — 해결 후 `/pr-merge` 재실행으로 이어진다.
-- **Start 모드 (`--start <branch>`, v4.2+)**: 구현 시작 전 격리 worktree를 미리 만드는 모드. `dev` pull 후 worktree 생성·안내·종료만 수행하며 커밋·리뷰·머지 사이클은 진입하지 않는다. `/sprint-init` prompt-map의 1.4 단계에서 호출되도록 설계되었으며, `--start`를 생략하고 `dev`에서 코딩 후 `/pr-merge`를 호출하는 기존 흐름도 그대로 작동한다(Step 4.1 폴백). 기본 모드 `/pr-merge`는 격리 worktree 안에서 호출되면 현재 브랜치를 작업 브랜치로 인식하고 머지 사이클에 직행한다 — Start 모드 + cd + `/pr-merge` 조합이 권장 흐름이다.
+- **Worktree 정책 (v5.0+)**: sprint worktree는 `/sprint-init`이 생성한다 (`.astra-worktrees/sprint-<N>-<name>/`). `/pr-merge`는 그 안에서 호출되어 dev에 머지를 완료한 직후 worktree를 자동 제거하고 메인 worktree(dev)로 복귀한다. 공유 브랜치(main/staging/dev/master) 간 캐스케이드 머지·프로모션은 메인 worktree에서 직접 수행한다. 충돌 등으로 워크플로우가 중단되면 worktree는 그대로 남는다 — 해결 후 `/pr-merge` 재실행으로 이어진다.
+- **폴백 흐름**: `/sprint-init` 없이 메인 worktree(dev)에서 직접 변경한 사용자가 `/pr-merge`를 호출하면 Step 4.1에서 임시 격리 worktree를 자동 생성한다. 단발성 작업에 한해 사용하고, 일반적으로는 `/sprint-init`부터 시작하는 것이 권장된다.
 - **공통 전처리**: 모든 모드에서 실행 전 `main` / `staging` / `dev`를 pull 받는다. 캐스케이드 머지는 모드에 따라 범위가 다르다: 기본 모드는 전체(`main → staging → dev`), `--staging` 프로모션은 `main → staging`까지만, `--main` 프로모션은 건너뛴다.
 - **기본 모드**: 머지 대상 브랜치는 자동으로 `dev`로 설정된다 (사용자에게 묻지 않음). `main`/`master`/`staging`/`dev` 브랜치에서 실행하면 자동으로 작업 브랜치를 생성한다. 브랜치명도 변경사항을 분석하여 자동 결정한다. 원격에 `{target-branch}`가 없으면 기본 브랜치로부터 자동 생성한다.
 - **프로모션 모드 (`--staging`)**: `dev` → `staging`으로 승격한다. 작업 브랜치 생성/커밋 단계를 건너뛰고 PR 기반 머지에 집중한다.

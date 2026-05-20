@@ -155,22 +155,21 @@ For each scenario, specify:
 - **Verification Method**: snapshot / console / network / server-log / db-query
 - **Test Data**: Required input data for the scenario
 
-### Step 5.5: Switch to dev Branch
+### Step 5.5: Worktree-Aware Branch Handling (v5.0+)
 
-Before generating output files, switch to the `dev` branch and sync with the latest state. Do not create a work branch — work directly on `dev`. Work branch creation is handled automatically by `/pr-merge`.
+Test scenario 파일은 현재 worktree의 현재 브랜치에 그대로 작성한다. 이전 정책의 dev 강제 전환은 sprint worktree 모델에서 더 이상 필요 없다.
 
-0. **Main worktree guard**: Abort if invoked from inside an isolated worktree (`.astra-worktrees/<slug>/`). Dev-sync runs in the main worktree only:
-   ```bash
-   source "$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh"
-   astra_ensure_main_worktree || exit 1
-   ```
-1. **Check current branch**: `git branch --show-current`
-2. **Skip if already on `dev`**: If the current branch is `dev`, skip steps 3–5 and run only the pull (`git pull origin dev`)
-3. **Preserve uncommitted changes**: Check with `git status --porcelain`; if there are changes, save them with `git stash --include-untracked` (includes untracked files)
-4. **Switch to dev and sync**: `git fetch origin dev && git checkout dev && git pull origin dev`
-5. **Restore stash**: If step 3 stashed changes, restore them with `git stash pop`. On conflict, report the conflicting files to the user and request manual resolution.
+```bash
+source "$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh"
+CURRENT_BRANCH=$(git branch --show-current)
+```
 
-> **Note**: If the `dev` branch does not exist, fall back to `main` or `master`. If no default branch exists, work on the current branch.
+분기:
+- **sprint worktree (`astra_is_isolated_worktree` true)**: 현재 sprint 브랜치(`feat/sprint-<N>-<name>` 등)에 그대로 작성. dev 머지 금지 — 머지는 `/pr-merge`가 담당한다.
+- **메인 worktree + 공유 브랜치(dev/main/master/staging)**: 현재 브랜치에 그대로 작성. 단발성 작업 폴백.
+- **메인 worktree + 작업 브랜치**: v4.1 이전 호환성 케이스. 현재 브랜치에 그대로 작성.
+
+> **Note**: 이전 v4.x에서는 메인 worktree 가드와 dev 강제 전환이 있었다. v5.0+에서는 sprint worktree 모델로 전환되어 가드를 제거했다.
 
 ### Step 6: Generate Scenario Files
 
