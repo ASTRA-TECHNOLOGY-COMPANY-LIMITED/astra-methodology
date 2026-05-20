@@ -100,6 +100,7 @@ Sprint Progress:
 
 Planning:
   /service-planner [feature]     Design Thinking planning (6 deliverables: market analysis, interview, requirements+KPI, use cases+journey map, IA+wireframe, features+risk)
+  /blueprint [feature]           Blueprint authoring — 10 sections (data flow / schema DDL / API contract / sequence / pseudocode logic / HITL Triggers). No implementation code. Auto-loads /service-planner artifacts. /feature-dev reads Section 10 to gate HITL during implementation.
   /handoff-publish [feature]     Generate UX/UI/Dev/QA handoff package ({feature}-handoff/ with 14 files)
 
 Slack Integration:
@@ -195,6 +196,7 @@ Handoff Package (branch root: {feature}-handoff/):
 
 Workflow:
   /service-planner feature   → 기획 산출물 (docs/planner/...)
+  /blueprint feature         → 청사진 (docs/blueprints/...) — data flow + schema + logic + Section 10 HITL Triggers
   /handoff-publish feature   → Handoff 패키지 생성
   UX: 1-screen-registry.md 보완 + Loom 녹화
   UI: Figma 프레임명 = Screen ID
