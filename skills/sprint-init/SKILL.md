@@ -638,7 +638,7 @@ worktree 제거 직후, **메인 worktree에서** 다음을 수행한다:
 
 > **경로 주의**: worktree가 제거되었으므로 `auto-state.yaml`은 이제 *메인 worktree*의 `docs/sprints/sprint-{N}-{sprint-name}/`에 존재한다 (Sprint 브랜치 머지로 dev에 반영된 파일). 만약 메인 worktree에 해당 경로가 없으면 (sprint 브랜치가 dev로 머지되어 파일이 따라왔어야 함) `git pull origin dev`로 동기화 후 다시 확인.
 
-##### 5.6.D Final Silent Save (선택)
+##### 5.6.D Final Silent Save — 생략 후 자동 진행
 
 5.7 보고서는 일반적으로 컨텍스트 부담이 작으므로 별도 silent save는 생략한다. 5.6.C에서 이미 머지 결과(pr_url, merge_success)를 yaml에 기록했으므로 5.7에서는 그 yaml만 다시 읽으면 된다 — exit/사용자 확인 없이 곧바로 Step 5.7로 진행한다.
 
