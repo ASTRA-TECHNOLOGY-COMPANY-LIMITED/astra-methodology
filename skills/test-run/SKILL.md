@@ -17,13 +17,22 @@ The LLM directly monitors server logs to detect errors and verifies page behavio
 
 테스트는 **반드시 `dev` 브랜치에서 실행**한다. 현재 브랜치의 변경사항을 dev에 머지한 뒤 테스트를 진행한다.
 
-#### A. Check Current Branch
+#### A. Main worktree guard
+
+격리 worktree(`.astra-worktrees/<slug>/`) 안에서 호출된 경우 중단한다. test-run의 dev 머지 파이프라인은 메인 worktree에서만 실행한다 — 격리 worktree에 있다면 사용자가 `/pr-merge`로 머지를 마친 뒤 메인 worktree(dev)에서 재실행해야 한다:
+
+```bash
+source "$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh"
+astra_ensure_main_worktree || exit 1
+```
+
+#### B. Check Current Branch
 
 ```bash
 CURRENT_BRANCH=$(git branch --show-current)
 ```
 
-#### B. Branch Handling
+#### C. Branch Handling
 
 | 현재 브랜치 | 처리 방법 |
 |------------|----------|
@@ -31,7 +40,7 @@ CURRENT_BRANCH=$(git branch --show-current)
 | `feat/*`, `fix/*` 등 작업 브랜치 | 변경사항 커밋 → dev에 머지 → dev 체크아웃 |
 | `main`, `master` | ⚠️ 경고 표시 후 dev 브랜치로 전환 |
 
-#### C. Commit Unstaged Changes (if any)
+#### D. Commit Unstaged Changes (if any)
 
 현재 브랜치에 커밋되지 않은 변경사항이 있는 경우:
 
@@ -48,7 +57,7 @@ git commit -m "wip: pre-test commit on {CURRENT_BRANCH}"
 
 변경사항이 없으면 이 단계를 건너뛴다.
 
-#### D. Switch to dev and Merge
+#### E. Switch to dev and Merge
 
 현재 브랜치가 `dev`가 아닌 경우:
 
@@ -76,7 +85,7 @@ git merge {CURRENT_BRANCH} --no-edit
    - **머지 취소** — `git merge --abort` 후 워크플로우 종료
 3. 충돌이 해결되면 `git commit --no-edit`으로 머지 완료
 
-#### E. Confirm dev Branch
+#### F. Confirm dev Branch
 
 ```bash
 # dev 브랜치에 있는지 최종 확인
