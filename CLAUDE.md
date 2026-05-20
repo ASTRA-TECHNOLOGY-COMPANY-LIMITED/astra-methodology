@@ -72,23 +72,27 @@ The plugin auto-applies international code standards when implementing phone num
 
 Data files: `iso_3166_1_countries.json` (249 countries), `iso_3166_2_regions.json` (653 regions), `country_calling_codes.json` (245 calling codes).
 
-### Worktree Isolation (v4.1+)
+### Worktree Isolation (v5.0+)
 
-`/pr-merge`와 dev-sync 스킬은 동일 저장소에서 동시에 작업하는 다른 Claude Code 세션을 보호하기 위해 **격리 worktree** 정책을 따른다.
+ASTRA는 sprint 단위로 격리된 worktree를 사용해 다중 Claude Code 세션 환경에서 sprint 간 코드/포트 간섭을 방지한다.
 
-- **공유 브랜치** (`main`, `master`, `staging`, `dev`): 메인 worktree에서 직접 작업. 캐스케이드 머지(`main→staging→dev`)와 프로모션 (`/pr-merge --staging`, `/pr-merge --main`)도 메인 worktree에서 진행한다.
-- **격리 브랜치** (`feat/*`, `fix/*`, `docs/*`, `refactor/*`, `chore/*` 등): `/pr-merge`가 `.astra-worktrees/<slug>/`에 격리 worktree를 생성해 거기서 작업한다. 슬러그는 `feat/foo-bar` → `feat-foo-bar` (슬래시→하이픈) 규칙. 머지 완료 후 worktree는 자동 제거되고 메인 worktree는 `dev`로 복귀한다. 충돌·중단 시 worktree는 그대로 남으며, 사용자가 해결 후 `/pr-merge` 재실행으로 이어진다.
-- **dev-sync 스킬 가드**: `service-planner`, `handoff-publish`, `manual-generator`, `slack-import`, `sprint-init`, `test-scenario`, `catalog-generator`, `test-run` 8종은 격리 worktree 안에서 호출되면 거부한다 — 메인 worktree(`dev`)에서 실행해야 한다.
-- **헬퍼 스크립트**: `scripts/worktree-helpers.sh` (source 해서 사용). 주요 함수: `astra_ensure_main_worktree`, `astra_create_worktree_new`, `astra_remove_worktree`, `astra_is_isolated_worktree`. 격리 worktree 판정은 `git rev-parse --git-dir` vs `--git-common-dir` 비교 (경로 매칭 아님).
+- **공유 브랜치** (`main`, `master`, `staging`, `dev`): 메인 worktree에서 유지. 캐스케이드 머지(`main→staging→dev`)와 프로모션(`/pr-merge --staging`, `/pr-merge --main`)도 메인 worktree에서 진행한다.
+- **Sprint worktree** (`.astra-worktrees/sprint-<N>-<name>/`): `/sprint-init`이 생성하며 `feat/sprint-<N>-<name>` 브랜치를 보유한다. 해당 sprint의 *모든* feature 코드·테스트가 이 worktree 안에서 작성·커밋·푸시된다. `/pr-merge`가 dev 머지를 완료한 직후 worktree를 자동 제거하고 메인 worktree(dev)로 복귀한다.
+- **포트 격리**: `/sprint-init`이 worktree 안에 `.astra-worktree.env`를 작성한다. 포트 베이스는 `base + 100*N` (예: sprint 2 → 3200). 충돌 감지 시 헬퍼가 +100씩 시프트한다. `/test-run`은 이 파일을 source 해 sprint 전용 포트로 서버를 띄우고, 종료 시 4단계 cleanup(shell 정지 → SIGTERM → SIGKILL+자식 → 검증)으로 포트를 풀어준다.
+- **dev-sync 스킬 가드** (메인 worktree 전용, 5종): `service-planner`, `handoff-publish`, `manual-generator`, `slack-import`, `catalog-generator` — 모두 계획 단계 산출물이라 sprint 시작 전 메인 worktree(`dev`)에서 실행한다. v4.x에서 가드 대상이었던 `sprint-init`은 v5.0+에서 worktree 생성을 담당하므로 여전히 메인 worktree 전용이다. `test-scenario`, `test-run`은 v5.0+에서 가드를 제거해 sprint worktree 안에서 실행할 수 있다.
+- **헬퍼 스크립트**: `scripts/worktree-helpers.sh` (source 해서 사용). 주요 함수: `astra_ensure_main_worktree`, `astra_create_sprint_worktree`, `astra_remove_sprint_worktree`, `astra_compute_port_base`, `astra_port_in_use`, `astra_write_worktree_env`, `astra_is_isolated_worktree`. 격리 worktree 판정은 `git rev-parse --git-dir` vs `--git-common-dir` 비교 (경로 매칭 아님).
 - **`.gitignore`**: target project 초기화(`init-project.sh`) 시 `.astra-worktrees/`를 자동 등록한다.
-- **권장 워크플로우 (v4.2+, 코드 변경 격리 보장)**:
-  1. `/sprint-init` — 메인 worktree(`dev`)에서 prompt-map 생성
-  2. `/pr-merge --start feat/<feature-name>` — 메인 worktree에서 호출, 격리 worktree 생성 + 안내 출력 후 종료
-  3. `cd .astra-worktrees/feat-<feature-name>/`
-  4. `/feature-dev "..."` — 격리 worktree 내에서 코드 작성 (`/feature-dev`는 외부 plugin이라 ASTRA의 worktree 가드 밖이지만, 이미 격리 디렉토리에서 호출하므로 자동으로 격리됨)
-  5. `/pr-merge` — 격리 worktree에서 호출 → 커밋·리뷰·머지 사이클 (기본 모드 `/pr-merge`는 격리 worktree 안에서도 허용; Step 4에서 현재 브랜치를 작업 브랜치로 인식하고 Step 5로 직행)
+- **권장 워크플로우 (v5.0+)**:
+  1. `/sprint-init` — 메인 worktree(`dev`)에서 호출. sprint worktree 생성 + `.astra-worktree.env` 작성 + prompt-map/progress/retrospective를 worktree 안에 작성 후 cd 안내.
+  2. `cd .astra-worktrees/sprint-<N>-<name>/`
+  3. `/feature-dev "..."` — sprint worktree 내에서 feature별 코드 작성 (prompt-map 1.1~1.4 순서대로)
+  4. `/test-run` — sprint worktree 내에서 통합 테스트 (sprint 전용 포트 사용, 종료 시 포트 자동 해제)
+  5. `/pr-merge` — sprint worktree 내에서 호출 → 커밋·리뷰·dev 머지·worktree 자동 제거 → 메인 worktree(dev)로 복귀
 
-  `/pr-merge --start`를 생략하고 `dev`에서 직접 코딩한 뒤 `/pr-merge`를 호출하는 기존 흐름도 그대로 작동한다(Step 4.1 폴백). 다중 Claude Code 세션 환경에서는 `--start` 사용을 권장한다.
+  `/sprint-init` 없이 메인 worktree에서 직접 변경 후 `/pr-merge`를 호출하는 단발성 흐름도 폴백으로 지원된다(`/pr-merge` Step 4.1이 임시 worktree를 생성).
+- **트레이드오프**: sprint당 단일 worktree = sprint당 PR 1개. feature별 코드 리뷰 granularity가 사라지고 롤백 단위가 sprint이다. 작은 단위 리뷰가 필요하면 sprint를 작게 끊거나 폴백(메인 worktree + `/pr-merge`)을 사용한다.
+
+> **v4.x → v5.0 breaking changes**: `/pr-merge --start <branch>` 모드가 제거되었다. `/test-run`이 더 이상 dev 머지·푸시를 수행하지 않으며 (그 역할은 `/pr-merge`로 이관) 머지 후 dev→staging 자동 프로모션 안내도 제거되었다. `test-scenario`/`test-run` 메인 worktree 가드는 해제되었다.
 
 ### Hooks Architecture
 
