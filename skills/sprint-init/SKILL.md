@@ -18,7 +18,8 @@ Creates a sprint-level isolated worktree, writes port-isolated env settings, and
 Sprint worktree를 *생성*하는 명령이므로 메인 worktree에서만 실행한다. 이미 격리 worktree 안이면 거부:
 
 ```bash
-source "$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
 astra_ensure_main_worktree || exit 1
 ```
 

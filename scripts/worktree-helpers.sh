@@ -12,7 +12,8 @@
 #   - Worktrees are ephemeral: created on demand, removed when the task ends.
 #
 # Usage:
-#   source "$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh"
+#   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+#   source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
 #   astra_ensure_main_worktree || exit 1
 #   wt_path=$(astra_create_worktree "feat/foo-bar" "origin/dev") || exit 1
 #   ...

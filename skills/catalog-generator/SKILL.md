@@ -173,7 +173,8 @@ Before generating output files, switch to the `dev` branch and sync with the lat
 
 0. **Main worktree guard**: Abort if invoked from inside an isolated worktree (`.astra-worktrees/<slug>/`). Dev-sync runs in the main worktree only:
    ```bash
-   source "$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh"
+   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+   source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
    astra_ensure_main_worktree || exit 1
    ```
 1. **Check current branch**: `git branch --show-current`

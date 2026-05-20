@@ -20,7 +20,8 @@ The LLM directly monitors server logs to detect errors and verifies page behavio
 #### A. Detect Worktree Context
 
 ```bash
-source "$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
 
 CURRENT_BRANCH=$(git branch --show-current)
 if astra_is_isolated_worktree; then

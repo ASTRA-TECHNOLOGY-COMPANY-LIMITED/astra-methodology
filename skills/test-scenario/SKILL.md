@@ -160,7 +160,8 @@ For each scenario, specify:
 Test scenario 파일은 현재 worktree의 현재 브랜치에 그대로 작성한다. 이전 정책의 dev 강제 전환은 sprint worktree 모델에서 더 이상 필요 없다.
 
 ```bash
-source "$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
 CURRENT_BRANCH=$(git branch --show-current)
 ```
 
