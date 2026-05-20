@@ -11,6 +11,15 @@ Creates prompt maps and retrospective templates for a new sprint.
 
 ## Execution Procedure
 
+### Step 0: Main Worktree Guard
+
+Before any user interaction, abort if invoked from inside an isolated worktree (`.astra-worktrees/<slug>/`). Dev-sync runs in the main worktree only:
+
+```bash
+source "$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh"
+astra_ensure_main_worktree || exit 1
+```
+
 ### Step 1: Confirm Sprint Number and Sprint Name
 
 Parse from `$ARGUMENTS`:

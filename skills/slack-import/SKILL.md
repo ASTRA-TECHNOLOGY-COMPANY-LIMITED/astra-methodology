@@ -285,6 +285,11 @@ List의 스키마에서 상태(status) 관련 컬럼을 식별한다:
 
 블루프린트 파일을 생성하기 전에, `dev` 브랜치로 전환하고 최신 상태로 동기화한다. 작업 브랜치는 생성하지 않으며, `dev`에서 직접 작업한다. 작업 브랜치 생성은 `/pr-merge` 실행 시 자동으로 처리된다.
 
+0. **메인 worktree 가드**: 격리 worktree(`.astra-worktrees/<slug>/`) 안에서 호출된 경우 중단한다. dev-sync는 메인 worktree에서만 실행한다:
+   ```bash
+   source "$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh"
+   astra_ensure_main_worktree || exit 1
+   ```
 1. **현재 브랜치 확인**: `git branch --show-current`
 2. **이미 `dev` 브랜치인 경우 스킵**: 현재 브랜치가 `dev`이면 아래 3~5단계를 건너뛰고 pull만 실행한다 (`git pull origin dev`)
 3. **미커밋 변경사항 보존**: `git status --porcelain`으로 확인하여 변경사항이 있으면 `git stash --include-untracked`로 임시 저장한다 (untracked 파일도 포함)
