@@ -61,9 +61,14 @@ astra_is_isolated_worktree() {
   local git_dir common_dir
   git_dir=$(git rev-parse --git-dir 2>/dev/null) || return 1
   common_dir=$(git rev-parse --git-common-dir 2>/dev/null) || return 1
+  # `.git`이 파일(submodule worktree)인 경우 실제 gitdir 디렉토리 경로로 정규화.
+  # 파일 경로를 그대로 비교하면 디렉토리인 common_dir와 결코 일치하지 않아 오탐이 발생한다.
+  if [ -f "$git_dir" ]; then
+    git_dir=$(git rev-parse --absolute-git-dir 2>/dev/null) || return 1
+  fi
   # Normalize both to absolute paths for comparison.
-  git_dir=$(cd "$git_dir" && pwd) 2>/dev/null || git_dir=$(realpath "$git_dir" 2>/dev/null)
-  common_dir=$(cd "$common_dir" && pwd) 2>/dev/null || common_dir=$(realpath "$common_dir" 2>/dev/null)
+  git_dir=$(cd "$git_dir" && pwd 2>/dev/null) || git_dir=$(realpath "$git_dir" 2>/dev/null)
+  common_dir=$(cd "$common_dir" && pwd 2>/dev/null) || common_dir=$(realpath "$common_dir" 2>/dev/null)
   [ "$git_dir" != "$common_dir" ]
 }
 
@@ -197,6 +202,18 @@ astra_create_worktree_existing() {
   local base_slug="$(astra_branch_to_slug "$branch")"
   local root slug n=2
   root=$(astra_main_worktree_root) || return 1
+
+  # 해당 branch가 이미 다른 worktree에 체크아웃되어 있으면 즉시 실패 (git worktree add는
+  # "already checked out at <path>"로 거부하지만, 호출자가 원인을 명확히 알 수 있도록 선검사).
+  local already_checked_out
+  already_checked_out=$(git worktree list --porcelain 2>/dev/null | awk -v b="refs/heads/$branch" '
+    /^branch / && $2==b { print "yes"; exit }
+  ')
+  if [ "$already_checked_out" = "yes" ]; then
+    echo "ERROR: '$branch'는 이미 다른 worktree에 체크아웃되어 있습니다. 기존 worktree를 사용하거나 제거 후 다시 시도하세요." >&2
+    return 1
+  fi
+
   slug="$base_slug"
   while true; do
     local path="$root/.astra-worktrees/$slug"

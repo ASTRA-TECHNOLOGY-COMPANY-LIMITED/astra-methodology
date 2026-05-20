@@ -83,10 +83,8 @@ git fetch origin
 
 상위 브랜치의 변경사항을 하위 브랜치로 순차적으로 머지한다. 원격에 존재하는 브랜치만 대상으로 한다.
 
-**모드별 캐스케이드 범위**:
-- **기본 모드 (`{target-branch}` = `dev`)**: 전체 캐스케이드 실행 (`main → staging → dev`)
-- **기본 모드 (`{target-branch}` = `staging`)**: `main → staging`까지만 실행 (dev로의 캐스케이드 불필요)
-- **기본 모드 (`{target-branch}` = 기타)**: 전체 캐스케이드 실행 (`main → staging → dev`). 단, `{target-branch}` 자체는 캐스케이드 대상이 아니므로 Step 5에서 `origin/{target-branch}`와 머지하여 동기화한다.
+**모드별 캐스케이드 범위** (Step 1.1에서 기본 모드의 `{target-branch}`는 항상 `dev`로 고정됨):
+- **기본 모드**: 전체 캐스케이드 실행 (`main → staging → dev`)
 - **`--staging` 프로모션**: `main → staging`까지만 실행 (dev는 머지 대상이 아님)
 - **`--main` 프로모션**: 캐스케이드를 건너뛴다 (staging → main 방향이므로 역방향 동기화 불필요)
 
@@ -131,9 +129,9 @@ git fetch origin
 
 ### Step 4: 작업 브랜치 확인
 
-현재 브랜치가 `main`, `master`, `staging`, `dev`, 또는 `{target-branch}`인지 확인한다.
+현재 브랜치가 공유 브랜치(`main`, `master`, `staging`, `dev`) 중 하나인지 확인한다 (Step 1.1에서 `{target-branch}`는 항상 `dev`로 고정되므로 별도 분기 불필요).
 
-- **공유 브랜치(main/master/staging/dev) 또는 `{target-branch}`에 있는 경우**: 격리 worktree 자동 생성이 필요 → **Step 4.1**로 진행
+- **공유 브랜치(main/master/staging/dev)에 있는 경우**: 격리 worktree 자동 생성이 필요 → **Step 4.1**로 진행
 - **이미 작업 브랜치(feature, fix, docs 등)에 메인 worktree에서 머물러 있는 경우**: 사용자가 정책 도입 전부터 메인 worktree에서 작업 중이던 케이스. 그대로 사용 → **Step 5**로 진행 (강제 마이그레이션하지 않음)
 
 ### Step 4.1: 격리 worktree 작업 브랜치 자동 생성
@@ -343,7 +341,13 @@ Agent tool (subagent_type: "feature-dev:code-reviewer")
    fi
    ```
    `git worktree remove`가 실패하면 (`{work-tree-path}`에 dirty 변경사항 등) 헬퍼는 경고만 출력하고 워크플로우는 계속 진행한다.
-6. **머지된 로컬 브랜치 삭제**: PR이 실제로 머지 완료된 경우만 `git branch -d "$BRANCH_NAME"` (안전 삭제 — 미머지면 실패). 미머지로 실패하면 사용자에게 안내만 하고 강제 삭제하지 않는다.
+6. **머지된 로컬 브랜치 삭제**: Step 4.1을 통해 격리 worktree를 생성한 경우(`$WT_PATH`와 `$BRANCH_NAME`이 모두 설정된 경우)에만 실행한다. PR이 실제로 머지 완료된 경우만 `git branch -d "$BRANCH_NAME"` (안전 삭제 — 미머지면 실패):
+   ```bash
+   if [ -n "${WT_PATH:-}" ] && [ -n "${BRANCH_NAME:-}" ]; then
+     git branch -d "$BRANCH_NAME" || echo "INFO: $BRANCH_NAME 삭제 건너뜀 (미머지 또는 원격에서 이미 삭제됨)"
+   fi
+   ```
+   Step 4.1을 거치지 않고 이미 작업 브랜치에 머물러 있던 경우(Step 4 경로 b)는 현재 브랜치가 메인 worktree에 체크아웃된 상태라 `git branch -d`로 삭제할 수 없으므로 건너뛴다. 미머지로 실패하면 사용자에게 안내만 하고 강제 삭제하지 않는다.
 7. 최종 요약을 출력한다:
 
 > **참고**: 기본 모드에서는 버전 범프를 수행하지 않는다. 버전 범프는 `--main` 프로모션 (Step 11)에서만 실행된다.
@@ -490,7 +494,7 @@ EOF
 
 - **브랜치 전략**: `feature → dev → staging → main` 순서로 코드를 승격한다.
 - **Worktree 격리 (v4.1+)**: 작업 브랜치는 메인 저장소 루트의 `.astra-worktrees/<slug>/`에서 작업하므로, 메인 worktree의 다른 Claude Code 세션이 브랜치 전환 영향을 받지 않는다. 공유 브랜치(main/staging/dev/master) 간 캐스케이드 머지·프로모션은 메인 worktree에서 직접 수행한다. 작업 종료(머지 완료) 후 격리 worktree는 자동 제거되고, 메인 worktree는 `dev`로 복귀한다. 충돌 등으로 워크플로우가 중단되면 사용자가 격리 worktree에 남는다(자동 정리되지 않음) — 해결 후 `/pr-merge` 재실행으로 이어진다.
-- **공통 전처리**: 모든 모드에서 실행 전 `main` / `staging` / `dev`를 pull 받는다. 캐스케이드 머지는 모드와 `{target-branch}`에 따라 범위가 다르다: 기본 모드에서 `{target-branch}` = `dev`이면 전체(`main → staging → dev`), `{target-branch}` = `staging`이면 `main → staging`만, `--staging` 프로모션에서는 `main → staging`만, `--main` 프로모션에서는 건너뛴다.
+- **공통 전처리**: 모든 모드에서 실행 전 `main` / `staging` / `dev`를 pull 받는다. 캐스케이드 머지는 모드에 따라 범위가 다르다: 기본 모드는 전체(`main → staging → dev`), `--staging` 프로모션은 `main → staging`까지만, `--main` 프로모션은 건너뛴다.
 - **기본 모드**: 머지 대상 브랜치는 자동으로 `dev`로 설정된다 (사용자에게 묻지 않음). `main`/`master`/`staging`/`dev` 브랜치에서 실행하면 자동으로 작업 브랜치를 생성한다. 브랜치명도 변경사항을 분석하여 자동 결정한다. 원격에 `{target-branch}`가 없으면 기본 브랜치로부터 자동 생성한다.
 - **프로모션 모드 (`--staging`)**: `dev` → `staging`으로 승격한다. 작업 브랜치 생성/커밋 단계를 건너뛰고 PR 기반 머지에 집중한다.
 - **프로모션 모드 (`--main`)**: `staging` → `main`으로 승격한다. 릴리스 프로모션이므로 버전 범프가 이 단계에서 실행된다.

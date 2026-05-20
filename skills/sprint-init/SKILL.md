@@ -11,6 +11,15 @@ Creates prompt maps and retrospective templates for a new sprint.
 
 ## Execution Procedure
 
+### Step 0: Main Worktree Guard
+
+Before any user interaction, abort if invoked from inside an isolated worktree (`.astra-worktrees/<slug>/`). Dev-sync runs in the main worktree only:
+
+```bash
+source "$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh"
+astra_ensure_main_worktree || exit 1
+```
+
 ### Step 1: Confirm Sprint Number and Sprint Name
 
 Parse from `$ARGUMENTS`:
@@ -27,11 +36,6 @@ When scanning existing directories, extract the sprint number from directory nam
 
 Before generating output files, switch to the `dev` branch and sync with the latest state. Do not create a work branch — work directly on `dev`. Work branch creation is handled automatically by `/pr-merge`.
 
-0. **Main worktree guard**: Abort if invoked from inside an isolated worktree (`.astra-worktrees/<slug>/`). Dev-sync runs in the main worktree only:
-   ```bash
-   source "$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh"
-   astra_ensure_main_worktree || exit 1
-   ```
 1. **Check current branch**: `git branch --show-current`
 2. **Skip if already on `dev`**: If the current branch is `dev`, skip steps 3–5 and run only the pull (`git pull origin dev`)
 3. **Preserve uncommitted changes**: Check with `git status --porcelain`; if there are changes, save them with `git stash --include-untracked` (includes untracked files)
