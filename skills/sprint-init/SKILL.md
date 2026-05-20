@@ -80,7 +80,13 @@ write test cases to docs/tests/test-cases/sprint-{N}/{feature-name}-test-cases.m
 Use Given-When-Then format, include unit/integration/edge cases.
 Do not modify any code yet."
 
-### 1.4 Implementation Prompt
+### 1.4 Start Isolated Worktree
+/pr-merge --start feat/{feature-name}
+
+> 이 명령은 `.astra-worktrees/feat-{feature-name}/`에 격리 worktree를 생성하고 안내를 출력한 후 종료합니다.
+> 출력된 경로로 이동(`cd .astra-worktrees/feat-{feature-name}/`)한 뒤 다음 1.5 프롬프트를 실행하세요. 다중 Claude Code 세션 환경에서 코드 변경이 처음부터 격리 디렉토리에서 일어나도록 보장합니다.
+
+### 1.5 Implementation Prompt
 /feature-dev "Strictly follow the contents of docs/blueprints/{NNN}-{feature-name}/blueprint.md and
 docs/database/database-design.md to proceed with development.
 Write tests referencing docs/tests/test-cases/sprint-{N}/{feature-name}-test-cases.md,
