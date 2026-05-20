@@ -13,86 +13,90 @@ The LLM directly monitors server logs to detect errors and verifies page behavio
 
 ## Execution Procedure
 
-### Step 0: Prepare dev Branch (Pre-merge)
+### Step 0: Worktree Context & Port Isolation (v5.0+)
 
-테스트는 **반드시 `dev` 브랜치에서 실행**한다. 현재 브랜치의 변경사항을 dev에 머지한 뒤 테스트를 진행한다.
+테스트는 **현재 worktree의 현재 브랜치에서 실행**한다. 이전 정책의 dev 강제 머지는 sprint worktree 모델에서 더 이상 필요 없다 — 머지는 `/pr-merge`가 담당한다.
 
-#### A. Main worktree guard
-
-격리 worktree(`.astra-worktrees/<slug>/`) 안에서 호출된 경우 중단한다. test-run의 dev 머지 파이프라인은 메인 worktree에서만 실행한다 — 격리 worktree에 있다면 사용자가 `/pr-merge`로 머지를 마친 뒤 메인 worktree(dev)에서 재실행해야 한다:
+#### A. Detect Worktree Context
 
 ```bash
 source "$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh"
-astra_ensure_main_worktree || exit 1
-```
 
-#### B. Check Current Branch
-
-```bash
 CURRENT_BRANCH=$(git branch --show-current)
+if astra_is_isolated_worktree; then
+  IN_SPRINT_WT=1
+else
+  IN_SPRINT_WT=0
+fi
 ```
 
-#### C. Branch Handling
+| 컨텍스트 | 처리 |
+|---------|------|
+| sprint worktree (격리, sprint 브랜치) | 현재 브랜치 그대로 테스트 (정상) |
+| 메인 worktree + 작업 브랜치 (호환성) | 현재 브랜치 그대로 테스트 |
+| 메인 worktree + 공유 브랜치(dev/main/staging/master) | 현재 브랜치 그대로 테스트 (단발성 폴백) |
 
-| 현재 브랜치 | 처리 방법 |
-|------------|----------|
-| `dev` | 변경사항이 있으면 커밋 후 그대로 진행 |
-| `feat/*`, `fix/*` 등 작업 브랜치 | 변경사항 커밋 → dev에 머지 → dev 체크아웃 |
-| `main`, `master` | ⚠️ 경고 표시 후 dev 브랜치로 전환 |
+> **v5.0+ 중요**: dev 머지·푸시는 이 스킬에서 수행하지 않는다. 이전 Step 12/13의 dev 커밋·푸시·`/pr-merge --staging` 체이닝은 제거되었으며, sprint 통합 테스트가 끝나면 사용자가 `/pr-merge`를 호출해 머지 사이클에 진입한다.
 
-#### D. Commit Unstaged Changes (if any)
+#### B. Commit Unstaged Changes (if any)
 
-현재 브랜치에 커밋되지 않은 변경사항이 있는 경우:
+테스트 전 현재 브랜치에 미커밋 변경이 있으면 wip 커밋한다 (테스트 중 파일 변경이 비결정성을 만들지 않도록):
 
 ```bash
-# 1. 변경사항 확인
-git status --short
-
-# 2. 변경사항이 있으면 커밋 (이미 추적 중인 파일만 스테이징 — .env, 빌드 아티팩트 등 untracked 파일 제외)
-git add -u
-git commit -m "wip: pre-test commit on {CURRENT_BRANCH}"
+if [ -n "$(git status --porcelain)" ]; then
+  git add -u
+  git commit -m "wip: pre-test commit on ${CURRENT_BRANCH}"
+fi
 ```
 
-> **Note**: `git add -u`는 이미 Git이 추적 중인 파일의 변경사항만 스테이징한다. 새로 생성된 untracked 파일은 포함되지 않으므로 `.env`, `node_modules/`, 빌드 결과물이 실수로 커밋되는 것을 방지한다.
+> **Note**: `git add -u`는 이미 추적 중인 파일만 스테이징한다. `.env`, `node_modules/`, 빌드 결과물 등 untracked 파일은 포함되지 않는다.
 
-변경사항이 없으면 이 단계를 건너뛴다.
+#### C. Load Worktree Port Env
 
-#### E. Switch to dev and Merge
-
-현재 브랜치가 `dev`가 아닌 경우:
+sprint worktree에는 `/sprint-init`이 생성한 `.astra-worktree.env`가 있다. 이 파일을 source 해 sprint 전용 포트를 적용한다:
 
 ```bash
-# 1. dev 브랜치로 전환
-git checkout dev
-
-# 2. dev 최신화 (원격 브랜치가 존재하는 경우에만)
-git ls-remote --heads origin dev | grep -q dev && git pull origin dev --no-edit
+WT_ENV="$(astra_worktree_env_path "$(pwd)")"
+if [ -f "$WT_ENV" ]; then
+  # shellcheck disable=SC1090
+  set -a; . "$WT_ENV"; set +a
+  echo "📦 sprint worktree env loaded: PORT=$PORT (base=$ASTRA_PORT_BASE)"
+else
+  # 메인 worktree 또는 v4.x 호환 케이스 — 기본 포트 유지
+  echo "ℹ️  .astra-worktree.env 없음 — 기본 포트 사용"
+fi
 ```
 
-**`main`/`master` 브랜치인 경우**: dev로 전환만 하고, 머지는 수행하지 않는다. `main`/`master`를 dev에 머지하면 역방향 머지가 발생하므로 금지한다.
+#### D. Pre-launch Port Availability Check
 
-**작업 브랜치 (`feat/*`, `fix/*` 등)인 경우에만 머지를 실행한다**:
+서버 기동 전 env 파일에 정의된 *모든* 스택별 포트가 사용 가능한지 확인하고, 하나라도 점유 중이면 abort 한다 (다른 worktree나 외부 프로세스를 종료하지 않도록). 단일 `PORT`만 검사하면 Spring Boot(`SERVER_PORT`)·Django/FastAPI(`DJANGO_PORT`/`FASTAPI_PORT`)·Vite(`VITE_PORT`) 스택에서 런타임 충돌을 선제 감지할 수 없다.
 
 ```bash
-# 3. 작업 브랜치를 dev에 머지 (main/master는 제외)
-git merge {CURRENT_BRANCH} --no-edit
+# 기본 PORT가 비어 있으면 3000으로 보정 (env 미로드 케이스 폴백)
+: "${PORT:=3000}"
+
+# env에 정의된 후보 포트를 모두 검사. 미정의/빈 값은 건너뛴다.
+PORT_CHECK_FAILED=0
+for var in PORT SERVER_PORT DJANGO_PORT FASTAPI_PORT VITE_PORT; do
+  port_val="${!var:-}"
+  [ -z "$port_val" ] && continue
+  if astra_port_in_use "$port_val"; then
+    echo "ERROR: $var=$port_val 가 이미 사용 중입니다." >&2
+    PORT_CHECK_FAILED=1
+  fi
+done
+
+if [ "$PORT_CHECK_FAILED" = "1" ]; then
+  echo "       다른 worktree의 dev 서버나 외부 프로세스를 먼저 종료한 뒤 재실행하세요." >&2
+  echo "       점유 프로세스 확인: lsof -i :<PORT>" >&2
+  exit 1
+fi
+
+TEST_PORT="$PORT"   # Step 2 이후에서 사용하는 대표 포트 (스택별 실제 포트는 Step 2 표 참조)
+echo "✅ 포트 사용 가능 확인 (PORT=$PORT, SERVER_PORT=${SERVER_PORT:-—}, DJANGO_PORT=${DJANGO_PORT:-—}, FASTAPI_PORT=${FASTAPI_PORT:-—}, VITE_PORT=${VITE_PORT:-—})"
 ```
 
-**머지 충돌 발생 시:**
-1. 충돌 파일 목록을 사용자에게 표시
-2. **AskUserQuestion**으로 처리 방법 확인:
-   - **직접 해결** — 충돌 해결 후 계속
-   - **머지 취소** — `git merge --abort` 후 워크플로우 종료
-3. 충돌이 해결되면 `git commit --no-edit`으로 머지 완료
-
-#### F. Confirm dev Branch
-
-```bash
-# dev 브랜치에 있는지 최종 확인
-git branch --show-current  # must be "dev"
-```
-
-> **📌 테스트 실행 브랜치**: `dev` (원래 작업 브랜치: `{CURRENT_BRANCH}`)
+> **📌 테스트 실행 브랜치**: `${CURRENT_BRANCH}` (worktree: `$(pwd)`, 포트: `$TEST_PORT`)
 
 ---
 
@@ -183,34 +187,45 @@ Assess the current project's tech stack and server launch method:
 2. Check run scripts in `package.json`, `build.gradle`, `pom.xml`, `pyproject.toml`, etc.
 3. Check environment variables in `.env`, `.env.local`, etc. (port number, DB URL, etc.)
 
-**Server launch command detection by tech stack:**
+**Server launch command detection by tech stack (포트 주입 포함):**
 
-| Tech Stack | Detection File | Launch Command |
-|----------|----------|-----------|
-| Next.js | `package.json` → `next dev` | `npm run dev` |
-| React (CRA/Vite) | `package.json` → `vite` / `react-scripts` | `npm run dev` / `npm start` |
-| Spring Boot (Gradle) | `build.gradle` | `./gradlew bootRun` |
-| Spring Boot (Maven) | `pom.xml` | `./mvnw spring-boot:run` |
-| NestJS | `package.json` → `@nestjs/core` | `npm run start:dev` |
-| FastAPI | `pyproject.toml` / `main.py` | `uvicorn main:app --reload` |
-| Django | `manage.py` | `python manage.py runserver` |
+| Tech Stack | Detection File | Launch Command (port-aware) | Port Var |
+|----------|----------|-----------|----------|
+| Next.js | `package.json` → `next dev` | `PORT=$TEST_PORT npm run dev` | PORT |
+| React (CRA) | `package.json` → `react-scripts` | `PORT=$TEST_PORT npm start` | PORT |
+| Vite | `package.json` → `vite` | `npm run dev -- --port $TEST_PORT` | (인자) |
+| NestJS | `package.json` → `@nestjs/core` | `PORT=$TEST_PORT npm run start:dev` | PORT |
+| Spring Boot (Gradle) | `build.gradle` | `./gradlew bootRun --args="--server.port=${SERVER_PORT:-$TEST_PORT}"` | SERVER_PORT |
+| Spring Boot (Maven) | `pom.xml` | `./mvnw spring-boot:run -Dspring-boot.run.arguments="--server.port=${SERVER_PORT:-$TEST_PORT}"` | SERVER_PORT |
+| FastAPI | `pyproject.toml` / `main.py` | `uvicorn main:app --reload --port ${FASTAPI_PORT:-$TEST_PORT}` | FASTAPI_PORT |
+| Django | `manage.py` | `python manage.py runserver ${DJANGO_PORT:-$TEST_PORT}` | DJANGO_PORT |
+
+> **포트 주입 규칙**: sprint worktree에서는 `.astra-worktree.env`가 위 변수들을 미리 정의해 둔다. 메인 worktree나 env 파일이 없는 환경에서는 `$TEST_PORT`(기본 3000)가 폴백으로 적용된다. 서버 launch command에서 사용한 *실제 포트 번호*를 `$LAUNCHED_PORT` 변수에 저장해 두면 Step 10/실패 분기의 cleanup이 이 포트를 종료할 수 있다.
 
 ### Step 3: Start Server and Monitor Logs
 
-**Launch the server in the background and capture logs:**
+**Launch the server in the background, capture PID and logs:**
 
-```
-# Launch server in background (Bash run_in_background=true)
-{server launch command}
+```bash
+# 1. 스택에 맞는 포트 변수 선택 (Step 2 표 참조). 예시: Next.js
+LAUNCHED_PORT="$TEST_PORT"   # 실제 사용한 포트를 기록 (cleanup용)
 
-# Wait for server startup (until port is open)
-# Maximum 60 seconds wait, check every 5 seconds
+# 2. Bash run_in_background=true로 기동 (PORT/SERVER_PORT 등은 Step 2 표 명령 그대로)
+#    Bash 도구는 background shell id를 반환한다 → SERVER_SHELL_ID 변수에 저장
+#    예: SERVER_SHELL_ID=$(Bash run_in_background=true command="PORT=$LAUNCHED_PORT npm run dev")
+
+# 3. 자식 PID까지 캡처 (npm/gradle wrapper 등이 자식 프로세스로 실제 서버를 띄우는 경우 대비)
+#    Bash 도구의 shell id를 OS PID로 변환할 수 없는 환경에서는 lsof로 포트 점유 PID를 역추적한다:
+sleep 3  # 기동 초기 대기
+SERVER_PIDS=$(lsof -i ":$LAUNCHED_PORT" -sTCP:LISTEN -t 2>/dev/null | sort -u | tr '\n' ' ')
+echo "🚀 서버 기동 PIDs: ${SERVER_PIDS:-(아직 미감지)} (port=$LAUNCHED_PORT)"
 ```
 
 **Server startup verification sequence:**
-1. Start server process with Bash `run_in_background=true`
-2. Periodically check server logs with `TaskOutput` to detect startup completion message
-3. If startup fails, analyze error cause from logs and report to user
+1. Start server process with Bash `run_in_background=true` — Bash 도구가 반환한 background shell id를 `SERVER_SHELL_ID`에 저장.
+2. Periodically check server logs with `TaskOutput` to detect startup completion message.
+3. 기동 완료 후 `lsof -i :$LAUNCHED_PORT -sTCP:LISTEN -t`로 LISTEN 중인 PID를 모두 캡처해 `SERVER_PIDS` 에 저장 (cleanup 단계에서 사용).
+4. If startup fails, analyze error cause from logs and report to user.
 
 **Log monitoring patterns:**
 
@@ -247,7 +262,7 @@ Analyze the following to write test cases:
 
 Write test cases in the `docs/tests/test-cases/sprint-{N}/` directory (where `{N}` is the current sprint number detected from `docs/sprints/` by scanning `sprint-{N}-{name}/` directories and finding the highest `{N}`).
 
-> **Note**: Test cases are written on the `dev` branch (merged in Step 0):
+> **Note**: Test cases are written on the *current* branch (sprint worktree에서는 sprint 브랜치, 메인 worktree 폴백에서는 현재 브랜치). dev 머지는 `/pr-merge`가 담당한다.
 
 ```markdown
 # {Feature Name} Test Cases
@@ -509,16 +524,53 @@ Record test results in `docs/tests/test-reports/`:
 {Core Web Vitals results}
 ```
 
-### Step 10: Shut Down Server
+### Step 10: Shut Down Server (Guaranteed Cleanup)
 
-Shut down the server process after testing is complete:
+테스트가 끝났거나(성공·실패 무관) 워크플로우가 실패로 중단되더라도 **반드시 이 단계를 수행**한다. 포트를 점유한 채로 끝나면 다음 `/test-run` 또는 다른 worktree의 서버가 기동 실패한다.
 
+다음 cleanup은 사용자 확인 없이 자동 실행한다 (Bash background에서 띄운 dev 서버는 본 워크플로우의 소유물이므로):
+
+```bash
+# 1. Bash background shell 정지 (Bash 도구가 반환했던 shell id 사용)
+#    KillShell tool 또는 TaskStop을 통해 SERVER_SHELL_ID 종료
+#    예: KillShell shell_id=$SERVER_SHELL_ID
+
+# 2. lsof로 캡처한 SERVER_PIDS 종료 (npm/gradle wrapper가 자식 프로세스로 실제 서버를 띄운 경우)
+for pid in $SERVER_PIDS; do
+  if kill -0 "$pid" 2>/dev/null; then
+    kill "$pid" 2>/dev/null || true
+  fi
+done
+sleep 2
+
+# 3. 여전히 살아 있으면 자식 프로세스까지 포함해 강제 종료
+for pid in $SERVER_PIDS; do
+  if kill -0 "$pid" 2>/dev/null; then
+    # pgrep -P로 자식 PID도 함께 종료
+    children=$(pgrep -P "$pid" 2>/dev/null | tr '\n' ' ')
+    [ -n "$children" ] && kill -9 $children 2>/dev/null || true
+    kill -9 "$pid" 2>/dev/null || true
+  fi
+done
+
+# 4. 포트가 풀렸는지 검증
+if astra_port_in_use "${LAUNCHED_PORT:-$TEST_PORT}"; then
+  echo "WARN: 포트 ${LAUNCHED_PORT:-$TEST_PORT}가 여전히 사용 중입니다." >&2
+  echo "      수동 종료 명령:" >&2
+  echo "        lsof -i :${LAUNCHED_PORT:-$TEST_PORT}" >&2
+  echo "        kill -9 \$(lsof -i :${LAUNCHED_PORT:-$TEST_PORT} -sTCP:LISTEN -t)" >&2
+else
+  echo "✅ 포트 ${LAUNCHED_PORT:-$TEST_PORT} 해제 완료"
+fi
 ```
-# Stop background server process with TaskStop
-# Or send Ctrl+C signal
-```
 
-Confirm with the user before shutting down the server.
+> **포트 종료 보장 정책 (v5.0+)**:
+> 1. 서버 기동 *전* (Step 0.D)에 `lsof`로 포트 점유 검사 → 점유 중이면 abort (외부 프로세스 보호).
+> 2. 기동 후 (Step 3) `SERVER_SHELL_ID`와 `lsof` 기반 `SERVER_PIDS`를 모두 캡처.
+> 3. Step 10 cleanup은 **테스트 성공·실패·예외 분기 모두에서 실행**한다 (Step 11에서 실패 분기로 종료할 때도 호출 후 종료). 누락 시 worktree 간 포트 충돌이 발생.
+> 4. cleanup 후 `astra_port_in_use`로 재확인 → 풀리지 않았으면 사용자에 수동 종료 명령 안내.
+
+**Step 11 실패 분기, Step 13 종료 분기, 예외 발생 시 워크플로우 중단 시점 모두에서 이 cleanup 블록을 호출**한다. cleanup 호출은 사용자 확인을 요구하지 않는다.
 
 ### Step 11: Determine Test Success/Failure
 
@@ -538,54 +590,47 @@ Evaluate the overall test result based on the test report generated in Step 9:
 - Server Log Errors with unhandled exceptions
 
 If **tests FAILED**:
-1. Provide the test report location
-2. List the failed items with brief descriptions
-3. End the workflow — do NOT proceed to branch creation or commit
+1. **Step 10 cleanup을 먼저 실행**(포트 해제). cleanup 미실행 시 다음 시도에서 포트 충돌 발생.
+2. Provide the test report location
+3. List the failed items with brief descriptions
+4. End the workflow — do NOT proceed to branch creation or commit
 
 If **tests PASSED with Severity-High issues only** (no Critical):
 1. List the High-severity issues
 2. Use **AskUserQuestion** to ask the user whether to proceed despite High issues:
    - **Proceed** — acknowledge and continue to Step 12
-   - **Stop** — end the workflow
+   - **Stop** — **Step 10 cleanup 실행 후** end the workflow
 3. If user chooses to stop, end the workflow.
 
 If **tests PASSED** (no Critical or High issues): proceed to Step 12.
 
-### Step 12: Commit & Push on dev Branch
+### Step 12: Commit Test Report on Current Branch
 
-테스트가 통과했으므로 dev 브랜치에서 테스트 결과를 커밋하고 푸시한다.
-
-> **Note**: Step 0에서 이미 dev 브랜치로 전환된 상태이다. 테스트 중 생성된 파일(테스트 리포트 등)도 dev에 커밋한다.
+테스트가 통과했으므로 현재 worktree의 현재 브랜치(`${CURRENT_BRANCH}`)에 테스트 리포트를 커밋한다. **dev 머지·푸시는 수행하지 않는다** — 머지 사이클은 `/pr-merge`가 담당한다.
 
 #### A. Stage Changes
 
 ```bash
-# Stage new test result files (untracked)
 git add docs/tests/ docs/sprints/
-
-# Stage modifications to existing tracked source files (safe: excludes .env, build artifacts)
-git add -u
+git add -u  # 추적 중인 파일의 수정만 스테이징
 ```
 
-> **Note**: `git add -u`는 이미 추적 중인 파일의 변경사항만 스테이징한다. `git add -A`와 달리 `.env`, `credentials`, `node_modules/`, `dist/` 등 untracked 파일이 포함되지 않는다.
+> **Note**: `git add -u`는 이미 추적 중인 파일의 변경사항만 스테이징한다. `.env`, `credentials`, `node_modules/`, `dist/` 등 untracked 파일은 포함되지 않는다.
 
 Show `git diff --staged --stat` to the user and use **AskUserQuestion** to confirm before committing:
 
 > **커밋할 변경사항을 확인해주세요:**
 > {staged file list}
 > - **커밋 진행** (기본값)
-> - **취소** — 워크플로우 중단
+> - **취소** — 워크플로우 중단 (Step 10 cleanup 실행 후 종료)
 
 #### B. Commit
 
 After user confirms:
 
 ```bash
-# Detect current sprint from docs/sprints/
-# Determine commit type based on staged files:
-# - If only docs/tests/ and docs/sprints/ changed → use "test:"
-# - If src/ or other source directories also changed → use "fix:"
-git commit -m "{type}: sprint-{N} {feature-name} integration test passed
+# 커밋 타입: 테스트 결과 파일만이면 "test:", 소스 수정이 함께면 "fix:"
+git commit -m "{type}: sprint-{N} integration test passed on ${CURRENT_BRANCH}
 
 - Scenario tests: {passed}/{total} passed
 - Console errors: {count}
@@ -595,42 +640,26 @@ git commit -m "{type}: sprint-{N} {feature-name} integration test passed
 🤖 Generated with Claude Code"
 ```
 
-#### C. Push dev to Remote
+원격 push는 하지 않는다 — `/pr-merge`가 PR 생성 시점에 함께 push 한다.
 
-```bash
-git push origin dev
-```
+### Step 13: Suggest `/pr-merge`
 
-**Push failure handling:**
-- If push fails due to non-fast-forward (remote dev has new commits), pull and re-push:
-  ```bash
-  git pull origin dev --no-edit && git push origin dev
-  ```
-- If push fails due to authentication or network error, display the error and end the workflow.
-
-After push completes, display the push result.
-
-### Step 13: PR Review & Merge (Optional)
-
-After successful push, ask the user whether to promote `dev` to `staging`:
+테스트 통과 + 리포트 커밋 완료. 사용자에게 다음 단계로 `/pr-merge` 실행을 제안한다:
 
 1. Use **AskUserQuestion** to confirm:
 
-> **테스트 통과 → dev 커밋 → 푸시 완료!**
-> Branch: `dev`
-> **dev → staging 프로모션을 진행할까요?**
-> - **예** (기본값) — `/pr-merge --staging` 실행
-> - **아니오** — 워크플로우 종료
+> **테스트 통과 + 리포트 커밋 완료!**
+> - Worktree: `$(pwd)`
+> - Branch: `${CURRENT_BRANCH}`
+> - 다음 단계: `/pr-merge` (현재 worktree에서 호출) → dev 머지 + worktree 자동 제거
+>
+> **/pr-merge를 지금 실행할까요?**
+> - **예** (기본값) — Skill tool로 `/pr-merge` 실행
+> - **아니오** — 워크플로우 종료 (사용자가 직접 실행)
 
-2. If the user approves, invoke `pr-merge --staging` using the Skill tool:
+2. 사용자가 승인하면 `Skill('pr-merge')` 호출. 사용자가 거부하면 종료한다.
 
-```
-Use Skill tool: invoke "pr-merge" with arguments "--staging"
-```
-
-> **Note**: PR은 `dev → staging` 방향으로 생성된다. 추가 옵션이 필요한 경우 (`--no-review`, `--draft` 등) 사용자에게 확인한다.
-
-3. If the user declines, provide the test report location and end the workflow.
+> **Note**: 사용자가 directly `--staging` 프로모션을 원하는 경우 `/pr-merge --staging`을 별도로 안내할 수 있다. 기본 흐름은 sprint 브랜치 → dev 머지(기본 `/pr-merge`)이다.
 
 ## Quick Run Examples
 
@@ -647,9 +676,11 @@ Use Skill tool: invoke "pr-merge" with arguments "--staging"
 
 ## Notes
 
-- If the server is already running, do not start it again. Check port usage first.
+- **Worktree-aware port (v5.0+)**: sprint worktree에서는 `/sprint-init`이 작성한 `.astra-worktree.env`의 `PORT`/`SERVER_PORT`/`VITE_PORT` 등을 자동 source 한다. 메인 worktree(dev)의 서버와 포트가 충돌하지 않는다.
+- **포트 종료 보장**: Step 0.D에서 기동 전 점유 검사, Step 3에서 PID 캡처, Step 10에서 4단계 cleanup (shell 종료 → SIGTERM → SIGKILL+자식 → 검증). 테스트 성공·실패·중단 모두 cleanup 호출.
+- If the server is already running on the target port, **abort** (do not kill the external process). 사용자가 직접 종료한 뒤 재실행해야 한다.
 - Do not expose sensitive information from `.env` files in logs.
 - Use test data only in test-dedicated DB/environments.
 - Mask sections containing personal information in server logs.
 - Performance measurements are based on the development environment and may differ from production performance.
-- Always shut down the server process after testing is complete.
+- **머지·푸시 분리 (v5.0+)**: 이 스킬은 dev 머지·푸시를 수행하지 않는다. 머지 사이클은 `/pr-merge`가 담당하며, sprint worktree는 머지 완료 후 자동 제거된다.
