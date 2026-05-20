@@ -488,7 +488,7 @@ EOF
 
 ### Step 12: 격리 worktree 생성 및 안내
 
-구현 시작 전 격리 worktree를 미리 만들어 코드 변경이 처음부터 격리 디렉토리에서 일어나도록 한다. 커밋·푸시·리뷰 사이클은 수행하지 않으며, 경로 안내 후 종료한다. Step 1.3 (메인 worktree 가드 + 클린 상태 검증) 및 Step 2.1 (dev fetch+pull)은 이미 통과한 상태이다.
+구현 시작 전 격리 worktree를 미리 만들어 코드 변경이 처음부터 격리 디렉토리에서 일어나도록 한다. 커밋·푸시·리뷰 사이클은 수행하지 않으며, 경로 안내 후 종료한다. Step 1 (메인 worktree 가드 + 클린 상태 검증) 및 Step 2.1 (dev fetch+pull)은 이미 통과한 상태이다.
 
 1. **브랜치명 확보**: Step 1에서 파싱한 `--start <branch-name>` 값을 확인한다. 인자가 없으면 **AskUserQuestion**으로 사용자에게 묻는다 (예: "구현할 기능의 작업 브랜치명을 입력하세요. prefix는 feat/, fix/, docs/, refactor/, chore/ 중 하나여야 합니다").
 
