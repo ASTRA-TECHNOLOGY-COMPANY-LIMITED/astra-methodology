@@ -190,14 +190,27 @@ P0 이슈는 최종 보고서에 기록하고 진행.
 ### 4.2 실행
 `Skill('sprint-init', '{기능 slug}')` 호출.
 
-### 4.3 성공 기준
+> **v5.0+ 중요**: `/sprint-init`은 `.astra-worktrees/sprint-<N>-<feature-slug>/`에 sprint worktree를 생성하고 모든 sprint 산출물을 그 안에 작성한다. autorun은 호출 직후 **반드시 worktree 경로로 cd**한 뒤 단계 5 이후를 실행해야 한다. cd하지 않으면 단계 5의 코드 생성과 단계 7의 `/test-run` 가드 해제가 모두 메인 worktree에서 일어나 격리가 깨진다.
+
+### 4.3 성공 기준 + worktree 이동
 ```
-docs/sprints/sprint-{N}-{feature-slug}/
-├── progress.md
-└── (프롬프트 맵, 백로그 등)
+.astra-worktrees/sprint-{N}-{feature-slug}/
+├── .astra-worktree.env          # 포트 베이스
+└── docs/sprints/sprint-{N}-{feature-slug}/
+    ├── prompt-map.md
+    ├── progress.md
+    └── retrospective.md
 ```
 
-`SPRINT_DIR` 변수에 저장.
+```bash
+WT_PATH=".astra-worktrees/sprint-${N}-${feature-slug}"
+cd "$WT_PATH" || {
+  echo "ERROR: sprint worktree로 이동 실패: $WT_PATH" >&2
+  exit 1
+}
+```
+
+`SPRINT_DIR`은 worktree 내부 경로(`docs/sprints/sprint-{N}-{feature-slug}/`)로 저장한다. 이후 모든 stage(5/6/7)는 이 디렉토리에서 실행된다.
 
 ## 단계 5: 구현 (`/generate-entity` + 청사진 기반)
 
@@ -460,7 +473,10 @@ Task(tester-persona, "
 
 🔁 Iterations: {final_iter}/{MAX_ITER} ({early-exit on PASS / max reached / abort})
 
-📁 산출물 위치:
+📁 Sprint Worktree: .astra-worktrees/sprint-{N}-{feature-slug}/
+   (모든 산출물이 이 worktree의 sprint 브랜치에 커밋되어 있음)
+
+📁 산출물 위치 (worktree 기준 상대 경로):
   - 기획 + HTML 기획화면: docs/planner/{NNN}-{feature-slug}/ (markdown 6종 + index.html + styles.css + SCR-*.html)
   - 청사진: docs/blueprints/{NNN}-{feature-slug}/
   - 스프린트: docs/sprints/sprint-{N}-{feature-slug}/
@@ -472,7 +488,9 @@ Task(tester-persona, "
 ✅ 테스트: {통과}/{전체}
 
 📋 다음 단계 (수동 실행 필요):
-  → 산출물 검토 후 /pr-merge 실행
+  1. cd .astra-worktrees/sprint-{N}-{feature-slug}/   # 검토용
+  2. 산출물 검토 후 동일 디렉토리에서 /pr-merge 실행
+  → /pr-merge가 dev 머지 완료 후 worktree를 자동 제거합니다.
 
 ❗ /pr-merge는 자동 실행되지 않았습니다.
    수동 검토 후 명시적으로 실행하세요.
