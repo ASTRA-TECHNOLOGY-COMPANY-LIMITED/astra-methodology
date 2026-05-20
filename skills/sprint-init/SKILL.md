@@ -1,6 +1,6 @@
 ---
 name: sprint-init
-description: "Initializes a new ASTRA sprint. Creates an isolated sprint worktree (with port-isolated dev server settings), generates sprint prompt maps, progress trackers, and retrospective templates inside that worktree, and prints the cd path so all subsequent development and testing happens in the worktree. With --auto flag, also auto-executes the post-scaffolding pipeline: /test-scenario → implementation → /test-run → /pr-merge --auto (worktree auto-removed). Between each major stage (5.2/5.3/5.4/5.5 iteration/5.6), the skill writes auto-state.yaml + commits it + prints a compact checkpoint message and EXITS. User then optionally runs /compact, then re-invokes /sprint-init --resume to continue from the saved state. Only halts on true blockers (gh auth, merge conflicts, Critical review issues)."
+description: "Initializes a new ASTRA sprint. Creates an isolated sprint worktree (with port-isolated dev server settings), generates sprint prompt maps, progress trackers, and retrospective templates inside that worktree, and prints the cd path so all subsequent development and testing happens in the worktree. With --auto flag, also auto-executes the post-scaffolding pipeline: /test-scenario → implementation → /test-run → /pr-merge --auto (worktree auto-removed). Between each major stage (5.2/5.3/5.4/5.5 iteration/5.6), the skill performs a silent save (auto-state.yaml + commit) and applies a 'reference-avoidance' rule (don't re-read large prior artifacts; rely on yaml SSoT) so the system's built-in auto-compression keeps context manageable, then continues directly to the next stage without user intervention. --resume flag is reserved for true recovery (context crash, forced interrupt) — it reads auto-state.yaml and jumps to next_stage. Only halts on true blockers (gh auth, merge conflicts, Critical review issues)."
 argument-hint: "[sprint-number] [sprint-name] [--auto] [--max-iter=N] [--resume]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Agent, TodoWrite
 ---
@@ -15,7 +15,13 @@ Creates a sprint-level isolated worktree, writes port-isolated env settings, and
 
 ### Step 0.A: Resume Detection (`--resume` 플래그)
 
-**중요**: `/compact`는 진행 중인 skill 실행을 종료시킨다. 따라서 `--auto` 모드에서 compact checkpoint 직후 재개하려면 사용자가 **명시적으로 `/sprint-init --resume`을 다시 호출**해야 한다.
+**언제 쓰나**: `--resume`은 **진짜 복구용**이다. `--auto` 모드는 평상시 중간에 끊기지 않고 stage 사이에서 silent save(`auto-state.yaml` + commit)만 하면서 자동으로 다음 stage로 진행한다. 다음 경우에만 사용자가 명시적으로 `/sprint-init --resume`을 호출해 재개한다:
+
+1. 시스템 자동 컨텍스트 압축 후 LLM이 in-flight 변수를 잃어 진행이 멈춘 경우
+2. 사용자가 의도적으로 중간에 중단했다가 다시 이어가는 경우
+3. 크래시·세션 종료 등으로 skill 실행이 비정상 종료된 경우
+
+`auto-state.yaml`이 단일 진실 출처(SSoT)이므로, 위 어떤 경우든 yaml에서 `next_stage`를 읽어 정확히 그 지점부터 재개한다.
 
 `$ARGUMENTS`에서 `--resume` 플래그를 우선 파싱한다:
 
@@ -378,9 +384,11 @@ Iteration 추적 변수:
 - `ITER_DIR` = `docs/sprints/sprint-{N}-{sprint-name}/iterations/`
 - `mkdir -p "$ITER_DIR"`
 
-#### Step 5.1.5: Compact Checkpoint Protocol (재사용 가능한 공통 패턴)
+#### Step 5.1.5: Silent Save Protocol (재사용 가능한 공통 패턴)
 
-`--auto` 모드는 stage 마다 다량의 컨텍스트(파일 내용, 테스트 로그, 코드 리뷰 출력)를 누적한다. **각 major stage 종료 시 사용자에게 `/compact` 실행 권장 + 상태 저장**으로 컨텍스트를 깨끗하게 시작한다.
+`--auto` 모드는 stage마다 다량의 컨텍스트(파일 내용, 테스트 로그, 코드 리뷰 출력)를 누적한다. **각 major stage 종료 시 상태를 yaml에 영속화한 뒤, "참조 회피 규칙"을 적용한 채 곧바로 다음 stage로 진행**한다. 사용자 개입은 없다.
+
+수동 `/compact` 슬래시 명령은 의도적으로 사용하지 않는다 — Claude Code의 시스템 자동 압축이 컨텍스트 한계에 근접하면 알아서 작동하고, 그 사이 LLM은 큰 객체 재참조를 회피해 신규 토큰 누적을 최소화한다.
 
 이 프로토콜은 Step 5.2 종료, 5.3 종료, 5.4 종료, 5.5 iteration 종료, 5.6 종료 시점에 호출된다.
 
@@ -448,39 +456,31 @@ git commit -m "chore: auto-state checkpoint after Stage ${X}"
 
 > `--auto` 진행 중 발생하는 커밋이므로 메시지는 자동 생성. push는 `/pr-merge --auto` 또는 다음 checkpoint에서 일괄 처리되므로 여기서는 생략 가능 (단, 만약 사용자가 중간에 다른 머신에서 `--resume`하려면 push 필요).
 
-##### 5.1.5.C 사용자에게 compact 안내 출력
+##### 5.1.5.C 참조 회피 규칙 적용 후 다음 stage 자동 진행
 
-체크포인트 작성·커밋 직후 다음 메시지를 출력하고 **skill 실행을 종료**한다. `/compact`가 진행 중인 skill을 중단시키므로, 사용자가 명시적으로 `/sprint-init --resume`을 다시 호출해야 재개된다:
+체크포인트 작성·커밋 직후 다음 한 줄을 가볍게 출력하고 **곧바로 다음 stage를 호출**한다. exit 하지 않는다:
 
 ```
-───────────────────────────────────────────────
-🗜️  COMPACT CHECKPOINT — Stage {X} 완료, Stage {Y} 진입 대기
-
-상태 저장됨: docs/sprints/sprint-{N}-{sprint-name}/auto-state.yaml (커밋 완료)
-Worktree: {WT_PATH}
-다음 단계: Stage {Y} — {next_stage_description}
-
-⚠️  /compact는 현재 skill 실행을 종료시킵니다.
-    따라서 다음 순서로 재개해야 합니다:
-
-📝 진행 방법:
-  (1) [선택] /compact 입력 → 대화 컨텍스트 압축
-  (2) [필수] /sprint-init --resume 입력 → 다음 stage 자동 재개
-
-또는 압축 없이 곧바로 다음 stage로 진행하려면:
-  /sprint-init --resume
-
-⛔ 즉시 중단하려면 아무 명령도 하지 마세요. worktree와 상태 파일은
-   보존되므로 나중에 /sprint-init --resume으로 언제든 이어갈 수 있습니다.
-───────────────────────────────────────────────
+✅ Stage {X} 완료 → Stage {Y} 자동 진행 (상태: docs/sprints/sprint-{N}-{sprint-name}/auto-state.yaml)
 ```
 
-이 메시지 출력 후 skill은 **즉시 return** 한다. 사용자 응답을 기다리지 않는다.
+그리고 다음 stage 진입 직전에 **반드시 다음 컨텍스트 효율 규칙을 LLM 스스로에게 적용**한다:
 
-##### 5.1.5.D 재개 시 동작 (Step 0.A에서 처리됨)
+> ⚡ **컨텍스트 효율 규칙 (자동 진행 중 매 stage 전환점)**
+> - 이전 stage에서 로딩한 대형 객체(테스트 로그 전체, 브라우저 스냅샷, 이전 구현 파일의 전체 내용)을 **재참조하지 않는다**.
+> - 단일 진실 출처(SSoT): `auto-state.yaml` (+ iteration 재개 시 `last_iteration_summary` 파일).
+> - 다음 stage에서 필요한 파일은 **선택적으로** Read/Edit 한다 — 전체 디렉토리 트리·전체 청사진을 다시 읽지 않는다.
+> - 이렇게 하면 Claude Code의 시스템 자동 압축(컨텍스트 한계 근접 시 작동)이 효과적으로 동작해 mid-skill 토큰 폭발을 막는다.
 
-재개는 Step 0.A의 `--resume` 모드에서 처리한다. 이 절은 재개 절차를 다시 설명하지 않고 그곳을 참조한다. 핵심:
+##### 5.1.5.D `--resume` 모드 (진짜 복구 전용)
 
+평상 흐름에서 `--resume`은 호출되지 않는다. 다음 비정상 경로에서만 사용한다 (Step 0.A 참조):
+
+- 시스템 자동 압축 후 LLM이 in-flight 변수를 잃어 다음 stage를 자동 호출하지 못한 경우
+- 사용자가 의도적으로 중간에 정지했다가 다시 이어가는 경우
+- 크래시·세션 종료로 skill 실행이 비정상 종료된 경우
+
+핵심:
 1. `auto-state.yaml`이 SSoT — 컨텍스트 압축으로 변수가 휘발되었어도 이 파일에서 모두 복원 가능
 2. `progress.next_stage`로 직접 점프
 3. iteration 재개 시 `last_iteration_summary` 파일과 `files_to_patch_next` 목록만 추가로 로딩
@@ -499,12 +499,12 @@ Worktree: {WT_PATH}
 
 성공 기준: 시나리오 파일 ≥ 1개 존재.
 
-##### 5.2.Z 🗜️ Compact Checkpoint
+##### 5.2.Z 💾 Silent Save
 
-Step 5.2 종료 직후 **Step 5.1.5의 Compact Checkpoint Protocol을 실행**한다:
-- `auto-state.yaml`에 `completed_stages: [5.0, 5.1, 5.2]`, `next_stage: 5.3`, `scenarios.files: [...]` 기록
-- 사용자에게 `/compact` 안내 출력 + 입력 대기
-- 사용자 응답 후 `auto-state.yaml` 다시 읽고 Step 5.3 재개
+Step 5.2 종료 직후 **Step 5.1.5의 Silent Save Protocol을 실행**한다:
+- `auto-state.yaml`에 `completed_stages: [5.0, 5.1, 5.2]`, `next_stage: 5.3`, `scenarios.files: [...]` 기록 + commit
+- 5.1.5.C의 참조 회피 규칙 적용 (테스트 시나리오 생성 과정에서 로딩한 청사진 전체 내용은 더 이상 재참조하지 않음)
+- **곧바로 Step 5.3 자동 진행** — exit/사용자 입력 대기 없음
 
 #### Step 5.3: 구현 (Iteration 1만)
 
@@ -517,27 +517,27 @@ prompt-map.md에서 추출한 각 feature에 대해 순차 실행:
 
 성공 기준: 청사진의 모든 테이블 정의·API 엔드포인트가 `src/` (또는 프로젝트 표준 위치) 코드로 반영됨.
 
-##### 5.3.Z 🗜️ Compact Checkpoint
+##### 5.3.Z 💾 Silent Save
 
-Step 5.3은 가장 많은 컨텍스트(다수의 entity·service·controller 생성)를 누적하는 단계다. **반드시 5.1.5 Compact Checkpoint Protocol을 실행**한다:
-- `auto-state.yaml`에 `completed_stages: [..., 5.3]`, `next_stage: 5.4`, `implementation.{entities/services/controllers}_created: [...]` 기록
-- 사용자에게 `/compact` 안내 출력 + 입력 대기 (특히 이 단계에서 강하게 권장)
-- 응답 후 `auto-state.yaml` 다시 읽고 Step 5.4 재개
+Step 5.3은 가장 많은 컨텍스트(다수의 entity·service·controller 생성)를 누적하는 단계다. **반드시 5.1.5 Silent Save Protocol을 실행**한다:
+- `auto-state.yaml`에 `completed_stages: [..., 5.3]`, `next_stage: 5.4`, `implementation.{entities/services/controllers}_created: [...]` 기록 + commit
+- 5.1.5.C의 참조 회피 규칙 적용 (방금 생성한 entity/service/controller 파일 전체 내용은 더 이상 재참조하지 않음 — 다음 stage는 테스트 실행이고 파일 경로만 알면 됨)
+- **곧바로 Step 5.4 자동 진행** — exit/사용자 입력 대기 없음
 
 #### Step 5.4: 통합 테스트 실행
 
 `Skill('test-run', '')` 호출. `.astra-worktree.env`의 sprint 전용 포트로 서버 기동, 테스트 수행, 종료 시 자동 포트 정리.
 
-##### 5.4.Z 🗜️ Compact Checkpoint
+##### 5.4.Z 💾 Silent Save
 
-`/test-run`은 브라우저 스냅샷·콘솔 로그·네트워크 요청 로그 등 큰 결과물을 컨텍스트에 누적한다. **반드시 5.1.5 Compact Checkpoint Protocol을 실행**한다:
-- `auto-state.yaml`에 `completed_stages: [..., 5.4]`, `last_test_result: { passed, total, failed_tests, log_excerpt }` 기록
+`/test-run`은 브라우저 스냅샷·콘솔 로그·네트워크 요청 로그 등 큰 결과물을 컨텍스트에 누적한다. **반드시 5.1.5 Silent Save Protocol을 실행**한다:
+- `auto-state.yaml`에 `completed_stages: [..., 5.4]`, `last_test_result: { passed, total, failed_tests, log_excerpt }` 기록 + commit
   - 테스트 통과 시 → `next_stage: 5.6`
   - 테스트 실패 + `CURRENT_ITER < MAX_ITER` → `next_stage: 5.5`
   - 테스트 실패 + `CURRENT_ITER == MAX_ITER` → `next_stage: 5.7` (보고서 직진)
 - `log_excerpt`는 마지막 실패 로그 핵심 100줄 이내로 축약 (전체 로그를 yaml에 박지 말 것)
-- 사용자에게 `/compact` 안내 출력 + 입력 대기
-- 응답 후 `next_stage`로 점프
+- 5.1.5.C의 참조 회피 규칙 적용 (브라우저 스냅샷·전체 콘솔 로그·네트워크 요청은 더 이상 재참조하지 않음 — yaml의 `log_excerpt`만 들고 다음 stage 진행)
+- **곧바로 `next_stage`로 자동 점프** — exit/사용자 입력 대기 없음
 
 #### Step 5.5: 자가 개선 루프 (테스트 실패 시)
 
@@ -580,15 +580,15 @@ Step 5.3은 가장 많은 컨텍스트(다수의 entity·service·controller 생
 
 4. `CURRENT_ITER += 1`.
 
-##### 5.5.Z 🗜️ Compact Checkpoint (iteration 사이마다 실행)
+##### 5.5.Z 💾 Silent Save (iteration 사이마다 실행)
 
-**Iteration 간 컨텍스트 압축은 필수**다. 디버그 로그·이전 코드 패치 시도·classification 분석 등이 누적되어 다음 iteration이 토큰 한도에 일찍 도달할 위험이 크다. **반드시 5.1.5 Compact Checkpoint Protocol을 실행**한다:
-- `auto-state.yaml`에 `current_iter: {CURRENT_ITER}`, `last_iteration_classification: {분류}`, `files_to_patch_next: [{summary가 지목한 src/ 파일 경로 목록}]`, `next_stage: 5.5` (또는 5.4 — 재시도 흐름)으로 기록
+**Iteration 간 컨텍스트 정리는 필수**다. 디버그 로그·이전 코드 패치 시도·classification 분석 등이 누적되어 다음 iteration이 토큰 한도에 일찍 도달할 위험이 크다. **반드시 5.1.5 Silent Save Protocol을 실행**한다:
+- `auto-state.yaml`에 `current_iter: {CURRENT_ITER}`, `last_iteration_classification: {분류}`, `files_to_patch_next: [{summary가 지목한 src/ 파일 경로 목록}]`, `next_stage: 5.5` (또는 5.4 — 재시도 흐름)으로 기록 + commit
 - iteration summary 경로(`$ITER_DIR/iter-{CURRENT_ITER-1}-summary.md`)도 `auto-state.yaml`의 `progress.last_iteration_summary` 필드에 기록 (다음 iteration 재개 시 *오직 이 summary 파일만* 읽도록)
-- 사용자에게 `/compact` 안내 출력 + 입력 대기
-- 응답 후 재개: summary 파일을 먼저 읽고 `files_to_patch_next` 파일들을 Direct Patch → 5.4(test-run) 재호출
+- 5.1.5.C의 참조 회피 규칙을 **엄격히 적용** — 이전 iteration의 디버그 로그·classification 분석·시도된 패치 diff는 더 이상 재참조하지 않음. summary 파일과 `files_to_patch_next`만 들고 다음 iteration 진입.
+- **곧바로 재개**: summary 파일을 먼저 읽고 `files_to_patch_next` 파일들을 Direct Patch → 5.4(test-run) 재호출 — exit/사용자 입력 대기 없음
 
-> **컨텍스트 효율 규칙 (재진입 시)**: `auto-state.yaml`과 `last_iteration_summary` 파일만 읽고 patch 대상 파일을 Edit한다. 전체 청사진·기획 문서·이전 iteration의 src 파일을 다시 Read하지 **않는다**.
+> **컨텍스트 효율 규칙 (iteration 재진입 시)**: `auto-state.yaml`과 `last_iteration_summary` 파일만 읽고 patch 대상 파일을 Edit한다. 전체 청사진·기획 문서·이전 iteration의 src 파일을 다시 Read하지 **않는다**.
 
 **실패** + `CURRENT_ITER == MAX_ITER`:
 - 안내 출력: `❌ 최대 반복({MAX_ITER}) 소진, 미해결 실패 — /pr-merge 실행하지 않고 정지`
@@ -596,37 +596,25 @@ Step 5.3은 가장 많은 컨텍스트(다수의 entity·service·controller 생
 
 #### Step 5.6: PR 머지 (테스트 통과 시만)
 
-##### 5.6.A 🗜️ Pre-merge Compact Checkpoint (특히 중요)
+##### 5.6.A 💾 Pre-merge Silent Save (특히 중요)
 
-머지 직전에 한 번 더 컨텍스트를 정리한다. `/pr-merge --auto` 자체가 PR 생성·코드 리뷰·이슈 수정·재리뷰까지 많은 컨텍스트를 추가로 소비하므로, 진입 시점의 컨텍스트가 가벼울수록 안정적이다.
+머지 직전에 한 번 더 상태를 영속화한다. `/pr-merge --auto` 자체가 PR 생성·코드 리뷰·이슈 수정·재리뷰까지 많은 컨텍스트를 추가로 소비하므로, 진입 시점의 컨텍스트가 가벼울수록 안정적이다.
 
-**이 checkpoint는 다른 곳보다 더 엄격하다**: pr-merge가 시작되면 머지 후 worktree가 사라지므로, `auto-state.yaml`이 sprint 브랜치 commit 안에 반드시 포함되어 있어야 dev로 머지된 뒤 메인 worktree에서 접근 가능하다.
+**이 save는 다른 곳보다 더 엄격하다**: pr-merge가 시작되면 머지 후 worktree가 사라지므로, `auto-state.yaml`이 sprint 브랜치 commit 안에 반드시 포함되어 있어야 dev로 머지된 뒤 메인 worktree에서 접근 가능하다.
 
-**5.1.5 Compact Checkpoint Protocol을 실행**하되 다음 추가 검증:
+**5.1.5 Silent Save Protocol을 실행**하되 다음 추가 검증:
 
 1. `auto-state.yaml`에 `completed_stages: [..., 5.5_passed]`, `next_stage: 5.6.B`, 최종 `last_test_result` 기록
-2. **반드시 git commit** (5.1.5.B 규칙):
+2. **반드시 git commit** (5.1.5.B 규칙 — 추적되지 않은 yaml이 worktree 제거와 함께 사라지는 사고 방지):
    ```bash
    git add docs/sprints/sprint-${N}-${SPRINT_NAME}/auto-state.yaml
    git commit -m "chore: pre-merge checkpoint (Stage 5.6.A)"
    ```
-3. 사용자에게 다음 메시지 출력 후 **skill 종료**:
+3. 다음 한 줄을 가볍게 출력하고 **곧바로 Step 5.6.B 자동 호출**:
    ```
-   🗜️  PRE-MERGE CHECKPOINT — 머지 진입 직전 마지막 게이트
-   
-   상태 저장됨 + 커밋 완료: docs/sprints/.../auto-state.yaml
-   다음 단계: Stage 5.6.B — /pr-merge --auto (PR 생성·리뷰·머지·worktree 제거)
-   
-   ⚠️  머지가 시작되면 worktree가 제거됩니다. 머지 전 컨텍스트 정리를 강력히 권장:
-   
-   📝 진행 방법:
-     (1) /compact   ← 권장
-     (2) /sprint-init --resume   ← 머지 시작
-   
-   또는 곧바로 머지:
-     /sprint-init --resume
+   ✅ Pre-merge save 완료 → /pr-merge --auto 자동 호출 (worktree 제거 예정)
    ```
-4. **사용자가 `--resume`으로 재진입하면 Step 5.6.B로 점프**.
+4. 5.1.5.C의 참조 회피 규칙 적용 — 이전 iteration 로그, 청사진 전체, 테스트 출력은 더 이상 재참조하지 않음. pr-merge는 git diff와 PR 메타데이터로 작업한다.
 
 ##### 5.6.B `/pr-merge --auto` 호출
 
@@ -650,20 +638,13 @@ worktree 제거 직후, **메인 worktree에서** 다음을 수행한다:
 
 > **경로 주의**: worktree가 제거되었으므로 `auto-state.yaml`은 이제 *메인 worktree*의 `docs/sprints/sprint-{N}-{sprint-name}/`에 존재한다 (Sprint 브랜치 머지로 dev에 반영된 파일). 만약 메인 worktree에 해당 경로가 없으면 (sprint 브랜치가 dev로 머지되어 파일이 따라왔어야 함) `git pull origin dev`로 동기화 후 다시 확인.
 
-##### 5.6.D Final Compact Checkpoint (선택)
+##### 5.6.D Final Silent Save (선택)
 
-5.7 보고서는 일반적으로 컨텍스트 부담이 작으므로 강제 checkpoint는 생략한다. 다만 `/pr-merge --auto`가 코드 리뷰 사이클을 많이 돌았다면(예: 리뷰 반복 ≥ 2회) 권장 메시지를 출력한다:
-
-```
-ℹ️  /pr-merge가 리뷰 사이클 {N}회를 소비했습니다. 보고서 작성 전 /compact 권장.
-   (continue / compact 후 continue / abort)
-```
-
-응답이 'abort'면 5.7을 건너뛴다.
+5.7 보고서는 일반적으로 컨텍스트 부담이 작으므로 별도 silent save는 생략한다. 5.6.C에서 이미 머지 결과(pr_url, merge_success)를 yaml에 기록했으므로 5.7에서는 그 yaml만 다시 읽으면 된다 — exit/사용자 확인 없이 곧바로 Step 5.7로 진행한다.
 
 #### Step 5.7: 최종 보고서 출력
 
-**데이터 소스**: `auto-state.yaml`을 다시 읽어 보고서 값을 채운다. /compact 누적으로 변수가 휘발되었을 가능성을 대비해, 컨텍스트에 남아 있는 값에 의존하지 않고 상태 파일을 단일 진실 출처로 사용한다.
+**데이터 소스**: `auto-state.yaml`을 다시 읽어 보고서 값을 채운다. 시스템 자동 압축으로 in-flight 변수가 휘발되었을 가능성을 대비해, 컨텍스트에 남아 있는 값에 의존하지 않고 상태 파일을 단일 진실 출처로 사용한다.
 
 ```
 ═══════════════════════════════════════════════════════
