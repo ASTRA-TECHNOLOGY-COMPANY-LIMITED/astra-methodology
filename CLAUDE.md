@@ -104,6 +104,9 @@ ASTRA는 sprint 단위로 격리된 worktree를 사용해 다중 Claude Code 세
 3. **track-sprint-progress.sh** — detects sprint-related file events and appends activity log entries to the sprint progress tracker
 4. All PostToolUse hooks are non-blocking (exit 0) — they emit warnings only
 
+**UserPromptSubmit hooks** (run when user submits a prompt):
+1. **inject-feature-dev-cwd.sh** — when `/feature-dev` is invoked from inside a sprint worktree (`.astra-worktrees/sprint-*`), injects cwd-anchored sprint paths into the LLM context so the external feature-dev plugin does not fall back to the main worktree (where uncommitted sprint files are not visible). Non-blocking (exit 0). No output when the trigger does not match.
+
 ### Hybrid Agent Architecture (Validators + Personas)
 
 ASTRA uses a **hybrid agent strategy** that pairs workflow-driven skills with two distinct agent types:
