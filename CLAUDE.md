@@ -72,6 +72,16 @@ The plugin auto-applies international code standards when implementing phone num
 
 Data files: `iso_3166_1_countries.json` (249 countries), `iso_3166_2_regions.json` (653 regions), `country_calling_codes.json` (245 calling codes).
 
+### Worktree Isolation (v4.1+)
+
+`/pr-merge`와 dev-sync 스킬은 동일 저장소에서 동시에 작업하는 다른 Claude Code 세션을 보호하기 위해 **격리 worktree** 정책을 따른다.
+
+- **공유 브랜치** (`main`, `master`, `staging`, `dev`): 메인 worktree에서 직접 작업. 캐스케이드 머지(`main→staging→dev`)와 프로모션 (`/pr-merge --staging`, `/pr-merge --main`)도 메인 worktree에서 진행한다.
+- **격리 브랜치** (`feat/*`, `fix/*`, `docs/*`, `refactor/*`, `chore/*` 등): `/pr-merge`가 `.astra-worktrees/<slug>/`에 격리 worktree를 생성해 거기서 작업한다. 슬러그는 `feat/foo-bar` → `feat-foo-bar` (슬래시→하이픈) 규칙. 머지 완료 후 worktree는 자동 제거되고 메인 worktree는 `dev`로 복귀한다. 충돌·중단 시 worktree는 그대로 남으며, 사용자가 해결 후 `/pr-merge` 재실행으로 이어진다.
+- **dev-sync 스킬 가드**: `service-planner`, `handoff-publish`, `manual-generator`, `slack-import`, `sprint-init`, `test-scenario`, `catalog-generator`, `test-run` 8종은 격리 worktree 안에서 호출되면 거부한다 — 메인 worktree(`dev`)에서 실행해야 한다.
+- **헬퍼 스크립트**: `scripts/worktree-helpers.sh` (source 해서 사용). 주요 함수: `astra_ensure_main_worktree`, `astra_create_worktree_new`, `astra_remove_worktree`, `astra_is_isolated_worktree`. 격리 worktree 판정은 `git rev-parse --git-dir` vs `--git-common-dir` 비교 (경로 매칭 아님).
+- **`.gitignore`**: target project 초기화(`init-project.sh`) 시 `.astra-worktrees/`를 자동 등록한다.
+
 ### Hooks Architecture
 
 `hooks/hooks.json` defines hooks that run automatically:

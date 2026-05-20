@@ -12,6 +12,8 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 
 **브랜치 전략**: `feature → dev → staging → main`
 
+**Worktree 격리 정책 (v4.1+)**: 작업 브랜치(feat/*, fix/*, docs/*, refactor/*, chore/* 등 공유 브랜치 외 모든 브랜치)는 `.astra-worktrees/<slug>/` 격리 디렉토리에서 작업한다. 메인 worktree는 항상 공유 브랜치(main/staging/dev/master) 중 하나를 유지하므로, 동일 저장소에서 작업하는 다른 Claude Code 세션이 브랜치 전환의 영향을 받지 않는다. 헬퍼는 `$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh`에서 source 한다.
+
 ## Execution Procedure
 
 ### Step 1: 인자 파싱 및 사전 검증
@@ -34,6 +36,14 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 1. **gh CLI 인증**: `gh auth status`를 실행하여 GitHub CLI 인증 상태를 확인한다. 인증되지 않은 경우 `gh auth login`을 안내하고 중단한다.
 2. **클린 상태 확인**: `git status`로 현재 상태를 파악한다 (커밋되지 않은 변경사항, 스테이징된 파일 등).
    - 프로모션 모드에서 미커밋 변경사항이 있으면 경고하고 중단한다 (프로모션은 클린 상태에서만 실행).
+3. **Worktree 헬퍼 로드**: 모든 Bash 단계에서 worktree 헬퍼를 source 한다:
+   ```bash
+   source "$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh"
+   ```
+   이후 `astra_*` 함수를 사용한다. 이미 격리 worktree 안에서 `/pr-merge`를 호출했다면 메인 worktree로 이동 후 재실행을 안내하고 중단한다:
+   ```bash
+   astra_ensure_main_worktree || exit 1
+   ```
 
 ### Step 1.1: 대상 브랜치 자동 선택 (기본 모드만)
 
@@ -55,7 +65,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 git fetch origin
 ```
 
-`main`, `staging`, `dev` 각 브랜치에 대해:
+`main`, `staging`, `dev`는 **공유 브랜치**이므로 메인 worktree에서 직접 처리한다 (worktree 격리 대상 아님). 각 브랜치에 대해:
 1. `git ls-remote --heads origin {branch}`로 원격 존재 여부를 확인한다.
 2. 원격에 존재하지 않는 브랜치는 건너뛴다 (경고만 출력).
 3. 원격에 존재하는 브랜치에 대해 로컬 브랜치가 없으면 `git checkout -b {branch} origin/{branch}`로 트래킹 브랜치를 생성한다.
@@ -65,16 +75,16 @@ git fetch origin
    git pull --rebase origin {branch}
    ```
 
+> **참고**: 공유 브랜치 간 checkout은 메인 worktree에서 합쳐서 수행한다. 다른 세션이 격리 worktree에서 작업 브랜치를 보고 있는 경우 영향받지 않는다.
+
 > **필수**: `{target-branch}` 브랜치는 반드시 존재해야 한다. 원격에 `{target-branch}`가 없으면 **AskUserQuestion**으로 사용자에게 기본 브랜치로부터 `{target-branch}`를 생성할지 확인한다. 거부 시 중단한다. (기본 모드에서 Step 1.1이 Step 2보다 먼저 실행되므로 `{target-branch}` 값이 이미 결정되어 있다.)
 
 #### Step 2.2: 캐스케이드 머지 (main → staging → dev)
 
 상위 브랜치의 변경사항을 하위 브랜치로 순차적으로 머지한다. 원격에 존재하는 브랜치만 대상으로 한다.
 
-**모드별 캐스케이드 범위**:
-- **기본 모드 (`{target-branch}` = `dev`)**: 전체 캐스케이드 실행 (`main → staging → dev`)
-- **기본 모드 (`{target-branch}` = `staging`)**: `main → staging`까지만 실행 (dev로의 캐스케이드 불필요)
-- **기본 모드 (`{target-branch}` = 기타)**: 전체 캐스케이드 실행 (`main → staging → dev`). 단, `{target-branch}` 자체는 캐스케이드 대상이 아니므로 Step 5에서 `origin/{target-branch}`와 머지하여 동기화한다.
+**모드별 캐스케이드 범위** (Step 1.1에서 기본 모드의 `{target-branch}`는 항상 `dev`로 고정됨):
+- **기본 모드**: 전체 캐스케이드 실행 (`main → staging → dev`)
 - **`--staging` 프로모션**: `main → staging`까지만 실행 (dev는 머지 대상이 아님)
 - **`--main` 프로모션**: 캐스케이드를 건너뛴다 (staging → main 방향이므로 역방향 동기화 불필요)
 
@@ -119,56 +129,92 @@ git fetch origin
 
 ### Step 4: 작업 브랜치 확인
 
-현재 브랜치가 `main`, `master`, `staging`, `dev`, 또는 `{target-branch}`인지 확인한다.
+현재 브랜치가 공유 브랜치(`main`, `master`, `staging`, `dev`) 중 하나인지 확인한다 (Step 1.1에서 `{target-branch}`는 항상 `dev`로 고정되므로 별도 분기 불필요).
 
-- **보호 브랜치 또는 `{target-branch}`에 있는 경우**: 작업 브랜치 자동 생성이 필요 → **Step 4.1**로 진행
-- **이미 작업 브랜치(feature, fix, docs 등)에 있는 경우**: 그대로 사용 → **Step 5**로 진행
+- **공유 브랜치(main/master/staging/dev)에 있는 경우**: 격리 worktree 자동 생성이 필요 → **Step 4.1**로 진행
+- **이미 작업 브랜치(feature, fix, docs 등)에 메인 worktree에서 머물러 있는 경우**: 사용자가 정책 도입 전부터 메인 worktree에서 작업 중이던 케이스. 그대로 사용 → **Step 5**로 진행 (강제 마이그레이션하지 않음)
 
-### Step 4.1: 작업 브랜치 자동 생성
+### Step 4.1: 격리 worktree 작업 브랜치 자동 생성
 
-1. `git status`와 `git log`로 현재 변경사항 및 최근 작업 컨텍스트를 분석하여 적절한 브랜치명을 **자동으로 결정**한다 (예: `feat/user-auth`, `fix/login-error`). 사용자에게 묻지 않는다.
+1. `git status`와 `git log`로 현재 변경사항 및 최근 작업 컨텍스트를 분석하여 적절한 *희망* 브랜치명을 **자동으로 결정**한다 (예: `feat/user-auth`, `fix/login-error`). 사용자에게 묻지 않는다.
    - 변경사항의 성격을 분석하여 prefix를 결정: `feat/` (기능 추가), `fix/` (버그 수정), `docs/` (문서), `refactor/` (리팩토링), `chore/` (설정/빌드)
    - 변경된 파일명, 커밋 로그, 디렉토리 구조에서 핵심 키워드를 추출하여 suffix를 결정
-2. 결정된 브랜치명으로 `{target-branch}`를 베이스로 작업 브랜치를 생성한다:
+   - 이 시점에는 *희망* 이름이다. 헬퍼가 이미 점유된 브랜치명/디렉토리를 감지하면 `-2`, `-3` suffix를 자동 추가하므로 **실제 사용된 이름은 헬퍼 반환값으로 확인**한다.
+2. 메인 worktree에 미커밋 변경사항이 있으면 stash로 임시 보관한다:
    ```bash
-   git checkout -b {branch-name} {target-branch}
+   STASHED=0
+   if [ -n "$(git status --porcelain)" ]; then
+     git stash push --include-untracked -m "astra-pr-merge-step4.1" || exit 1
+     STASHED=1
+   fi
    ```
-   미커밋 변경사항은 그대로 유지된다. 현재 브랜치가 이미 `{target-branch}`인 경우에도 명시적으로 `{target-branch}`를 베이스로 지정한다.
-3. 이후 단계에서 `{branch-name}`은 이 새로 생성된 브랜치를 참조한다.
+3. 격리 worktree에 신규 브랜치를 생성한다. 헬퍼가 `(branch, slug, .gitignore)` 충돌을 모두 흡수하고 *최종* 브랜치명과 worktree 절대경로를 탭 구분으로 반환한다.
+   ```bash
+   if ! out=$(astra_create_worktree_new "{희망 브랜치명}" "origin/{target-branch}"); then
+     # 생성 실패 시 stash 복원 후 종료 — 사용자 변경사항이 stash에 갇히지 않도록 보장
+     if [ "$STASHED" = "1" ]; then
+       git stash pop || echo "WARN: stash pop 실패. 'git stash list'에서 확인하세요."
+     fi
+     exit 1
+   fi
+   IFS=$'\t' read -r BRANCH_NAME WT_PATH <<< "$out"
+   # read 결과 검증 — 빈 문자열이면 cd가 홈으로 가서 다른 repo를 오염시킬 수 있음
+   if [ -z "$WT_PATH" ] || [ ! -d "$WT_PATH" ]; then
+     echo "ERROR: worktree 경로를 확정할 수 없습니다. 헬퍼 출력: '$out'" >&2
+     [ "$STASHED" = "1" ] && git stash pop || true
+     exit 1
+   fi
+   echo "작업 worktree: $WT_PATH (branch: $BRANCH_NAME)"
+   ```
+4. stash가 있으면 새 worktree로 이동해 거기서 복원한다 (linked worktree는 메인과 stash 리스트를 공유하므로 `git stash pop`이 메인의 stash를 옮겨와 적용한다):
+   ```bash
+   cd "$WT_PATH"
+   if [ "$STASHED" = "1" ]; then
+     git stash pop || {
+       echo "WARN: stash 복원 충돌. 'cd $WT_PATH && git stash list'로 확인 후 수동 해결하세요."
+       exit 1
+     }
+   fi
+   ```
+5. 이후 모든 git 작업(commit, push, 머지 후 정리)은 `$WT_PATH` 안에서 수행한다. SKILL.md의 후속 단계에서 "현재 브랜치"는 격리 worktree에 체크아웃된 `$BRANCH_NAME`을 의미한다.
+6. `{branch-name}`은 `$BRANCH_NAME` (헬퍼가 결정한 실제 사용된 이름), `{work-tree-path}`는 `$WT_PATH`를 참조한다. 자동 suffix가 붙었을 수 있으므로 후속 단계에서 *희망 이름이 아니라 헬퍼 반환값*을 사용한다.
 
 ### Step 5: 대상 브랜치 동기화
 
-Step 2에서 이미 캐스케이드 머지를 완료했으므로, 작업 브랜치에 `{target-branch}`의 최신 변경사항을 반영한다:
+Step 2에서 이미 캐스케이드 머지를 완료했으므로, 작업 브랜치에 `{target-branch}`의 최신 변경사항을 반영한다. **격리 worktree(`{work-tree-path}`) 안에서 실행**한다:
 
 ```bash
+cd "$WT_PATH"  # 또는 이미 cd 한 상태
 git merge origin/{target-branch}
 ```
 
 - **충돌 없음**: 다음 단계로 진행
-- **충돌 발생**: 충돌 파일 목록을 출력하고, 사용자에게 수동 해결을 안내한 후 중단한다.
+- **충돌 발생**: 충돌 파일 목록을 출력하고, 사용자에게 수동 해결을 안내한 후 중단한다. 사용자는 격리 worktree(`$WT_PATH`)에 남은 채로 충돌을 해결한 뒤 `/pr-merge`를 재실행하면 이어진다 — worktree는 자동 제거되지 않는다.
 
-**건너뛰기 조건**: Step 4.1을 방금 실행한 경우 (작업 브랜치를 `{target-branch}`로부터 생성) 이미 동기화 상태이므로 건너뛴다.
+**건너뛰기 조건**: Step 4.1을 방금 실행한 경우 (격리 worktree를 `origin/{target-branch}`로부터 생성) 이미 동기화 상태이므로 건너뛴다.
 
 ### Step 6: 커밋 & 푸시
 
-미커밋 변경사항을 처리한다:
+격리 worktree 안에서 미커밋 변경사항을 처리한다:
 
-1. `git status`로 변경사항을 확인한다.
+1. `git status`로 변경사항을 확인한다 (작업 디렉토리는 `$WT_PATH`).
 2. 변경사항이 있으면 변경 내용 요약을 사용자에게 보여주고 **AskUserQuestion**으로 커밋 진행 여부를 확인한다.
 3. 사용자 확인 후:
    - 변경된 파일을 `git add`로 스테이징 (민감 파일 `.env`, `credentials` 등 제외)
    - `git diff --staged`로 스테이징된 변경사항 분석
    - `git log`로 최근 커밋 메시지 스타일 확인
    - 변경사항을 분석하여 커밋 메시지 작성 후 `git commit` 실행
-4. `git push -u origin {branch-name}`으로 원격에 푸시한다.
+4. `git push -u origin "$BRANCH_NAME"`으로 원격에 푸시한다 (Step 4.1을 거친 경우 — 아니면 `git push -u origin {branch-name}`).
 
 변경사항이 없으면 이 단계를 건너뛴다.
+
+> **참고**: 격리 worktree는 메인 worktree와 git 메타데이터(`.git`)를 공유하므로 push/remote 설정은 별도 구성이 필요 없다.
 
 ### Step 7: PR 생성
 
 기존 PR이 있는지 확인하고, 없으면 새로 생성한다:
 
-1. `gh pr list --head {branch-name} --base {target-branch} --state open`으로 기존 PR 확인
+1. `gh pr list --head "$BRANCH_NAME" --base {target-branch} --state open`으로 기존 PR 확인 (Step 4.1을 거친 경우 — 아니면 `{branch-name}` 값으로 치환).
 2. **기존 PR이 있으면**: PR URL을 출력하고 Step 8로 진행
 3. **기존 PR이 없으면**: ASTRA 템플릿으로 PR 생성
 
@@ -278,13 +324,31 @@ Agent tool (subagent_type: "feature-dev:code-reviewer")
 
 ### Step 9: 정리 및 버전 업데이트
 
-머지 후 로컬 환경을 정리한다:
+머지 후 격리 worktree와 로컬 환경을 정리한다. **메인 worktree로 먼저 이동**한 뒤 정리한다 (격리 worktree에서 자기 자신을 remove할 수 없음):
 
-1. `git fetch origin`으로 원격 최신 상태를 가져온다.
-2. `git checkout {target-branch}`로 전환한다.
-3. `git pull --rebase`로 최신 상태 동기화
-4. 머지된 로컬 브랜치 삭제: `git branch -d {branch-name}`
-5. 최종 요약을 출력한다:
+1. **메인 worktree로 이동**:
+   ```bash
+   MAIN_ROOT=$(astra_main_worktree_root)
+   cd "$MAIN_ROOT"
+   ```
+2. `git fetch origin`으로 원격 최신 상태를 가져온다.
+3. `git checkout dev`로 전환한다 (`{target-branch}`가 dev가 아닌 경우에도 종료 위치는 dev로 통일).
+4. `git pull --rebase origin dev`로 최신 상태 동기화.
+5. **격리 worktree 제거**: Step 4.1에서 생성한 worktree가 있으면 헬퍼로 제거한다 (`$BRANCH_NAME`은 Step 4.1에서 헬퍼가 반환한 최종 브랜치명):
+   ```bash
+   if [ -n "${WT_PATH:-}" ]; then
+     astra_remove_worktree "$BRANCH_NAME"
+   fi
+   ```
+   `git worktree remove`가 실패하면 (`{work-tree-path}`에 dirty 변경사항 등) 헬퍼는 경고만 출력하고 워크플로우는 계속 진행한다.
+6. **머지된 로컬 브랜치 삭제**: Step 4.1을 통해 격리 worktree를 생성한 경우(`$WT_PATH`와 `$BRANCH_NAME`이 모두 설정된 경우)에만 실행한다. PR이 실제로 머지 완료된 경우만 `git branch -d "$BRANCH_NAME"` (안전 삭제 — 미머지면 실패):
+   ```bash
+   if [ -n "${WT_PATH:-}" ] && [ -n "${BRANCH_NAME:-}" ]; then
+     git branch -d "$BRANCH_NAME" || echo "INFO: $BRANCH_NAME 삭제 건너뜀 (미머지 또는 원격에서 이미 삭제됨)"
+   fi
+   ```
+   Step 4.1을 거치지 않고 이미 작업 브랜치에 머물러 있던 경우(Step 4 경로 b)는 현재 브랜치가 메인 worktree에 체크아웃된 상태라 `git branch -d`로 삭제할 수 없으므로 건너뛴다. 미머지로 실패하면 사용자에게 안내만 하고 강제 삭제하지 않는다.
+7. 최종 요약을 출력한다:
 
 > **참고**: 기본 모드에서는 버전 범프를 수행하지 않는다. 버전 범프는 `--main` 프로모션 (Step 11)에서만 실행된다.
 
@@ -317,10 +381,12 @@ Agent tool (subagent_type: "feature-dev:code-reviewer")
 
 **검증 절차**:
 
+> **참고**: 프로모션 모드의 source/target은 항상 공유 브랜치(dev/staging/main)이므로 worktree 격리 대상이 아니다. 모든 checkout은 메인 worktree에서 수행한다.
+
 1. **소스 브랜치 확인**: `git ls-remote --heads origin {source-branch}`로 원격에 `{source-branch}`가 존재하는지 확인한다. 없으면 에러 메시지를 출력하고 중단한다.
 2. **대상 브랜치 확인**: `git ls-remote --heads origin {target-branch}`로 원격에 `{target-branch}`가 존재하는지 확인한다.
    - **존재하지 않으면**: **AskUserQuestion**으로 `{target-branch}` 브랜치를 `{source-branch}`로부터 생성할지 확인한다. 승인 시 생성하고 push, 거부 시 중단한다.
-3. **소스 브랜치로 전환**: `git checkout {source-branch}`
+3. **소스 브랜치로 전환**: 메인 worktree에서 `git checkout {source-branch}`
 4. **차이 확인**: `git log origin/{target-branch}..origin/{source-branch} --oneline`으로 프로모션할 커밋이 있는지 확인한다. 차이가 없으면 "프로모션할 변경사항이 없습니다"를 출력하고 중단한다.
 5. 커밋 목록을 사용자에게 표시한다.
 
@@ -427,7 +493,8 @@ EOF
 ## Notes
 
 - **브랜치 전략**: `feature → dev → staging → main` 순서로 코드를 승격한다.
-- **공통 전처리**: 모든 모드에서 실행 전 `main` / `staging` / `dev`를 pull 받는다. 캐스케이드 머지는 모드와 `{target-branch}`에 따라 범위가 다르다: 기본 모드에서 `{target-branch}` = `dev`이면 전체(`main → staging → dev`), `{target-branch}` = `staging`이면 `main → staging`만, `--staging` 프로모션에서는 `main → staging`만, `--main` 프로모션에서는 건너뛴다.
+- **Worktree 격리 (v4.1+)**: 작업 브랜치는 메인 저장소 루트의 `.astra-worktrees/<slug>/`에서 작업하므로, 메인 worktree의 다른 Claude Code 세션이 브랜치 전환 영향을 받지 않는다. 공유 브랜치(main/staging/dev/master) 간 캐스케이드 머지·프로모션은 메인 worktree에서 직접 수행한다. 작업 종료(머지 완료) 후 격리 worktree는 자동 제거되고, 메인 worktree는 `dev`로 복귀한다. 충돌 등으로 워크플로우가 중단되면 사용자가 격리 worktree에 남는다(자동 정리되지 않음) — 해결 후 `/pr-merge` 재실행으로 이어진다.
+- **공통 전처리**: 모든 모드에서 실행 전 `main` / `staging` / `dev`를 pull 받는다. 캐스케이드 머지는 모드에 따라 범위가 다르다: 기본 모드는 전체(`main → staging → dev`), `--staging` 프로모션은 `main → staging`까지만, `--main` 프로모션은 건너뛴다.
 - **기본 모드**: 머지 대상 브랜치는 자동으로 `dev`로 설정된다 (사용자에게 묻지 않음). `main`/`master`/`staging`/`dev` 브랜치에서 실행하면 자동으로 작업 브랜치를 생성한다. 브랜치명도 변경사항을 분석하여 자동 결정한다. 원격에 `{target-branch}`가 없으면 기본 브랜치로부터 자동 생성한다.
 - **프로모션 모드 (`--staging`)**: `dev` → `staging`으로 승격한다. 작업 브랜치 생성/커밋 단계를 건너뛰고 PR 기반 머지에 집중한다.
 - **프로모션 모드 (`--main`)**: `staging` → `main`으로 승격한다. 릴리스 프로모션이므로 버전 범프가 이 단계에서 실행된다.
