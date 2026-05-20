@@ -47,8 +47,10 @@ Slack 채널의 메시지를 분석하여 개발 백로그 항목으로 정리�
 | 3 | 관리자 대시보드 | 관리자 권한별 대시보드 분리 | @park | 03-06 | Medium | [원문 첫 30자...] |
 
 ### 추천 다음 단계
-- `/slack-import {channel}` — 선택한 항목으로 블루프린트 + 스프린트 자동 생성
-- `/feature-dev "{기능 설명}"` — 개별 기능 설계/구현
+- `/slack-import {channel}` — 선택한 항목으로 청사진 + 스프린트 자동 생성 (대량 일괄)
+- `/blueprint {feature-slug}` — 개별 기능 청사진 작성 (데이터 플로우·스키마·로직)
+- `/sprint-init {feature-slug}` — 청사진이 준비된 후 스프린트 시작
+- `/feature-dev "..."` — sprint worktree 안에서 구현 (HITL은 청사진 Section 10에 따름)
 ```
 
 ## 우선순위 판단 기준
