@@ -13,6 +13,9 @@
 #
 # Usage:
 #   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+#   if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$PLUGIN_ROOT/scripts/worktree-helpers.sh" ]; then
+#     echo "ERROR: CLAUDE_PLUGIN_ROOT를 찾을 수 없습니다." >&2; exit 1
+#   fi
 #   source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
 #   astra_ensure_main_worktree || exit 1
 #   wt_path=$(astra_create_worktree "feat/foo-bar" "origin/dev") || exit 1
