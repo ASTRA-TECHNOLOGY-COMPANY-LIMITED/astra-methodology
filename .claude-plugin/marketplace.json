@@ -13,7 +13,7 @@
     {
       "name": "astra-methodology",
       "description": "ASTRA methodology plugin with coding convention enforcement, data standard, international code standards, naming validation, quality gates, Slack integration, service manual auto-generator, UX/UI/Dev/QA Screen-ID based handoff package generator, role-based persona agents, and /autorun self-improving full pipeline. v5.0.0 BREAKING: Sprint-level worktree model. /sprint-init creates `.astra-worktrees/sprint-<N>-<name>/` with sprint branch and port-isolated `.astra-worktree.env`; all dev + test happen inside the worktree. /test-run no longer touches dev — it sources the env, launches on the sprint port, and guarantees port release via 4-step cleanup. /pr-merge runs from the worktree, merges to dev, then auto-removes the worktree. REMOVED: /pr-merge --start mode; main-worktree guards on /test-run and /test-scenario; /test-run dev-commit + dev→staging promotion (moved to /pr-merge). v4.0.0 BREAKING: /ux-publish removed; HTML mockup generation integrated into /service-planner Step 6.",
-      "version": "5.0.0",
+      "version": "5.0.1",
       "author": {
         "name": "Zeans.L",
         "email": "zeans@astravision.co.kr"
