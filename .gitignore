@@ -1,2 +1,5 @@
 .claude/
 .DS_Store
+
+# ASTRA isolated worktrees (managed by /pr-merge)
+.astra-worktrees/

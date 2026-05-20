@@ -12,8 +12,8 @@
   "plugins": [
     {
       "name": "astra-methodology",
-      "description": "ASTRA methodology plugin with coding convention enforcement, data standard, international code standards, naming validation, quality gates, Slack integration, service manual auto-generator, UX/UI/Dev/QA Screen-ID based handoff package generator (HANDOFF_PROCESS_GUIDE v1.1), role-based persona agents (planner-reviewer, tester/designer/developer-persona), and /autorun self-improving full pipeline (planning → testing with up-to-N iteration loop, early exit on test pass). v4.0.0 BREAKING: /ux-publish removed; HTML mockup generation integrated into /service-planner Step 6 (co-located with markdown deliverables)",
-      "version": "4.0.0",
+      "description": "ASTRA methodology plugin with coding convention enforcement, data standard, international code standards, naming validation, quality gates, Slack integration, service manual auto-generator, UX/UI/Dev/QA Screen-ID based handoff package generator (HANDOFF_PROCESS_GUIDE v1.1), role-based persona agents (planner-reviewer, tester/designer/developer-persona), and /autorun self-improving full pipeline (planning → testing with up-to-N iteration loop, early exit on test pass). v4.1.0: Worktree isolation — /pr-merge creates work branches in .astra-worktrees/<slug>/ so concurrent Claude Code sessions don't collide on branch switches. v4.0.0 BREAKING: /ux-publish removed; HTML mockup generation integrated into /service-planner Step 6 (co-located with markdown deliverables)",
+      "version": "4.1.0",
       "author": {
         "name": "Zeans.L",
         "email": "zeans@astravision.co.kr"
