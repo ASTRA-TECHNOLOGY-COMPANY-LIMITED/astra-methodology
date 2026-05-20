@@ -148,10 +148,11 @@ Role-based mindset agents that bring senior-practitioner perspective. **Never au
 | Skill | Purpose |
 |-------|---------|
 | `/service-planner` | Design Thinking 기반 기획 (markdown 6종 + HTML 기획화면). 모드: 신규/개선. 자동 결정: 디자인 톤 5종 중 페르소나 기반 선택. |
+| `/blueprint` | 청사진(설계 문서) 작성 전용. 10개 표준 섹션(데이터 모델·API 계약·시퀀스·로직 의사코드·**HITL Triggers**) — 구현 코드 제외. planner 산출물 자동 로드. 1-3개 핵심 결정만 HITL. Section 10이 `/feature-dev`의 구현 단계 HITL 가드 역할. |
 | `/handoff-publish` | UX/UI/Dev/QA 협업 패키지 — Screen ID 기반 14파일. UX가 ID 발급 단독 권한. `{feature-name}-handoff/`에 출력. |
 | `/manual-generator` | Service URL + 프로젝트 docs → self-contained HTML 매뉴얼. Chrome MCP 스크린샷 + 어노테이션. |
 | `/catalog-generator` | 제품 데이터 → self-contained HTML 카탈로그. AI 이미지(fect-image) + 영업 전략 자동 적용. |
-| `/autorun` | 무인 풀 파이프라인: `/service-planner` → planner-reviewer → design-token-validator → blueprint → blueprint-reviewer → `/sprint-init` → 구현 → `/test-scenario` → `/test-run` (5회 자동 디버그). `/pr-merge` 직전 정지. |
+| `/autorun` | 무인 풀 파이프라인: `/service-planner` → planner-reviewer → design-token-validator → blueprint → blueprint-reviewer → `/sprint-init` → `/test-scenario`(TDD) → 구현 → `/test-run` (5회 자동 디버그) → `/pr-merge --auto` → worktree 자동 제거. 진짜 차단(gh 인증·머지 충돌·Critical 리뷰)에서만 HITL 발동. `/sprint-init --auto`로도 동일한 후반부 파이프라인 진입 가능. |
 | `/slack-import` | Slack List/메시지 → 청사진 + 스프린트 프롬프트 맵 + 진행 트래커. `SLACK_BOT_TOKEN` 필요. |
 | `/extract-backlog` | Slack 채널 메시지 → 우선순위 백로그 표 (가벼운 명령). |
 
@@ -189,7 +190,14 @@ These principles are inlined into the relevant skills rather than being a standa
 
 **Quick reference**: `/astra-guide principles`
 
-**ASTRA 자동 빌더 예외**: `/service-planner`, `/manual-generator`, `/catalog-generator`, `/handoff-publish`, `/project-init`, `/sprint-init`, `/autorun` 같은 *광범위 산출물 생성형 skill*은 사용자가 명시적으로 요청한 풀 스택 산출물을 생성하므로 "Simplicity First"의 범위 제한을 받지 않는다. 다만 그 내부에서 작성하는 *개별 코드*는 4원칙을 그대로 따른다.
+**ASTRA 자동 빌더 예외**: `/service-planner`, `/blueprint`, `/manual-generator`, `/catalog-generator`, `/handoff-publish`, `/project-init`, `/sprint-init`, `/autorun` 같은 *광범위 산출물 생성형 skill*은 사용자가 명시적으로 요청한 풀 스택 산출물을 생성하므로 "Simplicity First"의 범위 제한을 받지 않는다. 다만 그 내부에서 작성하는 *개별 코드*는 4원칙을 그대로 따른다.
+
+> **⚠️ 완전 자동 머지 경고 (v5.x+)**: `/autorun`과 `/sprint-init --auto`는 테스트 통과 시 `/pr-merge --auto`까지 자동 호출하여 dev 브랜치에 머지한다. 무인 모드는 다음 안전 게이트로 보호되지만 *유효 게이트만큼만* 안전하다:
+> - 테스트 통과 (test-run의 자가 개선 5회 + autorun MAX iteration 자가 개선)
+> - 코드 리뷰 통과 (feature-dev:code-reviewer Agent의 Critical 이슈 0건 — 잔존 시 머지 차단)
+> - 머지 충돌 부재 (캐스케이드/rebase 충돌은 자동 정지)
+>
+> 민감한 비즈니스 로직, 컴플라이언스 영향 기능, 레거시 통합에는 `--auto` 사용을 권장하지 않는다 — `/autorun`(머지 안 함 모드는 없음) 대신 `/sprint-init`(스캐폴딩만) + 수동 prompt-map 진행 후 사용자 검토를 거쳐 `/pr-merge`를 명시 호출하는 흐름을 사용하라.
 
 **Source**: [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills) (MIT) — adapted into existing skills with Korean translation and ASTRA-specific scope clauses.
 
@@ -217,7 +225,7 @@ These principles are inlined into the relevant skills rather than being a standa
 - **버전업 필수**: main 브랜치에 푸시하기 전 반드시 `.claude-plugin/plugin.json`과 `.claude-plugin/marketplace.json`의 `version` 필드를 업데이트해야 한다. SemVer 규칙을 따른다 — 버그 수정은 patch(x.x.+1), 기능 추가는 minor(x.+1.0), 호환성 깨지는 변경은 major(+1.0.0).
 - **Skill description 언어 정책**:
   - **영어 사용**: auto-trigger 스킬(`coding-convention`, `data-standard`, `code-standard`, `sprint-progress`), 검증/유틸 스킬(`project-checklist`, `astra-setup`, `sprint-init`, `astra-guide`, `test-run`, `test-scenario`, `project-init`, `catalog-generator`). LLM의 영어 description 매칭 정확도가 더 높아 자동 트리거/유틸 호출에 유리.
-  - **한국어 사용**: 사용자 워크플로우 진입점인 인터랙티브 도메인 스킬(`service-planner`, `handoff-publish`, `manual-generator`, `pr-merge`, `slack-import`, `autorun`). 한국 사용자가 `/help`로 발견할 때 의도가 즉시 이해되어야 함.
+  - **한국어 사용**: 사용자 워크플로우 진입점인 인터랙티브 도메인 스킬(`service-planner`, `blueprint`, `handoff-publish`, `manual-generator`, `pr-merge`, `slack-import`, `autorun`). 한국 사용자가 `/help`로 발견할 때 의도가 즉시 이해되어야 함.
   - **frontmatter 형식**: auto-trigger 스킬은 `description: >` 블록 형식, 명시 호출 스킬은 `description: "..."` 단일 라인 형식.
 - **Agent description 가드**: 페르소나 에이전트(`tester-persona`, `designer-persona`, `developer-persona`)는 description 첫 줄에 `[EXPLICIT-INVOCATION-ONLY — DO NOT AUTO-MATCH]` 가드 prefix를 필수로 둔다.
 - Skill SKILL.md files follow a strict procedural format (단계: step-by-step instructions)

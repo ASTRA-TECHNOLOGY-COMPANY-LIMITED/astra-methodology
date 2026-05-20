@@ -1,7 +1,7 @@
 ---
 name: pr-merge
-description: "PR 생성부터 코드 리뷰, 이슈 수정, 머지까지 자동화된 반복 사이클을 실행합니다. 커밋→푸시→PR 생성→코드 리뷰→수정→재리뷰→머지→worktree 제거 워크플로우를 단일 명령으로 처리합니다."
-argument-hint: "[max-iterations] [--no-review] [--draft] [--patch|--minor|--major] [--staging] [--main]"
+description: "PR 생성부터 코드 리뷰, 이슈 수정, 머지까지 자동화된 반복 사이클을 실행합니다. 커밋→푸시→PR 생성→코드 리뷰→수정→재리뷰→머지→worktree 제거 워크플로우를 단일 명령으로 처리합니다. --auto 플래그로 무인 모드(autorun 등)에서 호출 시 안전한 HITL 지점(gh 인증·머지 충돌·Critical 이슈)을 제외한 모든 확인 프롬프트를 자동 승인합니다."
+argument-hint: "[max-iterations] [--no-review] [--draft] [--auto] [--patch|--minor|--major] [--staging] [--main]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 ---
 
@@ -25,6 +25,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 - **max-iterations**: 숫자 인자 → 최대 리뷰 반복 횟수 (기본값: 3)
 - **--no-review**: 코드 리뷰 없이 커밋→푸시→PR 생성→머지만 실행
 - **--draft**: PR을 Draft 상태로 생성
+- **--auto**: 무인 모드 — 안전한 HITL 지점(아래 표 참조)을 제외한 모든 `AskUserQuestion` 프롬프트를 자동 승인. `/autorun` 등 상위 파이프라인에서 호출 시 사용.
 - **--patch / --minor / --major**: 버전 범프 유형 (기본값: --patch)
 - **--staging**: 프로모션 모드 — `dev` → `staging`으로 머지
 - **--main**: 프로모션 모드 — `staging` → `main`으로 머지
@@ -32,6 +33,20 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 **모드 결정**:
 - `--staging` 또는 `--main` → 프로모션 모드
 - 그 외 → 기본 모드 (sprint worktree → dev 머지)
+
+**`--auto` 플래그 정책**:
+
+| 지점 | `--auto` 동작 | 비고 |
+|------|---------------|------|
+| Step 6 커밋 확인 (line 233) | 자동 승인 → 즉시 커밋 | 변경 요약은 그대로 출력 |
+| Step 8.3 최종 머지 확인 (line 339) | 자동 승인 → 즉시 머지 | PR 메타데이터는 그대로 출력 |
+| Step 8.1 MAX 도달 + Critical 0건 | **HITL 유지** (기존 AskUserQuestion 그대로) | High 잔존은 사용자 판단 필요 |
+| Step 8.1 MAX 도달 + Critical ≥ 1건 | **무조건 halt** | 자동/수동 무관 |
+| gh CLI 미인증 | **halt** + 안내 | 진짜 차단 (인증은 자동 불가) |
+| 캐스케이드/rebase 머지 충돌 | **halt** + 충돌 파일 안내 | 진짜 차단 (병합 판단 필요) |
+| dev 브랜치 원격 부재 (line 91) | 자동 생성 후 진행 | 안전한 디폴트 |
+
+> `--auto`는 *안전 게이트*를 우회하지 않는다 — 진짜 차단(인증·충돌·Critical)에서는 일반 모드와 동일하게 멈춘다.
 
 다음 사전 조건을 검증한다:
 
@@ -88,7 +103,11 @@ git fetch origin
 
 > **참고**: 공유 브랜치 간 checkout은 메인 worktree에서 합쳐서 수행한다. 다른 세션이 격리 worktree에서 작업 브랜치를 보고 있는 경우 영향받지 않는다.
 
-> **필수**: `{target-branch}` 브랜치는 반드시 존재해야 한다. 원격에 `{target-branch}`가 없으면 **AskUserQuestion**으로 사용자에게 기본 브랜치로부터 `{target-branch}`를 생성할지 확인한다. 거부 시 중단한다. (기본 모드에서 Step 1.1이 Step 2보다 먼저 실행되므로 `{target-branch}` 값이 이미 결정되어 있다.)
+> **필수**: `{target-branch}` 브랜치는 반드시 존재해야 한다. 원격에 `{target-branch}`가 없으면:
+> - **일반 모드**: **AskUserQuestion**으로 사용자에게 기본 브랜치로부터 `{target-branch}`를 생성할지 확인한다. 거부 시 중단한다.
+> - **`--auto` 모드**: 기본 브랜치(`main`/`master`)로부터 `{target-branch}`를 자동 생성하고 push 후 계속 진행한다.
+>
+> (기본 모드에서 Step 1.1이 Step 2보다 먼저 실행되므로 `{target-branch}` 값이 이미 결정되어 있다.)
 
 #### Step 2.2: 캐스케이드 머지 (main → staging → dev)
 
@@ -230,8 +249,10 @@ git merge origin/{target-branch}
 격리 worktree 안에서 미커밋 변경사항을 처리한다:
 
 1. `git status`로 변경사항을 확인한다 (작업 디렉토리는 `$WT_PATH`).
-2. 변경사항이 있으면 변경 내용 요약을 사용자에게 보여주고 **AskUserQuestion**으로 커밋 진행 여부를 확인한다.
-3. 사용자 확인 후:
+2. 변경사항이 있으면 변경 내용 요약을 출력한다.
+   - **일반 모드**: **AskUserQuestion**으로 커밋 진행 여부를 확인한다.
+   - **`--auto` 모드**: 확인 프롬프트를 건너뛰고 바로 다음 단계로 진행한다.
+3. (자동 또는 사용자 확인 후):
    - 변경된 파일을 `git add`로 스테이징 (민감 파일 `.env`, `credentials` 등 제외)
    - `git diff --staged`로 스테이징된 변경사항 분석
    - `git log`로 최근 커밋 메시지 스타일 확인
@@ -336,9 +357,10 @@ Agent tool (subagent_type: "feature-dev:code-reviewer")
 
 ### Step 8.3: PR 머지 확인
 
-1. **AskUserQuestion**으로 사용자에게 최종 머지 확인을 요청한다.
-   - PR URL, 리뷰 결과 요약 (통과 여부, 반복 횟수), 변경 파일 수를 표시
-2. 사용자가 머지를 거부하면 워크플로우를 중단한다.
+PR URL, 리뷰 결과 요약 (통과 여부, 반복 횟수), 변경 파일 수를 출력한다.
+
+- **일반 모드**: **AskUserQuestion**으로 사용자에게 최종 머지 확인을 요청한다. 거부 시 워크플로우를 중단한다.
+- **`--auto` 모드**: 확인 프롬프트를 건너뛰고 바로 Step 8.4로 진행한다.
 
 ### Step 8.4: PR 머지
 

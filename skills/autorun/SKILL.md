@@ -1,6 +1,6 @@
 ---
 name: autorun
-description: "ASTRA 풀 자동 실행 — 사용자 입력 없이 기획부터 테스트까지 자동 진행하며, 테스트 통과 시까지 최대 N회 자동 반복합니다. /service-planner(HTML 기획화면 포함) → blueprint → /sprint-init → 구현(/generate-entity + 청사진 기반) → /test-scenario → /test-run을 순차 실행하고, 테스트 실패 시 실패 원인을 분류해 적절한 단계부터 재진입(자가 개선 루프)합니다. 모든 사용자 선택 단계는 스마트 디폴트로 자동 결정되며, 시작 시 최대 반복 횟수만 1회 입력받습니다. /pr-merge 직전에 정지합니다. 한 번의 명령으로 1주일치 작업을 무인 실행하고자 할 때 사용합니다."
+description: "ASTRA 풀 자동 실행 — 사용자 입력 없이 기획부터 PR 머지·worktree 제거까지 완전 자동 진행하며, 테스트 통과 시까지 최대 N회 자동 반복합니다. /service-planner(HTML 기획화면 포함) → blueprint → /sprint-init → /test-scenario → 구현(/generate-entity + 청사진 기반) → /test-run → /pr-merge --auto → worktree 자동 제거를 순차 실행하고, 테스트 실패 시 실패 원인을 분류해 적절한 단계부터 재진입(자가 개선 루프)합니다. 모든 사용자 선택 단계는 스마트 디폴트로 자동 결정되며, 시작 시 최대 반복 횟수만 1회 입력받습니다. gh 인증 누락·머지 충돌·Critical 리뷰 이슈 같은 진짜 차단 상황에서만 HITL이 발동됩니다. 한 번의 명령으로 1주일치 작업을 무인 실행하고자 할 때 사용합니다."
 argument-hint: "[기능 설명] [--max-iter=N] (N 미지정 시 기본 3회, 1회로 지정하면 단일 패스)"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, TodoWrite, Skill, AskUserQuestion
 ---
@@ -17,7 +17,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, TodoWrite, Skill, AskU
 2. **순차 실행 (Sequential)**: 각 단계가 성공해야 다음 단계로 진행한다. 병렬화하지 않는다 (문서 의존성 때문).
 3. **자가 개선 반복 (Self-Improving Loop)**: 테스트(Stage 7) 실패 시 즉시 정지하지 않고, 실패 원인을 분류하여 *적절한 단계부터 재진입*한다. 최대 N회까지 반복하며, 모든 테스트 통과 시 즉시 종료(early exit). 5회 디버그 후에도 실패 + 마지막 iteration이면 정지.
 4. **컨텍스트 효율성 (Context Efficiency)**: iteration 간 핸드오프는 `iter-{i}-summary.md`(200줄 이내)만으로 한다. 전체 청사진/기획 문서를 매 iteration마다 재로딩하지 않는다.
-5. **`/pr-merge` 직전 정지 (Hard Stop)**: 절대 `/pr-merge`를 호출하지 않는다. 사용자가 직접 검토 후 실행해야 한다.
+5. **풀 자동 머지 (Full Auto Merge)**: 모든 테스트가 통과하면 `/pr-merge --auto`를 자동 호출하여 PR 생성·코드 리뷰·머지·worktree 제거까지 일관 수행한다. **단, 진짜 차단 상황**(gh 인증 누락, 머지 충돌, Critical 리뷰 이슈)에서는 `/pr-merge`가 일반 모드와 동일하게 HITL로 정지한다.
 6. **멱등성 (Idempotent)**: 중간 실패 후 재실행 시 이미 완료된 단계와 iteration을 모두 인식하고, 마지막 미완료 지점부터 재개한다.
 7. **Goal-Driven**: 각 단계마다 검증 가능한 성공 기준(파일 존재 여부, 테스트 통과)을 확인한다.
 
@@ -58,11 +58,12 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, TodoWrite, Skill, AskU
 5. Stage 3: 청사진 작성 (blueprint.md)
 6. Stage 3.5: 청사진 검증 (blueprint-reviewer)
 7. Stage 4: 스프린트 계획 (/sprint-init)
-8. Stage 5: 구현 (/generate-entity + 청사진 기반)
-9. Stage 6: 테스트 시나리오 (/test-scenario)
+8. Stage 5: 테스트 시나리오 (/test-scenario) — TDD: 구현 이전
+9. Stage 6: 구현 (/generate-entity + 청사진 기반)
 10. Stage 7: 테스트 실행 (/test-run)
 11. Stage 7.5: Iteration 루프 (실패 시 재진입, early exit on pass)
-12. Stage 8: 최종 보고서 + /pr-merge 안내
+12. Stage 8: /pr-merge --auto 자동 실행 (PR 생성·코드 리뷰·머지·worktree 제거)
+13. Stage 9: 최종 보고서 (머지 결과 포함)
 
 ## 단계 0.5: 최대 반복 횟수(N) 결정
 
@@ -140,41 +141,61 @@ Task(design-token-validator, "{PLANNER_DIR} 검증 — styles.css, SCR-*.html, i
 
 P0 이슈는 최종 보고서에 기록하고 진행.
 
-## 단계 3: 청사진 자동 작성
+## 단계 3: 청사진 자동 작성 (`/blueprint` 스킬 위임)
 
-### 3.1 디렉토리 결정
-`docs/blueprints/` 스캔하여 다음 번호 결정 (3자리 zero-padding).
+v5.1+ 이전에는 인라인으로 청사진을 작성했으나, `/blueprint` 전용 스킬로 분리되었다. autorun은 단순히 스킬을 `--auto` 모드로 호출한다.
 
-### 3.2 청사진 생성
-다음 입력을 종합하여 `docs/blueprints/{NNN}-{feature-slug}/blueprint.md` 작성:
-- `PLANNER_DIR/feature-definition.md` (기능 정의)
-- `PLANNER_DIR/usecase-definition.md` (유스케이스)
-- `PLANNER_DIR/ia-screen-design.md` (화면 설계)
-- `PLANNER_DIR/requirements-definition.md` (요구사항/KPI)
+### 3.1 청사진 스킬 호출
 
-### 3.3 청사진 표준 섹션 (자동 작성)
-1. **개요** (목적, 배경, 범위)
-2. **기능 명세** (사용자 시나리오, API 요구사항)
-3. **데이터 모델** (ER 다이어그램, 테이블 설계 — 한국 공공데이터 표준 준수)
-4. **API 명세** (엔드포인트 목록, 요청/응답 스키마)
-5. **시퀀스 다이어그램** (Mermaid 형식)
-6. **에러 처리 정책**
-7. **성능 요구사항**
-8. **보안 고려사항**
+```
+Skill('blueprint', '{feature-slug} --auto --from-planner={PLANNER_DIR}')
+```
+
+- `--auto`: HITL 스킵 (PK 전략·트랜잭션 경계·외부 호출 동기성 모두 보수적 디폴트 적용 — auto-inc PK / 단일 트랜잭션+Outbox / 동기+Circuit Breaker)
+- `--from-planner`: `/service-planner` 산출물(`PLANNER_DIR`)을 자동 로드해 6종 산출물에서 청사진 본문 도출
+
+호출 결과로 다음이 생성된다:
+- `docs/blueprints/{NNN}-{feature-slug}/blueprint.md` — 10개 표준 섹션 (Section 10 HITL Triggers 포함)
+- `docs/blueprints/{NNN}-{feature-slug}/review.md` — blueprint-reviewer 자동 호출 결과 (스킬 내부에서 수행)
+
+`BLUEPRINT_PATH` 변수에 청사진 경로를 저장한다.
+
+### 3.2 청사진 표준 섹션 (`/blueprint` 스킬이 자동 작성)
+
+1. **개요** (목적, 배경, 범위, KPI)
+2. **기능 명세** (사용자 시나리오, 비즈니스 규칙)
+3. **데이터 모델** (ER 다이어그램, 테이블 DDL — 한국 공공데이터 표준 준수)
+4. **API 명세** (엔드포인트, 요청/응답 JSON Schema, 에러 코드)
+5. **시퀀스 다이어그램** (정상 / 예외 경로 Mermaid)
+6. **비즈니스 로직 설계** (의사코드 — 실행 코드 아님)
+7. **에러 처리 정책**
+8. **비기능 요구사항** (성능·보안·가용성)
 9. **테스트 전략 개요**
+10. **HITL Triggers (구현 단계용)** — `/feature-dev`가 단계 5에서 그대로 따라 *꼭 필요한 결정*에서만 사용자에게 묻도록 가이드
 
-### 3.4 자동 적용 스킬 트리거
-청사진 작성 중 DB 테이블/컬럼 명명 시 `data-standard` 스킬이 자동 적용된다 (TB_/TC_ 접두사, _YMD/_DT 접미사, 금칙어 검증).
+### 3.3 자동 적용 스킬 트리거
+`/blueprint` 스킬이 DDL을 작성하는 동안 `data-standard` 스킬과 PostToolUse 훅이 자동 발동되어 TB_/TC_ 접두사, _YMD/_DT 접미사, 금칙어 검증을 수행한다 (autorun은 별도 호출 불필요).
 
-`BLUEPRINT_PATH` 변수에 생성된 파일 경로 저장.
+### 3.4 검증 결과 수집 (이전 단계 3.5)
 
-## 단계 3.5: 청사진 검증 (자동, 비차단)
+`Task(blueprint-reviewer, ...)`는 `/blueprint` 스킬 내부에서 자동 수행되므로 autorun은 별도 호출하지 않는다. `review.md`를 읽어 P0 이슈 수만 최종 보고서에 기록하고 진행한다.
 
+```bash
+P0_ISSUES=$(grep -c "P0" "docs/blueprints/{NNN}-{feature-slug}/review.md" 2>/dev/null || echo 0)
+echo "blueprint-reviewer P0 이슈: $P0_ISSUES개"
 ```
-Task(blueprint-reviewer, "{BLUEPRINT_PATH} 품질 검증")
-```
 
-P0 이슈는 최종 보고서에 기록하고 진행.
+### 3.5 청사진 자동 커밋 (worktree 가시성 보장)
+
+`/blueprint --auto`는 내부 Step 6에서 청사진을 메인 worktree의 현재 브랜치(dev)에 자동 commit한다. autorun은 commit 결과만 확인하면 된다.
+
+```bash
+# autorun이 메인 worktree(dev)에 있으므로 청사진은 dev에 commit됨
+# 단계 4의 sprint-init이 dev base로 sprint worktree를 생성할 때 청사진이 함께 carry된다
+git log -1 --oneline -- "docs/blueprints/{NNN}-{feature-slug}/" || {
+  echo "WARN: 청사진 commit이 감지되지 않습니다. sprint worktree에서 청사진이 보이지 않을 수 있습니다."
+}
+```
 
 ## 단계 4: 스프린트 계획 (`/sprint-init`)
 
@@ -190,7 +211,7 @@ P0 이슈는 최종 보고서에 기록하고 진행.
 ### 4.2 실행
 `Skill('sprint-init', '{기능 slug}')` 호출.
 
-> **v5.0+ 중요**: `/sprint-init`은 `.astra-worktrees/sprint-<N>-<feature-slug>/`에 sprint worktree를 생성하고 모든 sprint 산출물을 그 안에 작성한다. autorun은 호출 직후 **반드시 worktree 경로로 cd**한 뒤 단계 5 이후를 실행해야 한다. cd하지 않으면 단계 5의 코드 생성과 단계 7의 `/test-run` 가드 해제가 모두 메인 worktree에서 일어나 격리가 깨진다.
+> **v5.0+ 중요**: `/sprint-init`은 `.astra-worktrees/sprint-<N>-<feature-slug>/`에 sprint worktree를 생성하고 모든 sprint 산출물을 그 안에 작성한다. autorun은 호출 직후 **반드시 worktree 경로로 cd**한 뒤 단계 5 이후를 실행해야 한다. cd하지 않으면 단계 5(테스트 시나리오)/단계 6(구현)의 산출물과 단계 7의 `/test-run`, 단계 8의 `/pr-merge --auto`가 모두 메인 worktree에서 일어나 격리가 깨진다.
 
 ### 4.3 성공 기준 + worktree 이동
 ```
@@ -212,23 +233,11 @@ cd "$WT_PATH" || {
 
 `SPRINT_DIR`은 worktree 내부 경로(`docs/sprints/sprint-{N}-{feature-slug}/`)로 저장한다. 이후 모든 stage(5/6/7)는 이 디렉토리에서 실행된다.
 
-## 단계 5: 구현 (`/generate-entity` + 청사진 기반)
+## 단계 5: 테스트 시나리오 (`/test-scenario`) — TDD: 구현 이전
 
-청사진의 데이터 모델 및 API 명세 섹션을 기반으로 구현:
+> **순서 변경 (v5.x+)**: 테스트 시나리오를 구현 *이전*에 작성하여 TDD 원칙을 따른다. 청사진에 정의된 spec을 테스트로 명문화한 뒤 구현이 그 테스트를 만족하도록 한다. 시나리오는 청사진(blueprint)을 SSoT로 사용하며, 아직 존재하지 않는 route/endpoint 코드 스캔은 자연스럽게 누락된다 (정상).
 
-1. **엔티티 자동 생성**: 청사진에서 테이블 정의 추출 → 각 테이블에 대해 `Skill('generate-entity', '...')` 또는 `/generate-entity` 호출
-2. **서비스/컨트롤러 작성**: 청사진의 API 명세에 따라 service/controller/repository 레이어 작성
-3. **자동 적용 스킬 트리거**: 모든 Write/Edit 시 `coding-convention`, `data-standard`, `code-standard`가 자동 적용됨
-
-### 5.3 성공 기준
-- 엔티티/서비스/컨트롤러 파일이 `src/` 또는 프로젝트 표준 위치에 생성됨
-- 청사진의 데이터 모델·API 명세가 모두 코드로 반영됨
-
-실패 시 **STOP** + 사용자 개입 요청.
-
-## 단계 6: 테스트 시나리오 (`/test-scenario`)
-
-### 6.1 자동 결정 디폴트
+### 5.1 자동 결정 디폴트
 
 | 결정 지점 | 자동 디폴트 |
 |---|---|
@@ -237,16 +246,40 @@ cd "$WT_PATH" || {
 | Given-When-Then 형식 | **활성화** |
 | 진행 확인 | **무조건 Y** |
 
-### 6.2 실행
+### 5.2 실행
 `Skill('test-scenario', '{기능 slug}')` 호출.
 
-### 6.3 성공 기준
+### 5.3 성공 기준
 ```
 docs/tests/test-cases/sprint-{N}-{feature-slug}/
 └── (테스트 케이스 파일들)
 ```
 
 `TEST_DIR` 변수에 저장.
+
+## 단계 6: 구현 (`/generate-entity` + 청사진 기반)
+
+청사진의 데이터 모델 및 API 명세 섹션을 기반으로 구현하되, **Stage 5에서 작성한 테스트 시나리오를 만족하도록** 구현 방향을 잡는다:
+
+1. **엔티티 자동 생성**: 청사진에서 테이블 정의 추출 → 각 테이블에 대해 `Skill('generate-entity', '...')` 또는 `/generate-entity` 호출
+2. **서비스/컨트롤러 작성**: 청사진의 API 명세 + 테스트 시나리오의 Given-When-Then을 함께 참조하여 service/controller/repository 레이어 작성
+3. **자동 적용 스킬 트리거**: 모든 Write/Edit 시 `coding-convention`, `data-standard`, `code-standard`가 자동 적용됨
+
+### 6.2 HITL 가드 (autorun 무인 실행 원칙)
+
+구현 중 결정점에 다다르면 청사진의 **Section 10 (HITL Triggers)**를 먼저 확인한다:
+
+- Section 10에 명시된 결정(예: HITL-02 보안 알고리즘, HITL-03 외부 의존성)인데 청사진 본문에 답이 없으면 → autorun은 **STOP + 사용자 보고**. 무인 진행 위험.
+- Section 10에 없거나 답이 청사진에 명시된 경우 → **자동 진행**. 사용자에게 묻지 않는다.
+- Section 10의 Anti-HITL 목록(변수명·포맷·로그 레벨 등)에 해당하는 결정 → 코딩 컨벤션 따라 **자동 진행**.
+
+> autorun 모드에서는 어떠한 경우에도 `AskUserQuestion`을 *최소화*한다 (시작 시 max-iter 1회 입력이 유일). Section 10 트리거가 발동되면 차단하고 명확하게 사용자 보고로 넘긴다.
+
+### 6.3 성공 기준
+- 엔티티/서비스/컨트롤러 파일이 `src/` 또는 프로젝트 표준 위치에 생성됨
+- 청사진의 데이터 모델·API 명세가 모두 코드로 반영됨
+
+실패 시 **STOP** + 사용자 개입 요청.
 
 ## 단계 7: 테스트 실행 (`/test-run`)
 
@@ -273,7 +306,7 @@ docs/tests/test-cases/sprint-{N}-{feature-slug}/
 
 ### 7.5.1 Iteration 종료 처리 (매 iteration 끝마다 항상 실행)
 
-**변경 파일 추적 메커니즘**: git diff에 의존하지 않는다(autorun은 mid-pipeline에서 commit하지 않음). 대신 **iteration 시작 시 baseline 파일 목록 스냅샷**을 저장하고, 종료 시 비교한다.
+**변경 파일 추적 메커니즘**: git diff에 의존하지 않는다(autorun은 mid-pipeline에서 commit하지 않는다 — **단일 예외**: v5.1+ 단계 3.5에서 `/blueprint --auto`가 청사진 단일 커밋을 dev에 만든다. 이는 worktree 가시성 보장용이며 iteration 루프 시작 *전*이라 baseline 스냅샷에 영향 없음). 대신 **iteration 시작 시 baseline 파일 목록 스냅샷**을 저장하고, 종료 시 비교한다.
 
 1. **Iteration 시작 시 (한 번만)**: `{ITER_DIR}/iter-{CURRENT_ITER}-baseline.txt` 생성:
    ```bash
@@ -350,7 +383,7 @@ docs/tests/test-cases/sprint-{N}-{feature-slug}/
 
 | 신호 (정규식/키워드) | 분류 | 재진입 단계 |
 |---|---|---|
-| `TypeError`, `Cannot read property`, `NullPointer`, `panic:`, `Traceback`, `AttributeError`, `assertion failed`, `expected ... received`, 스택트레이스에 `src/` 경로 포함 | `CODE_BUG` | **Stage 5 (구현)** |
+| `TypeError`, `Cannot read property`, `NullPointer`, `panic:`, `Traceback`, `AttributeError`, `assertion failed`, `expected ... received`, 스택트레이스에 `src/` 경로 포함 | `CODE_BUG` | **Stage 6 (구현)** |
 | `404 Not Found`, `endpoint not implemented`, `missing field`, `schema mismatch`, 테스트가 청사진에 없는 동작 요구 | `SPEC_GAP` | **Stage 3 (청사진)** |
 | `screenshot diff > threshold`, `aria-label missing`, `contrast insufficient`, UI 상호작용/접근성 실패 | `DESIGN_MISALIGN` | **Stage 2 (UX)** |
 | `ECONNREFUSED`, `port already in use`, `database connection`, `permission denied`, 환경/인프라 오류 | `ENV_ISSUE` | **abort** (사용자 개입 필수) |
@@ -367,7 +400,7 @@ Task(tester-persona, "
 - 테스트 시나리오: {TEST_DIR}
 출력 형식:
   classification: CODE_BUG | SPEC_GAP | DESIGN_MISALIGN | ENV_ISSUE
-  target_stage: 1 | 2 | 3 | 5
+  target_stage: 1 | 2 | 3 | 6
   reason: <한 문장>
 ")
 ```
@@ -393,27 +426,109 @@ Task(tester-persona, "
 
    | target_stage | 직접 패치 대상 | 수행 작업 |
    |---|---|---|
-   | **1** (기획) | `docs/planner/{NNN}-{slug}/feature-definition.md` 등 summary가 지목한 파일 | Edit으로 해당 섹션 수정. Stage 4(/sprint-init)는 **재호출 안 함** (이미 sprint dir 존재). Stage 5는 Direct Patch로 계속. |
+   | **1** (기획) | `docs/planner/{NNN}-{slug}/feature-definition.md` 등 summary가 지목한 파일 | Edit으로 해당 섹션 수정. Stage 4(/sprint-init)는 **재호출 안 함** (이미 sprint dir 존재). Stage 6은 Direct Patch로 계속. |
    | **2** (UX HTML 기획화면) | `docs/planner/{NNN}-{slug}/styles.css`, `SCR-*.html`, `index.html` summary가 지목한 파일 | Edit으로 토큰/마크업 수정. 디자인 톤 변경 시 styles.css만 갱신. |
-   | **3** (청사진) | `docs/blueprints/{NNN}-{slug}/blueprint.md` | Edit으로 데이터 모델/API 명세 수정. data-standard 자동 적용 스킬은 그대로 발동. |
-   | **5** (구현) | `src/...` 코드 파일 — summary가 지목한 모듈/메서드 | Edit으로 직접 코드 패치. coding-convention 자동 적용. `/generate-entity` **재호출 안 함** (테이블 정의 변동 없으면). |
+   | **3** (청사진) | `docs/blueprints/{NNN}-{slug}/blueprint.md` | Edit으로 데이터 모델/API 명세 수정. data-standard 자동 적용 스킬은 그대로 발동. 청사진 수정 시 영향받는 테스트 시나리오도 Stage 5 패치 대상에 자동 포함. |
+   | **6** (구현) | `src/...` 코드 파일 — summary가 지목한 모듈/메서드 | Edit으로 직접 코드 패치. coding-convention 자동 적용. `/generate-entity` **재호출 안 함** (테이블 정의 변동 없으면). |
 
 5. 패치 후 재실행 단계:
-   - 청사진/기획/UX 수정 시 → Stage 5(구현) 부분 재패치 → Stage 6(테스트 시나리오) 영향받은 케이스만 재생성 (역시 직접 Edit) → Stage 7(/test-run) **재호출** (이건 sub-skill이지만 idempotent)
+   - 청사진/기획/UX 수정 시 → Stage 5(테스트 시나리오) 영향받은 케이스만 재생성 (직접 Edit) → Stage 6(구현) 부분 재패치 → Stage 7(/test-run) **재호출** (이건 sub-skill이지만 idempotent)
    - 구현만 수정 시 → 곧바로 Stage 7 재호출
 6. 변경된 파일 목록을 다음 iteration summary에 누적 (7.5.1 참조).
 
-### 7.5.6 예외: Stage 6 테스트 시나리오 재호출 정책
+### 7.5.6 예외: Stage 5 테스트 시나리오 재호출 정책
 `/test-scenario`는 idempotent하지 않을 수 있다. 따라서 재진입 시:
 - 테스트 케이스 파일 중 summary가 지목한 것만 Edit으로 직접 수정
 - 새로운 시나리오가 필요한 경우만 `/test-scenario` 재호출 (입력에 "추가 시나리오: {목록}" 명시)
 
 `/test-run`은 idempotent하므로 매 iteration마다 그대로 호출한다.
 
-## 단계 8: 최종 보고서 + `/pr-merge` 안내
+## 단계 8: `/pr-merge --auto` 자동 실행 (테스트 통과 시만)
 
-### 8.1 파이프라인 실행 보고서 작성
-`docs/sprints/sprint-{N}-{feature-slug}/pipeline-report.md`에 다음 작성:
+테스트가 통과(early exit)한 경우에만 진입한다. 미해결 실패(`MAX_ITER` 소진 또는 `ENV_ISSUE` abort)는 이 단계를 건너뛰고 Stage 9로 직진한다.
+
+### 8.0 사전 조건 확인
+- `CURRENT_ITER`의 최종 상태가 PASS
+- 작업 디렉토리가 sprint worktree (`$WT_PATH`) 안인지 확인 — Stage 4.3에서 cd 된 상태가 유지되어야 한다.
+
+### 8.1 `/pr-merge --auto` 호출
+
+```
+Skill('pr-merge', '--auto')
+```
+
+`/pr-merge --auto`가 다음을 자동 처리한다:
+
+| 단계 | 처리 방식 |
+|---|---|
+| 미커밋 변경사항 커밋 | 자동 (확인 프롬프트 우회) |
+| 브랜치 동기화 (main→staging→dev 캐스케이드) | 자동, 충돌 시 halt (HITL) |
+| PR 생성 | 자동 (ASTRA 템플릿) |
+| 코드 리뷰 (feature-dev:code-reviewer Agent) | 자동 |
+| Critical/High 이슈 수정 (최대 3 iteration) | 자동 (Surgical Changes 원칙) |
+| 머지 (최종 확인 프롬프트) | 자동 승인 |
+| **sprint worktree 제거** | 자동 (메인 worktree(dev)로 복귀) |
+
+### 8.2 HITL 발동 조건 (진짜 차단)
+
+다음 상황에서는 `/pr-merge --auto`가 정지하고 사용자 개입을 요청한다 — autorun은 이를 그대로 위임받는다:
+
+- **gh CLI 미인증**: `gh auth login` 안내 후 종료
+- **캐스케이드 머지 충돌**: 충돌 파일 목록 출력 후 종료 (수동 해결 필요)
+- **rebase 충돌** (target 브랜치 → 작업 브랜치): 동일
+- **Critical 리뷰 이슈 ≥ 1건이 MAX iteration 후에도 잔존**: 머지 차단 (`gh pr merge` 호출 안 함)
+- **MAX iteration 도달 + High 이슈만 잔존**: `/pr-merge` 자체의 `AskUserQuestion`이 발동 (a/b/c 선택). autorun은 이 프롬프트를 사용자에게 그대로 노출한다 — 우회하지 않음.
+
+### 8.3 결과 캡처
+`/pr-merge --auto`의 출력에서 다음을 추출하여 `MERGE_RESULT` 변수에 저장:
+- PR URL
+- 머지 성공 여부 (true/false)
+- 리뷰 반복 횟수
+- worktree 제거 여부
+
+> **중요**: `/pr-merge`가 worktree를 제거하면 현재 작업 디렉토리가 메인 worktree(dev)로 자동 변경된다. Stage 9의 보고서 작성은 메인 worktree에서 진행한다.
+
+---
+
+## 단계 9: 최종 보고서
+
+### 9.0 working directory 정합성 보장
+
+Stage 8의 `/pr-merge --auto`가 머지 성공 시 worktree를 제거하고 메인 worktree로 cd 한다. 그러나 Skill 도구가 sub-skill의 cwd 변경을 부모 컨텍스트로 propagate하는지는 보장되지 않는다. Stage 9.1 보고서 작성 전에 명시적으로 메인 worktree로 cd 한다:
+
+```bash
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
+
+# Stage 8이 머지 성공으로 worktree를 제거했으면 이미 메인 worktree에 있어야 하지만,
+# Skill 호출 경계에서 cwd가 유실되었을 수 있다. 무조건 메인 worktree로 cd.
+MAIN_ROOT=$(astra_main_worktree_root)
+if [ -z "$MAIN_ROOT" ] || [ ! -d "$MAIN_ROOT" ]; then
+  echo "ERROR: 메인 worktree 경로를 확정할 수 없습니다" >&2
+  exit 1
+fi
+cd "$MAIN_ROOT"
+
+# 머지가 성공했으면 dev가 최신이지만, 명시적으로 동기화하여 보고서를 정확한 base에 작성한다.
+if [ "$MERGE_RESULT" = "success" ]; then
+  git fetch origin dev 2>/dev/null
+  git checkout dev 2>/dev/null
+  git pull --rebase origin dev 2>/dev/null || true
+fi
+```
+
+**머지 실패 또는 미실행 케이스**: sprint worktree는 그대로 남아 있고 Stage 8을 건너뛰었다. 이 경우 worktree 안에 보고서를 쓰는 것이 합리적이지만, autorun이 메인 worktree로 cd 했다면 worktree 경로를 명시적으로 참조하여 보고서를 쓴다:
+
+```bash
+if [ "$MERGE_RESULT" != "success" ]; then
+  REPORT_DIR="$MAIN_ROOT/.astra-worktrees/sprint-${SPRINT_N}-${FEATURE_SLUG}/docs/sprints/sprint-${SPRINT_N}-${FEATURE_SLUG}"
+else
+  REPORT_DIR="$MAIN_ROOT/docs/sprints/sprint-${SPRINT_N}-${FEATURE_SLUG}"
+fi
+```
+
+### 9.1 파이프라인 실행 보고서 작성
+`$REPORT_DIR/pipeline-report.md`에 다음 작성:
 
 ```markdown
 # ASTRA Autorun 자동 실행 보고서
@@ -421,15 +536,16 @@ Task(tester-persona, "
 **기능**: {feature-slug}
 **실행 시각**: {timestamp}
 **총 소요 시간**: {duration}
-**최종 결과**: ✅ PASS (early exit) / ❌ FAIL (max iterations exhausted) / ⚠️ ABORT (env issue)
+**최종 결과**: ✅ MERGED / ❌ FAIL (max iterations exhausted) / ⚠️ ABORT (env issue) / 🟡 BLOCKED (Critical 리뷰 이슈 잔존)
 **iterations_used**: {final_iter}/{MAX_ITER}
+**머지 결과**: {MERGE_RESULT} (PR URL: {pr_url}, worktree 제거: {yes/no})
 
 ## Iteration 요약 (자가 개선 루프)
 
 | Iter | 결과 | 재진입 단계 | 분류 | 테스트 통과율 | Summary |
 |---|---|---|---|---|---|
 | 1 | ❌ FAIL | - | CODE_BUG | 12/15 | iterations/iter-1-summary.md |
-| 2 | ❌ FAIL | Stage 5 | SPEC_GAP | 14/15 | iterations/iter-2-summary.md |
+| 2 | ❌ FAIL | Stage 6 | SPEC_GAP | 14/15 | iterations/iter-2-summary.md |
 | 3 | ✅ PASS | Stage 3 | - | 15/15 | iterations/iter-3-summary.md |
 
 ## 마지막 iteration 단계별 결과
@@ -440,24 +556,32 @@ Task(tester-persona, "
 | 2. UX 컴포넌트 | ✅ / ⚠️ / ❌ | {경로} | design-token: {요약} |
 | 3. 청사진 | ✅ / ⚠️ / ❌ | {경로} | blueprint-reviewer: {요약} |
 | 4. 스프린트 계획 | ✅ / ⚠️ / ❌ | {경로} | - |
-| 5. 구현 | ✅ / ⚠️ / ❌ | {파일 N개} | coding-convention: {요약} |
-| 6. 테스트 시나리오 | ✅ / ⚠️ / ❌ | {경로} | - |
+| 5. 테스트 시나리오 | ✅ / ⚠️ / ❌ | {경로} | - |
+| 6. 구현 | ✅ / ⚠️ / ❌ | {파일 N개} | coding-convention: {요약} |
 | 7. 테스트 실행 | ✅ / ⚠️ / ❌ | {경로} | 통과: {N}/{M} |
+| 8. PR 머지 (/pr-merge --auto) | ✅ / 🟡 / ⏭️ | PR {url} | 리뷰 반복: {N}회, worktree: {removed/preserved} |
 
 ## ⚠️ 주의 필요 항목 (P0 이슈)
 
 {검증 단계에서 발견된 P0 이슈 목록 — 마지막 iteration 기준}
 
-## 🚫 미해결 실패 (FAIL/ABORT 종료 시만)
+## 🚫 미해결 실패 (FAIL/ABORT/BLOCKED 종료 시만)
 
 - {분류}: {원인 요약}
-- 마지막 시도: Stage {N} 재진입, 결과 {fail/abort}
-- 권장 조치: {수동 디버그 / 환경 점검 / 청사진 재설계}
+- 마지막 시도: Stage {N} 재진입, 결과 {fail/abort/blocked}
+- 권장 조치: {수동 디버그 / 환경 점검 / 청사진 재설계 / Critical 이슈 수동 해결}
 
 ## 📋 다음 단계
 
-1. 위 산출물을 검토하고 필요한 수정 사항을 적용하세요.
-2. 수정 완료 후 `/pr-merge`를 실행하여 커밋·리뷰·머지 사이클을 진행하세요.
+**머지 성공 시**:
+1. 메인 worktree(dev)에서 다음 sprint를 시작하세요.
+2. 추가 검토가 필요하면 페르소나 분석 호출:
+   - 개발 검토: `Task(developer-persona)`
+   - 테스트 검토: `Task(tester-persona)`
+
+**미해결 실패 시**:
+1. 위 산출물(worktree 또는 dev 브랜치)을 검토하고 수정 사항을 적용하세요.
+2. sprint worktree가 남아있다면 그 안에서 수정 후 `/pr-merge`를 재실행하세요.
 3. 관련 페르소나 분석이 필요하면 다음을 호출하세요:
    - 기획 검토: `Task(planner-reviewer)`
    - 디자인 검토: `Task(designer-persona)`
@@ -465,19 +589,22 @@ Task(tester-persona, "
    - 테스트 검토: `Task(tester-persona)`
 ```
 
-### 8.2 사용자 안내 메시지 출력
+### 9.2 사용자 안내 메시지 출력
 
 ```
 ═══════════════════════════════════════════════════════
-{✅ / ❌ / ⚠️} ASTRA Autorun 자동 실행 완료
+{✅ MERGED / ❌ FAIL / ⚠️ ABORT / 🟡 BLOCKED} ASTRA Autorun 완전 자동 실행 완료
 
 🔁 Iterations: {final_iter}/{MAX_ITER} ({early-exit on PASS / max reached / abort})
 
-📁 Sprint Worktree: .astra-worktrees/sprint-{N}-{feature-slug}/
-   (모든 산출물이 이 worktree의 sprint 브랜치에 커밋되어 있음)
+🎯 머지 결과:
+  - PR URL: {pr_url 또는 "—"}
+  - 머지 성공: {yes / no}
+  - 리뷰 자동 수정 반복: {N}회
+  - Sprint Worktree: {removed (메인 dev 복귀) / preserved (실패로 유지)}
 
-📁 산출물 위치 (worktree 기준 상대 경로):
-  - 기획 + HTML 기획화면: docs/planner/{NNN}-{feature-slug}/ (markdown 6종 + index.html + styles.css + SCR-*.html)
+📁 산출물 위치:
+  - 기획 + HTML 기획화면: docs/planner/{NNN}-{feature-slug}/
   - 청사진: docs/blueprints/{NNN}-{feature-slug}/
   - 스프린트: docs/sprints/sprint-{N}-{feature-slug}/
   - 테스트: docs/tests/test-cases/sprint-{N}-{feature-slug}/
@@ -487,18 +614,21 @@ Task(tester-persona, "
 ⚠️ P0 이슈: {N}건 (보고서 참조)
 ✅ 테스트: {통과}/{전체}
 
-📋 다음 단계 (수동 실행 필요):
-  1. cd .astra-worktrees/sprint-{N}-{feature-slug}/   # 검토용
-  2. 산출물 검토 후 동일 디렉토리에서 /pr-merge 실행
-  → /pr-merge가 dev 머지 완료 후 worktree를 자동 제거합니다.
+{머지 성공 시 메시지}:
+  ✅ dev 브랜치에 머지 완료 — 현재 메인 worktree(dev)로 복귀했습니다.
+  다음 sprint를 시작하려면 /autorun 또는 /sprint-init을 실행하세요.
 
-❗ /pr-merge는 자동 실행되지 않았습니다.
-   수동 검토 후 명시적으로 실행하세요.
+{미해결 실패 시 메시지}:
+  ❗ /pr-merge가 자동 실행되지 못했습니다.
+  원인: {Critical 이슈 잔존 / 머지 충돌 / 환경 오류 / 테스트 실패}
+  해결 후 sprint worktree에서 /pr-merge를 수동 실행하세요.
 ═══════════════════════════════════════════════════════
 ```
 
-### 8.3 `/pr-merge` 절대 호출 금지
-이 단계에서 **절대로 `/pr-merge`를 호출하지 않는다**. 사용자에게 안내만 한다.
+### 9.3 `/pr-merge --auto` 호출 정책
+- 테스트가 통과한 경우(early exit)에만 Stage 8에서 `/pr-merge --auto`를 자동 호출한다.
+- 미해결 실패(MAX_ITER 소진 / ENV_ISSUE abort) 시에는 호출하지 않고 Stage 9에서 보고서만 작성한다.
+- HITL이 정말 필요한 상황(gh 인증·머지 충돌·Critical 이슈)에서는 `/pr-merge` 자체가 정지하며, autorun은 이를 그대로 보고서에 반영한다.
 
 ## 실패 처리 정책
 
@@ -510,7 +640,7 @@ Task(tester-persona, "
 ### Iteration 루프 진입 조건 (Stage 7 실패 시)
 - `/test-run`이 5회 자동 디버그 후에도 실패 + `CURRENT_ITER < MAX_ITER`
   → 7.5의 분류·재진입 로직 실행
-- `CURRENT_ITER == MAX_ITER`까지 도달하면 그 시점에서 정지 + Stage 8 보고서 작성
+- `CURRENT_ITER == MAX_ITER`까지 도달하면 그 시점에서 정지. Stage 8(`/pr-merge --auto`)은 **건너뛰고** Stage 9 보고서 작성으로 직진.
 
 ### 비차단 조건 (Continue with Warning)
 - 검증 에이전트(planner-reviewer, blueprint-reviewer, design-token-validator)의 P0 이슈
@@ -548,8 +678,8 @@ Task(tester-persona, "
 2. `docs/planner/{NNN}-{feature-slug}/` 6개 markdown + `index.html` + `styles.css` + `SCR-*.html` 모두 존재 → Stage 1 건너뛰기
 3. `docs/blueprints/{NNN}-{feature-slug}/blueprint.md` 존재 → Stage 3 건너뛰기
 4. `docs/sprints/sprint-{N}-{feature-slug}/` 존재 → Stage 4 건너뛰기
-5. 구현 산출물 감지 (모듈별 시그니처 파일 존재) → Stage 5 건너뛰기
-6. `docs/tests/test-cases/sprint-{N}-{feature-slug}/` 존재 → Stage 6 건너뛰기
+5. `docs/tests/test-cases/sprint-{N}-{feature-slug}/` 존재 → Stage 5 (테스트 시나리오) 건너뛰기
+6. 구현 산출물 감지 (모듈별 시그니처 파일 존재) → Stage 6 (구현) 건너뛰기
 
 `MAX_ITER`는 재실행 시 처리:
 - `--max-iter=N` 인자가 있으면 그 값을 그대로 사용 (Stage 0.5.1 규칙 준수, 프롬프트 안 함).
@@ -559,8 +689,8 @@ Task(tester-persona, "
 ```
 🔄 재개 모드 감지
   - 이전 iteration: 2회 완료 (마지막: FAIL, CODE_BUG)
-  - Stage 1~4: ✅ 건너뜀
-  - Stage 5 (구현): ⏳ Iteration 3 재개 시작 (target: Stage 5)
+  - Stage 1~5: ✅ 건너뜀
+  - Stage 6 (구현): ⏳ Iteration 3 재개 시작 (target: Stage 6)
   - 컨텍스트: iter-2-summary.md 참조
 ```
 
@@ -590,11 +720,11 @@ Task(tester-persona, "
 | `/service-planner` | Stage 1에서 호출 (디폴트 자동 적용 + HTML 기획화면 동시 생성) |
 | `/handoff-publish` | **호출 안 함** (선택적 산출물, 사용자 명시 시만) |
 | `/sprint-init` | Stage 4에서 호출 |
-| `/generate-entity` | Stage 5에서 호출 (청사진 데이터 모델 기반 엔티티 생성) |
-| `/test-scenario` | Stage 6에서 호출 |
+| `/generate-entity` | Stage 6에서 호출 (청사진 데이터 모델 기반 엔티티 생성) |
+| `/test-scenario` | Stage 5에서 호출 (구현 *이전*, TDD 흐름) |
 | `/test-run` | Stage 7에서 호출 (반복마다 재호출, 최대 MAX_ITER회) |
 | `tester-persona` | Stage 7.5의 *AMBIGUOUS* 분기에서만 호출 (실패 분류) |
-| `/pr-merge` | **절대 호출 금지** — 안내만 출력 |
+| `/pr-merge` | **Stage 8에서 `/pr-merge --auto`로 자동 호출** (테스트 통과 시만). 미해결 실패 시 호출 안 함. worktree 제거는 /pr-merge가 담당. |
 | `/check-naming`, `/check-convention` | 자동 적용 스킬 + 검증 에이전트가 대체 수행 |
 
 ## ASTRA 4원칙 적용
