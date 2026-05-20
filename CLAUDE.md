@@ -81,6 +81,14 @@ Data files: `iso_3166_1_countries.json` (249 countries), `iso_3166_2_regions.jso
 - **dev-sync 스킬 가드**: `service-planner`, `handoff-publish`, `manual-generator`, `slack-import`, `sprint-init`, `test-scenario`, `catalog-generator`, `test-run` 8종은 격리 worktree 안에서 호출되면 거부한다 — 메인 worktree(`dev`)에서 실행해야 한다.
 - **헬퍼 스크립트**: `scripts/worktree-helpers.sh` (source 해서 사용). 주요 함수: `astra_ensure_main_worktree`, `astra_create_worktree_new`, `astra_remove_worktree`, `astra_is_isolated_worktree`. 격리 worktree 판정은 `git rev-parse --git-dir` vs `--git-common-dir` 비교 (경로 매칭 아님).
 - **`.gitignore`**: target project 초기화(`init-project.sh`) 시 `.astra-worktrees/`를 자동 등록한다.
+- **권장 워크플로우 (v4.2+, 코드 변경 격리 보장)**:
+  1. `/sprint-init` — 메인 worktree(`dev`)에서 prompt-map 생성
+  2. `/pr-merge --start feat/<feature-name>` — 메인 worktree에서 호출, 격리 worktree 생성 + 안내 출력 후 종료
+  3. `cd .astra-worktrees/feat-<feature-name>/`
+  4. `/feature-dev "..."` — 격리 worktree 내에서 코드 작성 (`/feature-dev`는 외부 plugin이라 ASTRA의 worktree 가드 밖이지만, 이미 격리 디렉토리에서 호출하므로 자동으로 격리됨)
+  5. `/pr-merge` — 격리 worktree에서 호출 → 커밋·리뷰·머지 사이클 (기본 모드 `/pr-merge`는 격리 worktree 안에서도 허용; Step 4에서 현재 브랜치를 작업 브랜치로 인식하고 Step 5로 직행)
+
+  `/pr-merge --start`를 생략하고 `dev`에서 직접 코딩한 뒤 `/pr-merge`를 호출하는 기존 흐름도 그대로 작동한다(Step 4.1 폴백). 다중 Claude Code 세션 환경에서는 `--start` 사용을 권장한다.
 
 ### Hooks Architecture
 
