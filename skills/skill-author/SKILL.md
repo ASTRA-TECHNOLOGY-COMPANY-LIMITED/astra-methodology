@@ -36,7 +36,7 @@ Ask the four questions *at once* with `AskUserQuestion` to reduce user load:
 
 Apply BP §12 ASTRA conventions based on the answers:
 - auto-trigger / validation / utility / meta → English `description: >` block
-- interactive-domain → Korean `description: "..."` single line
+- interactive-domain → English `description: "..."` single line
 - For meta skills, add `paths` glob as a supplementary trigger (BP §12.1)
 
 ## 2. Write the Frontmatter
@@ -162,7 +162,7 @@ Done if the report is 13/13 PASS. If any FAIL/WARN remain, return to Step 5 (ref
 
 A new skill usually also needs one line added to the **Skill Catalog table** in `CLAUDE.md`. This skill does not update it automatically — emit a one-line notice so the user decides the table format and placement (section):
 
-> Add a `/<skill-name>` row to the Skill Catalog table in `CLAUDE.md`. Format: `| /<skill-name> | <one-line Korean description> |`
+> Add a `/<skill-name>` row to the Skill Catalog table in `CLAUDE.md`. Format: `| /<skill-name> | <one-line English description> |`
 
 ## 10. Version Bump Notice (user task)
 

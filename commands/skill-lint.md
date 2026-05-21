@@ -39,7 +39,7 @@ If still empty, abort and ask the user for an explicit path.
 | # | Item | Auto/Semi/Manual | Check Method |
 |---|------|------------------|--------------|
 | 1 | description 3rd-person + What + When + trigger keywords | **Auto** | `grep -iE '\b(I (can|will|am)|you can use|let me)\b'` in description → FAIL if any match. `grep -iE '\b(use when|when (the user|you))\b'` → require ≥1 match for trigger keyword |
-| 2 | Language policy compliance | **Semi-auto** | Detect description language by Hangul ratio (`grep -c '[가-힣]'`). Auto-trigger / validation-utility / meta type must use `description: >` block (English). Interactive-domain type must use `description: "..."` single line (Korean). Cross-check `description` block style with the declared type — ask user to confirm type if ambiguous |
+| 2 | Language policy compliance | **Semi-auto** | Detect description language by Hangul ratio (`grep -c '[가-힣]'`). Auto-trigger / validation-utility / meta type must use `description: >` block (English). Interactive-domain type must use `description: "..."` single line (English). Cross-check `description` block style with the declared type — ask user to confirm type if ambiguous |
 | 3 | Body ≤ 500 lines | **Auto** | `wc -l SKILL.md` — strip frontmatter (`awk '/^---$/{n++; next} n==2'`) then count |
 | 4 | Forward-slash paths only | **Auto** | `grep -nE '[A-Za-z_-]+\\\\[A-Za-z_]'` — any match in body = FAIL (Windows path) |
 | 5 | References one level deep | **Auto** | For each `references/*.md` linked from SKILL.md, `grep -nE '\]\(references/' references/*.md` — any match = nested reference FAIL |
