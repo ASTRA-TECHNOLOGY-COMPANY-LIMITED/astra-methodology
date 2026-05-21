@@ -1,108 +1,108 @@
-# 11. Decision Log — 디자인 결정 이력
+# 11. Decision Log — Design Decision History
 
-**기능**: {{FEATURE_NAME}}
+**Feature**: {{FEATURE_NAME}}
 **Owner**: {{OWNER}}
-**최종 수정**: {{TODAY}}
+**Last updated**: {{TODAY}}
 
-> **왜 필요한가?** 3개월 후 새 디자이너/개발자가 합류해서 "이거 왜 이렇게 했어요?" 물을 때 **답할 사람이 없으면 임의로 되돌립니다.** 의사결정 이력은 제도적 지식의 핵심.
-
----
-
-## 포함할 내용 (각 엔트리)
-
-- 날짜
-- 영향받는 Screen ID(들)
-- 변경 내용 (Before → After)
-- 사유
-- 검토한 대안
-- 결정자
+> **Why is this needed?** Three months later, when a new designer/developer joins and asks "why did you do this?", **if there's no one to answer, they will arbitrarily revert it.** Decision history is the core of institutional knowledge.
 
 ---
 
-## 작성 시점
+## What to include (per entry)
 
-- **ID에 영향이 있는 모든 결정** (디자인 / 정책 / 기술)
-- **라벨 변경, 컴포넌트 삭제, 정렬 변경** 등 사용자 노출 변경
-- **IA 변경, URL 변경, 권한 정책 변경**
-- **Out of Scope 판단** (왜 Handoff에 포함하지 않았는지)
+- Date
+- Affected Screen ID(s)
+- Change (Before → After)
+- Rationale
+- Alternatives considered
+- Decider
 
 ---
 
-## 변경 이력
+## When to write
+
+- **All decisions that affect an ID** (design / policy / technical)
+- **Label changes, component removal, sort changes**, etc. that are user-visible
+- **IA changes, URL changes, permission-policy changes**
+- **Out-of-Scope judgments** (why something is not included in the handoff)
+
+---
+
+## Change log
 
 <!--
-아래 형식으로 새 엔트리를 최신순(위에서부터)으로 추가하세요.
-삭제 금지 — 이력은 보존합니다.
+Add new entries in reverse-chronological order (newest at the top) in the format below.
+Do not delete — preserve the history.
 -->
 
-## {{TODAY}} — Handoff 패키지 초기 생성
+## {{TODAY}} — Initial creation of the handoff package
 
-- **영향**: 전체 Registry (초기 구성)
-- **변경 내용**: `/handoff-publish` 스킬로 Handoff 패키지 {{FEATURE_NAME}}-handoff/ 생성
-- **사유**: HANDOFF_PROCESS_GUIDE v1.1 적용 — UX/UI/Dev/QA 공통 기준 확립
-- **기존 ID 변환 내역** (SCR-NNN → 4-segment):
-  <!-- Step 2-B의 자동 변환 결과를 여기에 기록 -->
+- **Affected**: entire Registry (initial setup)
+- **Change**: created the handoff package {{FEATURE_NAME}}-handoff/ via the `/handoff-publish` skill
+- **Rationale**: applied HANDOFF_PROCESS_GUIDE v1.1 — establish the shared baseline for UX/UI/Dev/QA
+- **Legacy ID conversion log** (SCR-NNN → 4-segment):
+  <!-- Record the auto-conversion result from Step 2-B here -->
   - `SCR-001` → `{{DOMAIN_CODE}}-EXPERT-LIST`
   - `SCR-002` → `{{DOMAIN_CODE}}-EXPERT-LIST-EMPTY`
   - `SCR-003` → `{{DOMAIN_CODE}}-EXPERT-DETAIL-UC01`
-  - _(실제 변환 목록으로 교체)_
-- **대안 검토**: SCR-NNN 유지 + alias 병행 → 거부 (이중 관리 부담)
-- **결정자**: {{OWNER}}
+  - _(replace with the actual conversion list)_
+- **Alternatives considered**: keep SCR-NNN + run alias in parallel → rejected (dual-maintenance burden)
+- **Decider**: {{OWNER}}
 
 ---
 
-<!-- 예시 엔트리 (실제 결정 발생 시 아래 형식으로 추가) -->
+<!-- Example entries (add real entries in the format below as decisions occur) -->
 
-## 2026-04-24 — Hero CTA 라벨 변경 (예시)
+## 2026-04-24 — Hero CTA label change (example)
 
-- **영향**: `{{DOMAIN_CODE}}-HOME-HERO-CTA`
-- **Before**: "지금 질문하기"
-- **After**: "회원가입하고 질문하기"
-- **사유**: 정직한 UX — 버튼 라벨과 실제 동작 일치 (실제로는 로그인 게이트)
-- **대안 검토**: 삭제 안 함 (Hero CTA는 conversion 핵심)
-- **결정자**: {{OWNER}}
-
----
-
-## 2026-04-24 — Expert Q&A 하단 "나도 질문하기" 삭제 (예시)
-
-- **영향**: `{{DOMAIN_CODE}}-HOME-EXPERT-QA-CTA`
-- **사유**: 중복 CTA + 비로그인 시 로그인 게이트 → 정직성 위반
-- **대안 검토**: 라벨 변경 후 유지 → 거부 (이미 상단에 "전체 보기" 있음)
-- **결정자**: {{OWNER}}
+- **Affected**: `{{DOMAIN_CODE}}-HOME-HERO-CTA`
+- **Before**: "Ask now"
+- **After**: "Sign up and ask"
+- **Rationale**: honest UX — button label should match the actual behavior (this is in fact a login gate)
+- **Alternatives considered**: do not remove (Hero CTA is core to conversion)
+- **Decider**: {{OWNER}}
 
 ---
 
-## 변경 관리 프로세스 (PDF §22)
+## 2026-04-24 — Remove "Ask too" CTA from Expert Q&A bottom (example)
 
-변경 발생 시 아래 절차를 **모두** 수행합니다:
+- **Affected**: `{{DOMAIN_CODE}}-HOME-EXPERT-QA-CTA`
+- **Rationale**: duplicate CTA + login gate when not logged in → violates honesty
+- **Alternatives considered**: relabel and keep → rejected (the top already has "See all")
+- **Decider**: {{OWNER}}
+
+---
+
+## Change-management process (PDF §22)
+
+When a change occurs, perform **all** of the following steps:
 
 ```
-1. 1-screen-registry.md 업데이트 (변경 ID에 🔁 changed YYYY-MM-DD 표시)
-2. 11-decision-log.md 에 결정 이력 추가 (이 파일)
-3. 변경 내용 한 줄 요약 (변경 사유 + 영향 범위)
-4. Slack #{{DOMAIN_CODE}}-design 채널에 공유
-5. 큰 변경은 Loom 1~2분 영상 추가
-6. UI/Dev 확인 후 ✅ acknowledged 표시
+1. Update 1-screen-registry.md (mark changed IDs with 🔁 changed YYYY-MM-DD)
+2. Add a decision entry in 11-decision-log.md (this file)
+3. One-line summary of the change (reason + scope)
+4. Share in the Slack #{{DOMAIN_CODE}}-design channel
+5. For larger changes, add a 1–2 min Loom video
+6. After UI/Dev acknowledge, mark ✅ acknowledged
 ```
 
 ---
 
-## 결정 이력 템플릿 (복사해서 사용)
+## Decision-log template (copy and use)
 
 ```markdown
-## YYYY-MM-DD — {결정 제목}
+## YYYY-MM-DD — {decision title}
 
-- **영향**: {Screen ID 목록}
-- **Before**: {이전 상태 — 라벨, 컴포넌트, 정책 등}
-- **After**: {변경된 상태}
-- **사유**: {왜 변경했는지 — 사용자 피드백 / 데이터 / 정책}
-- **대안 검토**: {검토한 다른 선택지와 기각 이유}
-- **결정자**: {이름 / 역할}
-- **Slack 공유**: {링크 or 메시지 ID}
-- **Loom 링크**: {선택 — 큰 변경 시}
+- **Affected**: {list of Screen IDs}
+- **Before**: {prior state — label, component, policy, etc.}
+- **After**: {changed state}
+- **Rationale**: {why — user feedback / data / policy}
+- **Alternatives considered**: {other options considered + why they were rejected}
+- **Decider**: {name / role}
+- **Slack share**: {link or message ID}
+- **Loom link**: {optional — for larger changes}
 ```
 
 ---
 
-_이 파일은 **추가만** 가능합니다. 과거 엔트리를 수정하거나 삭제하지 마세요. 번복이 필요한 경우 새 엔트리로 기록하세요._
+_This file is **append-only**. Do not edit or remove past entries. If a reversal is required, record it as a new entry._

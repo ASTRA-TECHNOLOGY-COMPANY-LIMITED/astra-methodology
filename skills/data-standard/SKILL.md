@@ -177,9 +177,9 @@ The entity's own primary key (`@Id`) is always named **`id`**, regardless of the
 | REG | registration | 등록 → Registration |
 | CHG | change | 변경 → Change |
 | PRCS | processing | 처리 → Processing |
-| BRNO | businessRegistrationNumber | 사업자등록번호 (단일 용어) |
-| TELNO | telephoneNumber | 전화번호 (단일 용어) |
-| RDNMADR | roadNameAddress | 도로명주소 (단일 용어) |
+| BRNO | businessRegistrationNumber | 사업자등록번호 (single standard term) |
+| TELNO | telephoneNumber | 전화번호 (single standard term) |
+| RDNMADR | roadNameAddress | 도로명주소 (single standard term) |
 
 #### Boolean field naming rules
 

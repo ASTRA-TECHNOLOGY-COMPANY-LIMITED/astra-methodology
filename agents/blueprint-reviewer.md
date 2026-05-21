@@ -26,16 +26,16 @@ A blueprint authored by `/blueprint` must contain these 10 sections:
 
 | # | Section | Required content |
 |---|---------|------------------|
-| 1 | 개요 (Overview) | 목적, 배경, 범위(In/Out), KPI 표 |
-| 2 | 기능 명세 (Functional Spec) | 액터, 사용자 시나리오(Mermaid journey), 비즈니스 규칙 표 |
-| 3 | 데이터 모델 (Data Model) | ER 다이어그램(Mermaid erDiagram), DDL, 인덱스 표, FK 표 |
-| 4 | API 명세 (API Contract) | 엔드포인트 표, 요청/응답 JSON Schema, 에러 코드 표 |
-| 5 | 시퀀스 다이어그램 (Sequence) | 정상 경로 + 예외 경로 Mermaid sequenceDiagram |
-| 6 | 비즈니스 로직 설계 (Logic Design) | **의사코드만** (` ```pseudo ` 언어 태그 또는 언어 무관) |
-| 7 | 에러 처리 정책 (Error Policy) | 영역별 처리 방침 표 |
-| 8 | 비기능 요구사항 (Non-Functional) | 성능·보안·가용성 |
-| 9 | 테스트 전략 개요 (Test Strategy) | 레벨별 표 + 9.1 필수 테스트 케이스 체크리스트 |
-| 10 | **HITL Triggers (구현 단계용)** | 10.1 발동 원칙(T1-T4), 10.2 기능 특화 트리거 표, 10.3 질문 형식, 10.4 Anti-HITL 목록 |
+| 1 | Overview | Purpose, background, scope (In/Out), KPI table |
+| 2 | Functional Spec | Actors, user scenarios (Mermaid journey), business rule table |
+| 3 | Data Model | ER diagram (Mermaid erDiagram), DDL, index table, FK table |
+| 4 | API Contract | Endpoint table, request/response JSON Schema, error code table |
+| 5 | Sequence Diagram | Happy path + exception path Mermaid sequenceDiagram |
+| 6 | Logic Design | **Pseudocode only** (` ```pseudo ` language tag or language-neutral) |
+| 7 | Error Policy | Per-area handling policy table |
+| 8 | Non-Functional Requirements | Performance, security, availability |
+| 9 | Test Strategy Overview | Per-level table + 9.1 required test case checklist |
+| 10 | **HITL Triggers (for implementation phase)** | 10.1 trigger principles (T1-T4), 10.2 feature-specific trigger table, 10.3 question format, 10.4 Anti-HITL list |
 
 ## Verification Areas
 
@@ -77,8 +77,8 @@ Inconsistencies = −3 points each.
 
 Verify that Section 10.2's entries reference real decision points found elsewhere in the blueprint:
 
-- Each HITL-NN row's "구현 중 결정해야 하는 항목" should be traceable to a specific section (e.g., Section 2.3 for business rules, Section 8 for non-functional).
-- Each row's "옵션 (이미 청사진에 답이 있으면 자동 적용)" column should accurately reflect whether the blueprint actually answers the decision. If the row says "자동" but the blueprint never specifies the answer, flag as inconsistent (−2 points).
+- Each HITL-NN row's "Item to decide during implementation" should be traceable to a specific section (e.g., Section 2.3 for business rules, Section 8 for non-functional).
+- Each row's "Options (auto-applied if the blueprint already answers)" column should accurately reflect whether the blueprint actually answers the decision. If the row says "auto" but the blueprint never specifies the answer, flag as inconsistent (−2 points).
 - The anti-HITL list in 10.4 must include the standard items (variable names, code formatting, log levels, file layout, import order, DTO/Entity split, HTTP status code minor choices).
 
 ### 5. Design-Implementation Consistency (10 points, only when src/ exists)
@@ -117,15 +117,15 @@ If no implementation exists yet (design-only), score this area as N/A (10/10).
 | Cross-Document Consistency | {x} | 10 |
 
 ### Section Completeness Detail
-- [✓/✗] 1. 개요: {status}
-- [✓/✗] 2. 기능 명세: {status}
-- [✓/✗] 3. 데이터 모델: {status}
-- [✓/✗] 4. API 명세: {status}
-- [✓/✗] 5. 시퀀스 다이어그램: {status}
-- [✓/✗] 6. 비즈니스 로직 설계: {status} (pseudocode language tag: {present/missing})
-- [✓/✗] 7. 에러 처리 정책: {status}
-- [✓/✗] 8. 비기능 요구사항: {status}
-- [✓/✗] 9. 테스트 전략 개요: {status}
+- [✓/✗] 1. Overview: {status}
+- [✓/✗] 2. Functional Spec: {status}
+- [✓/✗] 3. Data Model: {status}
+- [✓/✗] 4. API Contract: {status}
+- [✓/✗] 5. Sequence Diagram: {status}
+- [✓/✗] 6. Logic Design: {status} (pseudocode language tag: {present/missing})
+- [✓/✗] 7. Error Policy: {status}
+- [✓/✗] 8. Non-Functional Requirements: {status}
+- [✓/✗] 9. Test Strategy Overview: {status}
 - [✓/✗] 10. HITL Triggers: {status} (10.1: {x/✓}, 10.2 row count: {N}, 10.3: {x/✓}, 10.4: {x/✓})
 
 ### Code Pollution Violations

@@ -1,11 +1,11 @@
-# 5. Responsive Guide — 반응형 기준
+# 5. Responsive Guide — Responsive Baseline
 
-**기능**: {{FEATURE_NAME}}
-**최종 수정**: {{TODAY}}
+**Feature**: {{FEATURE_NAME}}
+**Last updated**: {{TODAY}}
 
 ---
 
-## 12.1 ID 표기 컨벤션
+## 12.1 ID notation convention
 
 ```
 Desktop (≥1024):    {{DOMAIN_CODE}}-EXPERT-DETAIL-UC03
@@ -15,85 +15,85 @@ Mobile  (<768):     {{DOMAIN_CODE}}-EXPERT-DETAIL-UC03-M
 
 ---
 
-## 12.2 원칙
+## 12.2 Principles
 
-- **Desktop 기준으로 설계** → Tablet/Mobile은 분기점만 정의
-- **구조가 다를 때만 별도 ID 생성** (LNB → Bottom tabs 등)
-- **단순 스타일 변경** (폰트 크기, 패딩)은 ID 분리하지 않음 → 같은 ID 안에서 처리
-
----
-
-## 분기점 상세
-
-| 분기 | 너비 | 주요 변경 |
-|------|------|----------|
-| Desktop | ≥1024px | 기본 레이아웃. 좌측 LNB + 메인 컨텐츠 + 우측 위젯 (선택) |
-| Tablet | 768~1023px | 우측 위젯 제거, 좌측 LNB는 축소 또는 hamburger menu |
-| Mobile | <768px | LNB → Bottom Tab 전환, 컨텐츠는 1-column, 카드는 full-width |
+- **Design for Desktop first** → for Tablet/Mobile, define only the breakpoints
+- **Create a separate ID only when structure differs** (LNB → Bottom tabs, etc.)
+- **Pure style changes** (font size, padding) do not split the ID → handle within the same ID
 
 ---
 
-## 레이아웃 분기 체크리스트
+## Breakpoint details
 
-각 화면마다 다음을 확인합니다:
-
-- [ ] **Desktop → Tablet 전환**
-  - 우측 위젯/사이드바 처리 방식
-  - 테이블의 컬럼 우선순위 (숨길 컬럼)
-  - 카드 그리드 columns 변화 (예: 4 → 2)
-
-- [ ] **Tablet → Mobile 전환**
-  - 네비게이션 방식 (LNB → Bottom Tab / Drawer)
-  - 모달 크기 (전체 화면 모달 전환 여부)
-  - 폼 입력 필드 레이아웃 (2-col → 1-col)
-  - 액션 버튼 위치 (고정 하단 FAB / Sticky CTA)
+| Breakpoint | Width | Main changes |
+|------------|-------|--------------|
+| Desktop | ≥1024px | Base layout. Left LNB + main content + right widget (optional) |
+| Tablet | 768~1023px | Remove right widget; shrink left LNB or switch to hamburger menu |
+| Mobile | <768px | LNB → Bottom Tab; content becomes 1-column; cards become full-width |
 
 ---
 
-## Breakpoint 토큰
+## Layout-branch checklist
 
-프로젝트의 디자인 토큰(`src/styles/design-tokens.css` 또는 Tailwind config)과 일치해야 합니다:
+For each screen, verify the following:
+
+- [ ] **Desktop → Tablet transition**
+  - Handling of the right widget / sidebar
+  - Column priority in tables (which columns to hide)
+  - Card grid column changes (e.g., 4 → 2)
+
+- [ ] **Tablet → Mobile transition**
+  - Navigation pattern (LNB → Bottom Tab / Drawer)
+  - Modal size (whether to switch to a full-screen modal)
+  - Form-field layout (2-col → 1-col)
+  - Action-button position (fixed-bottom FAB / sticky CTA)
+
+---
+
+## Breakpoint tokens
+
+Must match the project's design tokens (`src/styles/design-tokens.css` or the Tailwind config):
 
 ```css
-/* design-tokens.css 예시 */
+/* design-tokens.css example */
 --breakpoint-sm: 640px;
---breakpoint-md: 768px;   /* tablet 진입 */
---breakpoint-lg: 1024px;  /* desktop 진입 */
+--breakpoint-md: 768px;   /* enters tablet */
+--breakpoint-lg: 1024px;  /* enters desktop */
 --breakpoint-xl: 1280px;
 ```
 
 ```css
-/* Mobile-first 접근 */
+/* Mobile-first approach */
 .card {
-  /* Mobile 기본 스타일 */
+  /* base mobile style */
 }
 
 @media (min-width: 768px) {
-  /* Tablet 스타일 */
+  /* tablet style */
 }
 
 @media (min-width: 1024px) {
-  /* Desktop 스타일 */
+  /* desktop style */
 }
 ```
 
 ---
 
-## 터치 타겟 (Mobile)
+## Touch targets (Mobile)
 
-- **최소 터치 영역**: 44×44px (iOS HIG) / 48×48dp (Material)
-- **간격**: 터치 타겟 사이 최소 8px 여백
-- **hover 효과 대체**: Mobile에서는 `:active` / press animation으로 대체
+- **Minimum touch area**: 44×44px (iOS HIG) / 48×48dp (Material)
+- **Spacing**: at least 8px gap between touch targets
+- **Hover-effect substitute**: on Mobile, substitute with `:active` / press animation
 
 ---
 
-## 화면별 분기 ID 목록
+## Per-screen branching ID list
 
-| Desktop ID | Tablet 분기 필요? | Mobile 분기 필요? | Mobile ID |
-|-----------|-----------------|-----------------|-----------|
-| `{{DOMAIN_CODE}}-EXPERT-LIST` | ❌ (컬럼 수만 조정) | ✅ (카드 1-col + Bottom Tab) | `{{DOMAIN_CODE}}-EXPERT-LIST-M` |
-| `{{DOMAIN_CODE}}-EXPERT-DETAIL-UC03` | ❌ | ✅ (답변 입력창 Sticky) | `{{DOMAIN_CODE}}-EXPERT-DETAIL-UC03-M` |
-| `{{DOMAIN_CODE}}-EXPERT-WRITE` | ❌ | ✅ (전체 화면 폼) | `{{DOMAIN_CODE}}-EXPERT-WRITE-M` |
-| `{{DOMAIN_CODE}}-EXPERT-MODAL01` | ❌ | ✅ (Bottom Sheet으로 변환) | `{{DOMAIN_CODE}}-EXPERT-MODAL01-M` |
+| Desktop ID | Tablet branch needed? | Mobile branch needed? | Mobile ID |
+|------------|----------------------|------------------------|-----------|
+| `{{DOMAIN_CODE}}-EXPERT-LIST` | ❌ (only column count) | ✅ (1-col cards + Bottom Tab) | `{{DOMAIN_CODE}}-EXPERT-LIST-M` |
+| `{{DOMAIN_CODE}}-EXPERT-DETAIL-UC03` | ❌ | ✅ (sticky answer input) | `{{DOMAIN_CODE}}-EXPERT-DETAIL-UC03-M` |
+| `{{DOMAIN_CODE}}-EXPERT-WRITE` | ❌ | ✅ (full-screen form) | `{{DOMAIN_CODE}}-EXPERT-WRITE-M` |
+| `{{DOMAIN_CODE}}-EXPERT-MODAL01` | ❌ | ✅ (convert to Bottom Sheet) | `{{DOMAIN_CODE}}-EXPERT-MODAL01-M` |
 
-_TODO (UI 디자이너): 실제 Figma 작업 시 분기 필요 여부를 확정하고 위 표를 업데이트하세요._
+_TODO (UI designer): During actual Figma work, confirm whether branching is required and update the table above._

@@ -157,24 +157,24 @@ For each scenario, specify:
 
 ### Step 5.5: Worktree-Aware Branch Handling (v5.0+)
 
-Test scenario 파일은 현재 worktree의 현재 브랜치에 그대로 작성한다. 이전 정책의 dev 강제 전환은 sprint worktree 모델에서 더 이상 필요 없다.
+Test scenario files are written directly to the current branch of the current worktree. The previous policy of forcing a switch to `dev` is no longer needed in the sprint worktree model.
 
 ```bash
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
 if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$PLUGIN_ROOT/scripts/worktree-helpers.sh" ]; then
-  echo "ERROR: CLAUDE_PLUGIN_ROOT를 찾을 수 없습니다. 플러그인 캐시 경로를 확인하세요." >&2
+  echo "ERROR: CLAUDE_PLUGIN_ROOT not found. Check the plugin cache path." >&2
   exit 1
 fi
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
 CURRENT_BRANCH=$(git branch --show-current)
 ```
 
-분기:
-- **sprint worktree (`astra_is_isolated_worktree` true)**: 현재 sprint 브랜치(`feat/sprint-<N>-<name>` 등)에 그대로 작성. dev 머지 금지 — 머지는 `/pr-merge`가 담당한다.
-- **메인 worktree + 공유 브랜치(dev/main/master/staging)**: 현재 브랜치에 그대로 작성. 단발성 작업 폴백.
-- **메인 worktree + 작업 브랜치**: v4.1 이전 호환성 케이스. 현재 브랜치에 그대로 작성.
+Branches:
+- **Sprint worktree (`astra_is_isolated_worktree` true)**: Write directly to the current sprint branch (e.g., `feat/sprint-<N>-<name>`). Do not merge into dev — merging is `/pr-merge`'s responsibility.
+- **Main worktree + shared branch (dev/main/master/staging)**: Write directly to the current branch. Fallback for one-off work.
+- **Main worktree + work branch**: Pre-v4.1 compatibility case. Write directly to the current branch.
 
-> **Note**: 이전 v4.x에서는 메인 worktree 가드와 dev 강제 전환이 있었다. v5.0+에서는 sprint worktree 모델로 전환되어 가드를 제거했다.
+> **Note**: In previous v4.x, there was a main-worktree guard and forced switch to `dev`. v5.0+ moved to the sprint worktree model and removed the guard.
 
 ### Step 6: Generate Scenario Files
 

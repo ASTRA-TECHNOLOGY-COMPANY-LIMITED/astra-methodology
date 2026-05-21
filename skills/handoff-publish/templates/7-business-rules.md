@@ -1,134 +1,134 @@
-# 7. Business Rules — 화면별 비즈니스 규칙 / 노출 정책
+# 7. Business Rules — Per-Screen Business Rules / Exposure Policy
 
-**기능**: {{FEATURE_NAME}}
-**최종 수정**: {{TODAY}}
+**Feature**: {{FEATURE_NAME}}
+**Last updated**: {{TODAY}}
 
-> **왜 필요한가?** 화면이 어떻게 생겼는지(디자인)와 별개로, **"무엇을 보여주는가"** 의 정책이 필요합니다. 노출 조건, 정렬, 개수 제한, 데이터 필터, 권한 분기 등.
+> **Why is this needed?** Separately from how a screen looks (design), there must be a policy for **"what is shown"** — exposure conditions, sorting, count limits, data filters, permission branching, etc.
 
 ---
 
-## 15.1 작성 형식 (예시)
+## 15.1 Authoring format (example)
 
-## `{{DOMAIN_CODE}}-COURSES-LIST-POPULAR` — 인기 강의 리스트
+## `{{DOMAIN_CODE}}-COURSES-LIST-POPULAR` — Popular Courses List
 
-### 노출 정책
-- **정렬**: 최근 30일 수강생 수 DESC
-- **필터**: 활성 강의만, 비공개 제외
-- **개수**: 12개 (3행 × 4열)
-- **페이지네이션**: "더보기" 버튼 (12개씩 추가)
+### Exposure policy
+- **Sort**: enrolled-students count over the last 30 days DESC
+- **Filter**: active courses only; exclude private
+- **Count**: 12 (3 rows × 4 cols)
+- **Pagination**: "Load more" button (12 at a time)
 
-### 사용 컴포넌트
-- `CourseCard` (medium 크기)
-- 표시 props: `title`, `thumbnail`, `instructor`, `rating`, `studentCount`, `price`
-- 추가 표시: `isBest` 뱃지 (모든 카드)
-- 표시 안 함: `progress` (이 화면은 비교용)
+### Components used
+- `CourseCard` (medium size)
+- Displayed props: `title`, `thumbnail`, `instructor`, `rating`, `studentCount`, `price`
+- Additional display: `isBest` badge (every card)
+- Not displayed: `progress` (this screen is for comparison)
 
-### 권한별 분기
-- **비로그인**: 진행률 안 보임 + "로그인 후 수강" CTA
-- **로그인**: 진행률 노출 + "이어서 수강" CTA
+### Per-permission branching
+- **Not logged in**: no progress shown + "Log in to enroll" CTA
+- **Logged in**: progress shown + "Continue learning" CTA
 
-### 데이터 없을 때
-- "아직 인기 강의가 없습니다" + "전체 강의 보기" 링크
+### When no data
+- "No popular courses yet" + "See all courses" link
 
-### 데이터 소스 (API)
+### Data source (API)
 - `GET /api/courses?sort=popular&limit=12`
-- **캐싱**: 5분 (CDN)
-- **인증**: optional (인증 헤더 있으면 진행률 포함 응답)
+- **Caching**: 5 minutes (CDN)
+- **Auth**: optional (if the auth header is present, the response includes progress)
 
 ---
 
-## `{{DOMAIN_CODE}}-EXPERT-LIST` — 전문가 Q&A 리스트
+## `{{DOMAIN_CODE}}-EXPERT-LIST` — Expert Q&A List
 
-### 노출 정책
-- **정렬**: 최신순 (createdAt DESC) — 기본 탭
-- **필터**: 카테고리 탭 (전체 / FTA / 통관 / 관세 / ...)
-- **개수**: 20개씩 페이지네이션
-- **페이지네이션**: Mobile → LoadMore / Desktop → Numbered
+### Exposure policy
+- **Sort**: newest (createdAt DESC) — default tab
+- **Filter**: category tabs (All / FTA / Customs / Tariff / ...)
+- **Count**: 20 per page
+- **Pagination**: Mobile → LoadMore / Desktop → Numbered
 
-### 사용 컴포넌트
-- `QuestionCard` (Medium 크기)
-- 표시 props: `title`, `excerpt`, `author`, `createdAt`, `answerCount`, `viewCount`
-- 추가 표시: `isAccepted`, `isHot`, `category`
-- 표시 안 함: —
+### Components used
+- `QuestionCard` (Medium size)
+- Displayed props: `title`, `excerpt`, `author`, `createdAt`, `answerCount`, `viewCount`
+- Additional display: `isAccepted`, `isHot`, `category`
+- Not displayed: —
 
-### 권한별 분기
-- **비로그인**: "질문하기" CTA → 클릭 시 로그인 모달
-- **일반 사용자**: "질문하기" CTA → 토큰 잔여 확인 → 작성 페이지
-- **답변자 권한**: 본인이 답변 가능한 카테고리 하이라이트
+### Per-permission branching
+- **Not logged in**: "Ask" CTA → on click, login modal
+- **Regular user**: "Ask" CTA → check remaining tokens → write page
+- **Answerer role**: highlight categories the user can answer
 
-### 데이터 없을 때
-- 전체 EMPTY: "아직 질문이 없어요. [첫 질문 작성하기]"
-- 카테고리 EMPTY: "이 카테고리에는 아직 질문이 없어요"
+### When no data
+- Overall EMPTY: "No questions yet. [Write your first question]"
+- Category EMPTY: "No questions in this category yet"
 
-### 데이터 소스 (API)
+### Data source (API)
 - `GET /api/expert/questions?category={cat}&sort=latest&page={n}&limit=20`
-- **캐싱**: 1분 (stale-while-revalidate)
+- **Caching**: 1 minute (stale-while-revalidate)
 
 ---
 
-## `{{DOMAIN_CODE}}-EXPERT-DETAIL-UC03` — 질문 상세 (채택 완료)
+## `{{DOMAIN_CODE}}-EXPERT-DETAIL-UC03` — Question Detail (Adopted)
 
-### 노출 정책
-- **답변 정렬**: 채택 답변 최상단 → 추천 순 → 최신 순
-- **답변 개수 제한**: 없음 (무한 스크롤)
-- **본문**: 마크다운 렌더링, 이미지 최대 5MB × 10개
+### Exposure policy
+- **Answer sort**: adopted answer at the top → upvoted → newest
+- **Answer count limit**: none (infinite scroll)
+- **Body**: Markdown rendering; images max 5MB × 10
 
-### 사용 컴포넌트
-- `QuestionHeader` (작성자, 날짜, 카테고리, 뷰/답변 수)
-- `AnswerCard` (답변 목록)
-- `AcceptedBadge` (채택 답변 강조)
+### Components used
+- `QuestionHeader` (author, date, category, view/answer counts)
+- `AnswerCard` (answer list)
+- `AcceptedBadge` (highlight the adopted answer)
 
-### 권한별 분기
-| 역할 | 질문 수정/삭제 | 답변 작성 | 답변 채택 | 답변 수정 |
-|------|----------------|---------|---------|---------|
-| 비로그인 | ❌ | ❌ | ❌ | ❌ |
-| 일반 사용자 | ❌ | ✅ | ❌ | ❌ (본인 답변만) |
-| 작성자 본인 | ✅ | ❌ (본인 글 답변 불가) | ❌ (이미 채택) | ❌ |
-| 답변자 | ❌ | ✅ | ❌ | ✅ (본인 답변) |
-| 관리자 | ✅ (전체) | ✅ | ❌ | ✅ (전체) |
+### Per-permission branching
+| Role | Edit/delete question | Write answer | Adopt answer | Edit answer |
+|------|-----------------------|--------------|--------------|-------------|
+| Not logged in | ❌ | ❌ | ❌ | ❌ |
+| Regular user | ❌ | ✅ | ❌ | ❌ (own answer only) |
+| Question owner | ✅ | ❌ (cannot answer own post) | ❌ (already adopted) | ❌ |
+| Answerer | ❌ | ✅ | ❌ | ✅ (own answer) |
+| Admin | ✅ (all) | ✅ | ❌ | ✅ (all) |
 
-### 데이터 없을 때
-- 답변 0개인 경우 UC01로 분기 (별도 ID)
-- UC03에서는 답변이 반드시 1개 이상 존재
+### When no data
+- If there are 0 answers, branch to UC01 (separate ID)
+- In UC03 there must be at least 1 answer
 
-### 데이터 소스 (API)
-- `GET /api/expert/questions/{id}` — 질문 + 답변 목록 (한 번에)
-- **캐싱**: 없음 (실시간)
-- **인증**: optional (로그인 시 `canEdit`, `canAnswer` 플래그 포함)
-
----
-
-## 15.2 작성 항목 체크리스트
-
-각 화면 ID마다 아래 항목을 모두 정의해야 합니다:
-
-- [ ] 노출 조건 (어떤 데이터를 보여주나)
-- [ ] 정렬 / 필터 / 개수 제한
-- [ ] 사용 컴포넌트 + 표시할 props
-- [ ] 권한별 분기 (필요 시)
-- [ ] 데이터 없을 때 처리
-- [ ] 데이터 소스 (API endpoint, 캐싱)
-- [ ] 시간/이벤트 기반 변동 (예: NEW 뱃지 7일 룰)
+### Data source (API)
+- `GET /api/expert/questions/{id}` — question + answer list (in one call)
+- **Caching**: none (real-time)
+- **Auth**: optional (when logged in, response includes `canEdit`, `canAnswer` flags)
 
 ---
 
-## 공통 정책
+## 15.2 Authoring item checklist
 
-### 배지 노출 기준
-- `isNew`: 등록일로부터 7일 이내
-- `isHot`: 24시간 내 답변 5개 이상 또는 조회수 100 이상
-- `isBest`: 카테고리 내 상위 10%
-- `isAccepted`: 질문 작성자가 채택한 답변
-- `isPremium`: Pro 플랜 전용 컨텐츠
+For every screen ID, all of the following must be defined:
 
-### 캐싱 정책
-| 데이터 유형 | TTL | 무효화 트리거 |
-|-----------|-----|-------------|
-| 인기 리스트 | 5분 | 수동 관리자 퍼지 |
-| 리스트 (최신순) | 1분 (SWR) | 새 글 작성 |
-| 상세 | 없음 (실시간) | — |
-| 사용자 프로필 | 10분 | 본인 수정 |
+- [ ] Exposure condition (what data is shown)
+- [ ] Sort / filter / count limit
+- [ ] Components used + props to display
+- [ ] Per-permission branching (when applicable)
+- [ ] Handling when no data
+- [ ] Data source (API endpoint, caching)
+- [ ] Time/event-driven changes (e.g., NEW badge 7-day rule)
 
 ---
 
-_TODO (UX/PM): 이 기능의 모든 Registry ID에 대해 위 형식으로 비즈니스 규칙을 작성하세요. 작성 후 개발자가 구현 시 이 문서를 **필수 참조**합니다._
+## Common policies
+
+### Badge exposure criteria
+- `isNew`: within 7 days of registration
+- `isHot`: 5+ answers within 24 hours or 100+ views
+- `isBest`: top 10% within its category
+- `isAccepted`: the answer adopted by the question owner
+- `isPremium`: Pro-plan-only content
+
+### Caching policy
+| Data type | TTL | Invalidation trigger |
+|-----------|-----|----------------------|
+| Popular list | 5 min | manual admin purge |
+| List (newest) | 1 min (SWR) | new post written |
+| Detail | none (real-time) | — |
+| User profile | 10 min | self-edit |
+
+---
+
+_TODO (UX/PM): Author business rules in the format above for every Registry ID of this feature. Once written, developers **must reference** this document while implementing._

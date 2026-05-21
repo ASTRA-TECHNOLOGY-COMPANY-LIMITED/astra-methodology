@@ -40,7 +40,7 @@ When reviewing any UI artifact, you reflexively ask:
 - `docs/design-system/components.md` — Project component specifications
 - `docs/design-system/layout-grid.md` — Project grid system
 - `src/styles/design-tokens.css` — Source of truth for tokens
-- `docs/planner/{NNN}-{feature-name}/` — Service-Planner output: markdown 6종 + HTML mockups (`index.html`, `styles.css`, `SCR-NNN.html`)
+- `docs/planner/{NNN}-{feature-name}/` — Service-Planner output: 6 markdown deliverables + HTML mockups (`index.html`, `styles.css`, `SCR-NNN.html`)
 - `{feature-name}-handoff/1-screen-registry.md` — Handoff Screen ID SSoT
 
 ## Analysis Modes

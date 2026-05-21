@@ -1,64 +1,64 @@
 ---
-description: Slack 채널에서 백로그 항목을 추출하여 요약합니다
+description: Extracts and summarizes backlog items from a Slack channel
 argument-hint: "<channel-name or channel-id> [limit]"
 allowed-tools: mcp__fect-slack__slack_list_channels, mcp__fect-slack__slack_get_history, mcp__fect-slack__slack_search_channels, mcp__fect-slack__slack_get_user_info, AskUserQuestion
 ---
 
-# Slack 백로그 추출
+# Slack Backlog Extraction
 
-Slack 채널의 메시지를 분석하여 개발 백로그 항목으로 정리합니다.
+Analyzes messages from a Slack channel and organizes them into development backlog items.
 
-> 블루프린트와 스프린트까지 생성하려면 `/slack-import` 스킬을 사용하세요.
+> To also generate the Blueprint and Sprint, use the `/slack-import` skill.
 
-## 입력
+## Input
 
-`$ARGUMENTS`에서 파싱:
+Parsed from `$ARGUMENTS`:
 
-| 위치 | 의미 | 예시 |
-|------|------|------|
-| 1번째 | 채널 이름 또는 ID | `project-tasks`, `C01234567890` |
-| 2번째 (선택) | 조회할 메시지 수 | `30` (기본값: 20) |
+| Position | Meaning | Example |
+|----------|---------|---------|
+| 1st | Channel name or ID | `project-tasks`, `C01234567890` |
+| 2nd (optional) | Number of messages to fetch | `30` (default: 20) |
 
-인자가 없으면 `mcp__fect-slack__slack_list_channels`로 채널 목록을 보여주고 `AskUserQuestion`으로 선택을 받는다.
+If no arguments are provided, list channels with `mcp__fect-slack__slack_list_channels` and prompt the user via `AskUserQuestion`.
 
-## 분석 절차
+## Analysis Procedure
 
-1. 채널 ID 확인 (이름이면 `mcp__fect-slack__slack_search_channels`로 검색)
-2. `mcp__fect-slack__slack_get_history`로 메시지 조회
-3. 각 메시지에서 요구사항/태스크/이슈 성격의 내용 식별
-4. 고유 user ID에 대해 `mcp__fect-slack__slack_get_user_info` 조회
-5. 중복/유사 항목 병합
+1. Resolve the channel ID (if a name is given, search with `mcp__fect-slack__slack_search_channels`)
+2. Fetch messages with `mcp__fect-slack__slack_get_history`
+3. Identify content that has a requirement/task/issue nature in each message
+4. Call `mcp__fect-slack__slack_get_user_info` for each unique user ID
+5. Merge duplicate/similar items
 
-## 출력 형식
+## Output Format
 
 ```
-## Slack 백로그 — #{channel-name}
+## Slack Backlog — #{channel-name}
 
-조회 기간: {oldest_msg_date} ~ {latest_msg_date}
-분석 메시지: {N}개
-추출 항목: {M}개
+Period: {oldest_msg_date} ~ {latest_msg_date}
+Messages analyzed: {N}
+Items extracted: {M}
 
-### 백로그 항목
+### Backlog Items
 
-| # | 기능명 | 설명 | 요청자 | 날짜 | 우선순위 | 메시지 |
-|---|--------|------|--------|------|----------|--------|
-| 1 | 이메일 인증 | 회원가입 시 이메일 인증 코드 발송/검증 | @kim | 03-06 | High | [원문 첫 30자...] |
-| 2 | PG 결제 연동 | 이니시스 PG 카드/계좌이체 처리 | @lee | 03-06 | High | [원문 첫 30자...] |
-| 3 | 관리자 대시보드 | 관리자 권한별 대시보드 분리 | @park | 03-06 | Medium | [원문 첫 30자...] |
+| # | Feature | Description | Requester | Date | Priority | Message |
+|---|---------|-------------|-----------|------|----------|---------|
+| 1 | Email verification | Send/verify email verification code at sign-up | @kim | 03-06 | High | [first 30 chars of original message...] |
+| 2 | PG payment integration | Inicis PG card/bank-transfer processing | @lee | 03-06 | High | [first 30 chars of original message...] |
+| 3 | Admin dashboard | Separate dashboards by admin permission | @park | 03-06 | Medium | [first 30 chars of original message...] |
 
-### 추천 다음 단계
-- `/slack-import {channel}` — 선택한 항목으로 청사진 + 스프린트 자동 생성 (대량 일괄)
-- `/blueprint {feature-slug}` — 개별 기능 청사진 작성 (데이터 플로우·스키마·로직)
-- `/sprint-init {feature-slug}` — 청사진이 준비된 후 스프린트 시작
-- `/feature-dev "..."` — sprint worktree 안에서 구현 (HITL은 청사진 Section 10에 따름)
+### Recommended Next Steps
+- `/slack-import {channel}` — Auto-generate Blueprint + Sprint from the selected items (bulk)
+- `/blueprint {feature-slug}` — Author Blueprint per feature (data flow, schema, logic)
+- `/sprint-init {feature-slug}` — Start the sprint after the Blueprint is ready
+- `/feature-dev "..."` — Implement inside the sprint worktree (HITL follows Blueprint Section 10)
 ```
 
-## 우선순위 판단 기준
+## Priority Decision Criteria
 
-| 신호 | 판단 |
-|------|------|
-| 리액션 수 3개 이상 또는 :fire: :rotating_light: :exclamation: 리액션 | High |
-| 스레드 답글 3개 이상 | High |
-| "급한", "긴급", "ASAP", "중요" 등 키워드 | High |
-| 스레드 답글 1-2개 | Medium |
-| 단순 언급, 아이디어 성격 | Low |
+| Signal | Decision |
+|--------|----------|
+| 3 or more reactions, or :fire: :rotating_light: :exclamation: reactions | High |
+| 3 or more thread replies | High |
+| Keywords such as "urgent", "ASAP", "important", "critical" | High |
+| 1–2 thread replies | Medium |
+| Simple mention, idea-only nature | Low |
