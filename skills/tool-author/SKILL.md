@@ -46,8 +46,8 @@ The frontmatter `paths:` covers the most common LLM-tool-file conventions:
 
 | Glob | Matches |
 |------|---------|
-| `tools/**/*.{py,ts}` | dedicated tool directory |
-| `mcp/**/*.{py,ts}` | MCP server projects |
+| `tools/**/*.py` / `tools/**/*.ts` | dedicated tool directory |
+| `mcp/**/*.py` / `mcp/**/*.ts` | MCP server projects |
 | `**/tools.py` | single-file Python convention |
 | `src/**/*.tool.ts` | naming-prefix TypeScript convention |
 
@@ -207,3 +207,4 @@ Baseline by running the same scenarios without this skill and comparing descript
 | Python / Pydantic rendering | [`references/python-pydantic.md`](references/python-pydantic.md) |
 | TypeScript / Zod rendering | [`references/typescript-zod.md`](references/typescript-zod.md) |
 | Validation grep patterns | [`references/validation-greps.md`](references/validation-greps.md) |
+| Evaluation scenarios | [`references/evals.md`](references/evals.md) |

@@ -2,7 +2,7 @@
 
 Single Source of Truth for the six properties that every LLM tool description must satisfy. Derived from the L24 lesson and adapted to ASTRA's bilingual / English-description policy.
 
-> **Why these six?** A description that lacks any one of them produces one of the five failure modes documented in [`failure-modes.md`](failure-modes.md): wrong tool, skipped tool, malformed arguments, repeated retries, or user-intent bypass.
+> **Why these six?** A description that lacks any one of them produces one of the seven failure modes documented in [`failure-modes.md`](failure-modes.md): wrong tool, skipped tool, malformed arguments, repeated retries, user-intent bypass, wrong side-effect, or un-auditable traces.
 
 ---
 
