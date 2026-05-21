@@ -1,7 +1,7 @@
 ---
 name: sprint-init
 description: "Initializes a new ASTRA sprint. Creates an isolated sprint worktree (with port-isolated dev server settings), generates sprint prompt maps, progress trackers, and retrospective templates inside that worktree, and prints the cd path so all subsequent development and testing happens in the worktree. With --auto flag, also auto-executes the post-scaffolding pipeline: /test-scenario → implementation → /test-run → /pr-merge --auto (worktree auto-removed). Between each major stage (5.2/5.3/5.4/5.5 iteration/5.6), the skill performs a silent save (auto-state.yaml + commit) and applies a 'reference-avoidance' rule (don't re-read large prior artifacts; rely on yaml SSoT) so the system's built-in auto-compression keeps context manageable, then continues directly to the next stage without user intervention. --resume flag is reserved for true recovery (context crash, forced interrupt) — it reads auto-state.yaml and jumps to next_stage. Only halts on true blockers (gh auth, merge conflicts, Critical review issues)."
-argument-hint: "[sprint-number] [sprint-name] [--auto] [--max-iter=N] [--resume]"
+argument-hint: "[sprint-number] [sprint-name] [--auto] [--max-iter=N] [--resume] [--from-blueprint]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Agent, TodoWrite
 ---
 
@@ -79,6 +79,7 @@ Parse from `$ARGUMENTS`:
 - **Sprint name** (optional): The primary blueprint/feature name for this sprint.
 - **`--auto`** (optional flag): If present, set `AUTO_MODE=1` and proceed to Step 5 (Auto Continue) after scaffolding. Without this flag, the skill stops at Step 4 (Output Sprint Planning Guide) as before.
 - **`--max-iter=N`** (optional, only meaningful with `--auto`): max self-improving iteration count for the test loop (1 ≤ N ≤ 10). If `--auto` is set but `--max-iter` is missing, ask the user **once** via `AskUserQuestion` (default 3).
+- **`--from-blueprint`** (optional flag, v5.8+): Indicates this invocation was delegated from `/blueprint` Step 6.5 (auto-worktree creation). Set `FROM_BLUEPRINT=1` when present. **Read site**: Step 4 below — when `FROM_BLUEPRINT=1`, suppress the full Sprint Planning Guide body so `/blueprint` Step 7 can render a single consolidated Next-Steps block. No other behavior changes.
 
 **Directory name format**: `sprint-{N}-{sprint-name}/` (e.g., `sprint-1-auth/`, `sprint-2-payment/`, `sprint-3-dashboard/`)
 
@@ -309,6 +310,8 @@ git commit -m "chore: scaffold sprint ${SPRINT_N} (${SPRINT_NAME})"
 Do not push to remote — the push is bundled with the first feature commit or with `/pr-merge`.
 
 ### Step 4: Output Sprint Planning Guide
+
+> **`--from-blueprint` mode**: When invoked by `/blueprint` Step 6.5, the parent `/blueprint` skill prints its own consolidated output (Step 7 Case A) right after this skill returns. To avoid duplicate output, prefix this section with `(invoked from /blueprint — see consolidated output below)` and keep the body minimal: just the worktree path, branch, and port base. `/blueprint` Step 7 owns the user-facing "Next steps" section.
 
 ```
 ## Sprint {N} Initialization Complete
