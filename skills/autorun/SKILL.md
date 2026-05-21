@@ -462,7 +462,7 @@ Skill('pr-merge', '--auto')
 | Stage | Handling |
 |---|---|
 | Commit uncommitted changes | auto (bypasses confirmation prompt) |
-| Branch sync (main→staging→dev cascade) | auto, halts on conflict (HITL) |
+| Branch sync (`staging→dev` only — `main→staging` excluded; promotion modes skip cascade entirely) | auto, halts on conflict (HITL) |
 | Create PR | auto (ASTRA template) |
 | Code review (feature-dev:code-reviewer agent) | auto |
 | Fix Critical/High issues (up to 3 iterations) | auto (Surgical Changes principle) |

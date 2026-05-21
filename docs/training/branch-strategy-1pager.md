@@ -19,14 +19,15 @@
         ┌──────────┐   promotion (dev→staging)   ┌──────────┐   promotion (staging→main)   ┌──────────┐
         │   dev    │ ──────────────────────────► │ staging  │ ───────────────────────────► │   main   │
         │ (integ.) │                             │ (verify) │                              │ (release)│
-        └────▲─────┘                             └────▲─────┘                              └────┬─────┘
-             │                                        │                                         │
-             │             ◄── cascade merge (top→bottom, automatic on every PR) ──             │
-             └────────────────────────────────────────┴─────────────────────────────────────────┘
-                              changes on main always flow down to staging and dev
+        └────▲─────┘                             └────┬─────┘                              └──────────┘
+             │                                        │
+             │ ◄── cascade merge: staging → dev only, automatic on every PR ──
+             └────────────────────────────────────────┘
+                       changes on staging always flow down to dev
+                       (main → staging is never auto-cascaded)
 ```
 
-**4-tier flow**: `feature → dev → staging → main`. Code merges from top to bottom, and **whenever a change appears upstream it must immediately flow downstream** (cascade).
+**4-tier flow**: `feature → dev → staging → main`. Code is promoted top-to-bottom by people. **Only `staging → dev` is auto-cascaded on every PR** so the integration line catches up with the verified release-candidate line. `main → staging` is not auto-cascaded — `main` is touched only through the explicit `--main` promotion.
 
 Role of each branch:
 
@@ -120,9 +121,6 @@ The following sync must always happen **before** a PR is created:
    fetch remote
         │
         ▼
-   merge main into staging   ──► push staging
-        │
-        ▼
    merge staging into dev    ──► push dev
         │
         ▼
@@ -130,15 +128,17 @@ The following sync must always happen **before** a PR is created:
    branch
 ```
 
+> **Scope**: the auto-cascade is **only `staging → dev`**. `main → staging` is intentionally excluded — `main` is touched only via the explicit `--main` promotion. This protects production code on `main` from being mixed into the integration line outside the controlled release flow.
+
 ### Why is this done every time?
 
-If my `feat/login` branched off `dev` a week ago, plenty of teammates' code has since landed on `dev`. If you raise a PR in that state:
+If my `feat/login` branched off `dev` a week ago, plenty of teammates' code has since landed on `dev`, and after the latest promotion `staging` may also be ahead of `dev`. If you raise a PR in that state:
 
 1. Conflicts explode on the PR → review flow breaks
 2. CI may pass against the old `dev` but break after merge
-3. If a hotfix landed on `main` but is not reflected in `dev`, the next release regresses
+3. If a release-candidate fix landed on `staging` but is not reflected in `dev`, it regresses in the next sprint
 
-**Cascade enforces the invariant "all changes from upstream are always reflected downstream" on every PR**. The tool does it every time so people don't forget.
+**Cascade enforces the invariant "staging changes are always reflected in dev" on every PR**. The tool does it every time so people don't forget.
 
 ### What if there's a conflict?
 
