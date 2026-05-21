@@ -27,7 +27,7 @@ Hãy hình dung các nhánh nơi code được tập hợp như **các sân kh�
 
 **Cách đọc**:
 - Mũi tên nét liền (→) là **luồng do con người khởi động**: tạo PR, sau khi xác minh thì "thăng cấp" lên bước tiếp theo.
-- Mũi tên nét đứt (⤴) là **luồng do công cụ tự động xử lý**: khi nhánh phía trên có thay đổi, các nhánh phía dưới được đồng bộ ngay lập tức.
+- Mũi tên nét đứt (⤴) là **luồng do công cụ tự động xử lý** — chỉ là `staging → dev`. Khi `staging` đi trước `dev` (thường ngay sau khi promotion `dev → staging` hoặc sau khi có hotfix tách ra từ `staging`), công cụ đồng bộ `dev` ở mỗi PR. `main → staging` **không** được auto-cascade; `main` chỉ được chạm vào thông qua promotion `staging → main` rõ ràng.
 
 | Nhánh | Ai can thiệp? | Thay đổi như thế nào? |
 |-------|---------------|------------------------|
@@ -124,19 +124,21 @@ Mỗi nhánh công việc được tiến hành trong **thư mục riêng biệt
 
 ### Điều gì xảy ra?
 
-**Ngay trước khi** tạo PR, công cụ sẽ chảy thay đổi từ trên xuống dưới theo thứ tự sau.
+**Ngay trước khi** tạo PR, công cụ sẽ đồng bộ `staging → dev` để nhánh tích hợp bắt kịp nhánh release-candidate đã được xác minh.
 
 <!-- DIAGRAM:05-cascade -->
 
+> **Phạm vi**: cascade tự động **chỉ là `staging → dev`**. `main → staging` được cố ý loại trừ — `main` chỉ được chạm vào thông qua promotion `staging → main` rõ ràng. Điều này ngăn code production rò rỉ vào nhánh tích hợp ngoài luồng release có kiểm soát.
+
 ### Tại sao phải làm điều này mỗi lần?
 
-Nếu nhánh `feat/login` của tôi đã được tách ra từ `dev` cách đây một tuần, thì trong khoảng thời gian đó, `dev` đã nhận rất nhiều code từ các đồng nghiệp khác. Nếu mở PR trong trạng thái đó:
+Nếu nhánh `feat/login` của tôi đã được tách ra từ `dev` cách đây một tuần, trong khoảng thời gian đó `dev` đã nhận rất nhiều code từ các đồng nghiệp, và sau lần promotion gần nhất `staging` có thể cũng đi trước `dev`. Nếu mở PR trong trạng thái đó:
 
 1. **Bùng nổ xung đột** — Luồng review bị gián đoạn và lãng phí thời gian
 2. **CI pass → vỡ sau khi merge** — Vì được xác minh dựa trên dev cũ nên không thể tin cậy
-3. **Hotfix vận hành bị quay ngược** — Nếu sửa lỗi đã vào main không được phản ánh vào dev, lỗi cũ sẽ tái phát ở release tiếp theo
+3. **Release-candidate bị quay ngược** — Nếu sửa lỗi đã vào `staging` không được phản ánh vào `dev`, cùng lỗi đó sẽ tái phát ở sprint tiếp theo
 
-**Cascade ép buộc quy tắc "tất cả thay đổi của nhánh trên luôn có ở nhánh dưới" mỗi PR**. Công cụ thực hiện mỗi lần để con người không bị quên.
+**Cascade ép buộc quy tắc "thay đổi của staging luôn có mặt trong dev" mỗi PR**. Công cụ thực hiện mỗi lần để con người không bị quên.
 
 ### Nếu có xung đột?
 

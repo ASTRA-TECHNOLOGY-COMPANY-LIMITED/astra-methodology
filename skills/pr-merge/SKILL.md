@@ -81,7 +81,7 @@ If not in promotion mode, set the target branch automatically to **`dev`**. Do n
 
 ### Step 2: Branch sync (common to all modes)
 
-Before all modes, pull `main`, `staging`, `dev` to the latest, and cascade-merge upstream changes into downstream branches.
+Before all modes, pull `main`, `staging`, `dev` to the latest. Cascade merge is restricted to `staging → dev` only — `main → staging` is never run automatically by `/pr-merge` (operate on `main` only via the explicit `--main` promotion).
 
 Save the current branch as `{current-branch}`.
 
@@ -109,26 +109,18 @@ git fetch origin
 >
 > (Since Step 1.1 runs before Step 2 in default mode, the `{target-branch}` value is already determined.)
 
-#### Step 2.2: Cascade merge (main → staging → dev)
+#### Step 2.2: Cascade merge (staging → dev)
 
-Sequentially merge upstream changes into downstream branches. Target only branches that exist on the remote.
+Sync upstream `staging` into downstream `dev`. The cascade scope is restricted to a single hop — `main → staging` is intentionally excluded so that production code on `main` is only touched via the explicit `--main` promotion.
 
-**Per-mode cascade scope** (in default mode, Step 1.1 fixes `{target-branch}` to `dev`):
-- **Default mode**: run the full cascade (`main → staging → dev`)
-- **`--staging` promotion**: run only up to `main → staging` (dev is not a merge target)
+**Per-mode cascade scope**:
+- **Default mode**: run `staging → dev` (when both branches exist on the remote)
+- **`--staging` promotion**: skip the cascade (no automatic `main → staging` sync; promote `dev → staging` as-is)
 - **`--main` promotion**: skip the cascade (staging → main direction; no reverse sync needed)
 
-When the cascade should run:
+When the cascade should run (default mode only):
 
-1. **main → staging** (when staging exists on the remote):
-   ```bash
-   git checkout staging
-   git merge main
-   ```
-   - On conflict: print the conflict file list and instruct the user to resolve manually; abort.
-   - If there are changes after the merge: `git push origin staging`
-
-2. **staging → dev** (when staging exists on the remote, in default mode, and `{target-branch}` = `dev`):
+1. **staging → dev** (when both `staging` and `dev` exist on the remote):
    ```bash
    git checkout dev
    git merge staging
@@ -136,17 +128,9 @@ When the cascade should run:
    - On conflict: print the conflict file list and instruct the user to resolve manually; abort.
    - If there are changes after the merge: `git push origin dev`
 
-3. **main → dev** (when staging does not exist on the remote, in default mode, and `{target-branch}` = `dev`):
-   ```bash
-   git checkout dev
-   git merge main
-   ```
-   - On conflict: print the conflict file list and instruct the user to resolve manually; abort.
-   - If there are changes after the merge: `git push origin dev`
+2. `git checkout {current-branch}` to return to the original branch.
 
-4. `git checkout {current-branch}` to return to the original branch.
-
-> **Note**: when the cascade merge has no changes (Already up to date), silently skip that step.
+> **Note**: when the cascade merge has no changes (Already up to date), silently skip that step. If `staging` does not exist on the remote, skip the cascade entirely — do **not** fall back to `main → dev` (operating on `main` requires the explicit `--main` promotion).
 
 ### Step 3: Per-mode branching
 
@@ -551,7 +535,7 @@ EOF
 - **Branch strategy**: promote code in the order `feature → dev → staging → main`.
 - **Worktree policy (v5.0+)**: sprint worktrees are created by `/sprint-init` (`.astra-worktrees/sprint-<N>-<name>/`). `/pr-merge` is invoked inside one, and right after merging into dev it auto-removes the worktree and returns to the main worktree (dev). Cross-shared-branch (main/staging/dev/master) cascade merges and promotions run directly in the main worktree. If the workflow halts due to a conflict, the worktree remains — after resolving, re-run `/pr-merge` to continue.
 - **Fallback flow**: when a user without `/sprint-init` invokes `/pr-merge` after making changes directly in the main worktree (dev), Step 4.1 auto-creates a temporary isolated worktree. Use this for one-off work; starting with `/sprint-init` is Recommended in general.
-- **Common preprocessing**: in every mode, pull `main` / `staging` / `dev` before execution. The cascade-merge scope differs per mode: default mode runs the full cascade (`main → staging → dev`), `--staging` promotion only up to `main → staging`, `--main` promotion skips it.
+- **Common preprocessing**: in every mode, pull `main` / `staging` / `dev` before execution. The cascade merge itself is restricted to `staging → dev` and runs only in default mode — promotion modes (`--staging`, `--main`) skip the cascade entirely. `main → staging` is never auto-cascaded; operate on `main` only via the explicit `--main` promotion.
 - **Default mode**: the merge target branch is automatically set to `dev` (no user prompt). When running from `main`/`master`/`staging`/`dev`, a work branch is auto-created. The branch name is also auto-decided by analyzing the changes. If `{target-branch}` is missing on the remote, it is auto-created from the default branch.
 - **Promotion mode (`--staging`)**: promote `dev` → `staging`. Skips the work-branch creation/commit steps and focuses on PR-based merging.
 - **Promotion mode (`--main`)**: promote `staging` → `main`. As this is a release promotion, the version bump runs at this stage.

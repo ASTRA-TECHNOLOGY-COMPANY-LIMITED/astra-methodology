@@ -27,7 +27,7 @@ Think of the lines where code gathers as a **stage of a performance**.
 
 **How to read**:
 - Solid arrows (→) are **flows initiated by people**: open a PR, after verification "promote" to the next stage.
-- Dotted arrows (⤴) are **flows that the tool handles automatically**: whenever a change happens upstream, it syncs downstream immediately.
+- Dotted arrows (⤴) are **flows the tool handles automatically** — specifically `staging → dev` only. Whenever `staging` is ahead of `dev` (typically right after a `dev → staging` promotion or a `staging`-branched hotfix), the tool syncs `dev` on every PR. `main → staging` is **not** auto-cascaded; `main` is touched only via the explicit `staging → main` promotion.
 
 | Line | Who touches it? | How does it change? |
 |------|-----------------|---------------------|
@@ -124,19 +124,21 @@ Each work branch runs in **a separate folder inside the repository** (git worktr
 
 ### What happens?
 
-**Right before** you open a PR, the tool flows changes top-to-bottom in this order.
+**Right before** you open a PR, the tool syncs `staging → dev` so the integration line catches up with the verified release-candidate line.
 
 <!-- DIAGRAM:05-cascade -->
 
+> **Scope**: the auto-cascade is **only `staging → dev`**. `main → staging` is intentionally excluded — `main` is touched only via the explicit `staging → main` promotion. This keeps production code from leaking into the integration line outside the controlled release flow.
+
 ### Why every time?
 
-If my `feat/login` branched off `dev` a week ago, lots of teammates' code has since landed on `dev`. If you raise a PR in that state:
+If my `feat/login` branched off `dev` a week ago, lots of teammates' code has since landed on `dev`, and after the most recent promotion `staging` may also be ahead of `dev`. If you raise a PR in that state:
 
 1. **Conflict explosion** — review flow breaks and time is wasted
 2. **CI passes → breaks after merge** — verified against the old dev, so unreliable
-3. **Production hotfix regression** — if a fix that landed on main isn't reflected in dev, the same bug returns in the next release
+3. **Release-candidate regression** — if a fix that landed on `staging` isn't reflected in `dev`, the same bug returns in the next sprint
 
-**Cascade enforces "every change upstream is always present downstream" as a rule on every PR**. The tool does it every time so people don't forget.
+**Cascade enforces "staging changes are always present in dev" as a rule on every PR**. The tool does it every time so people don't forget.
 
 ### What if there's a conflict?
 
