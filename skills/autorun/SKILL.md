@@ -209,8 +209,8 @@ WT_PATH=$(git worktree list --porcelain 2>/dev/null | awk -v slug="${feature_slu
 ')
 
 if [ -z "$WT_PATH" ]; then
-  # Fallback: glob — pick the most-recent matching dir
-  WT_PATH=$(ls -td .astra-worktrees/sprint-*-${feature_slug} 2>/dev/null | head -1)
+  # Fallback: glob — include both bare and collision-suffixed dirs, pick most recent
+  WT_PATH=$(ls -td .astra-worktrees/sprint-*-${feature_slug} .astra-worktrees/sprint-*-${feature_slug}-* 2>/dev/null | head -1)
 fi
 
 if [ -n "$WT_PATH" ] && [ -d "$WT_PATH" ]; then
