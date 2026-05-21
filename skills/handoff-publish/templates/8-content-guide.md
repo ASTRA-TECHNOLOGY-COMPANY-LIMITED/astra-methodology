@@ -1,109 +1,109 @@
-# 8. Content Guide — UX Writing + 데이터 표시 규칙
+# 8. Content Guide — UX Writing + Data Display Rules
 
-**기능**: {{FEATURE_NAME}}
-**최종 수정**: {{TODAY}}
+**Feature**: {{FEATURE_NAME}}
+**Last updated**: {{TODAY}}
 
-> **왜 필요한가?** 같은 컴포넌트라도 화면마다 라벨/메시지가 다르면 사용자 경험이 깨집니다. 브랜드 보이스의 일관성 + 정직한 UX 원칙을 보장합니다.
-
----
-
-## 16.1 브랜드 보이스
-
-- **톤**: 전문적, 신뢰, 실무 중심
-- **호칭**: 사용자에게는 정중하게 ("~하세요")
-- **금지**: 과장 / 어정쩡한 표현 / "Loading..." 같은 게으른 표현
+> **Why is this needed?** Even when the same component is used, inconsistent labels/messages across screens break the user experience. This guarantees a consistent brand voice + honest UX principles.
 
 ---
 
-## 16.2 마이크로카피 룰
+## 16.1 Brand voice
 
-### [버튼]
-- **원칙**: 행동 동사 + 정직성
-- ✅ **"회원가입하고 질문하기"** (실제 동작 명시)
-- ❌ "지금 질문하기" (실제로는 로그인 게이트)
-
-### [에러 메시지]
-- **원칙**: 무엇이 + 왜 + 어떻게 해결
-- ✅ **"토큰이 부족합니다. 충전 후 다시 시도하세요. [충전하기]"**
-- ❌ "오류가 발생했습니다"
-
-### [Empty 상태]
-- **원칙**: 다음 행동 유도
-- ✅ **"아직 질문이 없어요. [첫 질문 작성하기]"**
-- ❌ "데이터가 없습니다"
-
-### [확인 모달]
-- **원칙**: 무엇을 + 결과 명시
-- ✅ **"이 질문을 삭제하시겠습니까? 삭제 후 복구할 수 없습니다."**
-- ❌ "확인하시겠습니까?"
+- **Tone**: professional, trustworthy, practitioner-focused
+- **Form of address**: polite to the user (e.g., "Please…")
+- **Forbidden**: exaggeration / vague phrasing / lazy expressions like "Loading..."
 
 ---
 
-## 16.3 데이터 표시 규칙
+## 16.2 Microcopy rules
 
-### [이미지/미디어]
-- **썸네일 비율**: 16:9 (강의), 4:3 (인사이트), 1:1 (프로필)
-- **권장 해상도**: 320×180 (썸네일), 800×450 (상세)
-- **포맷**: WebP 우선, JPEG fallback
-- **Placeholder**: 카테고리 색상 + 첫 글자
-- **alt 텍스트 필수**: 장식 이미지는 `alt=""` (스크린리더 건너뛰기)
+### [Buttons]
+- **Principle**: action verb + honesty
+- ✅ **"Sign up and ask"** (specifies the actual action)
+- ❌ "Ask now" (in reality, this is a login gate)
 
-### [날짜/시간]
-- 1시간 이내: "방금 전", "10분 전"
-- 24시간 이내: "3시간 전"
-- 7일 이내: "3일 전"
-- 7일 이후: "2026.04.20"
-- 절대 표시 필요 시: hover 툴팁
-- **타임존**: 사용자 로컬 타임존 (서버는 UTC 저장)
+### [Error messages]
+- **Principle**: what + why + how to resolve
+- ✅ **"You don't have enough tokens. Recharge and try again. [Recharge]"**
+- ❌ "An error occurred"
 
-### [숫자]
-- 1,000 미만: 정확한 숫자 ("847명")
-- 1,000~9,999: "1.2K" 또는 "1,234"
-- 10,000+: "1.2만" (한국어) / "12K" (영어)
-- 통화: "₩12,000" / "$12.00" (locale)
+### [Empty state]
+- **Principle**: invite the next action
+- ✅ **"No questions yet. [Write your first question]"**
+- ❌ "No data"
 
-### [텍스트 자르기]
-- **카드 제목**: 2줄 (`line-clamp-2`)
-- **카드 설명**: 3줄
-- **강사명/저자명**: 1줄 truncate
-- **카테고리 뱃지**: 자르지 않음 (짧게 유지)
+### [Confirmation modals]
+- **Principle**: what + spell out the consequence
+- ✅ **"Delete this question? Once deleted it cannot be restored."**
+- ❌ "Are you sure?"
 
 ---
 
-## 17. i18n 다국어 정책
+## 16.3 Data display rules
 
-> FECT는 **한국어 / 영어 / 베트남어 3개국어 강제** 정책입니다. 디자이너가 한국어 텍스트만 보고 작업하면 베트남어 길이로 깨집니다.
+### [Images/media]
+- **Thumbnail ratios**: 16:9 (courses), 4:3 (insights), 1:1 (profiles)
+- **Recommended resolutions**: 320×180 (thumbnail), 800×450 (detail)
+- **Formats**: WebP first, JPEG fallback
+- **Placeholder**: category color + first letter
+- **alt text required**: decorative images use `alt=""` (screen readers skip)
 
-### 17.1 번역 대상 / 예외
+### [Date/time]
+- Within 1 hour: "just now", "10 min ago"
+- Within 24 hours: "3 hr ago"
+- Within 7 days: "3 days ago"
+- Beyond 7 days: "2026.04.20"
+- When absolute time is needed: hover tooltip
+- **Timezone**: user's local timezone (server stores UTC)
 
-| 대상 | 정책 |
-|------|------|
-| 모든 UI 텍스트 (버튼/라벨/메시지) | ✅ 번역 필수 (3개국어) |
-| 브랜드명 ("FECT", "ASTRA") | ❌ 번역 안 함 |
-| 의도적 영문 (디자인 사양) | ❌ 번역 안 함 + `i18n-ignore` 주석 |
+### [Numbers]
+- Under 1,000: exact number ("847 people")
+- 1,000–9,999: "1.2K" or "1,234"
+- 10,000+: "1.2만" (Korean) / "12K" (English)
+- Currency: "₩12,000" / "$12.00" (locale)
 
-### 17.2 텍스트 길이 가정
-- **베트남어 = 한국어 대비 1.4배 길이** 가정
-- 줄바꿈 / 잘림 처리 시 **베트남어 기준**으로 디자인
-- 버튼 너비는 텍스트 길이에 유연 (고정 너비 지양)
+### [Text truncation]
+- **Card title**: 2 lines (`line-clamp-2`)
+- **Card description**: 3 lines
+- **Instructor/author name**: 1-line truncate
+- **Category badge**: do not truncate (keep short)
 
-### 17.3 신규 텍스트 추가 절차
+---
+
+## 17. i18n localization policy
+
+> FECT enforces **3 mandatory languages: Korean / English / Vietnamese**. If a designer only views the Korean text, the layout will break at Vietnamese length.
+
+### 17.1 Translation scope / exceptions
+
+| Target | Policy |
+|--------|--------|
+| All UI text (buttons/labels/messages) | ✅ translation required (3 languages) |
+| Brand names ("FECT", "ASTRA") | ❌ do not translate |
+| Intentional English (design spec) | ❌ do not translate + `i18n-ignore` comment |
+
+### 17.2 Text length assumptions
+- Assume **Vietnamese = 1.4× the length of Korean**
+- Design line-breaks / truncation against the **Vietnamese baseline**
+- Button width should be flexible to text length (avoid fixed width)
+
+### 17.3 Procedure for adding new text
 
 ```
-1. UX가 ko/en/vi 3개 번역안 작성
-2. 개발자가 i18n 키 등록 (프로젝트의 i18n 라이브러리 사용)
-3. 코드에서 t('key') 호출
-4. 모든 locale 파일에 키 존재 검증 (lint)
+1. UX writes 3 translations: ko/en/vi
+2. Developer registers the i18n key (using the project's i18n library)
+3. Code calls t('key')
+4. Lint verifies the key exists in every locale file
 ```
 
-→ 코드에 키만 추가하고 locale 파일에 안 넣으면 빌드 실패하도록 lint 룰 권장.
+→ A lint rule that fails the build when only the code adds a key without the locale file is Recommended.
 
-### i18n 키 네이밍 컨벤션
+### i18n key naming convention
 
 ```
 {{feature}}.{{screen}}.{{element}}.{{state}}
 
-예:
+Example:
 expert.detail.acceptButton.default
 expert.detail.acceptButton.disabled
 expert.list.empty.message
@@ -112,63 +112,63 @@ expert.list.empty.cta
 
 ---
 
-## 18. Accessibility (a11y) 가이드라인
+## 18. Accessibility (a11y) guidelines
 
-> 접근성은 **법적 요구사항이자 신뢰의 기본**. UX/UI/Dev 모두 책임입니다.
+> Accessibility is **a legal requirement and a foundation of trust**. UX/UI/Dev are all responsible.
 
-### 18.1 준수 레벨
-- **WCAG 2.1 AA** 목표
+### 18.1 Compliance level
+- Target: **WCAG 2.1 AA**
 
-### 18.2 색상 대비
-- 본문 텍스트 / 배경: **4.5:1 이상**
-- 큰 글자(18pt+): **3:1 이상**
-- 디자인 시스템 토큰은 자동으로 만족 (커스텀 색상 시 검증)
+### 18.2 Color contrast
+- Body text / background: **at least 4.5:1**
+- Large text (18pt+): **at least 3:1**
+- Design system tokens satisfy this automatically (verify when using custom colors)
 
-### 18.3 키보드 네비게이션
-- 모든 인터랙션을 키보드로 가능 (Tab / Enter / ESC)
-- Tab 순서가 시각적 순서와 일치
-- Focus state **시각적으로 명확** (디자이너 책임)
+### 18.3 Keyboard navigation
+- All interactions must be possible by keyboard (Tab / Enter / ESC)
+- Tab order matches visual order
+- Focus state is **visually clear** (designer's responsibility)
 
-### 18.4 모달 / 드롭다운
-- ESC 키로 닫기
-- Focus trap (모달 안에서만 Tab)
-- 닫은 후 트리거 요소로 focus 복귀
+### 18.4 Modals / dropdowns
+- Close with ESC
+- Focus trap (Tab stays inside the modal)
+- After closing, focus returns to the trigger element
 
-### 18.5 스크린 리더
-- 이미지 `alt` 속성 필수 (장식 이미지는 `alt=""`)
-- 버튼 `aria-label` (아이콘 only 버튼)
-- 폼 필드 `<label>` 연결
-- 동적 컨텐츠 변경 시 `aria-live`
+### 18.5 Screen readers
+- Image `alt` attribute required (decorative images use `alt=""`)
+- Button `aria-label` (icon-only buttons)
+- Form fields linked to `<label>`
+- Use `aria-live` when dynamic content changes
 
-### 18.6 책임 분담
-- **디자이너**: 색상 대비, Focus state 디자인, 시각적 순서
-- **개발자**: ARIA 속성, 키보드 핸들러, focus trap 구현
-- **QA**: 스크린 리더 테스트 (VoiceOver / NVDA)
+### 18.6 Responsibility split
+- **Designer**: color contrast, focus-state design, visual order
+- **Developer**: ARIA attributes, keyboard handlers, focus-trap implementation
+- **QA**: screen-reader testing (VoiceOver / NVDA)
 
 ---
 
-## 화면별 카피 레퍼런스 (이 기능 특유)
+## Per-screen copy reference (this feature)
 
-각 Screen ID의 주요 텍스트를 나열합니다. 개발자가 구현 시 이 섹션을 i18n 키의 ko 값으로 사용합니다.
+List the key text for each Screen ID. Developers use this section as the `ko` value when registering i18n keys.
 
 ### `{{DOMAIN_CODE}}-EXPERT-LIST`
-- 헤더: "전문가 Q&A"
-- 서브: "무역 전문가에게 직접 질문하고 답변 받으세요"
-- CTA (로그인): "질문하기"
-- CTA (비로그인): "회원가입하고 질문하기"
-- EMPTY 메시지: "아직 질문이 없어요"
-- EMPTY CTA: "첫 질문 작성하기"
+- Header: "Expert Q&A"
+- Subhead: "Ask trade experts directly and get answers"
+- CTA (logged in): "Ask"
+- CTA (not logged in): "Sign up and ask"
+- EMPTY message: "No questions yet"
+- EMPTY CTA: "Write your first question"
 
 ### `{{DOMAIN_CODE}}-EXPERT-DETAIL-UC02`
-- 채택 버튼: "이 답변 채택하기"
-- 채택 버튼 비활성화 hover: "본인이 작성한 질문만 채택할 수 있어요"
-- 답변 작성 placeholder: "답변을 입력하세요 (최소 50자)"
-- 답변 등록 버튼: "답변 등록"
+- Adopt button: "Adopt this answer"
+- Adopt button disabled hover: "Only the question owner can adopt"
+- Answer-writing placeholder: "Enter your answer (minimum 50 characters)"
+- Submit answer button: "Submit answer"
 
-### `{{DOMAIN_CODE}}-EXPERT-MODAL01` (삭제 확인)
-- 제목: "질문을 삭제하시겠습니까?"
-- 설명: "삭제된 질문은 복구할 수 없습니다. 등록된 답변도 함께 삭제됩니다."
-- 취소: "취소"
-- 확정: "삭제하기"
+### `{{DOMAIN_CODE}}-EXPERT-MODAL01` (delete confirmation)
+- Title: "Delete this question?"
+- Description: "A deleted question cannot be restored. Registered answers will be deleted together."
+- Cancel: "Cancel"
+- Confirm: "Delete"
 
-_TODO (UX): 위 예시 외에 모든 Registry ID의 주요 카피를 나열하세요._
+_TODO (UX): Beyond the examples above, list the key copy for every Registry ID._

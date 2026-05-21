@@ -9,21 +9,21 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Agen
 
 Creates a sprint-level isolated worktree, writes port-isolated env settings, and generates prompt maps / progress trackers / retrospective templates **inside that worktree**.
 
-> **v5.0+ 정책**: sprint당 단일 worktree(`.astra-worktrees/sprint-<N>-<name>/`)에서 모든 feature 작업·테스트가 진행된다. 머지는 `/pr-merge`가 dev로 반영하고 worktree를 자동 제거한다. 트레이드오프: sprint당 PR 1개 — feature별 리뷰 granularity는 없지만 sprint 단위로 깔끔히 머지/롤백된다.
+> **v5.0+ policy**: Every feature task and test for a sprint runs inside a single worktree (`.astra-worktrees/sprint-<N>-<name>/`). `/pr-merge` reflects the work into dev and auto-removes the worktree. Trade-off: one PR per sprint — no per-feature review granularity, but clean per-sprint merge/rollback.
 
 ## Execution Procedure
 
-### Step 0.A: Resume Detection (`--resume` 플래그)
+### Step 0.A: Resume Detection (`--resume` flag)
 
-**언제 쓰나**: `--resume`은 **진짜 복구용**이다. `--auto` 모드는 평상시 중간에 끊기지 않고 stage 사이에서 silent save(`auto-state.yaml` + commit)만 하면서 자동으로 다음 stage로 진행한다. 다음 경우에만 사용자가 명시적으로 `/sprint-init --resume`을 호출해 재개한다:
+**When to use**: `--resume` is **for true recovery**. In normal operation, `--auto` mode never interrupts between stages — it only does a silent save (`auto-state.yaml` + commit) and then proceeds to the next stage automatically. Only in the following cases does the user explicitly invoke `/sprint-init --resume` to continue:
 
-1. 시스템 자동 컨텍스트 압축 후 LLM이 in-flight 변수를 잃어 진행이 멈춘 경우
-2. 사용자가 의도적으로 중간에 중단했다가 다시 이어가는 경우
-3. 크래시·세션 종료 등으로 skill 실행이 비정상 종료된 경우
+1. The LLM lost its in-flight variables after the system auto-compressed the context and progress halted
+2. The user intentionally stopped mid-way and is now continuing
+3. The skill execution terminated abnormally due to a crash or session end
 
-`auto-state.yaml`이 단일 진실 출처(SSoT)이므로, 위 어떤 경우든 yaml에서 `next_stage`를 읽어 정확히 그 지점부터 재개한다.
+Since `auto-state.yaml` is the single source of truth (SSoT), in any of the above cases we read `next_stage` from the yaml and resume from exactly that point.
 
-`$ARGUMENTS`에서 `--resume` 플래그를 우선 파싱한다:
+Parse the `--resume` flag from `$ARGUMENTS` first:
 
 ```bash
 RESUME_MODE=0
@@ -35,37 +35,37 @@ for arg in $ARGUMENTS; do
 done
 ```
 
-#### `--resume` 모드 동작
-`RESUME_MODE=1`이면:
+#### `--resume` mode behavior
+If `RESUME_MODE=1`:
 
-1. **메인 worktree에서 호출된 케이스**: `docs/sprints/sprint-*/auto-state.yaml`을 글롭하여 `merge.merge_success != true`인 항목을 추린 뒤, **sprint 번호 N이 가장 큰 것**을 "가장 최신"으로 채택한다 (디렉토리명 `sprint-{N}-...`의 N 비교). 그 항목의 `sprint.worktree_path`로 cd 후 단계를 이어간다. worktree가 이미 제거된 상태면(머지 후 yaml만 dev에 남아 있는 케이스) 에러 출력 후 abort — `--resume`은 진행 중인 worktree가 살아 있을 때만 의미가 있다.
-2. **sprint worktree 안에서 호출된 케이스**: 현재 디렉토리의 `docs/sprints/sprint-{N}-{name}/auto-state.yaml`을 읽는다 (없으면 abort).
-3. `auto-state.yaml`을 읽어 다음 변수를 모두 복원한다:
+1. **Invoked from the main worktree**: Glob `docs/sprints/sprint-*/auto-state.yaml` and filter entries with `merge.merge_success != true`. Adopt the **largest sprint number N** as the "most recent" (compare the N in directory names `sprint-{N}-...`). cd into that entry's `sprint.worktree_path` and continue the stages. If the worktree has already been removed (the case where only the yaml remains in dev after the merge), print an error and abort — `--resume` is only meaningful when an in-progress worktree is still alive.
+2. **Invoked from inside a sprint worktree**: Read the current directory's `docs/sprints/sprint-{N}-{name}/auto-state.yaml` (abort if missing).
+3. Read `auto-state.yaml` and restore all of the following variables:
    - `SPRINT_N`, `SPRINT_NAME`, `WT_PATH`, `MAX_ITER`, `CURRENT_ITER`
    - `progress.next_stage`, `progress.last_iteration_summary`, `files_to_patch_next`
-   - 기타 stage별 산출물 경로
-4. **Step 0~4 (worktree 생성·scaffolding)를 모두 건너뛴다** — 이미 존재한다.
-5. **`progress.next_stage`로 직접 점프**한다. 예: `next_stage: 5.4`면 Step 5.4를 바로 실행.
-6. 시작 안내:
+   - Other per-stage deliverable paths
+4. **Skip all of Step 0~4 (worktree creation·scaffolding)** — they already exist.
+5. **Jump directly to `progress.next_stage`**. e.g., `next_stage: 5.4` → run Step 5.4 immediately.
+6. Startup notice:
    ```
-   🔄 sprint-init --resume 재개
+   🔄 sprint-init --resume resumed
       Sprint: sprint-{N}-{name}
       Worktree: {WT_PATH}
-      이전 완료: {completed_stages}
-      재개 단계: Stage {next_stage} — {next_stage_description}
+      Previously completed: {completed_stages}
+      Resuming stage: Stage {next_stage} — {next_stage_description}
       Iteration: {current_iter}/{max_iter}
    ```
 
-`RESUME_MODE=0`이면 정상 Step 0.B로 진행.
+If `RESUME_MODE=0`, proceed normally to Step 0.B.
 
-### Step 0.B: Main Worktree Guard (신규 sprint만)
+### Step 0.B: Main Worktree Guard (new sprint only)
 
-Sprint worktree를 *생성*하는 명령이므로 메인 worktree에서만 실행한다. 이미 격리 worktree 안이면 거부:
+This command *creates* a sprint worktree, so it must run in the main worktree only. Reject if already inside an isolated worktree:
 
 ```bash
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
 if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$PLUGIN_ROOT/scripts/worktree-helpers.sh" ]; then
-  echo "ERROR: CLAUDE_PLUGIN_ROOT를 찾을 수 없습니다. 플러그인 캐시 경로를 확인하세요." >&2
+  echo "ERROR: CLAUDE_PLUGIN_ROOT not found. Verify the plugin cache path." >&2
   exit 1
 fi
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
@@ -88,65 +88,65 @@ When scanning existing directories, extract the sprint number from directory nam
 
 ### Step 1.5: Sync `dev` Branch
 
-Sprint worktree는 `origin/dev`(없으면 `origin/main`)를 base로 분기한다. 메인 worktree를 먼저 `dev`로 정렬해 두면 base가 항상 최신 상태가 된다.
+The sprint worktree branches from `origin/dev` (or `origin/main` when missing) as base. Aligning the main worktree to `dev` first keeps the base always up to date.
 
 1. **Check current branch**: `git branch --show-current`
-2. **Preserve uncommitted changes**: `git status --porcelain`에 변경이 있으면 `git stash --include-untracked -m "astra-sprint-init"`로 보관
-3. **Switch and pull**: `git fetch origin dev && git checkout dev && git pull origin dev` (`dev`가 없으면 `main`/`master`로 폴백, 그것도 없으면 현재 브랜치 유지)
-4. **Restore stash**: 2단계에서 stash 했으면 `git stash pop`. 충돌 시 사용자에 보고하고 중단.
+2. **Preserve uncommitted changes**: If `git status --porcelain` shows changes, stash with `git stash --include-untracked -m "astra-sprint-init"`
+3. **Switch and pull**: `git fetch origin dev && git checkout dev && git pull origin dev` (if `dev` is absent, fall back to `main`/`master`; if neither exists, stay on the current branch)
+4. **Restore stash**: If stashed in step 2, `git stash pop`. On conflict, report to the user and abort.
 
 ### Step 1.6: Create Sprint Worktree
 
-`feat/sprint-{N}-{sprint-name}` 브랜치로 새 격리 worktree를 생성한다. 이 안에서 모든 feature 코드와 테스트 산출물이 작성된다.
+Create a new isolated worktree on the `feat/sprint-{N}-{sprint-name}` branch. All feature code and test deliverables are written inside it.
 
 ```bash
-SPRINT_N="{확정된 sprint 번호}"
-SPRINT_NAME="{확정된 sprint 이름}"
+SPRINT_N="{confirmed sprint number}"
+SPRINT_NAME="{confirmed sprint name}"
 
 if ! out=$(astra_create_sprint_worktree "$SPRINT_N" "$SPRINT_NAME"); then
-  echo "ERROR: sprint worktree 생성 실패" >&2
+  echo "ERROR: sprint worktree creation failed" >&2
   exit 1
 fi
 IFS=$'\t' read -r SPRINT_BRANCH WT_PATH <<< "$out"
 if [ -z "$WT_PATH" ] || [ ! -d "$WT_PATH" ]; then
-  echo "ERROR: sprint worktree 경로를 확정할 수 없습니다. 헬퍼 출력: '$out'" >&2
+  echo "ERROR: could not determine sprint worktree path. helper output: '$out'" >&2
   exit 1
 fi
 ```
 
-`astra_create_sprint_worktree`가 브랜치/슬러그/포트 충돌을 모두 흡수하므로 반환된 `$SPRINT_BRANCH`·`$WT_PATH`를 *그대로* 사용한다 (희망 이름과 다를 수 있음).
+`astra_create_sprint_worktree` absorbs branch/slug/port conflicts, so use the returned `$SPRINT_BRANCH`·`$WT_PATH` *as-is* (it may differ from the desired name).
 
 ### Step 1.7: Write Worktree Port Env File
 
-worktree 안에 `.astra-worktree.env`를 생성한다. `/test-run`이 서버 기동 전 이 파일을 source 해 sprint 전용 포트를 적용한다.
+Create `.astra-worktree.env` inside the worktree. `/test-run` sources this file before starting the server to apply the sprint-specific ports.
 
 ```bash
-# 기본 포트 베이스: 3000 (Node 기반 기본값). 다른 스택은 env 파일 내 변환식이 자동 적용.
+# Default port base: 3000 (Node-stack default). Other stacks are derived automatically by the conversion formula inside the env file.
 PORT_BASE_DEFAULT=3000
 if ! PORT_BASE=$(astra_compute_port_base "$PORT_BASE_DEFAULT" "$SPRINT_N"); then
-  echo "ERROR: 사용 가능한 포트 베이스를 찾지 못했습니다" >&2
+  echo "ERROR: could not find an available port base" >&2
   exit 1
 fi
 
 astra_write_worktree_env "$WT_PATH" "$SPRINT_N" "$SPRINT_NAME" "$PORT_BASE" || exit 1
-echo "Sprint 포트 베이스: $PORT_BASE (offset=$((PORT_BASE - PORT_BASE_DEFAULT)))"
+echo "Sprint port base: $PORT_BASE (offset=$((PORT_BASE - PORT_BASE_DEFAULT)))"
 ```
 
-생성된 파일에는 `ASTRA_PORT_BASE`, `PORT`, `VITE_PORT`, `SERVER_PORT`, `DJANGO_PORT`, `FASTAPI_PORT` 등 프레임워크별 값이 포함된다. `/test-run`은 감지한 스택에 맞는 값을 선택해 서버를 띄운다.
+The generated file contains per-framework values such as `ASTRA_PORT_BASE`, `PORT`, `VITE_PORT`, `SERVER_PORT`, `DJANGO_PORT`, `FASTAPI_PORT`. `/test-run` picks the value matching the detected stack to start the server.
 
 ### Step 1.8: Move into Sprint Worktree
 
-이후 산출물 작성·진행 추적은 모두 worktree 안에서 수행한다:
+From here on, deliverable writing and progress tracking happen inside the worktree:
 
 ```bash
 cd "$WT_PATH"
 ```
 
-> 이 시점부터 "현재 작업 디렉토리"는 `$WT_PATH`이며, 모든 docs/sprints/* 파일은 sprint 브랜치에 커밋된다.
+> From this point on, the "current working directory" is `$WT_PATH`, and every docs/sprints/* file is committed onto the sprint branch.
 
 ### Step 2: Create Sprint Prompt Map
 
-`$WT_PATH/docs/sprints/sprint-{N}-{sprint-name}/prompt-map.md` 파일을 생성한다.
+Create the file `$WT_PATH/docs/sprints/sprint-{N}-{sprint-name}/prompt-map.md`.
 
 Scan `docs/blueprints/` for numbered directories matching the sprint name (or use the blueprint names provided by the user). Each blueprint becomes a feature in the prompt map. Do NOT analyze or carry over items from previous sprints.
 
@@ -156,23 +156,23 @@ Scan `docs/blueprints/` for numbered directories matching the sprint name (or us
 ## Sprint Goal
 [Describe the business value to achieve in this sprint]
 
-> **Worktree 안내**: 이 sprint의 모든 작업은 `.astra-worktrees/sprint-{N}-{sprint-name}/` 안에서 진행됩니다.
-> 새 Claude Code 세션은 반드시 그 경로에서 시작하세요.
+> **Worktree note**: Every task in this sprint runs inside `.astra-worktrees/sprint-{N}-{sprint-name}/`.
+> New Claude Code sessions must be started from that path.
 
 ## Feature 1: {feature-name}
 
 ### 1.1 Blueprint Prompt
 /blueprint {feature-name} --from-planner=docs/planner/{NNN}-{feature-name}
 
-> `/blueprint` 스킬은 `/service-planner` 산출물(있으면 자동 로드)을 입력으로 10개 표준 섹션의 청사진을 `docs/blueprints/{NNN}-{feature-name}/blueprint.md`에 작성합니다.
-> - **포함**: 데이터 플로우, 스키마 DDL, ER 다이어그램, API JSON Schema, 시퀀스 다이어그램, 의사코드 로직, HITL Triggers
-> - **제외**: 실행 가능한 구현 코드, ORM 어노테이션, 프레임워크 종속 표현
-> - PK 전략·트랜잭션 경계·외부 의존성 동기성처럼 사람 결정이 필요한 1-3개 항목만 자동으로 물어봅니다.
+> The `/blueprint` skill takes `/service-planner` deliverables (auto-loaded when present) as input and writes a 10-standard-section blueprint to `docs/blueprints/{NNN}-{feature-name}/blueprint.md`.
+> - **Included**: data flow, schema DDL, ER diagram, API JSON Schema, sequence diagrams, pseudocode logic, HITL Triggers
+> - **Excluded**: executable implementation code, ORM annotations, framework-dependent expressions
+> - Only asks 1-3 items that genuinely require human judgment (PK strategy, transaction boundary, external-dependency sync mode) automatically.
 >
 > **Numbering Rule**: Scan existing directories in `docs/blueprints/` to determine the next number. Use 3-digit zero-padded format (e.g., `001-`, `002-`).
 
 ### 1.2 DB Design Reflection Prompt
-/feature-dev "Refer to docs/blueprints/{NNN}-{feature-name}/blueprint.md Section 3 (데이터 모델) and reflect those tables/columns/indexes/FK relationships into docs/database/database-design.md, including the ERD and FK relationship summary.
+/feature-dev "Refer to docs/blueprints/{NNN}-{feature-name}/blueprint.md Section 3 (Data Model) and reflect those tables/columns/indexes/FK relationships into docs/database/database-design.md, including the ERD and FK relationship summary.
 
 The blueprint is the single source of truth — do not change schema decisions, do not add columns not in the blueprint, do not rename. If you find a real inconsistency, stop and report instead of guessing.
 
@@ -181,7 +181,7 @@ HITL Guard: Before asking the user any question, first check Section 10 (HITL Tr
 Do not modify any application code yet."
 
 ### 1.3 Test Case Prompt
-/feature-dev "Based on docs/blueprints/{NNN}-{feature-name}/blueprint.md Section 9 (테스트 전략) and Section 9.1 (필수 테스트 케이스), write test cases to docs/tests/test-cases/sprint-{N}/{feature-name}-test-cases.md.
+/feature-dev "Based on docs/blueprints/{NNN}-{feature-name}/blueprint.md Section 9 (Test Strategy) and Section 9.1 (Required Test Cases), write test cases to docs/tests/test-cases/sprint-{N}/{feature-name}-test-cases.md.
 
 Use Given-When-Then format. Cover: (a) Section 5.1 happy path, (b) Section 5.2 exception paths, (c) Section 2.3 business rules, (d) Section 7 error policy items. Include unit, integration, and edge cases.
 
@@ -194,7 +194,7 @@ Do not modify any application code yet."
 
 Write tests referencing docs/tests/test-cases/sprint-{N}/{feature-name}-test-cases.md. Once implementation is complete, run all tests and report results to docs/tests/test-reports/.
 
-HITL Guard (중요): The blueprint's Section 10 (HITL Triggers) tells you exactly when to ask the user during implementation. The four triggers are T1 (business decisions without a clear blueprint answer), T2 (security/permission policy choices), T3 (external dependency/3rd-party introduction), T4 (destructive changes like DROP/RENAME or public API signature change). Outside those triggers, do not ask — apply the blueprint as written and follow coding conventions.
+HITL Guard (important): The blueprint's Section 10 (HITL Triggers) tells you exactly when to ask the user during implementation. The four triggers are T1 (business decisions without a clear blueprint answer), T2 (security/permission policy choices), T3 (external dependency/3rd-party introduction), T4 (destructive changes like DROP/RENAME or public API signature change). Outside those triggers, do not ask — apply the blueprint as written and follow coding conventions.
 
 Specifically do NOT ask the user about: variable/function names, code formatting, log levels, file layout, import order, DTO/Entity split, fine-grained HTTP status codes — those follow project conventions automatically. Waking the user too often defeats the automation."
 
@@ -203,18 +203,18 @@ Specifically do NOT ask the user about: variable/function names, code formatting
 
 ---
 
-## Sprint 종료 시 (모든 feature 구현 완료 후)
+## At Sprint End (after all features are implemented)
 
 ### Z.1 Integration Test
 /test-run
 
-> `.astra-worktree.env`의 sprint 전용 포트로 서버를 띄우고 테스트를 수행합니다.
-> 테스트 종료 시 해당 포트의 서버 프로세스도 자동으로 정리됩니다.
+> Boots the server using the sprint-specific ports in `.astra-worktree.env` and runs tests.
+> When the tests finish, the server processes on those ports are also cleaned up automatically.
 
 ### Z.2 Merge to dev
 /pr-merge
 
-> sprint 브랜치를 dev로 머지하고 worktree를 제거합니다. 사용자는 메인 worktree(dev)로 자동 복귀합니다.
+> Merges the sprint branch into dev and removes the worktree. The user is automatically returned to the main worktree (dev).
 ```
 
 ### Step 2.5: Create Sprint Progress Tracker
@@ -299,14 +299,14 @@ Create the `docs/sprints/sprint-{N}-{sprint-name}/retrospective.md` file:
 
 ### Step 3.5: Commit Sprint Scaffolding
 
-생성된 sprint 문서 3종(`prompt-map.md`, `progress.md`, `retrospective.md`)을 sprint 브랜치에 커밋한다. 이후 feature 작업 커밋과 분리되어 머지 시 추적이 쉽다.
+Commit the 3 generated sprint documents (`prompt-map.md`, `progress.md`, `retrospective.md`) to the sprint branch. This keeps them separate from later feature commits and makes tracking easy at merge time.
 
 ```bash
 git add "docs/sprints/sprint-${SPRINT_N}-${SPRINT_NAME}/"
 git commit -m "chore: scaffold sprint ${SPRINT_N} (${SPRINT_NAME})"
 ```
 
-원격 push는 하지 않는다 — 첫 feature 커밋 또는 `/pr-merge` 시점에 함께 push 된다.
+Do not push to remote — the push is bundled with the first feature commit or with `/pr-merge`.
 
 ### Step 4: Output Sprint Planning Guide
 
@@ -314,10 +314,10 @@ git commit -m "chore: scaffold sprint ${SPRINT_N} (${SPRINT_NAME})"
 ## Sprint {N} Initialization Complete
 
 ### Worktree
-- 경로: {WT_PATH}
-- 브랜치: {SPRINT_BRANCH}
-- 포트 베이스: {PORT_BASE}
-- env 파일: {WT_PATH}/.astra-worktree.env
+- Path: {WT_PATH}
+- Branch: {SPRINT_BRANCH}
+- Port base: {PORT_BASE}
+- env file: {WT_PATH}/.astra-worktree.env
 
 ### Generated Files (in worktree)
 - docs/sprints/sprint-{N}-{sprint-name}/prompt-map.md (prompt map)
@@ -326,11 +326,11 @@ git commit -m "chore: scaffold sprint ${SPRINT_N} (${SPRINT_NAME})"
 
 ### Next Steps
 1. cd {WT_PATH}
-2. 위 prompt-map의 Feature 1.1 ~ 1.4를 순서대로 실행 (디자인 → DB → 테스트 → 구현)
-3. 모든 feature 완료 후: /test-run → /pr-merge
+2. Run Feature 1.1 ~ 1.4 of the prompt-map above in order (design → DB → tests → implementation)
+3. After every feature is done: /test-run → /pr-merge
 
-> **다중 세션 안내**: 새 Claude Code 세션은 반드시 {WT_PATH}에서 시작하세요.
-> 메인 worktree(dev)에는 다른 sprint 작업이 진행 중일 수 있습니다.
+> **Multi-session note**: New Claude Code sessions must be started from {WT_PATH}.
+> The main worktree (dev) may have other sprint work in progress.
 
 ### Sprint Planning Procedure (1 hour, run inside worktree)
 1. (10 min) Review AI analysis report
@@ -339,65 +339,65 @@ git commit -m "chore: scaffold sprint ${SPRINT_N} (${SPRINT_NAME})"
 4. (10 min) Finalize sprint backlog
 ```
 
-> **분기**: `--auto` 플래그가 없으면 여기서 종료. `--auto`가 있으면 **Step 5**로 진행한다.
+> **Branch**: Without the `--auto` flag, stop here. With `--auto`, continue to **Step 5**.
 
 ---
 
 ### Step 5: Auto Continue (only if `--auto` flag is set)
 
-scaffolding 완료 후 무인 모드로 다음 파이프라인을 순차 실행한다:
+After scaffolding finishes, run the following pipeline sequentially in unattended mode:
 
 ```
-/test-scenario all → 구현(blueprint 기반) → /test-run → (실패 시 자가 개선 루프) → /pr-merge --auto → worktree 자동 제거
+/test-scenario all → implementation (blueprint-based) → /test-run → (self-improvement loop on failure) → /pr-merge --auto → worktree auto-removed
 ```
 
-**기본 원칙** (autorun과 동일):
-- 파이프라인 중에는 `AskUserQuestion`을 호출하지 않는다 (Step 1에서 `--max-iter` 미입력 시 1회만 예외).
-- 각 단계의 성공 기준은 *검증 가능한 파일/테스트 결과*로만 판정한다.
-- 진짜 차단(gh 인증·머지 충돌·Critical 리뷰 이슈)에서만 HITL이 발동된다.
+**Default principles** (same as autorun):
+- During the pipeline, do not call `AskUserQuestion` (the only exception is the one-time prompt in Step 1 when `--max-iter` is not provided).
+- Each stage's success criterion is judged solely from *verifiable file/test results*.
+- HITL fires only on true blockers (gh auth, merge conflict, Critical review issues).
 
-#### Step 5.0: 사전 검증
+#### Step 5.0: Pre-checks
 
-1. **현재 worktree가 sprint worktree인지 확인**: 이미 Step 1.6/1.8에서 worktree 생성 후 cd 했으므로 `$(pwd)`가 `$WT_PATH`와 동일해야 한다. 다르면 abort.
-2. **Blueprint 존재 확인**: prompt-map.md에서 추출한 각 feature에 대해 `docs/blueprints/[0-9][0-9][0-9]-{feature-name}/blueprint.md`가 worktree 안(또는 머지된 base 브랜치)에 존재해야 한다.
-   - 누락 시 abort 메시지:
+1. **Verify the current worktree is the sprint worktree**: Steps 1.6/1.8 already created the worktree and cd'd in, so `$(pwd)` must equal `$WT_PATH`. Abort if not.
+2. **Verify blueprints exist**: For every feature extracted from prompt-map.md, `docs/blueprints/[0-9][0-9][0-9]-{feature-name}/blueprint.md` must exist inside the worktree (or in the merged base branch).
+   - Abort message when missing:
      ```
-     ❌ --auto 모드는 blueprint 사전 작성을 요구합니다.
-        누락된 blueprint: {feature-name}
-        해결: /service-planner {feature-name} 또는 /feature-dev로 blueprint 작성 후 재실행.
+     ❌ --auto mode requires blueprints to be authored in advance.
+        Missing blueprint: {feature-name}
+        Fix: author the blueprint with /service-planner {feature-name} or /feature-dev, then re-run.
      ```
-3. **MAX_ITER 결정**: `--max-iter=N` 인자 사용. 없으면 `AskUserQuestion` 1회로 입력받음 (1/3/5 옵션, 기본 3).
+3. **Determine MAX_ITER**: Use the `--max-iter=N` argument. If absent, ask once via `AskUserQuestion` (options 1/3/5, default 3).
 
-#### Step 5.1: 진행 추적 초기화
+#### Step 5.1: Initialize progress tracking
 
-`TodoWrite`로 todos 생성:
-1. Step 5.2: 테스트 시나리오 생성
-2. Step 5.3: 구현 (각 feature)
-3. Step 5.4: 통합 테스트 실행
-4. Step 5.5: 자가 개선 루프 (실패 시)
-5. Step 5.6: /pr-merge --auto 실행
-6. Step 5.7: 최종 보고서
+Create todos via `TodoWrite`:
+1. Step 5.2: generate test scenarios
+2. Step 5.3: implementation (per feature)
+3. Step 5.4: run integration tests
+4. Step 5.5: self-improvement loop (on failure)
+5. Step 5.6: run /pr-merge --auto
+6. Step 5.7: final report
 
-Iteration 추적 변수:
-- `MAX_ITER` = 위에서 결정된 N
+Iteration tracking variables:
+- `MAX_ITER` = the N determined above
 - `CURRENT_ITER` = 1
 - `ITER_DIR` = `docs/sprints/sprint-{N}-{sprint-name}/iterations/`
 - `mkdir -p "$ITER_DIR"`
 
-#### Step 5.1.5: Silent Save Protocol (재사용 가능한 공통 패턴)
+#### Step 5.1.5: Silent Save Protocol (reusable shared pattern)
 
-`--auto` 모드는 stage마다 다량의 컨텍스트(파일 내용, 테스트 로그, 코드 리뷰 출력)를 누적한다. **각 major stage 종료 시 상태를 yaml에 영속화한 뒤, "참조 회피 규칙"을 적용한 채 곧바로 다음 stage로 진행**한다. 사용자 개입은 없다.
+`--auto` mode accumulates a large amount of context per stage (file contents, test logs, code review output). **At the end of each major stage, persist the state to yaml, then apply the "reference-avoidance rule" and immediately proceed to the next stage**. No user intervention.
 
-수동 `/compact` 슬래시 명령은 의도적으로 사용하지 않는다 — Claude Code의 시스템 자동 압축이 컨텍스트 한계에 근접하면 알아서 작동하고, 그 사이 LLM은 큰 객체 재참조를 회피해 신규 토큰 누적을 최소화한다.
+The manual `/compact` slash command is intentionally not used — Claude Code's system auto-compression triggers on its own as the context approaches the limit, and in the meantime the LLM avoids re-referencing large objects to minimize new token accumulation.
 
-이 프로토콜은 Step 5.2 종료, 5.3 종료, 5.4 종료, 5.5 iteration 종료, 5.6 종료 시점에 호출된다.
+This protocol is invoked at the end of Step 5.2, end of 5.3, end of 5.4, end of 5.5 iteration, and end of 5.6.
 
-##### 5.1.5.A 체크포인트 파일 작성
+##### 5.1.5.A Write the checkpoint file
 
-각 stage 종료 시 `$WT_PATH/docs/sprints/sprint-{N}-{sprint-name}/auto-state.yaml`을 갱신한다:
+At the end of each stage, update `$WT_PATH/docs/sprints/sprint-{N}-{sprint-name}/auto-state.yaml`:
 
 ```yaml
-# auto-state.yaml — sprint-init --auto 재개용 SSoT
+# auto-state.yaml — SSoT for sprint-init --auto resume
 sprint:
   number: {N}
   name: {sprint-name}
@@ -410,9 +410,9 @@ iteration:
   current_iter: {CURRENT_ITER}
 
 progress:
-  completed_stages: [5.0, 5.1, 5.2, ...]   # 지금까지 끝난 stage 번호 목록
-  next_stage: 5.3                           # 재개 시 점프할 단계
-  next_stage_description: "구현 (Iteration 1만)"
+  completed_stages: [5.0, 5.1, 5.2, ...]   # list of stage numbers completed so far
+  next_stage: 5.3                           # stage to jump to on resume
+  next_stage_description: "Implementation (iteration 1 only)"
 
 features:
   - name: {feature-name-1}
@@ -421,7 +421,7 @@ features:
 
 scenarios:
   generated_dir: docs/tests/test-cases/sprint-{N}-{sprint-name}/
-  files: [auth-test-cases.md, payment-test-cases.md, ...]   # 5.2 완료 후 채움
+  files: [auth-test-cases.md, payment-test-cases.md, ...]   # filled after 5.2
 
 implementation:
   entities_created: [User.java, Payment.java, ...]
@@ -432,10 +432,10 @@ last_test_result:
   passed: {N}
   total: {M}
   failed_tests: []
-  log_excerpt: "..."   # 마지막 실패 로그 핵심 100줄 이내
+  log_excerpt: "..."   # last failure log essence, within 100 lines
 
 last_iteration_classification: null | CODE_BUG | SPEC_GAP | DESIGN_MISALIGN | ENV_ISSUE
-files_to_patch_next: []   # iteration 2+ 진입 시 사용 (summary가 지목한 src/ 파일들)
+files_to_patch_next: []   # used on iteration 2+ entry (src/ files indicated by the summary)
 
 merge:
   pr_url: null
@@ -443,231 +443,231 @@ merge:
   worktree_removed: null
 ```
 
-##### 5.1.5.B 체크포인트 파일 커밋 (필수)
+##### 5.1.5.B Commit the checkpoint file (required)
 
-상태 파일을 sprint 브랜치에 커밋한다. **이 단계를 빠뜨리면** 다음 케이스에서 파일이 사라진다:
-- 5.6.A 직후 `/pr-merge --auto`의 `git add -u`는 *추적 중인* 파일만 스테이징한다 → untracked `auto-state.yaml`은 머지에 포함 안 됨 → worktree 제거 시 함께 사라짐.
-- `--resume`이 메인 worktree에서 yaml을 찾을 때, 머지된 dev에 yaml이 있어야 함.
+Commit the state file to the sprint branch. **Skipping this step** causes the file to disappear in the following cases:
+- Right after 5.6.A, `/pr-merge --auto`'s `git add -u` only stages *tracked* files → untracked `auto-state.yaml` is not included in the merge → it is removed together with the worktree.
+- When `--resume` looks for the yaml from the main worktree, the yaml must exist in the merged dev.
 
 ```bash
 git add "docs/sprints/sprint-${SPRINT_N}-${SPRINT_NAME}/auto-state.yaml"
 git commit -m "chore: auto-state checkpoint after Stage ${X}"
 ```
 
-> `--auto` 진행 중 발생하는 커밋이므로 메시지는 자동 생성. push는 `/pr-merge --auto` 또는 다음 checkpoint에서 일괄 처리되므로 여기서는 생략 가능 (단, 만약 사용자가 중간에 다른 머신에서 `--resume`하려면 push 필요).
+> Since this commit occurs during `--auto` progress, the message is generated automatically. Push is handled in bulk by `/pr-merge --auto` or the next checkpoint, so it can be omitted here (however, if the user wants to `--resume` from another machine mid-way, push is needed).
 
-##### 5.1.5.C 참조 회피 규칙 적용 후 다음 stage 자동 진행
+##### 5.1.5.C Apply the reference-avoidance rule and auto-advance to the next stage
 
-체크포인트 작성·커밋 직후 다음 한 줄을 가볍게 출력하고 **곧바로 다음 stage를 호출**한다. exit 하지 않는다:
+Right after writing/committing the checkpoint, lightly print the following one line and **immediately invoke the next stage**. Do not exit:
 
 ```
-✅ Stage {X} 완료 → Stage {Y} 자동 진행 (상태: docs/sprints/sprint-{N}-{sprint-name}/auto-state.yaml)
+✅ Stage {X} complete → auto-advancing to Stage {Y} (state: docs/sprints/sprint-{N}-{sprint-name}/auto-state.yaml)
 ```
 
-그리고 다음 stage 진입 직전에 **반드시 다음 컨텍스트 효율 규칙을 LLM 스스로에게 적용**한다:
+And just before entering the next stage, **the LLM must apply the following context-efficiency rule to itself**:
 
-> ⚡ **컨텍스트 효율 규칙 (자동 진행 중 매 stage 전환점)**
-> - 이전 stage에서 로딩한 대형 객체(테스트 로그 전체, 브라우저 스냅샷, 이전 구현 파일의 전체 내용)을 **재참조하지 않는다**.
-> - 단일 진실 출처(SSoT): `auto-state.yaml` (+ iteration 재개 시 `last_iteration_summary` 파일).
-> - 다음 stage에서 필요한 파일은 **선택적으로** Read/Edit 한다 — 전체 디렉토리 트리·전체 청사진을 다시 읽지 않는다.
-> - 이렇게 하면 Claude Code의 시스템 자동 압축(컨텍스트 한계 근접 시 작동)이 효과적으로 동작해 mid-skill 토큰 폭발을 막는다.
+> ⚡ **Context-efficiency rule (at every auto-advance stage boundary)**
+> - **Do not re-reference** the large objects loaded in the previous stage (entire test logs, browser snapshots, full contents of previously implemented files).
+> - Single source of truth (SSoT): `auto-state.yaml` (+ on iteration resume, the `last_iteration_summary` file).
+> - For files needed in the next stage, Read/Edit them **selectively** — do not re-read the full directory tree or the full blueprint.
+> - This makes Claude Code's system auto-compression (triggered when nearing the context limit) work effectively and prevents mid-skill token explosion.
 
-##### 5.1.5.D `--resume` 모드 (진짜 복구 전용)
+##### 5.1.5.D `--resume` mode (true-recovery only)
 
-평상 흐름에서 `--resume`은 호출되지 않는다. 다음 비정상 경로에서만 사용한다 (Step 0.A 참조):
+`--resume` is not invoked on the normal path. Use only on the following abnormal paths (see Step 0.A):
 
-- 시스템 자동 압축 후 LLM이 in-flight 변수를 잃어 다음 stage를 자동 호출하지 못한 경우
-- 사용자가 의도적으로 중간에 정지했다가 다시 이어가는 경우
-- 크래시·세션 종료로 skill 실행이 비정상 종료된 경우
+- The LLM lost in-flight variables after system auto-compression and could not auto-invoke the next stage
+- The user intentionally stopped mid-way and is now continuing
+- The skill execution terminated abnormally due to a crash or session end
 
-핵심:
-1. `auto-state.yaml`이 SSoT — 컨텍스트 압축으로 변수가 휘발되었어도 이 파일에서 모두 복원 가능
-2. `progress.next_stage`로 직접 점프
-3. iteration 재개 시 `last_iteration_summary` 파일과 `files_to_patch_next` 목록만 추가로 로딩
+Key points:
+1. `auto-state.yaml` is the SSoT — even if variables vaporized due to context compression, this file restores everything
+2. Jump directly to `progress.next_stage`
+3. On iteration resume, additionally load only the `last_iteration_summary` file and the `files_to_patch_next` list
 
-##### 5.1.5.E 멱등성
+##### 5.1.5.E Idempotency
 
-`auto-state.yaml`은 매 체크포인트마다 *완전히 덮어쓴다*. partial update 금지 — 부분 갱신은 stage 간 정합성을 깨뜨릴 수 있다. 항상 최신 상태 스냅샷을 통째로 쓴다.
+At every checkpoint, *fully overwrite* `auto-state.yaml`. Partial updates are forbidden — they can break inter-stage consistency. Always write the latest state snapshot as a whole.
 
-매 checkpoint마다 새 git commit이 생긴다 (`chore: auto-state checkpoint after Stage X`). PR이 머지될 때 이 commit들은 squash 또는 그대로 머지된다 (사용자 git workflow에 따라).
+Each checkpoint creates a new git commit (`chore: auto-state checkpoint after Stage X`). When the PR is merged, those commits are either squashed or merged as-is (depending on the user's git workflow).
 
-> **참고**: 이 프로토콜은 `--auto` 모드 전용이다. `--auto` 없이 sprint-init만 실행하는 흐름은 영향받지 않는다.
+> **Note**: This protocol is `--auto` mode only. Running sprint-init without `--auto` is unaffected.
 
-#### Step 5.2: 테스트 시나리오 생성 (Iteration 1만)
+#### Step 5.2: Generate test scenarios (Iteration 1 only)
 
-`Skill('test-scenario', 'all')`을 호출한다. 모든 feature에 대해 `docs/tests/test-cases/sprint-{N}-{sprint-name}/`에 시나리오가 생성된다.
+Invoke `Skill('test-scenario', 'all')`. Scenarios are generated under `docs/tests/test-cases/sprint-{N}-{sprint-name}/` for every feature.
 
-성공 기준: 시나리오 파일 ≥ 1개 존재.
+Success criterion: ≥ 1 scenario file exists.
 
 ##### 5.2.Z 💾 Silent Save
 
-Step 5.2 종료 직후 **Step 5.1.5의 Silent Save Protocol을 실행**한다:
-- `auto-state.yaml`에 `completed_stages: [5.0, 5.1, 5.2]`, `next_stage: 5.3`, `scenarios.files: [...]` 기록 + commit
-- 5.1.5.C의 참조 회피 규칙 적용 (테스트 시나리오 생성 과정에서 로딩한 청사진 전체 내용은 더 이상 재참조하지 않음)
-- **곧바로 Step 5.3 자동 진행** — exit/사용자 입력 대기 없음
+Immediately after Step 5.2 ends, **run the Step 5.1.5 Silent Save Protocol**:
+- Record `completed_stages: [5.0, 5.1, 5.2]`, `next_stage: 5.3`, `scenarios.files: [...]` in `auto-state.yaml` + commit
+- Apply the 5.1.5.C reference-avoidance rule (the full blueprint content loaded during scenario generation is no longer re-referenced)
+- **Auto-advance to Step 5.3 immediately** — no exit / no user input
 
-#### Step 5.3: 구현 (Iteration 1만)
+#### Step 5.3: Implementation (Iteration 1 only)
 
-prompt-map.md에서 추출한 각 feature에 대해 순차 실행:
+For each feature extracted from prompt-map.md, run sequentially:
 
-1. blueprint.md를 읽고 **데이터 모델 섹션**에서 테이블 정의 추출
-2. 각 테이블에 대해 `Skill('generate-entity', '{table-name}')` 호출 (또는 청사진 기반 직접 entity 작성)
-3. **API 명세 섹션**에 따라 service/controller/repository 레이어 작성
-4. 자동 적용 스킬(`coding-convention`, `data-standard`, `code-standard`)은 매 Write/Edit마다 발동된다.
+1. Read blueprint.md and extract table definitions from the **Data Model section**
+2. For each table, invoke `Skill('generate-entity', '{table-name}')` (or author the entity directly from the blueprint)
+3. According to the **API spec section**, author the service/controller/repository layers
+4. Auto-applied skills (`coding-convention`, `data-standard`, `code-standard`) fire on every Write/Edit.
 
-성공 기준: 청사진의 모든 테이블 정의·API 엔드포인트가 `src/` (또는 프로젝트 표준 위치) 코드로 반영됨.
+Success criterion: every table definition and API endpoint in the blueprint is reflected in code under `src/` (or the project's standard location).
 
 ##### 5.3.Z 💾 Silent Save
 
-Step 5.3은 가장 많은 컨텍스트(다수의 entity·service·controller 생성)를 누적하는 단계다. **반드시 5.1.5 Silent Save Protocol을 실행**한다:
-- `auto-state.yaml`에 `completed_stages: [..., 5.3]`, `next_stage: 5.4`, `implementation.{entities/services/controllers}_created: [...]` 기록 + commit
-- 5.1.5.C의 참조 회피 규칙 적용 (방금 생성한 entity/service/controller 파일 전체 내용은 더 이상 재참조하지 않음 — 다음 stage는 테스트 실행이고 파일 경로만 알면 됨)
-- **곧바로 Step 5.4 자동 진행** — exit/사용자 입력 대기 없음
+Step 5.3 is the stage that accumulates the most context (multiple entity/service/controller generations). **Always run the 5.1.5 Silent Save Protocol**:
+- Record `completed_stages: [..., 5.3]`, `next_stage: 5.4`, `implementation.{entities/services/controllers}_created: [...]` in `auto-state.yaml` + commit
+- Apply the 5.1.5.C reference-avoidance rule (the full contents of just-generated entity/service/controller files are no longer re-referenced — the next stage is the test run and only file paths are needed)
+- **Auto-advance to Step 5.4 immediately** — no exit / no user input
 
-#### Step 5.4: 통합 테스트 실행
+#### Step 5.4: Run integration tests
 
-`Skill('test-run', '')` 호출. `.astra-worktree.env`의 sprint 전용 포트로 서버 기동, 테스트 수행, 종료 시 자동 포트 정리.
+Invoke `Skill('test-run', '')`. Boots the server using the sprint-specific ports in `.astra-worktree.env`, runs tests, and cleans up the ports automatically on exit.
 
 ##### 5.4.Z 💾 Silent Save
 
-`/test-run`은 브라우저 스냅샷·콘솔 로그·네트워크 요청 로그 등 큰 결과물을 컨텍스트에 누적한다. **반드시 5.1.5 Silent Save Protocol을 실행**한다:
-- `auto-state.yaml`에 `completed_stages: [..., 5.4]`, `last_test_result: { passed, total, failed_tests, log_excerpt }` 기록 + commit
-  - 테스트 통과 시 → `next_stage: 5.6`
-  - 테스트 실패 + `CURRENT_ITER < MAX_ITER` → `next_stage: 5.5`
-  - 테스트 실패 + `CURRENT_ITER == MAX_ITER` → `next_stage: 5.7` (보고서 직진)
-- `log_excerpt`는 마지막 실패 로그 핵심 100줄 이내로 축약 (전체 로그를 yaml에 박지 말 것)
-- 5.1.5.C의 참조 회피 규칙 적용 (브라우저 스냅샷·전체 콘솔 로그·네트워크 요청은 더 이상 재참조하지 않음 — yaml의 `log_excerpt`만 들고 다음 stage 진행)
-- **곧바로 `next_stage`로 자동 점프** — exit/사용자 입력 대기 없음
+`/test-run` accumulates large artifacts in the context (browser snapshots, console logs, network request logs). **Always run the 5.1.5 Silent Save Protocol**:
+- Record `completed_stages: [..., 5.4]`, `last_test_result: { passed, total, failed_tests, log_excerpt }` in `auto-state.yaml` + commit
+  - If tests pass → `next_stage: 5.6`
+  - Tests failed + `CURRENT_ITER < MAX_ITER` → `next_stage: 5.5`
+  - Tests failed + `CURRENT_ITER == MAX_ITER` → `next_stage: 5.7` (jump directly to the report)
+- Abbreviate `log_excerpt` to the essence of the last failure log within 100 lines (do not embed the full log in the yaml)
+- Apply the 5.1.5.C reference-avoidance rule (browser snapshots, full console logs, network requests are no longer re-referenced — carry only the `log_excerpt` from the yaml into the next stage)
+- **Auto-jump to `next_stage` immediately** — no exit / no user input
 
-#### Step 5.5: 자가 개선 루프 (테스트 실패 시)
+#### Step 5.5: Self-improvement loop (on test failure)
 
-**모든 테스트 통과** → Step 5.6으로 즉시 진행 (early exit).
+**All tests pass** → proceed immediately to Step 5.6 (early exit).
 
-**실패** + `CURRENT_ITER < MAX_ITER`:
+**Failed** + `CURRENT_ITER < MAX_ITER`:
 
-1. **실패 분류** (autorun Stage 7.5.4와 동일한 패턴 매칭 + 폴백 시 `tester-persona` 위임):
-   | 신호 | 분류 | 재진입 |
-   |------|------|--------|
-   | TypeError, NullPointer, panic, stack trace에 `src/` | `CODE_BUG` | Direct Patch (src/ 파일 Edit, sub-skill 재호출 금지) |
-   | 404 Not Found, schema mismatch, 청사진에 없는 동작 요구 | `SPEC_GAP` | **abort** (blueprint 수정 필요) |
-   | screenshot diff, aria-label, contrast 등 UI 실패 | `DESIGN_MISALIGN` | **abort** (UX 수정 필요) |
-   | ECONNREFUSED, port in use, db connection | `ENV_ISSUE` | **abort** (사용자 개입) |
+1. **Failure classification** (same pattern matching as autorun Stage 7.5.4 + `tester-persona` delegation as fallback):
+   | Signal | Classification | Re-entry |
+   |--------|----------------|----------|
+   | TypeError, NullPointer, panic, `src/` in stack trace | `CODE_BUG` | Direct Patch (Edit src/ files, no sub-skill re-invocation) |
+   | 404 Not Found, schema mismatch, behavior not in blueprint | `SPEC_GAP` | **abort** (blueprint fix required) |
+   | UI failure such as screenshot diff, aria-label, contrast | `DESIGN_MISALIGN` | **abort** (UX fix required) |
+   | ECONNREFUSED, port in use, db connection | `ENV_ISSUE` | **abort** (user intervention) |
 
-2. **Direct Patch** (sub-skill 재호출 금지 — autorun Stage 7.5.5와 동일 원칙):
-   - `CODE_BUG` 케이스: summary가 지목한 `src/` 파일을 Edit으로 직접 수정. 새 entity 생성 등 sub-skill 재호출 금지.
-   - 다른 분류는 abort.
+2. **Direct Patch** (no sub-skill re-invocation — same principle as autorun Stage 7.5.5):
+   - `CODE_BUG` case: directly Edit the `src/` files indicated by the summary. Re-invoking sub-skills such as new entity generation is forbidden.
+   - Other classifications: abort.
 
-3. **Abort 시 명확한 안내 메시지**:
+3. **Clear abort message**:
    ```
-   ❌ {분류} 분류 — sprint-init --auto는 이 카테고리를 자가 개선하지 않습니다.
+   ❌ {classification} category — sprint-init --auto does not self-improve this category.
 
-   {SPEC_GAP일 때}:
-     blueprint 수정이 필요합니다. sprint-init은 blueprint를 다시 그리지 않습니다.
-     해결책 2가지:
-       (1) docs/blueprints/{NNN}-{feature}/blueprint.md 수동 수정 후 /pr-merge --auto
-       (2) /autorun "{기능 설명}" --max-iter=N — blueprint도 자동 패치하는 풀 파이프라인
+   {when SPEC_GAP}:
+     A blueprint fix is required. sprint-init does not redraw blueprints.
+     Two resolutions:
+       (1) Manually edit docs/blueprints/{NNN}-{feature}/blueprint.md, then /pr-merge --auto
+       (2) /autorun "{feature description}" --max-iter=N — the full pipeline that auto-patches blueprints too
 
-   {DESIGN_MISALIGN일 때}:
-     HTML 기획화면(styles.css, SCR-*.html) 수정이 필요합니다.
-     해결책: /service-planner 재실행 후 /pr-merge --auto, 또는 /autorun 풀 파이프라인.
+   {when DESIGN_MISALIGN}:
+     HTML planning screens (styles.css, SCR-*.html) need to be fixed.
+     Resolution: re-run /service-planner then /pr-merge --auto, or use the /autorun full pipeline.
 
-   {ENV_ISSUE일 때}:
-     환경/인프라 문제 — 사용자 진단이 필요합니다.
-     로그: {로그 위치}
+   {when ENV_ISSUE}:
+     Environment/infrastructure problem — needs user diagnosis.
+     Log: {log location}
    ```
 
-3. **Iteration 요약 작성**: `$ITER_DIR/iter-{CURRENT_ITER}-summary.md` (200줄 이내, autorun과 동일 형식).
+3. **Write iteration summary**: `$ITER_DIR/iter-{CURRENT_ITER}-summary.md` (within 200 lines, same format as autorun).
 
 4. `CURRENT_ITER += 1`.
 
-##### 5.5.Z 💾 Silent Save (iteration 사이마다 실행)
+##### 5.5.Z 💾 Silent Save (run between iterations)
 
-**Iteration 간 컨텍스트 정리는 필수**다. 디버그 로그·이전 코드 패치 시도·classification 분석 등이 누적되어 다음 iteration이 토큰 한도에 일찍 도달할 위험이 크다. **반드시 5.1.5 Silent Save Protocol을 실행**한다:
-- `auto-state.yaml`에 `current_iter: {CURRENT_ITER}`, `last_iteration_classification: {분류}`, `files_to_patch_next: [{summary가 지목한 src/ 파일 경로 목록}]`, `next_stage: 5.5` (또는 5.4 — 재시도 흐름)으로 기록 + commit
-- iteration summary 경로(`$ITER_DIR/iter-{CURRENT_ITER-1}-summary.md`)도 `auto-state.yaml`의 `progress.last_iteration_summary` 필드에 기록 (다음 iteration 재개 시 *오직 이 summary 파일만* 읽도록)
-- 5.1.5.C의 참조 회피 규칙을 **엄격히 적용** — 이전 iteration의 디버그 로그·classification 분석·시도된 패치 diff는 더 이상 재참조하지 않음. summary 파일과 `files_to_patch_next`만 들고 다음 iteration 진입.
-- **곧바로 재개**: summary 파일을 먼저 읽고 `files_to_patch_next` 파일들을 Direct Patch → 5.4(test-run) 재호출 — exit/사용자 입력 대기 없음
+**Inter-iteration context cleanup is mandatory**. Debug logs, previous patch attempts, and classification analyses accumulate, posing a high risk that the next iteration hits the token limit early. **Always run the 5.1.5 Silent Save Protocol**:
+- Record in `auto-state.yaml`: `current_iter: {CURRENT_ITER}`, `last_iteration_classification: {classification}`, `files_to_patch_next: [{list of src/ file paths flagged by the summary}]`, `next_stage: 5.5` (or 5.4 — retry flow) + commit
+- Also record the iteration summary path (`$ITER_DIR/iter-{CURRENT_ITER-1}-summary.md`) in `auto-state.yaml`'s `progress.last_iteration_summary` field (so the next iteration reads *only this summary file* on resume)
+- **Strictly apply** the 5.1.5.C reference-avoidance rule — debug logs, classification analyses, and attempted-patch diffs from previous iterations are no longer re-referenced. Carry only the summary file and `files_to_patch_next` into the next iteration.
+- **Resume immediately**: first read the summary file, Direct Patch the `files_to_patch_next` files, then re-invoke 5.4 (test-run) — no exit / no user input
 
-> **컨텍스트 효율 규칙 (iteration 재진입 시)**: `auto-state.yaml`과 `last_iteration_summary` 파일만 읽고 patch 대상 파일을 Edit한다. 전체 청사진·기획 문서·이전 iteration의 src 파일을 다시 Read하지 **않는다**.
+> **Context-efficiency rule (on iteration re-entry)**: Read only `auto-state.yaml` and `last_iteration_summary`, then Edit the patch target files. **Do not** Read the full blueprint, planning docs, or src files from a previous iteration again.
 
-**실패** + `CURRENT_ITER == MAX_ITER`:
-- 안내 출력: `❌ 최대 반복({MAX_ITER}) 소진, 미해결 실패 — /pr-merge 실행하지 않고 정지`
-- Step 5.7 (보고서)로 직진, **`/pr-merge`는 호출하지 않는다**.
+**Failed** + `CURRENT_ITER == MAX_ITER`:
+- Print: `❌ Max iterations ({MAX_ITER}) exhausted with unresolved failures — stopping without /pr-merge`
+- Jump directly to Step 5.7 (report); **do not invoke `/pr-merge`**.
 
-#### Step 5.6: PR 머지 (테스트 통과 시만)
+#### Step 5.6: PR merge (only when tests pass)
 
-##### 5.6.A 💾 Pre-merge Silent Save (특히 중요)
+##### 5.6.A 💾 Pre-merge Silent Save (especially important)
 
-머지 직전에 한 번 더 상태를 영속화한다. `/pr-merge --auto` 자체가 PR 생성·코드 리뷰·이슈 수정·재리뷰까지 많은 컨텍스트를 추가로 소비하므로, 진입 시점의 컨텍스트가 가벼울수록 안정적이다.
+Persist the state one more time just before the merge. `/pr-merge --auto` itself consumes additional context for PR creation, code review, issue fixes, and re-review — the lighter the entering context, the more stable.
 
-**이 save는 다른 곳보다 더 엄격하다**: pr-merge가 시작되면 머지 후 worktree가 사라지므로, `auto-state.yaml`이 sprint 브랜치 commit 안에 반드시 포함되어 있어야 dev로 머지된 뒤 메인 worktree에서 접근 가능하다.
+**This save is stricter than others**: once pr-merge starts and merges, the worktree disappears, so `auto-state.yaml` must be included in a sprint branch commit so it is accessible from the main worktree after dev merge.
 
-**5.1.5 Silent Save Protocol을 실행**하되 다음 추가 검증:
+**Run the 5.1.5 Silent Save Protocol** with the following extra checks:
 
-1. `auto-state.yaml`에 `completed_stages: [..., 5.5_passed]`, `next_stage: 5.6.B`, 최종 `last_test_result` 기록
-2. **반드시 git commit** (5.1.5.B 규칙 — 추적되지 않은 yaml이 worktree 제거와 함께 사라지는 사고 방지):
+1. Record `completed_stages: [..., 5.5_passed]`, `next_stage: 5.6.B`, final `last_test_result` in `auto-state.yaml`
+2. **Always git commit** (5.1.5.B rule — to prevent the accident where an untracked yaml disappears with the worktree):
    ```bash
    git add docs/sprints/sprint-${N}-${SPRINT_NAME}/auto-state.yaml
    git commit -m "chore: pre-merge checkpoint (Stage 5.6.A)"
    ```
-3. 다음 한 줄을 가볍게 출력하고 **곧바로 Step 5.6.B 자동 호출**:
+3. Lightly print the following one line and **immediately auto-invoke Step 5.6.B**:
    ```
-   ✅ Pre-merge save 완료 → /pr-merge --auto 자동 호출 (worktree 제거 예정)
+   ✅ Pre-merge save complete → invoking /pr-merge --auto (worktree will be removed)
    ```
-4. 5.1.5.C의 참조 회피 규칙 적용 — 이전 iteration 로그, 청사진 전체, 테스트 출력은 더 이상 재참조하지 않음. pr-merge는 git diff와 PR 메타데이터로 작업한다.
+4. Apply the 5.1.5.C reference-avoidance rule — previous iteration logs, full blueprint, and test outputs are no longer re-referenced. pr-merge works from git diff and PR metadata.
 
-##### 5.6.B `/pr-merge --auto` 호출
+##### 5.6.B Invoke `/pr-merge --auto`
 
-`Skill('pr-merge', '--auto')` 호출.
+Invoke `Skill('pr-merge', '--auto')`.
 
-`/pr-merge --auto`가 다음을 자동 처리한다:
-- 변경사항 커밋 (확인 프롬프트 자동 승인)
-- PR 생성
-- 코드 리뷰 → 이슈 수정 → 재리뷰 사이클 (최대 3회)
-- Critical 이슈 잔존 시 halt (true HITL)
-- 머지 (최종 확인 프롬프트 자동 승인)
-- **worktree 자동 제거** + 메인 worktree(dev) 복귀
+`/pr-merge --auto` handles automatically:
+- Commit the changes (confirmation prompts auto-approved)
+- Create the PR
+- Code review → issue fixes → re-review cycle (up to 3 times)
+- Halt on remaining Critical issues (true HITL)
+- Merge (final confirmation prompt auto-approved)
+- **Auto-remove the worktree** + return to the main worktree (dev)
 
-> sprint-init은 sprint worktree 안에서 실행되고 있으므로, /pr-merge가 머지 완료 후 자기 자신이 들어 있는 worktree를 제거한다. 사용자는 머지 완료 시 메인 worktree(dev)로 자동 복귀된다.
+> Since sprint-init is running inside the sprint worktree, after the merge completes, /pr-merge removes the very worktree it is in. The user is automatically returned to the main worktree (dev) upon merge completion.
 
-##### 5.6.C 머지 결과를 `auto-state.yaml`에 기록
+##### 5.6.C Record merge result in `auto-state.yaml`
 
-worktree 제거 직후, **메인 worktree에서** 다음을 수행한다:
-1. `cd $(astra_main_worktree_root)` (worktree가 제거되었으면 자동으로 메인에 있겠지만, 안전을 위해 명시)
-2. 머지 결과(`pr_url`, `merge_success: true`, `worktree_removed: true`)를 `docs/sprints/sprint-{N}-{sprint-name}/auto-state.yaml`(메인 worktree 경로)에 기록
+Right after the worktree is removed, **in the main worktree** do the following:
+1. `cd $(astra_main_worktree_root)` (it should already be the main worktree once the sprint worktree is removed, but specify it explicitly for safety)
+2. Record the merge result (`pr_url`, `merge_success: true`, `worktree_removed: true`) into `docs/sprints/sprint-{N}-{sprint-name}/auto-state.yaml` (main worktree path)
 
-> **경로 주의**: worktree가 제거되었으므로 `auto-state.yaml`은 이제 *메인 worktree*의 `docs/sprints/sprint-{N}-{sprint-name}/`에 존재한다 (Sprint 브랜치 머지로 dev에 반영된 파일). 만약 메인 worktree에 해당 경로가 없으면 (sprint 브랜치가 dev로 머지되어 파일이 따라왔어야 함) `git pull origin dev`로 동기화 후 다시 확인.
+> **Path note**: With the worktree removed, `auto-state.yaml` now lives in the *main worktree's* `docs/sprints/sprint-{N}-{sprint-name}/` (the file landed in dev via the sprint branch merge). If the path is missing in the main worktree (the sprint branch should have carried the file into dev), sync with `git pull origin dev` and verify again.
 
-##### 5.6.D Final Silent Save — 생략 후 자동 진행
+##### 5.6.D Final Silent Save — skipped, auto-advance
 
-5.7 보고서는 일반적으로 컨텍스트 부담이 작으므로 별도 silent save는 생략한다. 5.6.C에서 이미 머지 결과(pr_url, merge_success)를 yaml에 기록했으므로 5.7에서는 그 yaml만 다시 읽으면 된다 — exit/사용자 확인 없이 곧바로 Step 5.7로 진행한다.
+The Step 5.7 report is generally lightweight on context, so no separate silent save is needed. Since 5.6.C already recorded the merge result (pr_url, merge_success) in the yaml, Step 5.7 only needs to re-read that yaml — proceed directly to Step 5.7 with no exit / no user confirmation.
 
-#### Step 5.7: 최종 보고서 출력
+#### Step 5.7: Final report output
 
-**데이터 소스**: `auto-state.yaml`을 다시 읽어 보고서 값을 채운다. 시스템 자동 압축으로 in-flight 변수가 휘발되었을 가능성을 대비해, 컨텍스트에 남아 있는 값에 의존하지 않고 상태 파일을 단일 진실 출처로 사용한다.
+**Data source**: Re-read `auto-state.yaml` to fill the report values. To guard against the case where in-flight variables vaporized due to system auto-compression, do not rely on values left in context — use the state file as the single source of truth.
 
 ```
 ═══════════════════════════════════════════════════════
-{✅ / ❌ / ⚠️} Sprint {N} --auto 완료
+{✅ / ❌ / ⚠️} Sprint {N} --auto complete
 
 🔁 Iterations: {iteration.current_iter}/{iteration.max_iter}
-✅ 테스트: {last_test_result.passed}/{last_test_result.total}
+✅ Tests: {last_test_result.passed}/{last_test_result.total}
 📦 Sprint Branch: feat/sprint-{N}-{sprint-name}
-🌿 Worktree: {merge.worktree_removed ? "removed" : "preserved (실패로 인해 유지)"}
+🌿 Worktree: {merge.worktree_removed ? "removed" : "preserved (kept due to failure)"}
 
-📁 산출물:
-  - 청사진: docs/blueprints/[NNN]-*/blueprint.md
-  - 스프린트: docs/sprints/sprint-{N}-{sprint-name}/
-  - 테스트: docs/tests/test-cases/sprint-{N}-{sprint-name}/
-  - Iteration 요약: docs/sprints/sprint-{N}-{sprint-name}/iterations/
-  - 자동 실행 상태: docs/sprints/sprint-{N}-{sprint-name}/auto-state.yaml
+📁 Deliverables:
+  - Blueprint: docs/blueprints/[NNN]-*/blueprint.md
+  - Sprint: docs/sprints/sprint-{N}-{sprint-name}/
+  - Tests: docs/tests/test-cases/sprint-{N}-{sprint-name}/
+  - Iteration summaries: docs/sprints/sprint-{N}-{sprint-name}/iterations/
+  - Auto-run state: docs/sprints/sprint-{N}-{sprint-name}/auto-state.yaml
 
-{merge.pr_url (머지 성공 시)}
-{last_iteration_classification가 set이면 미해결 실패 요약}
+{merge.pr_url (on merge success)}
+{If last_iteration_classification is set, summarize unresolved failures}
 ═══════════════════════════════════════════════════════
 ```
 
-보고서 출력 후 `auto-state.yaml`은 보존한다 (디버그/재현용). 다음 sprint에서는 새 파일이 작성된다.
+After the report is printed, preserve `auto-state.yaml` (for debug/reproduction). A new file is written in the next sprint.
 
 ---
 
@@ -675,9 +675,9 @@ worktree 제거 직후, **메인 worktree에서** 다음을 수행한다:
 
 - Existing sprint files are not overwritten.
 - The prompt map is filled in collaboratively by VA and PE during the Planning meeting.
-- Sprint worktree 안의 작업·테스트·머지가 끝나면 `/pr-merge`가 worktree를 자동 제거한다. 충돌·중단으로 worktree가 남으면 사용자가 해결 후 `/pr-merge` 재실행으로 이어진다.
-- `.astra-worktree.env`를 사용자가 수정하지 말 것 — `/test-run`이 자동 source 한다.
-- **`--auto` 모드 사용 시 주의**:
-  - blueprint가 사전에 준비되어 있어야 한다 (sprint-init은 blueprint를 생성하지 않음).
-  - `SPEC_GAP` / `DESIGN_MISALIGN` 분류 시 자동 머지하지 않고 abort — blueprint·UX 수정은 사용자 판단 필요.
-  - 기획부터 풀스택 자동 생성이 필요하면 `/autorun {기능 설명}`을 사용하라.
+- Once work, tests, and merge inside the sprint worktree complete, `/pr-merge` auto-removes the worktree. If the worktree remains due to a conflict or interruption, the user resolves it and re-invokes `/pr-merge` to continue.
+- The user must not edit `.astra-worktree.env` — `/test-run` sources it automatically.
+- **Caveats when using `--auto` mode**:
+  - The blueprint must be prepared in advance (sprint-init does not create blueprints).
+  - When classified as `SPEC_GAP` / `DESIGN_MISALIGN`, abort without auto-merge — blueprint/UX fixes require user judgment.
+  - For full-stack auto-generation starting from planning, use `/autorun {feature description}` instead.

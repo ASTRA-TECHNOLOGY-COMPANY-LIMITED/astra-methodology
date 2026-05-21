@@ -1,93 +1,93 @@
-# 2. Flows — 사용자 흐름 정의
+# 2. Flows — User Flow Definitions
 
-**기능**: {{FEATURE_NAME}}
-**최종 수정**: {{TODAY}}
+**Feature**: {{FEATURE_NAME}}
+**Last updated**: {{TODAY}}
 
-> 모든 버튼 클릭 후 결과를 명시합니다 (성공/실패 분기 포함).
-> 작성 원칙:
-> - 모든 클릭/제출/액션의 결과를 Screen ID로 매핑
-> - 성공/실패/예외 분기 빠뜨리지 않기
-> - 디자이너가 "다음 화면이 없네?" 라고 물어볼 일이 없게
+> Specify the result of every button click (including success/failure branches).
+> Authoring principles:
+> - Map the result of every click / submit / action to a Screen ID
+> - Do not miss success / failure / exception branches
+> - The designer should never have to ask "what's the next screen?"
 
 ---
 
-## 주요 Flow 1: 질문 작성 Flow
+## Main Flow 1: Ask Question Flow
 
 ```
-[질문 작성 Flow]
+[Ask Question Flow]
 
 {{DOMAIN_CODE}}-EXPERT-LIST
-    └ "질문하기" 클릭
-        ├ (비로그인) → {{DOMAIN_CODE}}-EXPERT-MODAL-LOGIN
-        └ (로그인)   → {{DOMAIN_CODE}}-EXPERT-WRITE
-                        └ "등록" 클릭
-                            ├ (성공)     → {{DOMAIN_CODE}}-EXPERT-LIST (새 질문 노출)
-                            ├ (토큰 부족) → {{DOMAIN_CODE}}-EXPERT-MODAL02
-                            └ (네트워크 에러) → {{DOMAIN_CODE}}-EXPERT-WRITE-ERROR
+    └ Click "Ask"
+        ├ (not logged in) → {{DOMAIN_CODE}}-EXPERT-MODAL-LOGIN
+        └ (logged in)     → {{DOMAIN_CODE}}-EXPERT-WRITE
+                              └ Click "Submit"
+                                  ├ (success)         → {{DOMAIN_CODE}}-EXPERT-LIST (new question shown)
+                                  ├ (insufficient tokens) → {{DOMAIN_CODE}}-EXPERT-MODAL02
+                                  └ (network error)   → {{DOMAIN_CODE}}-EXPERT-WRITE-ERROR
 ```
 
 ---
 
-## 주요 Flow 2: 답변 채택 Flow
+## Main Flow 2: Adopt Answer Flow
 
 ```
-[답변 채택 Flow]
+[Adopt Answer Flow]
 
-{{DOMAIN_CODE}}-EXPERT-DETAIL-UC02 (채택 전)
-    └ 답변 카드의 "채택" 버튼 클릭
-        ├ (본인 질문 & 채택 가능)     → 확인 모달
-        │   └ "채택 확정" 클릭
-        │       ├ (성공)  → {{DOMAIN_CODE}}-EXPERT-DETAIL-UC03 (채택 완료)
-        │       └ (실패)  → 에러 토스트 (유지)
-        ├ (본인 질문 아님)            → 버튼 비활성화 (클릭 불가)
-        └ (이미 채택 완료)            → 버튼 숨김
+{{DOMAIN_CODE}}-EXPERT-DETAIL-UC02 (before adoption)
+    └ Click the "Adopt" button on the answer card
+        ├ (own question & adoptable)  → confirm modal
+        │   └ Click "Confirm adopt"
+        │       ├ (success) → {{DOMAIN_CODE}}-EXPERT-DETAIL-UC03 (adopted)
+        │       └ (failure) → error toast (modal stays)
+        ├ (not own question)          → button disabled (not clickable)
+        └ (already adopted)           → button hidden
 ```
 
 ---
 
-## 주요 Flow 3: 질문 삭제 Flow
+## Main Flow 3: Delete Question Flow
 
 ```
-[질문 삭제 Flow]
+[Delete Question Flow]
 
 {{DOMAIN_CODE}}-EXPERT-DETAIL-*
-    └ "삭제" 메뉴 클릭 (본인 질문만 노출)
-        └ {{DOMAIN_CODE}}-EXPERT-MODAL01 (삭제 확인)
-            ├ "삭제하기" 클릭
-            │   ├ (성공)  → {{DOMAIN_CODE}}-EXPERT-LIST (토스트: "삭제되었습니다")
-            │   └ (실패)  → 에러 토스트 (모달 유지)
-            └ "취소" 클릭 → 모달 닫기 (DETAIL 유지)
+    └ Click "Delete" menu (only shown for the question owner)
+        └ {{DOMAIN_CODE}}-EXPERT-MODAL01 (delete confirmation)
+            ├ Click "Delete"
+            │   ├ (success) → {{DOMAIN_CODE}}-EXPERT-LIST (toast: "Deleted")
+            │   └ (failure) → error toast (modal stays)
+            └ Click "Cancel" → close modal (stay on DETAIL)
 ```
 
 ---
 
-## 작성 원칙
+## Authoring principles
 
-- **모든 클릭/제출/액션의 결과를 ID로 매핑**: 한 개의 클릭이라도 결과 화면이 빠지면 안 됨
-- **성공/실패/예외 분기 빠뜨리지 않기**: 특히 네트워크 에러, 권한 부족, 토큰 부족
-- **상태 전환은 같은 ID의 다른 UC로 표기**: 예) UC01(답변 없음) → UC02(채택 전) → UC03(채택 완료)
-- **숨겨진 화면도 포함**: URL 파라미터로만 접근하거나, 특정 조건에서만 노출되는 화면
+- **Map every click / submit / action result to an ID**: even a single click must not be missing a result screen
+- **Do not miss success / failure / exception branches**: especially network errors, insufficient permissions, insufficient tokens
+- **Represent state transitions as different UCs under the same ID**: e.g., UC01 (no answers) → UC02 (before adoption) → UC03 (adopted)
+- **Include hidden screens**: screens reachable only via URL parameters or shown only under specific conditions
 
 ---
 
-## Flow 다이어그램 (Mermaid — 선택)
+## Flow diagram (Mermaid — optional)
 
 ```mermaid
 flowchart LR
     LIST[{{DOMAIN_CODE}}-EXPERT-LIST]
     WRITE[{{DOMAIN_CODE}}-EXPERT-WRITE]
     LOGIN[{{DOMAIN_CODE}}-EXPERT-MODAL-LOGIN]
-    LIST_SUCCESS[{{DOMAIN_CODE}}-EXPERT-LIST<br/>새 질문 노출]
+    LIST_SUCCESS[{{DOMAIN_CODE}}-EXPERT-LIST<br/>new question shown]
     WRITE_ERR[{{DOMAIN_CODE}}-EXPERT-WRITE-ERROR]
     MODAL02[{{DOMAIN_CODE}}-EXPERT-MODAL02]
 
-    LIST -->|"질문하기 (비로그인)"| LOGIN
-    LIST -->|"질문하기 (로그인)"| WRITE
-    WRITE -->|"등록 성공"| LIST_SUCCESS
-    WRITE -->|"네트워크 에러"| WRITE_ERR
-    WRITE -->|"토큰 부족"| MODAL02
+    LIST -->|"Ask (not logged in)"| LOGIN
+    LIST -->|"Ask (logged in)"| WRITE
+    WRITE -->|"submit success"| LIST_SUCCESS
+    WRITE -->|"network error"| WRITE_ERR
+    WRITE -->|"insufficient tokens"| MODAL02
 ```
 
 ---
 
-_TODO (UX): 위 Flow 3개 외에 이 기능의 추가 시나리오(수정, 신고, 북마크 등)를 모두 추가하세요._
+_TODO (UX): Beyond the 3 flows above, add every additional scenario for this feature (edit, report, bookmark, etc.)._

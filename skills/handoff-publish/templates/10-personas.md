@@ -1,151 +1,151 @@
-# 10. Personas — 페르소나 / 핵심 시나리오
+# 10. Personas — Personas / Key Scenarios
 
-**기능**: {{FEATURE_NAME}}
-**최종 수정**: {{TODAY}}
+**Feature**: {{FEATURE_NAME}}
+**Last updated**: {{TODAY}}
 
-> **왜 필요한가?** 디자이너/개발자가 **"누가 왜 사용하는지"** 모르면 잘못된 가정으로 작업합니다. 우선순위 결정의 기준이 사라집니다.
-
----
-
-## 포함할 내용
-
-- 페르소나 (Top 3~5)
-- 각 페르소나의 목표 / 페인포인트 / 사용 맥락 / 디바이스
-- 핵심 사용 시나리오 (Top 5~10)
-- 우선순위 (Must-have vs Nice-to-have 시나리오)
+> **Why is this needed?** If designers/developers don't know **"who uses it and why"**, they work under wrong assumptions. The basis for prioritization disappears.
 
 ---
 
-## 페르소나
+## What to include
 
-### [페르소나 P1] 신입 무역 실무자 (대표)
-
-| 항목 | 내용 |
-|------|------|
-| 나이/경력 | 27세, 무역상사 1~2년차 |
-| 목표 | 실무에 즉시 적용 가능한 지식 습득 |
-| 페인포인트 | 어떤 강의부터 들어야 할지 모름 / 검색해도 파편화된 정보 |
-| 사용 맥락 | 업무 중 빠른 정보 검색 + 퇴근 후 학습 |
-| 디바이스 | 데스크톱 60% / 모바일 40% |
-| 주 사용 기능 | 검색, 강의 수강, Q&A 질문 |
-
-**결정 기준**: P1을 최우선으로 UX 결정
+- Personas (Top 3–5)
+- Each persona's goal / pain points / usage context / device
+- Core usage scenarios (Top 5–10)
+- Priority (Must-have vs. Nice-to-have scenarios)
 
 ---
 
-### [페르소나 P2] 시니어 무역 전문가 (답변자)
+## Personas
 
-| 항목 | 내용 |
-|------|------|
-| 나이/경력 | 10년+ 경력, Q&A 답변 권한 보유 |
-| 목표 | 전문성 인정 + 부수입 (포인트) |
-| 페인포인트 | 반복되는 초보 질문 / 답변해도 피드백 없음 (채택률 낮음) |
-| 사용 맥락 | 업무 자투리 시간 (5~10분) |
-| 디바이스 | 데스크톱 위주 (긴 답변 작성) |
-| 주 사용 기능 | 답변 작성, 대시보드 (수익/채택률), 알림 |
+### [Persona P1] Junior trade practitioner (primary)
 
----
+| Item | Content |
+|------|---------|
+| Age / experience | 27 years old, 1–2 years at a trade company |
+| Goal | Acquire knowledge immediately applicable to work |
+| Pain points | Doesn't know which course to take first / fragmented info even after searching |
+| Usage context | Quick info lookup during work + after-hours learning |
+| Device | Desktop 60% / Mobile 40% |
+| Main features | Search, course enrollment, Q&A asking |
 
-### [페르소나 P3] 교육 담당자 (B2B)
-
-| 항목 | 내용 |
-|------|------|
-| 나이/경력 | 35세, 대기업 인사팀 교육 담당 |
-| 목표 | 직원 대상 교육 커리큘럼 구축 |
-| 페인포인트 | 개별 강의 품질 편차 / 직원별 학습 이력 추적 어려움 |
-| 사용 맥락 | 월 1~2회 집중 사용 |
-| 디바이스 | 데스크톱 위주 |
-| 주 사용 기능 | 강의 큐레이션, 팀 학습 현황 리포트 |
+**Decision criterion**: UX decisions are made giving top priority to P1.
 
 ---
 
-## 핵심 시나리오 Top 3
+### [Persona P2] Senior trade expert (answerer)
 
-### S1. "FTA 원산지 기준 확인"
+| Item | Content |
+|------|---------|
+| Age / experience | 10+ years, has Q&A-answer permission |
+| Goal | Recognition of expertise + side income (points) |
+| Pain points | Repetitive beginner questions / no feedback even after answering (low adoption rate) |
+| Usage context | Idle minutes during work (5–10 min) |
+| Device | Mostly desktop (writes long answers) |
+| Main features | Write answers, dashboard (revenue/adoption rate), notifications |
+
+---
+
+### [Persona P3] Training manager (B2B)
+
+| Item | Content |
+|------|---------|
+| Age / experience | 35 years old, HR training manager at a large enterprise |
+| Goal | Build a training curriculum for employees |
+| Pain points | Variance in individual course quality / hard to track per-employee learning history |
+| Usage context | Intensive use 1–2 times per month |
+| Device | Mostly desktop |
+| Main features | Course curation, team learning-status reports |
+
+---
+
+## Core scenarios — Top 3
+
+### S1. "Verify FTA origin criteria"
 ```
-페르소나: P1 (신입 무역 실무자)
-트리거: 업무 중 특정 품목의 FTA 원산지 기준 필요
-흐름:
-  메인 → 무역 도구 진입 → HS Code 입력 → FTA 원산지 기준 조회
-  (결과 없음) → Q&A 검색 → 유사 질문 → 답변 확인
-  (답변 불충분) → 질문 작성
-우선순위: Must-have
-관련 화면: {{DOMAIN_CODE}}-TOOLS-FTA, {{DOMAIN_CODE}}-EXPERT-LIST, {{DOMAIN_CODE}}-EXPERT-WRITE
-```
-
-### S2. "특정 케이스 답이 안 나옴"
-```
-페르소나: P1
-트리거: 검색/도구로 해결 안 되는 특수 케이스
-흐름:
-  전문가 Q&A → 질문 작성 → 답변 대기 → 알림 수신 → 답변 확인 → 채택
-우선순위: Must-have
-관련 화면: {{DOMAIN_CODE}}-EXPERT-WRITE, {{DOMAIN_CODE}}-EXPERT-DETAIL-UC01, UC02, UC03
+Persona: P1 (junior trade practitioner)
+Trigger: needs the FTA origin criteria for a specific item during work
+Flow:
+  Home → enter Trade Tools → input HS Code → look up FTA origin criteria
+  (no result) → search Q&A → find similar questions → check answers
+  (insufficient answers) → write a question
+Priority: Must-have
+Related screens: {{DOMAIN_CODE}}-TOOLS-FTA, {{DOMAIN_CODE}}-EXPERT-LIST, {{DOMAIN_CODE}}-EXPERT-WRITE
 ```
 
-### S3. "이 분야 처음인데 뭐부터?"
+### S2. "No answer for a specific case"
 ```
-페르소나: P1 (신입 중 완전 초보)
-트리거: 무역 업무 첫 일주일
-흐름:
-  메인 → 추천 강의 섹션 → 강의 상세 → 신청 → 수강
-우선순위: Must-have
-관련 화면: {{DOMAIN_CODE}}-HOME, {{DOMAIN_CODE}}-COURSES-LIST-POPULAR, {{DOMAIN_CODE}}-COURSES-DETAIL
+Persona: P1
+Trigger: an edge case that search/tools can't resolve
+Flow:
+  Expert Q&A → write question → wait for answer → receive notification → check answer → adopt
+Priority: Must-have
+Related screens: {{DOMAIN_CODE}}-EXPERT-WRITE, {{DOMAIN_CODE}}-EXPERT-DETAIL-UC01, UC02, UC03
+```
+
+### S3. "Brand new to this field, where do I start?"
+```
+Persona: P1 (complete beginner within the junior tier)
+Trigger: first week on the job
+Flow:
+  Home → recommended courses section → course detail → apply → enroll
+Priority: Must-have
+Related screens: {{DOMAIN_CODE}}-HOME, {{DOMAIN_CODE}}-COURSES-LIST-POPULAR, {{DOMAIN_CODE}}-COURSES-DETAIL
 ```
 
 ---
 
-## 핵심 시나리오 Top 5~10 (확장)
+## Core scenarios — Top 5–10 (extended)
 
-### S4. "답변 작성 후 피드백 받기" (P2)
-- 답변 작성 → 채택/추천 알림 → 대시보드에서 수익 확인
-- 우선순위: Must-have
-- 관련 화면: `{{DOMAIN_CODE}}-EXPERT-DETAIL-UC02`, `{{DOMAIN_CODE}}-EXPERT-DASHBOARD`
+### S4. "Receiving feedback after writing an answer" (P2)
+- Write answer → adoption/upvote notification → check revenue on dashboard
+- Priority: Must-have
+- Related screens: `{{DOMAIN_CODE}}-EXPERT-DETAIL-UC02`, `{{DOMAIN_CODE}}-EXPERT-DASHBOARD`
 
-### S5. "직원 학습 현황 리포트 다운로드" (P3)
-- 관리자 대시보드 → 팀 학습 리포트 → Excel 다운로드
-- 우선순위: Nice-to-have (B2B 확장 시)
-- 관련 화면: `{{DOMAIN_CODE}}-ADMIN-TEAM-REPORT`
+### S5. "Download employee-learning report" (P3)
+- Admin dashboard → team learning report → Excel download
+- Priority: Nice-to-have (when B2B expands)
+- Related screens: `{{DOMAIN_CODE}}-ADMIN-TEAM-REPORT`
 
-### S6. "모바일로 이동 중 짧게 확인" (P1)
-- Bottom Tab → Q&A → 새 답변 알림 → 답변 내용 확인
-- 우선순위: Must-have
-- 관련 화면: Mobile 버전 모든 `-M` suffix ID
+### S6. "Quick check on mobile while commuting" (P1)
+- Bottom Tab → Q&A → new-answer notification → read answer
+- Priority: Must-have
+- Related screens: every Mobile `-M` suffix ID
 
-### S7. "검색으로 원하는 강의 찾기" (P1, P3)
-- 전역 검색 → 카테고리 필터 → 강의 선택
-- 우선순위: Must-have
+### S7. "Find a desired course via search" (P1, P3)
+- Global search → category filter → select course
+- Priority: Must-have
 
-### S8. "질문 삭제하기" (P1)
-- 본인 질문 상세 → 메뉴 → 삭제 → 확인 모달 → 삭제
-- 우선순위: Should-have
-- 관련 화면: `{{DOMAIN_CODE}}-EXPERT-MODAL01`
+### S8. "Delete a question" (P1)
+- Own question detail → menu → delete → confirm modal → delete
+- Priority: Should-have
+- Related screens: `{{DOMAIN_CODE}}-EXPERT-MODAL01`
 
 ---
 
-## 우선순위 (Must-have vs Nice-to-have)
+## Priority (Must-have vs. Nice-to-have)
 
-### Must-have (MVP 필수)
+### Must-have (MVP)
 - S1, S2, S3, S4, S6, S7
 
 ### Should-have (v1.1)
-- S8 (질문 삭제)
-- 질문 수정
-- 답변 신고
+- S8 (delete question)
+- Edit question
+- Report answer
 
 ### Nice-to-have (v1.2+)
-- S5 (B2B 리포트)
-- 답변 예약 작성
-- AI 답변 초안 추천
+- S5 (B2B report)
+- Scheduled answer drafting
+- AI answer-draft suggestions
 
 ---
 
-## 원칙
+## Principles
 
-- **디자인/개발 의사결정 시 "P1을 위해서는 ___" 형식으로 근거 제시**
-- **페르소나에 없는 사용자 그룹 등장 시** → UX 검토 후 추가
-- **핵심 시나리오에 없는 플로우는 Nice-to-have로 간주** (MVP 범위 외)
+- **For design/development decisions, present the rationale as "For P1, …"**
+- **When a user group not in the personas appears**, → add it after UX review
+- **Flows not in the core scenarios are treated as Nice-to-have** (out of MVP scope)
 
 ---
 
-_TODO (UX): 실제 인터뷰 결과를 반영하여 위 페르소나를 수정하세요. 인터뷰 근거가 없으면 "가설 기반"임을 명시하고 검증 계획을 포함하세요._
+_TODO (UX): Update the personas above with the actual interview results. If there is no interview basis, state "hypothesis-based" and include the validation plan._

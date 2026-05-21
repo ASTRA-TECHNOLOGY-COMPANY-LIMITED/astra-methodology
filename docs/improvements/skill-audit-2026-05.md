@@ -1,92 +1,92 @@
 # ASTRA Skill Audit — 2026-05-10
 
-> **⚠️ 이력 변경 (post-audit, v4.0.0)**: 본 감사 이후 `/ux-publish` 스킬은 제거되고, 그 핵심 기능(디자인 시스템 토큰을 적용한 화면 시각화)은 `/service-planner` Step 6의 HTML 기획화면 생성으로 통합되었다. 이 문서에 등장하는 ux-publish 분할/슬림화 작업 기록은 **historical record**로만 유효하며, 현재 코드베이스에는 해당 스킬이 존재하지 않는다.
+> **⚠️ Post-audit history change (v4.0.0)**: After this audit, the `/ux-publish` skill was removed, and its core functionality (visualizing screens with design-system tokens applied) was integrated into `/service-planner` Step 6 HTML mockup generation. The ux-publish split/slim-down work entries in this document remain valid only as **historical record**; the skill no longer exists in the current codebase.
 
-skill-development 가이드 기준 19개 스킬 분석 결과.
+Analysis of 19 skills against the skill-development guide.
 
-## 1. Progressive Disclosure 미적용 (가장 큰 문제)
+## 1. Progressive Disclosure Not Applied (the biggest issue)
 
-19개 스킬 중 **2개만** `references/` 사용 (catalog-generator, manual-generator). `examples/`, `scripts/` 사용 0개.
+Out of 19 skills, **only 2** use `references/` (catalog-generator, manual-generator). 0 use `examples/` or `scripts/`.
 
-| 스킬 | 단어 수 | 권장(1,500-2,000) | references | 우선순위 |
-|---|---:|---:|---|---|
-| ux-publish | 8,107 | 4배 초과 | ❌ | P0 |
-| project-init | 6,376 | 3배 초과 | ❌ | P0 |
-| service-planner | 6,075 | 3배 초과 | ❌ | P0 |
-| catalog-generator | 3,975 | 2배 초과 | ✅ | P2 (이미 부분적용) |
-| autorun | 3,890 | 2배 초과 | ❌ | P1 |
-| test-run | 3,404 | 1.7배 초과 | ❌ | P2 |
-| slack-import | 3,072 | 1.5배 초과 | ❌ | P2 |
-| manual-generator | 2,874 | 1.4배 초과 | ✅ | P3 (이미 부분적용) |
+| Skill | Word count | Recommended (1,500–2,000) | references | Priority |
+|-------|---:|---:|---|---|
+| ux-publish | 8,107 | 4x over | ❌ | P0 |
+| project-init | 6,376 | 3x over | ❌ | P0 |
+| service-planner | 6,075 | 3x over | ❌ | P0 |
+| catalog-generator | 3,975 | 2x over | ✅ | P2 (already partially applied) |
+| autorun | 3,890 | 2x over | ❌ | P1 |
+| test-run | 3,404 | 1.7x over | ❌ | P2 |
+| slack-import | 3,072 | 1.5x over | ❌ | P2 |
+| manual-generator | 2,874 | 1.4x over | ✅ | P3 (already partially applied) |
 
-## 2. Frontmatter Trigger Phrase 부족
+## 2. Insufficient Frontmatter Trigger Phrases
 
-CLAUDE.md 언어 정책(영어 auto-trigger / 한국어 사용자 진입점)과 `>` vs `"..."` 형식은 양호. 다만 가이드가 권장하는 *"This skill should be used when the user asks to '...' "* 형식의 발화 trigger가 거의 없음.
+The CLAUDE.md language policy (English auto-trigger / Korean user entry points) and the `>` vs. `"..."` formatting are healthy. However, the *"This skill should be used when the user asks to '...'"* form of utterance triggers recommended by the guide is mostly missing.
 
-| 스킬 | 누락된 trigger phrase 예시 |
-|---|---|
-| pr-merge | "PR 만들어줘", "리뷰 받고 머지", "이슈 수정해서 머지" |
-| service-planner | "기획해줘", "요구사항 정리", "기능 기획" |
-| handoff-publish | "UX 핸드오프", "디자인 인계 패키지" |
-| autorun | description이 본문 첫 단락 수준(150+ 단어), 핵심 trigger로 응축 필요 |
+| Skill | Missing trigger phrase examples |
+|-------|---------------------------------|
+| pr-merge | "create a PR for me", "get a review and merge", "fix the issues and merge" |
+| service-planner | "do the planning", "organize requirements", "plan a feature" |
+| handoff-publish | "UX handoff", "design handover package" |
+| autorun | description is at the level of an opening body paragraph (150+ words); needs to be compressed into a core trigger |
 
-## 3. 한국어 본문 톤
+## 3. Korean Body Tone
 
-가이드는 imperative form 권장. 한국어로는 평서형("~한다/~합니다")이 표준. 일부 스킬에 polite form 잔존:
-- slack-import 7건, autorun 6건, service-planner 4건, ux-publish 4건, manual-generator 3건의 "~하세요"
+The guide recommends imperative form. In Korean the standard is the plain declarative form ("~한다/~합니다"). Polite form lingers in some skills:
+- slack-import 7 instances, autorun 6, service-planner 4, ux-publish 4, manual-generator 3 of "~하세요"
 
-**검증 결과**: ux-publish의 4건은 모두 *사용자에게 보여줄 UI 메시지* (예: "디자이너 디렉토리를 선택하세요") — Claude 향 절차 지시문이 아니라 사용자 인터페이스 텍스트이므로 polite form이 의도적이고 적절. 변경하지 않음. 다른 스킬도 동일 패턴인지 별도 세션에서 분류 필요.
+**Verification result**: all 4 instances in ux-publish are *UI messages shown to the user* (e.g., "Please select the designer directory") — not procedural instructions targeting Claude, but user interface text, so polite form is intentional and appropriate. No change. Other skills should be classified in the same way in a separate session.
 
-## 4. 누락된 패턴
+## 4. Missing Patterns
 
-- `## Additional Resources` 섹션이 어떤 스킬에도 없음 → Claude가 보조 리소스 존재를 인지 못 함
-- 검증/스캐폴딩 등 deterministic 동작은 `scripts/`로 추출 가능 (autorun의 stage 결정, project-init의 디렉토리 생성)
+- No `## Additional Resources` section in any skill → Claude does not become aware of supplementary resources
+- Deterministic behaviors such as validation/scaffolding can be extracted into `scripts/` (autorun's stage decisions, project-init's directory creation)
 
 ---
 
-## 진행 계획 (사용자 승인)
+## Progress Plan (User Approved)
 
-P0 작업: **ux-publish 분할** + **한국어 톤 정리** 동시 진행.
+P0 work: **ux-publish split** + **Korean tone cleanup** in parallel.
 
-### ux-publish 분할 결과 (완료)
+### ux-publish split result (complete)
 
-advisor 권고에 따라 landing은 screen-build-guide에 통합 (6→5 파일).
+Per the advisor recommendation, landing was integrated into screen-build-guide (6→5 files).
 
-| 파일 | 단어 수 | 종류 |
-|---|---:|---|
-| `skills/ux-publish/SKILL.md` (슬림 후) | 1,847 | 본문 |
+| File | Word count | Kind |
+|------|---:|------|
+| `skills/ux-publish/SKILL.md` (post-slim) | 1,847 | body |
 | `references/common-resources-build.md` | 1,321 | references |
 | `references/ai-image-prompts.md` | 884 | references |
-| `references/screen-build-guide.md` (랜딩 통합) | 1,809 | references |
+| `references/screen-build-guide.md` (landing integrated) | 1,809 | references |
 | `assets/COPY-GUIDE-template.md` | 460 | assets |
 | `assets/completion-report-template.md` | 436 | assets |
 
-**결과**:
-- SKILL.md 본문: 8,107 → 1,847 단어 (-77%)
-- advisor 검증 기준 `< 2,500` 통과
-- skill-development 가이드 권장 1,500-2,000 단어 범위 적중
-- frontmatter description: 200+ 단어 → 90 단어로 압축, 4개 trigger phrase 명시
-- 5개 Step 진입 위치에서 명시적 references/assets 참조 ("먼저 X를 읽는다")
-- 정보 손실 0건 (모든 디테일이 references/assets에 분산)
+**Outcomes**:
+- SKILL.md body: 8,107 → 1,847 words (-77%)
+- Passes the advisor verification criterion of `< 2,500`
+- Lands in the skill-development guide's recommended 1,500–2,000 word range
+- frontmatter description: compressed from 200+ words to 90 words, with 4 trigger phrases stated
+- 5 Step entry points carry explicit references/assets references ("first read X")
+- Zero information loss (all details distributed across references/assets)
 
-### 한국어 톤 정리 (보류)
+### Korean Tone Cleanup (Deferred)
 
-ux-publish의 4건은 모두 사용자 UI 메시지였으나, 슬림화 과정에서 그 UI 메시지가 절차 지시문으로 자연스럽게 압축되어 polite form이 0건으로 감소. 별도 sweep 불필요.
+The 4 instances in ux-publish were all user UI messages; the slim-down naturally compressed those UI messages into procedural instructions, so polite-form count dropped to 0. No separate sweep needed.
 
-다른 스킬(slack-import 7건, autorun 6건, service-planner 4건, manual-generator 3건)의 polite form은 별도 세션에서 Claude 향 절차 지시문 vs 사용자 UI 메시지로 분류한 뒤 전자만 정리 권장.
+For other skills (slack-import 7, autorun 6, service-planner 4, manual-generator 3), it is recommended to first classify polite-form occurrences in a separate session as Claude-facing procedural instructions vs. user UI messages, then clean up only the former.
 
 ---
 
-## 다음 권장 작업 (별도 세션)
+## Recommended Next Work (Separate Session)
 
-**P0 — 동일 패턴으로 분할**:
-- `project-init` (6,376 → ~1,800): CLAUDE.md 보일러플레이트(L543-720)는 `assets/claude-md-template.md`로, 디자인 시스템 템플릿은 `references/`로
-- `service-planner` (6,075 → ~2,000): 6개 산출물 템플릿(시장분석/인터뷰/요구사항/유즈케이스/IA/기능정의서)을 `references/deliverable-templates/`로
+**P0 — split with the same pattern**:
+- `project-init` (6,376 → ~1,800): move the CLAUDE.md boilerplate (L543-720) to `assets/claude-md-template.md`; move design system templates to `references/`
+- `service-planner` (6,075 → ~2,000): move the 6 deliverable templates (market analysis / interview / requirements / use case / IA / feature definition) to `references/deliverable-templates/`
 
 **P1**:
-- `autorun` (3,890 → ~1,800): 단계별 디폴트 결정 매트릭스를 `references/auto-defaults.md`로
-- `pr-merge`, `service-planner`, `handoff-publish` 등의 frontmatter description에 trigger phrase 보강
+- `autorun` (3,890 → ~1,800): move the per-stage default-decision matrix to `references/auto-defaults.md`
+- Strengthen frontmatter descriptions of `pr-merge`, `service-planner`, `handoff-publish`, etc., with trigger phrases
 
 **P2**:
-- `test-run`, `slack-import` 분할
-- `catalog-generator`, `manual-generator`는 이미 references/ 사용 중 — 추가 압축은 불필요
+- Split `test-run`, `slack-import`
+- `catalog-generator`, `manual-generator` already use references/ — additional compression unnecessary

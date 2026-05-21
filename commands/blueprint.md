@@ -1,40 +1,40 @@
 ---
-description: 청사진(설계 문서)을 데이터 플로우·스키마·로직 설계 중심으로 작성합니다 (구현 코드 제외)
+description: Authors a Blueprint (design document) focused on data flow, schema, and logic design (excludes implementation code)
 argument-hint: "[feature-slug-or-blueprint-path] [--auto] [--from-planner=<planner-dir>]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Task, TodoWrite
 ---
 
-# /blueprint — 청사진 작성 슬래시 커맨드
+# /blueprint — Blueprint Authoring Slash Command
 
-`Skill('blueprint', '$ARGUMENTS')`를 호출하여 청사진을 작성합니다.
+Calls `Skill('blueprint', '$ARGUMENTS')` to author a Blueprint.
 
-## 사용 예시
+## Usage Examples
 
 ```
 /blueprint user-auth
 /blueprint user-auth --from-planner=docs/planner/003-user-auth
-/blueprint user-auth --auto                       # HITL 없이 자동 진행 (autorun 호환)
-/blueprint docs/blueprints/003-user-auth/blueprint.md   # 기존 청사진 갱신
+/blueprint user-auth --auto                       # Auto-run without HITL (autorun-compatible)
+/blueprint docs/blueprints/003-user-auth/blueprint.md   # Update an existing Blueprint
 ```
 
-## 동작 요약
+## Behavior Summary
 
-| 단계 | 내용 |
-|------|------|
-| 1 | `$ARGUMENTS` 파싱 (slug / `--auto` / `--from-planner`) |
-| 2 | `docs/planner/{NNN}-{slug}/` 산출물 자동 로드 (있는 경우) |
-| 3 | 10개 표준 섹션 자동 초안 작성 (개요 / 기능 명세 / 데이터 모델 / API 계약 / 시퀀스 / 로직 의사코드 / 에러 정책 / 비기능 / 테스트 전략 / **HITL Triggers**) |
-| 4 | 핵심 설계 결정 1-3개만 HITL (`--auto` 시 스킵) — PK 전략, 트랜잭션 경계, 외부 호출 동기성 |
-| 5 | `data-standard` 자동 스킬로 TB_/`_YMD`·금칙어 검증 (자동 발동) |
-| 6 | `blueprint-reviewer` 에이전트로 품질 검증 |
+| Step | Content |
+|------|---------|
+| 1 | Parse `$ARGUMENTS` (slug / `--auto` / `--from-planner`) |
+| 2 | Auto-load `docs/planner/{NNN}-{slug}/` deliverables (if present) |
+| 3 | Auto-draft 10 standard sections (Overview / Functional Spec / Data Model / API Contract / Sequence / Logic Pseudocode / Error Policy / Non-functional / Test Strategy / **HITL Triggers**) |
+| 4 | HITL on only 1–3 core design decisions (skipped under `--auto`) — PK strategy, transaction boundary, external-call synchronicity |
+| 5 | Validate TB_/`_YMD`/forbidden words via the `data-standard` auto-skill (automatically triggered) |
+| 6 | Quality validation via the `blueprint-reviewer` agent |
 
-## 출력
+## Output
 
-- `docs/blueprints/{NNN}-{feature-slug}/blueprint.md` — 청사진 본문 (10개 섹션)
-- `docs/blueprints/{NNN}-{feature-slug}/review.md` — blueprint-reviewer 보고서
+- `docs/blueprints/{NNN}-{feature-slug}/blueprint.md` — Blueprint body (10 sections)
+- `docs/blueprints/{NNN}-{feature-slug}/review.md` — blueprint-reviewer report
 
-## /feature-dev와의 관계
+## Relationship with /feature-dev
 
-청사진의 **Section 10 (HITL Triggers)**는 이후 `/feature-dev`가 구현 단계에서 그대로 따라 *꼭 필요한 결정*에서만 사용자에게 묻도록 합니다. 청사진이 단일 진실 원천(SoT)이므로, prompt-map.md에서 `/feature-dev` 호출 시 청사진 경로만 전달하면 HITL 가드가 자동 발동됩니다.
+The Blueprint's **Section 10 (HITL Triggers)** is later followed verbatim by `/feature-dev` during implementation so that the user is only asked about *truly required decisions*. Since the Blueprint is the single source of truth (SoT), passing only the Blueprint path when invoking `/feature-dev` from prompt-map.md automatically activates the HITL guard.
 
-자세한 단계는 `skills/blueprint/SKILL.md` 참조.
+See `skills/blueprint/SKILL.md` for detailed steps.

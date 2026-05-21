@@ -13,7 +13,7 @@ fi
 
 # Match: docs/database/database-design.md OR docs/blueprints/{NNN}-{slug}/*.md
 if echo "$FILE_PATH" | grep -qE '(database-design\.md|blueprints/[0-9]{3}-.*/.*\.md)$'; then
-  echo '[ASTRA] 설계 문서가 수정되었습니다. VA 검토 후 코드 반영을 진행하세요.'
+  echo '[ASTRA] Design document modified. Proceed with code reflection after VA review.'
 fi
 
 exit 0

@@ -1,955 +1,962 @@
 ---
 name: service-planner
-description: "기능에 대한 기획 산출물을 자동 생성합니다. 디자인씽킹 방법론 기반으로 시장분석 → 액터 도출 → 페르소나 인터뷰 → 페인포인트 분석 → 아이디어 도출(HMW/SCAMPER/JTBD) → 요구사항 정의(KPI/OKR) → 유즈케이스 정의(여정맵) → IA/화면설계 → 디자인 시스템 적용 HTML 기획화면 생성 → 기능 정의서(스토리맵/리스크)까지 전체 기획 파이프라인을 실행합니다."
-argument-hint: "[기능 설명 또는 서비스 키워드]"
+description: "Auto-generates planning deliverables for a feature. Runs the full planning pipeline based on the Design Thinking methodology: market analysis → actor derivation → persona interviews → pain-point analysis → idea derivation (HMW/SCAMPER/JTBD) → requirements definition (KPI/OKR) → use-case definition (journey maps) → IA / screen design → design-system-applied HTML mockup screens → feature definition (story map / risks)."
+argument-hint: "[feature description or service keyword]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 ---
 
-# ASTRA 서비스 기획 산출물 자동 생성
+# ASTRA Service Planning Auto-Generator
 
-디자인씽킹(Design Thinking) 방법론을 기반으로 기능에 대한 기획 산출물 6종 + HTML 기획화면을 자동 생성합니다.
+Auto-generates 6 planning deliverables + HTML mockup screens for a feature, based on the Design Thinking methodology.
 
-**방법론 매핑**:
-- **Empathize**: 시장/경쟁사 분석 + 페르소나 인터뷰
-- **Define**: 페인포인트 분석 + JTBD + 요구사항 정의
-- **Ideate**: HMW + SCAMPER + 아이디어 도출
-- **Prototype**: IA 구조 + 화면 설계 + HTML 기획화면 + 기능 정의
+**Methodology mapping**:
+- **Empathize**: market / competitor analysis + persona interviews
+- **Define**: pain-point analysis + JTBD + requirements definition
+- **Ideate**: HMW + SCAMPER + idea derivation
+- **Prototype**: IA structure + screen design + HTML mockup screens + feature definition
 
-**산출물 목록**:
-1. `market-analysis.md` — 시장/경쟁사 분석서
-2. `interview-report.md` — 페르소나 인터뷰 결과서 (페인포인트 포함)
-3. `requirements-definition.md` — 요구사항 정의서 (KPI/OKR + JTBD 포함)
-4. `usecase-definition.md` — 유즈케이스 정의서 (다이어그램 + 고객 여정맵 포함)
-5. `ia-screen-design.md` — IA 구조 및 화면 설계서 (와이어프레임 포함)
-6. **HTML 기획화면 세트** — `index.html` + `styles.css` + `SCR-NNN.html` (디자인 시스템 토큰 적용 정적 목업, 반응형/다크모드)
-7. `feature-definition.md` — 기능 정의서 (스토리맵 + 리스크 + 정책 포함)
+**Deliverables**:
+1. `market-analysis.md` — market / competitor analysis report
+2. `interview-report.md` — persona interview report (includes pain points)
+3. `requirements-definition.md` — requirements definition (includes KPI/OKR + JTBD)
+4. `usecase-definition.md` — use case definition (includes diagrams + customer journey map)
+5. `ia-screen-design.md` — IA structure and screen design (includes wireframes)
+6. **HTML mockup screen set** — `index.html` + `styles.css` + `SCR-NNN.html` (static mockups with design-token application, responsive / dark mode)
+7. `feature-definition.md` — feature definition (includes story map + risks + policies)
 
-**산출물 위치**: `docs/planner/{NNN}-{feature-name}/` (markdown 6종 + HTML 세트가 모두 같은 디렉토리에 위치)
+**Output location**: `docs/planner/{NNN}-{feature-name}/` (6 markdowns + the HTML set all live in the same directory)
 
 > **🌐 LANGUAGE RULE**: Before executing this skill, read the project's `CLAUDE.md` and check the `## Language` section to detect the project language. If the project language is NOT Korean (`ko`), you MUST translate ALL user-facing output — including prompts, messages, generated document content, section headers, table headers, and descriptions — into the project language. Technical identifiers (tool names, file paths, command names, DB table/column names) remain untranslated. If no `CLAUDE.md` exists or no `## Language` section is found, default to Korean.
 
-## 행동 원칙: Think Before Coding (생각 먼저, 작성은 그 다음)
+## Behavioral principle: Think Before Coding (think first, write second)
 
-기획 산출물 6종은 향후 수개월의 개발 방향을 결정한다. 따라서 첫 단계의 가정 오류가 가장 큰 비용을 초래한다. 다음 원칙을 기획 전 과정에서 적용한다:
+The 6 planning deliverables determine the development direction for months to come. An assumption error at the first stage therefore costs the most. Apply the following principles throughout planning:
 
-- **가정을 명시화한다**: 기능 범위, 사용자 정의, 비즈니스 모델, 기술 제약 등 중요한 가정은 산출물에 명시 기록한다 (특히 `requirements-definition.md`의 "전제 조건" 섹션).
-- **여러 해석이 존재하면 모두 제시한다**: 모호한 기능 설명("결제 시스템")에 대해 침묵 속에서 하나의 해석(예: B2C 구독 결제)을 골라 진행하지 않는다. `AskUserQuestion`으로 사용자에게 해석 선택지를 제시한다.
-- **불명확하면 멈추고 묻는다**: 단계별 산출물 생성 도중에도 결정적 가정이 모호하면 즉시 사용자에게 확인한다. 잘못된 페르소나·액터·우선순위로 6종 산출물을 작성한 뒤 폐기하는 비용보다 훨씬 적다.
-- **단순한 접근이 보이면 푸시백한다**: 사용자가 과도하게 복잡한 기능 범위를 요청하면 "MVP에서는 X만 포함하고 Y는 후속 스프린트로 분리하는 게 어떨까요?"라고 제안한다.
+- **Make assumptions explicit**: write down important assumptions (feature scope, user definition, business model, technical constraints) in the deliverables, especially the "Preconditions" section of `requirements-definition.md`.
+- **If multiple interpretations exist, present them all**: do not silently pick a single interpretation (e.g., B2C subscription payments) for an ambiguous feature description ("payment system"). Present interpretation options to the user via `AskUserQuestion`.
+- **When unclear, stop and ask**: even during step-by-step deliverable generation, if a decisive assumption is unclear, immediately confirm with the user. This is far cheaper than authoring the 6 deliverables on the wrong persona / actor / priority and discarding them.
+- **Push back when a simpler approach is visible**: if the user requests an overly complex feature scope, suggest "How about including only X in the MVP and splitting Y into a later sprint?"
 
-> 출처: [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills) (MIT)
+> Source: [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills) (MIT)
 
-## 실행 절차
+## Procedure
 
-### Step 0: 사전 준비 및 컨텍스트 수집
+### Step 0: Preparation and context collection
 
-#### A. 기능 정보 파싱
+#### A. Parse feature info
 
-`$ARGUMENTS`를 확인한다:
+Inspect `$ARGUMENTS`:
 
-| 인자 형태 | 동작 |
-|-----------|------|
-| 기능 설명 문자열 (예: `인증 기능`, `결제 시스템`) | 해당 설명을 기반으로 진행. 단 모호하면 A.1에서 해석 확인 |
-| _(없음)_ | `AskUserQuestion`으로 기능 정보를 질문 |
+| Argument form | Behavior |
+|---------------|----------|
+| Feature description string (e.g., `auth feature`, `payment system`) | Proceed based on the description. If ambiguous, confirm the interpretation in A.1. |
+| _(none)_ | Ask for the feature info via `AskUserQuestion` |
 
-##### A.1: 모호성 검증 (Think Before Coding)
+##### A.1: Ambiguity validation (Think Before Coding)
 
-기능 설명이 다음 중 하나에 해당하면 침묵 속에서 한 해석을 고르지 말고 `AskUserQuestion`으로 해석 선택지를 사용자에게 제시한다:
+If the feature description matches any of the following, do not silently pick a single interpretation; instead, present interpretation options to the user via `AskUserQuestion`:
 
-- **범용 키워드**: "결제 시스템", "인증", "관리자 페이지" 등 다중 해석이 가능한 키워드 (B2C/B2B, 일회성/구독, 소셜/이메일 등)
-- **타깃 미상**: 누구를 위한 기능인지 명확하지 않은 경우 (일반 사용자 vs 운영자 vs 외부 파트너)
-- **범위 미상**: MVP/풀 스택 여부가 모호한 경우
+- **Generic keywords**: "payment system", "auth", "admin page" — keywords admitting multiple interpretations (B2C/B2B, one-off/subscription, social/email, etc.)
+- **Unknown target**: when it is unclear who the feature is for (general user vs. operator vs. external partner)
+- **Unknown scope**: when MVP vs. full-stack is ambiguous
 
-예시 질문:
+Example question:
 ```
-"결제 시스템"으로 입력하셨습니다. 다음 중 어떤 해석에 가까운가요?
+You entered "payment system". Which interpretation is closest?
 
-(a) B2C 일회성 결제 (단건 상품 구매)
-(b) B2C 구독 결제 (월/년 정기 결제)
-(c) B2B 청구서 결제 (인보이스 + 후불)
-(d) 위 (a)~(c) 통합 멀티 결제 플랫폼
+(a) B2C one-off payments (single-product purchases)
+(b) B2C subscription payments (monthly/yearly recurring)
+(c) B2B invoice payments (invoice + post-pay)
+(d) Unified multi-payment platform combining (a)–(c)
 
-선택:
-```
-
-명확한 입력(예: "B2C 구독 결제, TossPayments 연동")이면 이 단계를 건너뛴다.
-
-인자가 없으면 다음을 질문한다:
-
-```
-## 서비스 기획 산출물 생성
-
-기획하려는 기능 또는 서비스에 대해 설명해 주세요.
-
-예시:
-- "소셜 로그인이 포함된 회원 인증 시스템"
-- "구독 기반 결제 시스템"
-- "팀 협업 워크스페이스 관리"
-
-기능 설명:
+Choice:
 ```
 
-사용자의 입력을 `{FEATURE_DESCRIPTION}`으로 저장한다.
+For clear inputs (e.g., "B2C subscription payments, TossPayments integration"), skip this step.
 
-#### B. 기획 모드 선택
-
-`AskUserQuestion`으로 기획 모드를 선택한다:
+If there are no arguments, ask:
 
 ```
-## 기획 모드 선택
+## Generate service planning deliverables
 
-어떤 유형의 기획을 진행하시겠습니까?
+Please describe the feature or service you want to plan.
 
-1. 🆕 신규 서비스 기획 — 새로운 기능/서비스를 처음부터 기획합니다
-2. 🔄 기존 서비스 개선 — 운영 중인 서비스의 개선점을 분석하고 개선안을 도출합니다
+Examples:
+- "Member-auth system including social login"
+- "Subscription-based payment system"
+- "Team-collaboration workspace management"
 
-선택:
+Feature description:
 ```
 
-- **신규 서비스 기획** 선택 시: 기본 워크플로우 그대로 진행
-- **기존 서비스 개선** 선택 시: 추가 컨텍스트를 수집한다:
+Save the user's input as `{FEATURE_DESCRIPTION}`.
+
+#### B. Choose planning mode
+
+Choose the planning mode via `AskUserQuestion`:
 
 ```
-## 기존 서비스 개선 — 추가 정보
+## Choose planning mode
 
-현재 서비스에 대한 기존 데이터가 있으면 공유해 주세요.
-(없으면 "없음"이라고 입력하세요)
+Which type of planning will you run?
 
-제공 가능한 정보:
-- 사용자 피드백/리뷰 데이터 (파일 경로 또는 텍스트)
-- 사용량 분석 지표 (DAU, 이탈률, 전환율 등)
-- CS 인입 유형 Top 10
-- 기존 서비스 URL 또는 화면 캡처 경로
-- 이전 개선 이력
+1. 🆕 New service planning — plan a new feature / service from scratch
+2. 🔄 Improve an existing service — analyze and derive improvements for a running service
 
-입력:
+Choice:
 ```
 
-수집된 정보를 `{EXISTING_SERVICE_DATA}`로 저장하고, 이후 단계에서 페르소나 인터뷰와 시장 분석에 반영한다.
-
-#### C. 대상 프로젝트 분석
-
-현재 작업 디렉토리에서 다음을 분석한다:
-
-1. `CLAUDE.md` 읽기 — 프로젝트 개요, 기술 스택, 도메인 컨텍스트 확인
-2. `docs/planner/` 스캔 — 기존 기획 산출물 번호 확인 (다음 번호 결정)
-3. `docs/blueprints/` 스캔 — 기존 블루프린트와의 연계 가능성 확인
-
-#### D. 디렉토리 번호 결정
-
-`docs/planner/` 디렉토리를 스캔하여 기존 디렉토리의 넘버링을 확인하고 다음 번호를 결정한다.
+- On **new service planning**: proceed with the default workflow as-is
+- On **improve an existing service**: collect additional context:
 
 ```
-NNN = (기존 최대 번호) + 1, 없으면 001
+## Improve an existing service — additional info
+
+Please share existing data about the current service.
+(If none, enter "none")
+
+You can provide:
+- user feedback / review data (file path or text)
+- usage analytics (DAU, churn rate, conversion, etc.)
+- top 10 CS inquiry types
+- existing service URL or screen-capture path
+- previous improvement history
+
+Input:
 ```
 
-기능 설명에서 영문 디렉토리명을 도출한다 (예: `인증 기능` → `auth`, `결제 시스템` → `payment`).
+Save the collected info as `{EXISTING_SERVICE_DATA}` and reflect it in persona interviews and market analysis in later steps.
+
+#### C. Analyze the target project
+
+Analyze the following in the current working directory:
+
+1. Read `CLAUDE.md` — verify project overview, tech stack, domain context
+2. Scan `docs/planner/` — determine existing planning-deliverable numbering (decide the next)
+3. Scan `docs/blueprints/` — check potential linkage with existing blueprints
+
+#### D. Determine the directory number
+
+Scan the `docs/planner/` directory to verify existing numbering and decide the next number.
+
+```
+NNN = (max existing number) + 1, or 001 if none
+```
+
+Derive an English directory name from the feature description (e.g., `auth feature` → `auth`, `payment system` → `payment`).
 
 `{OUTPUT_DIR}` = `docs/planner/{NNN}-{feature-name}/`
 
-`AskUserQuestion`으로 디렉토리명을 확인한다:
+Confirm the directory name via `AskUserQuestion`:
 
 ```
-## 산출물 디렉토리 확인
+## Confirm deliverables directory
 
-산출물 저장 경로: {OUTPUT_DIR}
+Deliverables save path: {OUTPUT_DIR}
 
-이 경로로 진행할까요? 변경이 필요하면 원하는 디렉토리명을 입력하세요.
-(예: 001-auth, 002-payment)
+Proceed with this path? If you need a change, enter the desired directory name.
+(e.g., 001-auth, 002-payment)
 ```
 
-#### E. dev 브랜치 전환 및 최신화
+#### E. Switch to the dev branch and sync to latest
 
-산출물 파일을 생성하기 전에, `dev` 브랜치로 전환하고 최신 상태로 동기화한다. 작업 브랜치는 생성하지 않으며, `dev`에서 직접 작업한다. 작업 브랜치 생성은 `/pr-merge` 실행 시 자동으로 처리된다.
+Before creating deliverable files, switch to `dev` and sync to latest. Do not create a work branch; work directly on `dev`. Work-branch creation is handled automatically when `/pr-merge` runs.
 
-0. **메인 worktree 가드**: 격리 worktree(`.astra-worktrees/<slug>/`) 안에서 호출된 경우 중단한다. dev-sync는 메인 worktree에서만 실행한다:
+0. **Main-worktree guard**: if called from inside an isolated worktree (`.astra-worktrees/<slug>/`), abort. dev-sync runs only in the main worktree:
    ```bash
    PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
    if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$PLUGIN_ROOT/scripts/worktree-helpers.sh" ]; then
-     echo "ERROR: CLAUDE_PLUGIN_ROOT를 찾을 수 없습니다. 플러그인 캐시 경로를 확인하세요." >&2
+     echo "ERROR: CLAUDE_PLUGIN_ROOT not found. Check the plugin cache path." >&2
      exit 1
    fi
    source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
    astra_ensure_main_worktree || exit 1
    ```
-1. **현재 브랜치 확인**: `git branch --show-current`
-2. **이미 `dev` 브랜치인 경우 스킵**: 현재 브랜치가 `dev`이면 아래 3~5단계를 건너뛰고 pull만 실행한다 (`git pull origin dev`)
-3. **미커밋 변경사항 보존**: `git status --porcelain`으로 확인하여 변경사항이 있으면 `git stash --include-untracked`로 임시 저장한다 (untracked 파일도 포함)
-4. **dev 브랜치 전환 및 최신화**: `git fetch origin dev && git checkout dev && git pull origin dev`
-5. **stash 복원**: step 3에서 stash 했으면 `git stash pop`으로 복원한다. 충돌 발생 시 충돌 파일 목록을 사용자에게 보고하고 수동 해결을 요청한다.
+1. **Check the current branch**: `git branch --show-current`
+2. **Skip if already on `dev`**: if the current branch is `dev`, skip steps 3–5 below and just pull (`git pull origin dev`)
+3. **Preserve uncommitted changes**: check with `git status --porcelain`; if changes exist, stash temporarily via `git stash --include-untracked` (untracked files included)
+4. **Switch to dev and sync**: `git fetch origin dev && git checkout dev && git pull origin dev`
+5. **Restore stash**: if you stashed in step 3, restore via `git stash pop`. On conflict, report the conflicting files to the user and request manual resolution.
 
-> **참고**: `dev` 브랜치가 존재하지 않으면 `main` 또는 `master` 브랜치에서 작업한다. 어떤 기본 브랜치도 없으면 현재 브랜치에서 작업한다.
+> **Note**: if the `dev` branch does not exist, work on `main` or `master`. If no default branch exists, work on the current branch.
 
 ---
 
-### Step 1: 시장/경쟁사 분석서 생성
+### Step 1: Generate the market / competitor analysis report
 
-#### A. 시장 환경 분석
+#### A. Market-environment analysis
 
-`{FEATURE_DESCRIPTION}`과 프로젝트 컨텍스트를 기반으로 다음을 분석한다:
+Based on `{FEATURE_DESCRIPTION}` and the project context, analyze the following:
 
-1. **PEST 분석**: 정치(Political), 경제(Economic), 사회(Social), 기술(Technological) 요인
-2. **시장 규모 및 트렌드**: 해당 도메인의 시장 동향, 성장세, 주요 변화
-3. **타겟 시장**: 목표 고객군, 시장 세그먼트
+1. **PEST analysis**: Political, Economic, Social, Technological factors
+2. **Market size and trends**: market trends, growth, key changes in the domain
+3. **Target market**: target customer base, market segments
 
-> **기존 서비스 개선 모드**: `{EXISTING_SERVICE_DATA}`가 있으면 현재 서비스의 포지셔닝과 시장 내 위치를 함께 분석한다.
+> **Improve-existing-service mode**: if `{EXISTING_SERVICE_DATA}` is present, also analyze the current service's positioning and market position.
 
-#### B. 경쟁사 벤치마킹
+#### B. Competitor benchmarking
 
-유사 서비스/제품을 3~5개 선정하여 벤치마킹한다:
+Select 3–5 similar services / products and benchmark:
 
-- 직접 경쟁사 (동일 기능을 제공하는 서비스)
-- 간접 경쟁사 (유사한 문제를 다른 방식으로 해결하는 서비스)
-- 글로벌 레퍼런스 (해외 우수 사례)
+- Direct competitors (services offering the same feature)
+- Indirect competitors (services solving a similar problem in another way)
+- Global references (overseas exemplars)
 
-#### C. SWOT 분석
+#### C. SWOT analysis
 
-프로젝트의 강점(Strengths), 약점(Weaknesses), 기회(Opportunities), 위협(Threats)을 도출한다.
+Derive the project's Strengths, Weaknesses, Opportunities, and Threats.
 
-#### D. 시장분석서 작성
+#### D. Author the market-analysis report
 
-`{OUTPUT_DIR}/market-analysis.md` 파일을 생성한다:
+Generate `{OUTPUT_DIR}/market-analysis.md`:
 
 ```markdown
-# 시장/경쟁사 분석서 — {기능명}
+# Market / competitor analysis — {feature name}
 
-## 1. 개요
+## 1. Overview
 
-| 항목 | 내용 |
-|------|------|
-| 기능 | {FEATURE_DESCRIPTION} |
-| 분석일 | {오늘 날짜} |
-| 기획 모드 | {신규 서비스 기획 / 기존 서비스 개선} |
+| Item | Content |
+|------|---------|
+| Feature | {FEATURE_DESCRIPTION} |
+| Analysis date | {today's date} |
+| Planning mode | {new service planning / improve existing service} |
 
-## 2. 시장 환경 분석 (PEST)
+## 2. Market-environment analysis (PEST)
 
-| 요인 | 분석 내용 | 시사점 |
-|------|----------|--------|
-| 정치/법률 (P) | {관련 규제, 정책, 법률 동향} | {기획에 미치는 영향} |
-| 경제 (E) | {시장 규모, 성장률, 경제 트렌드} | {기획에 미치는 영향} |
-| 사회/문화 (S) | {사용자 행동 변화, 인구통계 트렌드} | {기획에 미치는 영향} |
-| 기술 (T) | {기술 발전, 플랫폼 변화, AI/자동화 트렌드} | {기획에 미치는 영향} |
+| Factor | Analysis | Implications |
+|--------|----------|--------------|
+| Political/Legal (P) | {related regulations, policies, legal trends} | {impact on planning} |
+| Economic (E) | {market size, growth rate, economic trends} | {impact on planning} |
+| Social/Cultural (S) | {user-behavior shifts, demographic trends} | {impact on planning} |
+| Technological (T) | {tech evolution, platform shifts, AI / automation trends} | {impact on planning} |
 
-## 3. 경쟁사 벤치마킹
+## 3. Competitor benchmarking
 
-### 3.1 경쟁 구도
+### 3.1 Competitive landscape
 
-| # | 서비스명 | 유형 | 핵심 특징 | 타겟 고객 | 과금 모델 |
-|---|---------|------|---------|---------|---------|
-| 1 | {서비스명} | 직접 경쟁 | {특징} | {타겟} | {모델} |
-| 2 | {서비스명} | 간접 경쟁 | {특징} | {타겟} | {모델} |
-| 3 | {서비스명} | 글로벌 레퍼런스 | {특징} | {타겟} | {모델} |
+| # | Service | Type | Key features | Target | Pricing model |
+|---|---------|------|--------------|--------|---------------|
+| 1 | {service} | Direct competitor | {features} | {target} | {model} |
+| 2 | {service} | Indirect competitor | {features} | {target} | {model} |
+| 3 | {service} | Global reference | {features} | {target} | {model} |
 
-### 3.2 기능 비교 매트릭스
+### 3.2 Feature comparison matrix
 
-| 기능 | 우리 서비스 | 경쟁사 A | 경쟁사 B | 경쟁사 C |
-|------|-----------|---------|---------|---------|
-| {핵심 기능 1} | {O/X/△} | {O/X/△} | {O/X/△} | {O/X/△} |
-| {핵심 기능 2} | {O/X/△} | {O/X/△} | {O/X/△} | {O/X/△} |
-| {핵심 기능 3} | {O/X/△} | {O/X/△} | {O/X/△} | {O/X/△} |
+| Feature | Our service | Competitor A | Competitor B | Competitor C |
+|---------|-------------|--------------|--------------|--------------|
+| {core feature 1} | {O/X/△} | {O/X/△} | {O/X/△} | {O/X/△} |
+| {core feature 2} | {O/X/△} | {O/X/△} | {O/X/△} | {O/X/△} |
+| {core feature 3} | {O/X/△} | {O/X/△} | {O/X/△} | {O/X/△} |
 
-### 3.3 차별화 포인트
+### 3.3 Differentiators
 
-| # | 차별화 요소 | 설명 | 경쟁 우위 수준 |
-|---|-----------|------|-------------|
-| 1 | {요소} | {설명} | 강/중/약 |
+| # | Differentiator | Description | Competitive-advantage level |
+|---|----------------|-------------|------------------------------|
+| 1 | {element} | {description} | strong / medium / weak |
 
-## 4. SWOT 분석
+## 4. SWOT analysis
 
-| | 긍정적 | 부정적 |
-|---|--------|--------|
-| **내부** | **강점 (S)** | **약점 (W)** |
-| | - {강점 1} | - {약점 1} |
-| | - {강점 2} | - {약점 2} |
-| **외부** | **기회 (O)** | **위협 (T)** |
-| | - {기회 1} | - {위협 1} |
-| | - {기회 2} | - {위협 2} |
+| | Positive | Negative |
+|---|----------|----------|
+| **Internal** | **Strengths (S)** | **Weaknesses (W)** |
+| | - {strength 1} | - {weakness 1} |
+| | - {strength 2} | - {weakness 2} |
+| **External** | **Opportunities (O)** | **Threats (T)** |
+| | - {opportunity 1} | - {threat 1} |
+| | - {opportunity 2} | - {threat 2} |
 
-### 4.1 SO/ST/WO/WT 전략 도출
+### 4.1 SO/ST/WO/WT strategy derivation
 
-| 전략 | 설명 |
-|------|------|
-| SO 전략 (강점×기회) | {강점을 활용하여 기회를 포착하는 전략} |
-| ST 전략 (강점×위협) | {강점을 활용하여 위협에 대응하는 전략} |
-| WO 전략 (약점×기회) | {약점을 보완하여 기회를 활용하는 전략} |
-| WT 전략 (약점×위협) | {약점과 위협을 최소화하는 전략} |
+| Strategy | Description |
+|----------|-------------|
+| SO strategy (Strengths × Opportunities) | {strategy that uses strengths to capture opportunities} |
+| ST strategy (Strengths × Threats) | {strategy that uses strengths to counter threats} |
+| WO strategy (Weaknesses × Opportunities) | {strategy that compensates weaknesses to exploit opportunities} |
+| WT strategy (Weaknesses × Threats) | {strategy that minimizes weaknesses and threats} |
 
-## 5. 시장 시사점 및 기획 방향
+## 5. Market implications and planning direction
 
-| # | 시사점 | 기획 반영 방향 | 우선순위 |
-|---|--------|-------------|---------|
-| 1 | {시사점} | {반영 방향} | 상/중/하 |
-| 2 | {시사점} | {반영 방향} | 상/중/하 |
+| # | Implication | Planning reflection | Priority |
+|---|-------------|---------------------|----------|
+| 1 | {implication} | {reflection direction} | high/med/low |
+| 2 | {implication} | {reflection direction} | high/med/low |
 ```
 
-> **중요**: 시장분석서를 작성한 후 사용자에게 "시장분석서가 생성되었습니다. 다음 단계(액터 도출)로 진행할까요?"라고 확인한다.
+> **Important**: after authoring the market-analysis report, confirm with the user: "The market-analysis report has been generated. Proceed to the next step (actor derivation)?"
 
 ---
 
-### Step 2: 액터 도출 및 선택
+### Step 2: Actor derivation and selection
 
-#### A. 액터 자동 도출
+#### A. Auto-derive actors
 
-`{FEATURE_DESCRIPTION}`과 시장분석 결과를 종합하여 관련된 액터(사용자 유형)를 도출한다.
+Synthesize `{FEATURE_DESCRIPTION}` and the market-analysis result to derive related actors (user types).
 
-도출 기준:
-- **직접 사용자**: 서비스를 직접 사용하는 주체 (일반 사용자, 구독자, 구매자 등)
-- **관리자**: 서비스를 관리/운영하는 주체 (시스템 관리자, 운영자, 콘텐츠 관리자 등)
-- **간접 사용자**: 서비스와 간접적으로 상호작용하는 주체 (파트너, API 소비자, 외부 시스템 등)
-- **이해관계자**: 서비스의 결과물에 관심을 가지는 주체 (경영진, 마케터 등)
+Derivation criteria:
+- **Direct users**: subjects who directly use the service (general user, subscriber, buyer, etc.)
+- **Administrators**: subjects who manage / operate the service (system admin, operator, content manager, etc.)
+- **Indirect users**: subjects who interact indirectly (partner, API consumer, external system, etc.)
+- **Stakeholders**: subjects who care about the outcome (execs, marketers, etc.)
 
-최소 3개, 최대 8개 액터를 도출한다.
+Derive at least 3 and at most 8 actors.
 
-#### B. 액터 멀티 선택
+#### B. Multi-select actors
 
-도출된 액터 목록을 사용자에게 보여주고 `AskUserQuestion`으로 멀티 선택을 요청한다:
+Show the derived actor list to the user and request multi-select via `AskUserQuestion`:
 
 ```
-## 액터(사용자 유형) 선택
+## Select actors (user types)
 
-다음은 "{FEATURE_DESCRIPTION}" 관련 도출된 액터 목록입니다.
-인터뷰를 진행할 액터를 선택하세요 (콤마로 구분하여 복수 선택 가능).
+Below is the actor list derived for "{FEATURE_DESCRIPTION}".
+Select actors to interview (comma-separate for multi-select).
 
-| # | 액터명 | 유형 | 설명 |
-|---|--------|------|------|
-| 1 | 일반 사용자 | 직접 사용자 | 서비스를 직접 사용하는 최종 사용자 |
-| 2 | 시스템 관리자 | 관리자 | 서비스를 관리하는 운영자 |
+| # | Actor | Type | Description |
+|---|-------|------|-------------|
+| 1 | General user | Direct user | end user who uses the service directly |
+| 2 | System admin | Administrator | operator managing the service |
 | 3 | ... | ... | ... |
 
-선택할 액터 번호 (예: 1,2,3):
+Actor numbers to select (e.g., 1,2,3):
 ```
 
-선택된 액터들을 `{SELECTED_ACTORS}` 배열로 저장한다.
+Save the selected actors as the `{SELECTED_ACTORS}` array.
 
-> **참고**: 사용자가 액터를 추가하고 싶다고 하면, 추가 액터를 입력받아 목록에 포함시킨다.
+> **Note**: if the user wants to add an actor, accept the additional actor as input and include it in the list.
 
 ---
 
-### Step 3: 페르소나 인터뷰 실행 및 인터뷰결과서 생성
+### Step 3: Run persona interviews and generate the interview report
 
-#### A. 액터별 페르소나 생성
+#### A. Generate personas per actor
 
-선택된 각 액터에 대해 **3명의 페르소나**를 생성한다.
+Generate **3 personas** per selected actor.
 
-각 페르소나는 다음 정보를 포함한다:
+Each persona includes:
 
-| 항목 | 설명 |
-|------|------|
-| 이름 | 한국 이름 (예: 김민수) |
-| 나이 | 25~55세 범위 |
-| 직업 | 해당 액터의 전형적 직업 |
-| 기술 수준 | 초급/중급/고급 |
-| 사용 환경 | 모바일/데스크톱/하이브리드 |
-| 핵심 목표 | 서비스 사용의 주된 목적 |
-| 좌절감 요인 | 기존 경험에서의 불만 |
-| 특징 | 사용 패턴, 성향 등 차별화 요소 |
+| Item | Description |
+|------|-------------|
+| Name | a name (e.g., Min-su Kim) |
+| Age | range 25–55 |
+| Occupation | typical occupation for the actor |
+| Tech literacy | beginner / intermediate / advanced |
+| Usage context | mobile / desktop / hybrid |
+| Core goal | the main purpose of using the service |
+| Frustrations | dissatisfactions from prior experiences |
+| Traits | usage patterns, dispositions, and other differentiators |
 
-페르소나는 다양한 배경과 관점을 반영해야 한다 (연령대, 기술 숙련도, 사용 목적 등을 분산 배치).
+Personas must reflect diverse backgrounds and perspectives (distribute age range, tech literacy, usage purposes).
 
-> **기존 서비스 개선 모드**: `{EXISTING_SERVICE_DATA}`의 실제 사용자 피드백/CS 데이터를 페르소나의 좌절감 요인과 인터뷰 답변에 반영한다.
+> **Improve-existing-service mode**: reflect real user feedback / CS data from `{EXISTING_SERVICE_DATA}` in the personas' frustrations and interview answers.
 
-#### B. 페르소나 인터뷰 실행
+#### B. Run persona interviews
 
-각 페르소나에 대해 **심층 인터뷰를 시뮬레이션**한다.
+Simulate a **deep interview** for each persona.
 
-인터뷰 질문 카테고리 (각 카테고리 3~5문항, 총 15~20문항):
+Interview question categories (3–5 questions per category; 15–20 total):
 
-1. **현재 경험 (As-Is)**
-   - 현재 해당 기능과 관련된 과업을 어떻게 수행하는가?
-   - 어떤 도구/방법을 사용하는가?
-   - 가장 시간이 많이 걸리는 작업은?
+1. **Current experience (As-Is)**
+   - How do you currently perform tasks related to this feature?
+   - What tools / methods do you use?
+   - Which task takes the most time?
 
-2. **페인포인트 (Pain Points)**
-   - 가장 불편한 점은?
-   - 실수가 자주 발생하는 부분은?
-   - 포기하게 되는 시점은?
+2. **Pain points**
+   - What is the most painful?
+   - Where do mistakes happen most often?
+   - At what point do you give up?
 
-3. **니즈 & 기대 (Needs & Expectations)**
-   - 이상적인 경험은 어떤 것인가?
-   - 자동화되었으면 하는 것은?
-   - 다른 서비스에서 좋았던 경험은?
+3. **Needs & expectations**
+   - What would the ideal experience look like?
+   - What would you like automated?
+   - What good experiences have you had in other services?
 
-4. **가치 & 우선순위 (Value & Priority)**
-   - 가장 중요한 기능은?
-   - 시간 절약 vs 비용 절감 vs 편의성 중 우선순위는?
-   - 비용을 지불할 의향이 있는 기능은?
+4. **Value & priority**
+   - Which feature is most important?
+   - Among time-saving vs. cost-saving vs. convenience, what is the priority?
+   - Which feature would you pay for?
 
-각 페르소나의 답변은 **페르소나의 특징을 반영한 사실적인 응답**이어야 한다.
+Each persona's responses must be **realistic answers reflecting that persona's traits**.
 
-#### C. 페인포인트 종합 분석
+#### C. Comprehensive pain-point analysis
 
-모든 인터뷰 결과를 분석하여:
+Analyze all interview results and produce:
 
-1. **액터별 핵심 페인포인트** — 각 액터 유형에서 공통으로 나타나는 페인포인트 5개씩
-2. **관심사 키워드** — 각 액터의 핵심 관심사 키워드 5개씩
-3. **과업 분석** — 주요 과업의 중요도/시간소모/수행빈도를 5점 척도로 평가
-4. **전체 통합 페인포인트** — 전 액터에 걸쳐 가장 심각한 페인포인트 Top 10
+1. **Per-actor core pain points** — 5 pain points commonly observed for each actor type
+2. **Interest keywords** — 5 keywords representing each actor's core interests
+3. **Task analysis** — score each major task on a 5-point scale for importance / time / frequency
+4. **Overall integrated pain points** — Top 10 most severe pain points across all actors
 
-#### D. 인터뷰결과서 작성
+#### D. Author the interview report
 
-`{OUTPUT_DIR}/interview-report.md` 파일을 생성한다:
+Generate `{OUTPUT_DIR}/interview-report.md`:
 
 ```markdown
-# 인터뷰 결과서 — {기능명}
+# Interview report — {feature name}
 
-## 1. 개요
+## 1. Overview
 
-| 항목 | 내용 |
-|------|------|
-| 기능 | {FEATURE_DESCRIPTION} |
-| 인터뷰 일자 | {오늘 날짜} |
-| 대상 액터 | {선택된 액터 목록} |
-| 페르소나 수 | {액터 수 × 3}명 |
+| Item | Content |
+|------|---------|
+| Feature | {FEATURE_DESCRIPTION} |
+| Interview date | {today's date} |
+| Actors interviewed | {selected actor list} |
+| Number of personas | {actor count × 3} |
 
-## 2. 페르소나 프로필
+## 2. Persona profiles
 
-### 2.1 {액터명 1}
+### 2.1 {actor 1}
 
-#### 페르소나 1: {이름} ({나이}, {직업})
-| 항목 | 내용 |
-|------|------|
-| 기술 수준 | {초급/중급/고급} |
-| 사용 환경 | {모바일/데스크톱/하이브리드} |
-| 핵심 목표 | {목표} |
-| 좌절감 요인 | {좌절감} |
-| 특징 | {특징} |
+#### Persona 1: {name} ({age}, {occupation})
+| Item | Content |
+|------|---------|
+| Tech literacy | {beginner / intermediate / advanced} |
+| Usage context | {mobile / desktop / hybrid} |
+| Core goal | {goal} |
+| Frustrations | {frustrations} |
+| Traits | {traits} |
 
-(페르소나 2, 3도 동일 형식)
+(repeat the same format for persona 2, 3)
 
-### 2.2 {액터명 2}
-(동일 형식)
+### 2.2 {actor 2}
+(same format)
 
-## 3. 인터뷰 상세
+## 3. Interview details
 
-### 3.1 {액터명 1}
+### 3.1 {actor 1}
 
-#### 페르소나 1: {이름}
+#### Persona 1: {name}
 
-| # | 질문 | 답변 |
-|---|------|------|
-| 1 | {질문} | {답변} |
-| 2 | {질문} | {답변} |
+| # | Question | Answer |
+|---|----------|--------|
+| 1 | {question} | {answer} |
+| 2 | {question} | {answer} |
 | ... | ... | ... |
 
-(모든 페르소나에 대해 반복)
+(repeat for every persona)
 
-## 4. 페인포인트 분석
+## 4. Pain-point analysis
 
-### 4.1 액터별 핵심 페인포인트
+### 4.1 Per-actor core pain points
 
-#### {액터명 1}
-| # | 페인포인트 | 심각도 (1-5) | 빈도 (1-5) | 영향 범위 |
-|---|-----------|------------|-----------|---------|
-| 1 | {페인포인트} | {점수} | {점수} | {범위} |
+#### {actor 1}
+| # | Pain point | Severity (1-5) | Frequency (1-5) | Scope of impact |
+|---|------------|----------------|------------------|------------------|
+| 1 | {pain point} | {score} | {score} | {scope} |
 | ... | ... | ... | ... | ... |
 
-### 4.2 액터별 관심사 키워드
+### 4.2 Per-actor interest keywords
 
-| 액터 | 키워드 1 | 키워드 2 | 키워드 3 | 키워드 4 | 키워드 5 |
-|------|---------|---------|---------|---------|---------|
+| Actor | Keyword 1 | Keyword 2 | Keyword 3 | Keyword 4 | Keyword 5 |
+|-------|-----------|-----------|-----------|-----------|-----------|
 
-### 4.3 과업 분석
+### 4.3 Task analysis
 
-| # | 과업 | 중요도 | 시간소모 | 수행빈도 | 핵심 Pain Point |
-|---|------|--------|---------|---------|----------------|
+| # | Task | Importance | Time | Frequency | Core pain point |
+|---|------|------------|------|-----------|------------------|
 
-### 4.4 전체 통합 페인포인트 Top 10
+### 4.4 Top 10 overall integrated pain points
 
-| PP-ID | 순위 | 페인포인트 | 관련 액터 | 심각도 | 해결 우선순위 |
-|-------|------|-----------|---------|--------|------------|
-| PP-001 | 1 | {페인포인트} | {액터} | {점수} | {상/중/하} |
-| PP-002 | 2 | {페인포인트} | {액터} | {점수} | {상/중/하} |
+| PP-ID | Rank | Pain point | Related actor | Severity | Resolution priority |
+|-------|------|------------|----------------|----------|---------------------|
+| PP-001 | 1 | {pain point} | {actor} | {score} | {high/med/low} |
+| PP-002 | 2 | {pain point} | {actor} | {score} | {high/med/low} |
 | ... | ... | ... | ... | ... | ... |
 ```
 
-> **중요**: 인터뷰결과서를 작성한 후 사용자에게 "인터뷰결과서가 생성되었습니다. 다음 단계(아이디어 도출)로 진행할까요?"라고 확인한다.
+> **Important**: after authoring the interview report, confirm with the user: "The interview report has been generated. Proceed to the next step (idea derivation)?"
 
 ---
 
-### Step 4: 아이디어 도출 및 요구사항 정의서 생성
+### Step 4: Idea derivation and requirements-definition generation
 
-#### A. 아이디어 도출
+#### A. Idea derivation
 
-인터뷰결과서의 **통합 페인포인트 Top 10**과 시장분석서의 **기획 방향**을 기반으로 해결 아이디어를 도출한다.
+Based on the interview report's **Top 10 integrated pain points** and the market-analysis report's **planning direction**, derive solution ideas.
 
-아이디어 도출 기법:
-- **HMW (How Might We)**: 각 페인포인트를 "어떻게 하면 ~할 수 있을까?" 형태로 변환
-- **SCAMPER**: 대체(Substitute), 결합(Combine), 적용(Adapt), 수정(Modify), 다른 용도(Put to other use), 제거(Eliminate), 재배치(Reverse)
-- **JTBD (Jobs-to-be-Done)**: 각 핵심 페인포인트에 대해 Job Statement를 작성한다:
-  - 형식: "**When** [상황/맥락], **I want to** [동기/행동], **so I can** [기대 결과]"
-  - 각 JTBD에서 현재 underserved된 니즈를 식별하여 아이디어에 반영
-- **기술 적용**: AI/자동화/UX 개선 등 기술적 해결 방안 포함
+Idea-derivation techniques:
+- **HMW (How Might We)**: convert each pain point into "How might we …?"
+- **SCAMPER**: Substitute, Combine, Adapt, Modify, Put to other use, Eliminate, Reverse
+- **JTBD (Jobs-to-be-Done)**: write a Job Statement for each core pain point:
+  - Form: "**When** [context], **I want to** [motivation/action], **so I can** [expected outcome]"
+  - Identify currently underserved needs per JTBD and reflect them in ideas
+- **Tech application**: include technical solutions — AI / automation / UX improvements, etc.
 
-> **기존 서비스 개선 모드**: `{EXISTING_SERVICE_DATA}`가 있으면 실제 사용 데이터(이탈 구간, CS 인입 유형, 사용 빈도 등)를 기반으로 JTBD/HMW를 작성하고, 아이디어 우선순위를 실증 데이터로 뒷받침한다.
+> **Improve-existing-service mode**: when `{EXISTING_SERVICE_DATA}` is present, author JTBD / HMW based on real usage data (churn points, CS-inquiry types, frequency of use) and back idea priority with empirical evidence.
 
-최소 10개, 최대 15개 아이디어를 도출한다.
+Derive at least 10 and at most 15 ideas.
 
-#### B. 아이디어 선택
+#### B. Pick ideas
 
-도출된 아이디어를 사용자에게 보여주고 `AskUserQuestion`으로 멀티 선택을 요청한다:
+Show the derived ideas and request multi-select via `AskUserQuestion`:
 
 ```
-## 해결 아이디어 선택
+## Select solution ideas
 
-인터뷰 페인포인트 + 시장분석 기반으로 도출된 아이디어입니다.
-구현할 아이디어를 선택하세요 (콤마로 구분하여 복수 선택 가능).
+Ideas derived from interview pain points + market analysis.
+Pick ideas to implement (comma-separate for multi-select).
 
-| # | JTBD | HMW 질문 | 아이디어 | 설명 | 해결하는 페인포인트 | 구현 난이도 | 기대 효과 |
-|---|------|---------|---------|------|-----------------|-----------|---------|
-| 1 | When..., I want to..., so I can... | 어떻게 하면...? | {아이디어} | {설명} | PP-{N} | 상/중/하 | 상/중/하 |
+| # | JTBD | HMW question | Idea | Description | Pain points addressed | Implementation difficulty | Expected impact |
+|---|------|--------------|------|-------------|------------------------|---------------------------|-----------------|
+| 1 | When..., I want to..., so I can... | How might we ...? | {idea} | {description} | PP-{N} | high/med/low | high/med/low |
 | 2 | ... | ... | ... | ... | ... | ... | ... |
 
-선택할 아이디어 번호 (예: 1,3,5,7):
+Idea numbers to select (e.g., 1,3,5,7):
 ```
 
-선택된 아이디어들을 `{SELECTED_IDEAS}` 배열로 저장한다.
+Save the selected ideas as the `{SELECTED_IDEAS}` array.
 
-#### C. 요구사항 정의서 작성
+#### C. Author the requirements definition
 
-선택된 아이디어를 기반으로 `{OUTPUT_DIR}/requirements-definition.md` 파일을 생성한다:
+Based on the selected ideas, generate `{OUTPUT_DIR}/requirements-definition.md`:
 
 ```markdown
-# 요구사항 정의서 — {기능명}
+# Requirements definition — {feature name}
 
-## 1. 개요
+## 1. Overview
 
-| 항목 | 내용 |
-|------|------|
-| 기능 | {FEATURE_DESCRIPTION} |
-| 작성일 | {오늘 날짜} |
-| 기반 문서 | market-analysis.md, interview-report.md |
-| 선택된 아이디어 수 | {N}개 |
+| Item | Content |
+|------|---------|
+| Feature | {FEATURE_DESCRIPTION} |
+| Authored | {today's date} |
+| Base documents | market-analysis.md, interview-report.md |
+| Selected ideas | {N} |
 
-## 2. 성공 지표 (KPI / OKR)
+## 2. Success metrics (KPI / OKR)
 
-### 2.1 비즈니스 목표 (Objectives)
+### 2.1 Business objectives
 
-| # | 목표 (Objective) | 설명 | 관련 전략 |
-|---|-----------------|------|---------|
-| O1 | {목표} | {설명} | {SWOT 전략 참조} |
-| O2 | {목표} | {설명} | {SWOT 전략 참조} |
+| # | Objective | Description | Related strategy |
+|---|-----------|-------------|------------------|
+| O1 | {objective} | {description} | {refer to SWOT strategy} |
+| O2 | {objective} | {description} | {refer to SWOT strategy} |
 
-### 2.2 핵심 결과 (Key Results)
+### 2.2 Key results
 
-| # | 소속 목표 | 핵심 결과 (Key Result) | 현재값 | 목표값 | 측정 방법 |
-|---|---------|---------------------|--------|--------|---------|
-| KR1 | O1 | {측정 가능한 결과} | {baseline 또는 N/A} | {목표} | {측정 방법} |
-| KR2 | O1 | {측정 가능한 결과} | {baseline 또는 N/A} | {목표} | {측정 방법} |
-| KR3 | O2 | {측정 가능한 결과} | {baseline 또는 N/A} | {목표} | {측정 방법} |
+| # | Parent objective | Key result | Current | Target | Measurement |
+|---|------------------|------------|---------|--------|-------------|
+| KR1 | O1 | {measurable result} | {baseline or N/A} | {target} | {method} |
+| KR2 | O1 | {measurable result} | {baseline or N/A} | {target} | {method} |
+| KR3 | O2 | {measurable result} | {baseline or N/A} | {target} | {method} |
 
-### 2.3 KPI 대시보드 항목
+### 2.3 KPI dashboard items
 
-| # | KPI명 | 설명 | 측정 주기 | 목표 기준 | 관련 KR |
-|---|-------|------|---------|---------|--------|
-| 1 | {KPI} | {설명} | 일/주/월 | {기준} | KR{N} |
+| # | KPI | Description | Cadence | Target threshold | Related KR |
+|---|-----|-------------|---------|-------------------|------------|
+| 1 | {KPI} | {description} | daily/weekly/monthly | {threshold} | KR{N} |
 
-## 3. JTBD (Jobs-to-be-Done) 정리
+## 3. JTBD (Jobs-to-be-Done) summary
 
-| # | Job Statement | 관련 페인포인트 | 현재 해결 수준 | 기대 해결 수준 | 관련 아이디어 |
-|---|--------------|-------------|-------------|-------------|------------|
-| J1 | When {상황}, I want to {동기}, so I can {결과} | PP-{N} | {1-5} | {1-5} | IDEA-{N} |
-| J2 | When {상황}, I want to {동기}, so I can {결과} | PP-{N} | {1-5} | {1-5} | IDEA-{N} |
+| # | Job Statement | Related pain points | Current resolution | Expected resolution | Related ideas |
+|---|---------------|----------------------|---------------------|---------------------|----------------|
+| J1 | When {context}, I want to {motivation}, so I can {outcome} | PP-{N} | {1-5} | {1-5} | IDEA-{N} |
+| J2 | When {context}, I want to {motivation}, so I can {outcome} | PP-{N} | {1-5} | {1-5} | IDEA-{N} |
 
-## 4. 기능 요구사항 (Functional Requirements)
+## 4. Functional requirements
 
-### FR-001: {요구사항 제목}
+### FR-001: {requirement title}
 
-| 항목 | 내용 |
-|------|------|
+| Item | Content |
+|------|---------|
 | ID | FR-001 |
-| 요구사항명 | {제목} |
-| 설명 | {상세 설명} |
-| 관련 아이디어 | IDEA-{N} |
-| 관련 페인포인트 | PP-{N} |
-| 관련 JTBD | J{N} |
-| 관련 액터 | {액터 목록} |
-| 우선순위 | 필수 / 중요 / 선택 |
-| 인수 조건 | {인수 조건 목록} |
-| 관련 KPI | {KPI명} |
+| Name | {title} |
+| Description | {detailed description} |
+| Related idea | IDEA-{N} |
+| Related pain point | PP-{N} |
+| Related JTBD | J{N} |
+| Related actors | {actor list} |
+| Priority | Must / Should / Could |
+| Acceptance criteria | {acceptance criteria list} |
+| Related KPI | {KPI} |
 
-(모든 요구사항에 대해 반복)
+(repeat for every requirement)
 
-## 5. 비기능 요구사항 (Non-Functional Requirements)
+## 5. Non-functional requirements
 
-### NFR-001: {요구사항 제목}
+### NFR-001: {requirement title}
 
-| 항목 | 내용 |
-|------|------|
+| Item | Content |
+|------|---------|
 | ID | NFR-001 |
-| 유형 | 성능 / 보안 / 사용성 / 접근성 / 호환성 |
-| 요구사항명 | {제목} |
-| 설명 | {상세 설명} |
-| 측정 기준 | {측정 가능한 기준} |
-| 우선순위 | 필수 / 중요 / 선택 |
+| Type | performance / security / usability / accessibility / compatibility |
+| Name | {title} |
+| Description | {detailed description} |
+| Measurement criterion | {measurable criterion} |
+| Priority | Must / Should / Could |
 
-## 6. 요구사항 추적 매트릭스
+## 6. Requirements traceability matrix
 
-| 요구사항 ID | 요구사항명 | 페인포인트 | JTBD | 아이디어 | 액터 | KPI | 우선순위 |
-|------------|----------|----------|------|---------|------|-----|---------|
-| FR-001 | {제목} | PP-{N} | J{N} | IDEA-{N} | {액터} | {KPI} | {우선순위} |
+| Req ID | Name | Pain point | JTBD | Idea | Actor | KPI | Priority |
+|--------|------|------------|------|------|-------|-----|----------|
+| FR-001 | {title} | PP-{N} | J{N} | IDEA-{N} | {actor} | {KPI} | {priority} |
 | ... | ... | ... | ... | ... | ... | ... | ... |
 ```
 
-> **중요**: 요구사항정의서를 작성한 후 사용자에게 "요구사항정의서가 생성되었습니다. 다음 단계(유즈케이스 정의)로 진행할까요?"라고 확인한다.
+> **Important**: after authoring the requirements definition, confirm with the user: "The requirements definition has been generated. Proceed to the next step (use-case definition)?"
 
 ---
 
-### Step 5: 유즈케이스 정의서 생성
+### Step 5: Generate the use-case definition
 
-인터뷰결과서와 요구사항정의서를 기반으로 각 액터의 유즈케이스를 정의한다.
+Define use cases per actor, based on the interview report and the requirements definition.
 
-#### A. 유즈케이스 도출
+#### A. Use-case derivation
 
-선택된 각 액터별로 요구사항을 유즈케이스로 매핑한다:
+For each selected actor, map requirements to use cases:
 
-- 하나의 요구사항이 1개 이상의 유즈케이스에 대응
-- 유즈케이스 간의 관계: `<<include>>`, `<<extend>>`, 일반화(generalization) 식별
+- One requirement may correspond to 1+ use cases
+- Identify relationships among use cases: `<<include>>`, `<<extend>>`, generalization
 
-#### B. 고객 여정맵 (Customer Journey Map) 도출
+#### B. Derive customer journey maps
 
-핵심 유즈케이스(3~5개)에 대해 고객 여정맵을 작성한다:
+For core use cases (3–5), author customer journey maps:
 
-여정맵 구성요소:
-- **단계 (Phase)**: 서비스 접점의 시간 순서 (인지 → 탐색 → 가입 → 사용 → 재방문)
-- **행동 (Action)**: 각 단계에서 사용자가 하는 행동
-- **접점 (Touchpoint)**: 서비스와 만나는 채널/화면
-- **감정 (Emotion)**: 각 단계의 사용자 감정 상태 (😊 긍정 / 😐 중립 / 😤 부정)
-- **페인포인트**: 각 단계에서 발생하는 불편
-- **기회 영역 (Opportunity)**: 개선 가능한 포인트
+Components:
+- **Phase**: time-ordered service touchpoints (Awareness → Exploration → Sign-up → Use → Re-visit)
+- **Action**: the user's actions per phase
+- **Touchpoint**: the channel / screen where the user meets the service
+- **Emotion**: the user's emotional state per phase (😊 positive / 😐 neutral / 😤 negative)
+- **Pain point**: inconveniences at each phase
+- **Opportunity area**: points where improvement is possible
 
-#### C. 유즈케이스 정의서 작성
+#### C. Author the use-case definition
 
-`{OUTPUT_DIR}/usecase-definition.md` 파일을 생성한다:
+Generate `{OUTPUT_DIR}/usecase-definition.md`:
 
 ~~~markdown
-# 유즈케이스 정의서 — {기능명}
+# Use-case definition — {feature name}
 
-## 1. 개요
+## 1. Overview
 
-| 항목 | 내용 |
-|------|------|
-| 기능 | {FEATURE_DESCRIPTION} |
-| 작성일 | {오늘 날짜} |
-| 기반 문서 | interview-report.md, requirements-definition.md |
-| 액터 수 | {N}명 |
-| 유즈케이스 수 | {N}개 |
+| Item | Content |
+|------|---------|
+| Feature | {FEATURE_DESCRIPTION} |
+| Authored | {today's date} |
+| Base documents | interview-report.md, requirements-definition.md |
+| Actor count | {N} |
+| Use-case count | {N} |
 
-## 2. 액터 정의
+## 2. Actor definitions
 
-| # | 액터명 | 유형 | 설명 | 관련 유즈케이스 |
-|---|--------|------|------|---------------|
-| 1 | {액터명} | {직접/관리자/간접/시스템} | {설명} | UC-001, UC-002, ... |
+| # | Actor | Type | Description | Related use cases |
+|---|-------|------|-------------|--------------------|
+| 1 | {actor} | {direct / admin / indirect / system} | {description} | UC-001, UC-002, ... |
 
-## 3. 고객 여정맵 (Customer Journey Map)
+## 3. Customer Journey Map
 
-### 3.1 {핵심 유즈케이스/시나리오명} — {주요 액터}
+### 3.1 {core use-case / scenario name} — {primary actor}
 
 ```mermaid
 journey
-    title {시나리오명}
-    section {단계 1: 인지/탐색}
-      {행동 1}: {감정점수 1-5}: {액터}
-      {행동 2}: {감정점수 1-5}: {액터}
-    section {단계 2: 가입/설정}
-      {행동 3}: {감정점수 1-5}: {액터}
-      {행동 4}: {감정점수 1-5}: {액터}
-    section {단계 3: 핵심 사용}
-      {행동 5}: {감정점수 1-5}: {액터}
-    section {단계 4: 결과/재방문}
-      {행동 6}: {감정점수 1-5}: {액터}
+    title {scenario name}
+    section {phase 1: awareness / exploration}
+      {action 1}: {emotion score 1-5}: {actor}
+      {action 2}: {emotion score 1-5}: {actor}
+    section {phase 2: sign-up / setup}
+      {action 3}: {emotion score 1-5}: {actor}
+      {action 4}: {emotion score 1-5}: {actor}
+    section {phase 3: core use}
+      {action 5}: {emotion score 1-5}: {actor}
+    section {phase 4: result / re-visit}
+      {action 6}: {emotion score 1-5}: {actor}
 ```
 
-**여정 상세**:
+**Journey details**:
 
-| 단계 | 행동 | 접점 | 감정 | 페인포인트 | 기회 영역 |
-|------|------|------|------|----------|---------|
-| {단계 1} | {행동} | {화면/채널} | {😊/😐/😤} | {불편사항} | {개선 포인트} |
-| {단계 2} | {행동} | {화면/채널} | {😊/😐/😤} | {불편사항} | {개선 포인트} |
+| Phase | Action | Touchpoint | Emotion | Pain point | Opportunity |
+|-------|--------|------------|---------|------------|-------------|
+| {phase 1} | {action} | {screen / channel} | {😊/😐/😤} | {inconvenience} | {improvement} |
+| {phase 2} | {action} | {screen / channel} | {😊/😐/😤} | {inconvenience} | {improvement} |
 
-(핵심 유즈케이스 3~5개에 대해 반복)
+(repeat for 3–5 core use cases)
 
-## 4. 유즈케이스 다이어그램 (Mermaid)
+## 4. Use-case diagram (Mermaid)
 
-### 4.1 전체 시스템 유즈케이스 다이어그램
+### 4.1 System-wide use-case diagram
 
 ```mermaid
 graph LR
-    subgraph "{기능명} 시스템"
-        UC1["UC-001: {유즈케이스명}"]
-        UC2["UC-002: {유즈케이스명}"]
-        UC3["UC-003: {유즈케이스명}"]
+    subgraph "{feature name} system"
+        UC1["UC-001: {use-case name}"]
+        UC2["UC-002: {use-case name}"]
+        UC3["UC-003: {use-case name}"]
     end
 
-    Actor1["👤 {액터1}"] --> UC1
+    Actor1["👤 {actor 1}"] --> UC1
     Actor1 --> UC2
-    Actor2["👤 {액터2}"] --> UC3
+    Actor2["👤 {actor 2}"] --> UC3
     UC2 -.->|<<include>>| UC1
 ```
 
-### 4.2 {액터명 1} 유즈케이스 다이어그램
+### 4.2 {actor 1} use-case diagram
 
 ```mermaid
 graph LR
-    subgraph "{액터명 1} 관련 유즈케이스"
+    subgraph "{actor 1} use cases"
         ...
     end
 ```
 
-(각 액터별 다이어그램)
+(diagram per actor)
 
-## 5. 유즈케이스 상세
+## 5. Use-case details
 
-### UC-001: {유즈케이스명}
+### UC-001: {use-case name}
 
-| 항목 | 내용 |
-|------|------|
+| Item | Content |
+|------|---------|
 | ID | UC-001 |
-| 유즈케이스명 | {제목} |
-| 주 액터 | {액터명} |
-| 보조 액터 | {액터명 또는 없음} |
-| 선행 조건 | {선행 조건} |
-| 후행 조건 | {성공 시 상태} |
-| 관련 요구사항 | FR-001, FR-002 |
-| 관련 JTBD | J{N} |
-| 우선순위 | 상 / 중 / 하 |
+| Name | {title} |
+| Primary actor | {actor} |
+| Secondary actor | {actor or none} |
+| Precondition | {precondition} |
+| Postcondition | {state on success} |
+| Related requirements | FR-001, FR-002 |
+| Related JTBD | J{N} |
+| Priority | high / medium / low |
 
-**기본 흐름 (Main Flow):**
+**Main flow:**
 
-| 단계 | 액터 | 시스템 |
-|------|------|--------|
-| 1 | {액터 행동} | |
-| 2 | | {시스템 응답} |
-| 3 | {액터 행동} | |
-| 4 | | {시스템 응답} |
+| Step | Actor | System |
+|------|-------|--------|
+| 1 | {actor action} | |
+| 2 | | {system response} |
+| 3 | {actor action} | |
+| 4 | | {system response} |
 
-**대안 흐름 (Alternative Flow):**
+**Alternative flow:**
 
-| 분기점 | 조건 | 흐름 |
-|--------|------|------|
-| 단계 2 | {조건} | {대안 흐름} |
+| Branch point | Condition | Flow |
+|--------------|-----------|------|
+| Step 2 | {condition} | {alternative flow} |
 
-**예외 흐름 (Exception Flow):**
+**Exception flow:**
 
-| 분기점 | 예외 | 처리 |
-|--------|------|------|
-| 단계 2 | {예외 상황} | {처리 방법} |
+| Branch point | Exception | Handling |
+|--------------|-----------|----------|
+| Step 2 | {exception} | {handling} |
 
-(모든 유즈케이스에 대해 반복)
+(repeat for every use case)
 
-## 6. 유즈케이스 관계 매트릭스
+## 6. Use-case relationship matrix
 
-| 유즈케이스 | 관계 유형 | 대상 유즈케이스 | 설명 |
-|-----------|---------|-------------|------|
-| UC-001 | <<include>> | UC-003 | {설명} |
-| UC-002 | <<extend>> | UC-001 | {설명} |
+| Use case | Relationship | Target use case | Description |
+|----------|--------------|------------------|-------------|
+| UC-001 | <<include>> | UC-003 | {description} |
+| UC-002 | <<extend>> | UC-001 | {description} |
 
-## 7. 요구사항 ↔ 유즈케이스 추적 매트릭스
+## 7. Requirements ↔ use-case traceability matrix
 
-| 요구사항 ID | 유즈케이스 ID | 커버리지 |
-|------------|-------------|---------|
-| FR-001 | UC-001, UC-002 | 완전 |
-| FR-002 | UC-003 | 부분 |
+| Req ID | Use-case ID | Coverage |
+|--------|--------------|----------|
+| FR-001 | UC-001, UC-002 | full |
+| FR-002 | UC-003 | partial |
 ~~~
 
-> **중요**: 유즈케이스정의서를 작성한 후 사용자에게 "유즈케이스정의서가 생성되었습니다. 다음 단계(IA 구조 및 화면 설계)로 진행할까요?"라고 확인한다.
+> **Important**: after authoring the use-case definition, confirm with the user: "The use-case definition has been generated. Proceed to the next step (IA structure and screen design)?"
 
 ---
 
-### Step 6: IA 구조 및 화면 설계서 + HTML 기획화면 생성
+### Step 6: IA structure and screen design + HTML mockup-screen generation
 
-유즈케이스 정의서와 요구사항 정의서를 기반으로 정보구조(IA)를 설계하고 주요 화면의 와이어프레임(markdown)과 디자인 시스템 토큰이 적용된 정적 HTML 목업을 함께 작성한다. 산출 흐름은 A→D(markdown 작성) → E(디자인 시스템/톤 결정) → F(HTML 생성) 순이다.
+Based on the use-case and requirements definitions, design the information architecture (IA) and author both the wireframes (markdown) of major screens and the static HTML mockups with design-token application. Flow: A→D (markdown authoring) → E (design system / tone decision) → F (HTML generation).
 
-#### A. IA (Information Architecture) 설계
+#### A. IA (Information Architecture) design
 
-기능 정의와 유즈케이스를 기반으로 서비스의 전체 메뉴 구조를 설계한다:
+Based on the feature definition and use cases, design the overall menu structure:
 
-- **1뎁스**: 대메뉴 (GNB)
-- **2뎁스**: 중메뉴 (LNB 또는 탭)
-- **3뎁스**: 소메뉴 (세부 페이지)
+- **Depth 1**: top menu (GNB)
+- **Depth 2**: mid menu (LNB or tabs)
+- **Depth 3**: leaf menu (detail pages)
 
-각 메뉴 항목에 관련 유즈케이스와 요구사항을 매핑한다.
+Map related use cases and requirements to each menu item.
 
-> **기존 서비스 개선 모드**: 현재 서비스의 IA를 기준으로 시작하여, 변경/추가되는 메뉴 항목만 별도 표시한다 (예: `[NEW]`, `[CHANGED]`). 기존 화면은 변경이 필요한 부분만 와이어프레임으로 작성한다.
+> **Improve-existing-service mode**: start from the current service's IA and mark only changed / added menu items separately (e.g., `[NEW]`, `[CHANGED]`). For existing screens, only the parts that need changes are written as wireframes.
 
-#### B. 화면 흐름도 (Screen Flow)
+#### B. Screen flow
 
-주요 사용자 시나리오(유즈케이스 기본 흐름 기준)의 화면 이동 경로를 Mermaid 플로우차트로 작성한다.
+For major user scenarios (based on the main flows of the use cases), author the screen-transition paths as Mermaid flowcharts.
 
-#### C. 텍스트 기반 와이어프레임
+#### C. Text-based wireframes
 
-핵심 화면(3~5개)에 대해 ASCII 기반 와이어프레임을 작성한다:
+Author ASCII-based wireframes for core screens (3–5):
 
-- 레이아웃 구조 (헤더, 사이드바, 콘텐츠, 푸터)
-- 주요 UI 요소 배치 (버튼, 입력 필드, 테이블, 카드 등)
-- 각 요소의 기능 설명
+- Layout structure (header, sidebar, content, footer)
+- Major UI element placement (button, input field, table, card, etc.)
+- Functional description of each element
 
-#### D. IA 구조 및 화면 설계서 작성
+#### D. Author the IA structure and screen-design report
 
-`{OUTPUT_DIR}/ia-screen-design.md` 파일을 생성한다:
+Generate `{OUTPUT_DIR}/ia-screen-design.md`:
 
 ~~~markdown
-# IA 구조 및 화면 설계서 — {기능명}
+# IA structure and screen design — {feature name}
 
-## 1. 개요
+## 1. Overview
 
-| 항목 | 내용 |
-|------|------|
-| 기능 | {FEATURE_DESCRIPTION} |
-| 작성일 | {오늘 날짜} |
-| 기반 문서 | requirements-definition.md, usecase-definition.md |
-| 총 화면 수 | {N}개 |
+| Item | Content |
+|------|---------|
+| Feature | {FEATURE_DESCRIPTION} |
+| Authored | {today's date} |
+| Base documents | requirements-definition.md, usecase-definition.md |
+| Total screens | {N} |
 
-## 2. IA (정보구조도)
+## 2. IA (information architecture)
 
-### 2.1 메뉴 트리
+### 2.1 Menu tree
 
 ```mermaid
 graph TD
-    ROOT["{기능명}"]
-    ROOT --> M1["{1뎁스: 대메뉴 1}"]
-    ROOT --> M2["{1뎁스: 대메뉴 2}"]
-    ROOT --> M3["{1뎁스: 대메뉴 3}"]
+    ROOT["{feature name}"]
+    ROOT --> M1["{depth 1: top menu 1}"]
+    ROOT --> M2["{depth 1: top menu 2}"]
+    ROOT --> M3["{depth 1: top menu 3}"]
 
-    M1 --> M1_1["{2뎁스: 중메뉴 1-1}"]
-    M1 --> M1_2["{2뎁스: 중메뉴 1-2}"]
+    M1 --> M1_1["{depth 2: mid menu 1-1}"]
+    M1 --> M1_2["{depth 2: mid menu 1-2}"]
 
-    M1_1 --> M1_1_1["{3뎁스: 소메뉴 1-1-1}"]
-    M1_1 --> M1_1_2["{3뎁스: 소메뉴 1-1-2}"]
+    M1_1 --> M1_1_1["{depth 3: leaf menu 1-1-1}"]
+    M1_1 --> M1_1_2["{depth 3: leaf menu 1-1-2}"]
 
-    M2 --> M2_1["{2뎁스: 중메뉴 2-1}"]
+    M2 --> M2_1["{depth 2: mid menu 2-1}"]
 ```
 
-### 2.2 IA 상세
+### 2.2 IA details
 
-| 뎁스 | 메뉴ID | 메뉴명 | 화면ID | 설명 | 관련 UC | 관련 FR | 접근 권한 |
-|------|--------|--------|--------|------|--------|--------|---------|
-| 1 | M1 | {대메뉴 1} | — | {설명} | — | — | {권한} |
-| 2 | M1-1 | {중메뉴 1-1} | SCR-001 | {설명} | UC-001 | FR-001 | {권한} |
-| 3 | M1-1-1 | {소메뉴 1-1-1} | SCR-002 | {설명} | UC-001 | FR-001 | {권한} |
+| Depth | Menu ID | Menu name | Screen ID | Description | Related UC | Related FR | Access |
+|-------|---------|-----------|-----------|-------------|-------------|-------------|--------|
+| 1 | M1 | {top menu 1} | — | {description} | — | — | {permission} |
+| 2 | M1-1 | {mid menu 1-1} | SCR-001 | {description} | UC-001 | FR-001 | {permission} |
+| 3 | M1-1-1 | {leaf menu 1-1-1} | SCR-002 | {description} | UC-001 | FR-001 | {permission} |
 
-## 3. 화면 흐름도 (Screen Flow)
+## 3. Screen flow
 
-### 3.1 {시나리오명} 흐름
+### 3.1 {scenario name} flow
 
 ```mermaid
 flowchart LR
-    SCR001["SCR-001\n{화면명}"]
-    SCR002["SCR-002\n{화면명}"]
-    SCR003["SCR-003\n{화면명}"]
-    SCR004["SCR-004\n{화면명}"]
+    SCR001["SCR-001\n{screen name}"]
+    SCR002["SCR-002\n{screen name}"]
+    SCR003["SCR-003\n{screen name}"]
+    SCR004["SCR-004\n{screen name}"]
 
-    SCR001 -->|"{액션}"| SCR002
-    SCR002 -->|"{성공}"| SCR003
-    SCR002 -->|"{실패}"| SCR004
-    SCR003 -->|"{뒤로가기}"| SCR001
+    SCR001 -->|"{action}"| SCR002
+    SCR002 -->|"{success}"| SCR003
+    SCR002 -->|"{failure}"| SCR004
+    SCR003 -->|"{back}"| SCR001
 ```
 
-(주요 시나리오 2~3개에 대해 반복)
+(repeat for 2–3 major scenarios)
 
-## 4. 화면 목록
+## 4. Screen list
 
-| 화면ID | 화면명 | 유형 | 관련 UC | 관련 FR | 설명 |
-|--------|--------|------|--------|--------|------|
-| SCR-001 | {화면명} | 목록/상세/폼/모달/대시보드 | UC-001 | FR-001 | {설명} |
-| SCR-002 | {화면명} | {유형} | UC-002 | FR-002 | {설명} |
+| Screen ID | Screen name | Type | Related UC | Related FR | Description |
+|-----------|-------------|------|-------------|-------------|-------------|
+| SCR-001 | {screen name} | list / detail / form / modal / dashboard | UC-001 | FR-001 | {description} |
+| SCR-002 | {screen name} | {type} | UC-002 | FR-002 | {description} |
 
-## 5. 와이어프레임
+## 5. Wireframes
 
-### SCR-001: {화면명}
+### SCR-001: {screen name}
 
-**화면 설명**: {화면의 목적과 주요 기능}
-**관련 UC**: UC-001 | **관련 FR**: FR-001, FR-002
+**Screen description**: {purpose and main functions of the screen}
+**Related UC**: UC-001 | **Related FR**: FR-001, FR-002
 
 ```
 ┌─────────────────────────────────────────────┐
-│  [Logo]          {서비스명}        [👤 프로필] │
+│  [Logo]          {service name}    [👤 Profile] │
 ├─────────────────────────────────────────────┤
 │ ┌─────┐  ┌─────────────────────────────────┐│
-│ │     │  │  📋 {섹션 제목}                  ││
-│ │ 메뉴 │  │                                 ││
+│ │     │  │  📋 {section title}              ││
+│ │ Menu│  │                                 ││
 │ │     │  │  ┌──────────────────────────┐    ││
-│ │ • A  │  │  │ {데이터 영역}            │    ││
-│ │ • B  │  │  │                          │    ││
-│ │ • C  │  │  │  [항목 1]  [항목 2]       │    ││
-│ │     │  │  │  [항목 3]  [항목 4]       │    ││
+│ │ • A │  │  │ {data area}              │    ││
+│ │ • B │  │  │                          │    ││
+│ │ • C │  │  │  [item 1]  [item 2]       │    ││
+│ │     │  │  │  [item 3]  [item 4]       │    ││
 │ │     │  │  └──────────────────────────┘    ││
 │ │     │  │                                 ││
-│ │     │  │  [+ 추가]          [저장] [취소] ││
+│ │     │  │  [+ Add]          [Save] [Cancel]││
 │ └─────┘  └─────────────────────────────────┘│
 ├─────────────────────────────────────────────┤
-│  © {서비스명}  |  이용약관  |  개인정보처리방침  │
+│  © {service name}  |  Terms  |  Privacy      │
 └─────────────────────────────────────────────┘
 ```
 
-**UI 요소 설명**:
+**UI-element descriptions**:
 
-| # | 요소 | 유형 | 설명 | 동작 |
-|---|------|------|------|------|
-| 1 | {요소명} | 버튼/입력/테이블/... | {설명} | {클릭/입력 시 동작} |
-| 2 | {요소명} | {유형} | {설명} | {동작} |
+| # | Element | Type | Description | Behavior |
+|---|---------|------|-------------|----------|
+| 1 | {element} | button / input / table / ... | {description} | {behavior on click / input} |
+| 2 | {element} | {type} | {description} | {behavior} |
 
-(핵심 화면 3~5개에 대해 반복)
+(repeat for 3–5 core screens)
 
-## 6. 화면 ↔ 유즈케이스 ↔ 요구사항 추적
+## 6. Screen ↔ use-case ↔ requirement traceability
 
-| 화면ID | 화면명 | 유즈케이스 | 요구사항 | 액터 |
-|--------|--------|-----------|---------|------|
-| SCR-001 | {화면명} | UC-001 | FR-001, FR-002 | {액터} |
+| Screen ID | Screen name | Use case | Requirements | Actor |
+|-----------|-------------|----------|--------------|-------|
+| SCR-001 | {screen name} | UC-001 | FR-001, FR-002 | {actor} |
 ~~~
 
-#### E. 디자인 시스템 로드 및 디자인 톤 자동 결정
+#### E. Load the design system and auto-decide the design tone
 
-HTML 기획화면 생성에 사용할 디자인 토큰과 디자인 톤을 결정한다.
+Decide the design tokens and design tone to use for HTML mockup generation.
 
-##### E.1 디자인 토큰 로드
+##### E.1 Load the design system SSoT
 
-다음 우선순위로 토큰 소스를 결정한다:
+Determine the design-system source in the following priority order (v5.2.0+ DESIGN.md prioritized):
 
-| 우선순위 | 경로 | 사용 조건 |
-|---------|------|---------|
-| 1 | `src/styles/design-tokens.css` | 프로젝트 토큰 파일 존재 시 |
-| 2 | `$CLAUDE_PLUGIN_ROOT/skills/project-init/templates/design-tokens.css` | 프로젝트 토큰이 없는 경우 (Sprint 0 직후 등) |
+| Priority | Path | Use when | Extract |
+|----------|------|----------|---------|
+| 1 | `docs/design-system/DESIGN.md` | SSoT exists | Front Matter tokens + Body §1 philosophy + §2 persona + §5 aesthetic_rules |
+| 2 | `src/styles/design-tokens.css` | DESIGN.md absent + only CSS exists (legacy project) | CSS variable list |
+| 3 | `$CLAUDE_PLUGIN_ROOT/skills/project-init/templates/DESIGN.md` | the project has no design system at all (right after Sprint 0, etc.) | template defaults |
 
-선택된 토큰 파일을 읽어 사용 가능한 CSS 변수 목록(`--color-*`, `--font-*`, `--space-*`, `--radius-*`, `--shadow-*` 등)을 추출한다.
+**If DESIGN.md is loaded**: parse the Front Matter YAML to extract available tokens such as `tokens.color.semantic.*`, `tokens.typography.scale`, `tokens.spacing.scale`. Body §5 `aesthetic_rules.forbidden_generic_patterns` is used as an exclusion rule during HTML generation. Body §2 persona is used when deciding the tone of dummy data.
 
-##### E.2 컴포넌트/레이아웃 가이드 로드 (선택)
+**If only CSS is loaded** (legacy): token extraction is the same but aesthetic_rules / persona info is absent. Print a Recommended note about running `/design-init` for the user, and proceed.
 
-존재 시에만 로드하여 HTML 구조 결정에 참고한다:
+##### E.2 Load component / layout guides (optional)
 
-- `docs/design-system/components.md` — 버튼/입력/카드 등 컴포넌트 스펙
-- `docs/design-system/layout-grid.md` — 그리드/브레이크포인트 시스템
+When DESIGN.md is loaded, Body §4 is the component-spec SSoT (no separate load needed).
 
-##### E.3 Vibe Coding 가이드 로드 (필수)
+Only for legacy projects without DESIGN.md, load the following:
 
-`$CLAUDE_PLUGIN_ROOT/docs/ux/vibe-coding-design-guide.md` (Anti-AI 미학, 레퍼런스 앵커링) 와 `$CLAUDE_PLUGIN_ROOT/docs/ux/vibe-coding-animation-guide.md` (스프링 이징, 마이크로 인터랙션) 를 로드한다. 파일 부재 시 경고 후 가이드 없이 진행한다.
+- `docs/design-system/components.md` — specs for buttons / inputs / cards, etc.
+- `docs/design-system/layout-grid.md` — grid / breakpoint system
 
-##### E.4 디자인 톤 자동 결정 ({DESIGN_TONE})
+##### E.3 Load the Vibe Coding guides (required)
 
-사용자에게 묻지 않고, 기능 설명 + 시장분석 + 페르소나 정보를 종합하여 다음 중 1개를 자동 선택한다 (`AskUserQuestion` 호출 금지). 결정 근거(1줄)는 HTML 파일 주석에 명시한다.
+Load `$CLAUDE_PLUGIN_ROOT/docs/ux/vibe-coding-design-guide.md` (Anti-AI aesthetics, reference anchoring) and `$CLAUDE_PLUGIN_ROOT/docs/ux/vibe-coding-animation-guide.md` (spring easing, micro-interactions). On absence, print a warning and proceed without the guides.
 
-| 디자인 톤 | 적합 도메인 |
-|----------|----------|
-| Refined Minimal | SaaS, 생산성 도구, 어드민 대시보드 |
-| Bold & Vibrant | 소비자 앱, 마케팅, 캠페인 페이지 |
-| Soft & Warm | 커뮤니티, 교육, 헬스케어 |
-| Editorial | 콘텐츠, 미디어, 커머스 큐레이션 |
-| Professional Enterprise | B2B, 금융, 공공/엔터프라이즈 |
+##### E.4 Auto-decide the design tone ({DESIGN_TONE})
 
-#### F. HTML 기획화면 생성 (디자인 시스템 적용 정적 목업)
+**If DESIGN.md exists**: `brand.personality` + `brand.target_persona` in the Front Matter already defines the tone, so skip the separate auto-decision. When generating HTML, apply the DESIGN.md tone as-is.
 
-**목적**: 텍스트 와이어프레임을 보완하여 사용자가 브라우저에서 즉시 확인 가능한 시각적 기획화면을 제공한다. 프로덕션 컴포넌트가 아닌 **정적 HTML/CSS 목업**으로, 디자인 토큰을 적용한 고완성도 와이어프레임이다.
+**If DESIGN.md does not exist**: do not ask the user; synthesize the feature description + market analysis + persona info and auto-select one of the following (`AskUserQuestion` is forbidden). Note the rationale (one line) in an HTML file comment.
 
-**핵심 원칙**:
-- 정적 HTML/CSS만 사용 (JS 프레임워크/번들러 불필요, 브라우저에서 바로 열림)
-- 디자인 토큰 100% 사용 (하드코딩 색상/사이즈 금지, `var(--*)` 또는 fallback 값)
-- 반응형(mobile/tablet/desktop) + 다크모드(`prefers-color-scheme`) 자동 지원
-- 마이크로 인터랙션(hover/focus/active) CSS로만 구현
-- 더미 데이터는 페르소나 정보 기반의 자연스러운 한국어 콘텐츠
-- AI 이미지 생성 호출 금지 (기획 단계에서 비효율) — 아이콘은 인라인 SVG 또는 CSS gradient
+| Design tone | Suitable domains |
+|-------------|------------------|
+| Refined Minimal | SaaS, productivity tools, admin dashboards |
+| Bold & Vibrant | consumer apps, marketing, campaign pages |
+| Soft & Warm | community, education, healthcare |
+| Editorial | content, media, commerce curation |
+| Professional Enterprise | B2B, finance, public / enterprise |
 
-##### F.1 출력 위치
+#### F. Generate HTML mockup screens (design-token-applied static mockups)
 
-**모든 HTML/CSS 파일은 markdown 산출물과 동일한 디렉토리(`{OUTPUT_DIR}/`)에 직접 생성**한다. 별도 하위 폴더를 만들지 않는다.
+**Purpose**: complement the text wireframes by providing visual mockups the user can verify in the browser immediately. Not production components — **static HTML/CSS mockups** that are high-fidelity wireframes with design tokens applied.
+
+**Core principles**:
+- Use only static HTML/CSS (no JS framework / bundler needed; opens directly in the browser)
+- Use design tokens 100% (no hardcoded colors/sizes; `var(--*)` or fallback values)
+- Auto-support for responsive (mobile/tablet/desktop) + dark mode (`prefers-color-scheme`)
+- Implement micro-interactions (hover/focus/active) with CSS only
+- Dummy data is natural content based on persona info
+- No AI-image generation (inefficient at the planning stage) — icons are inline SVG or CSS gradients
+
+##### F.1 Output location
+
+**All HTML/CSS files are created directly in the same directory as the markdown deliverables (`{OUTPUT_DIR}/`)**. Do not create a separate subfolder.
 
 ```
 {OUTPUT_DIR}/
@@ -958,200 +965,200 @@ HTML 기획화면 생성에 사용할 디자인 토큰과 디자인 톤을 결�
 ├── requirements-definition.md
 ├── usecase-definition.md
 ├── ia-screen-design.md
-├── feature-definition.md            # Step 7에서 생성
-├── styles.css                       # 공통 스타일 (디자인 토큰 + 컴포넌트 + 애니메이션)
-├── index.html                       # 화면 인덱스 (네비게이션 허브)
-├── SCR-001.html                     # 화면별 정적 HTML 목업
+├── feature-definition.md            # generated in Step 7
+├── styles.css                       # shared styles (design tokens + components + animation)
+├── index.html                       # screen index (navigation hub)
+├── SCR-001.html                     # per-screen static HTML mockup
 ├── SCR-002.html
 └── ...
 ```
 
-##### F.2 공통 스타일(styles.css) 생성
+##### F.2 Generate shared styles (styles.css)
 
-다음 구조로 `{OUTPUT_DIR}/styles.css`를 생성한다:
+Generate `{OUTPUT_DIR}/styles.css` with the following structure:
 
-1. **`:root` 디자인 토큰** — Step E.1에서 로드한 토큰을 그대로 정의 (없는 항목은 fallback 토큰으로 보충)
-2. **다크모드 토큰 오버라이드** — `@media (prefers-color-scheme: dark) :root { ... }`
-3. **CSS Reset** — `box-sizing: border-box`, margin/padding 초기화
-4. **베이스 타이포그래피** — body 폰트, 헤딩 스케일, 라인 높이
-5. **레이아웃 유틸리티** — `.container` (max-width 반응형), `.grid-N` (12-column), 브레이크포인트 (mobile-first)
-6. **컴포넌트 스타일** — `{DESIGN_TONE}`에 맞춘 스타일:
+1. **`:root` design tokens** — define the tokens loaded in Step E.1 as-is (fill missing items with fallback tokens)
+2. **Dark-mode token override** — `@media (prefers-color-scheme: dark) :root { ... }`
+3. **CSS Reset** — `box-sizing: border-box`, reset margin / padding
+4. **Base typography** — body font, heading scale, line-height
+5. **Layout utilities** — `.container` (responsive max-width), `.grid-N` (12-column), breakpoints (mobile-first)
+6. **Component styles** — styled to match `{DESIGN_TONE}`:
    - `.btn` (primary/secondary/ghost) + hover/focus/active/disabled
-   - `.input` + 플로팅 라벨, 포커스 링
+   - `.input` + floating label, focus ring
    - `.card` (default/elevated/interactive) + hover lift
    - `.gnb`, `.sidebar`, `.page-layout`
    - `.table`, `.modal`, `.toast`, `.badge`, `.skeleton`
-7. **애니메이션** — 스프링 이징 변수, fadeInUp/shimmer 키프레임
-8. **접근성** — `:focus-visible` 포커스 링, `prefers-reduced-motion` 처리
-9. **인쇄 스타일** (선택) — `@media print` 기본 설정
+7. **Animation** — spring-easing variables, fadeInUp/shimmer keyframes
+8. **Accessibility** — `:focus-visible` focus ring, `prefers-reduced-motion` handling
+9. **Print styles** (optional) — `@media print` defaults
 
-##### F.3 화면별 HTML 생성 (`SCR-NNN.html`)
+##### F.3 Generate per-screen HTML (`SCR-NNN.html`)
 
-`ia-screen-design.md` Section 4(화면 목록) + Section 5(와이어프레임)을 기반으로, **화면 목록의 모든 SCR-NNN을 각각 별도 HTML 파일로 생성**한다.
+Based on Section 4 (screen list) + Section 5 (wireframes) of `ia-screen-design.md`, **generate a separate HTML file per SCR-NNN listed**.
 
-각 `SCR-NNN.html`의 구조:
+Structure of each `SCR-NNN.html`:
 
 ```html
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SCR-NNN — {화면명} | {기능명}</title>
+  <title>SCR-NNN — {screen name} | {feature name}</title>
   <!--
-    화면 ID: SCR-NNN
-    관련 UC: UC-XXX
-    관련 FR: FR-XXX
-    디자인 톤: {DESIGN_TONE}
-    톤 결정 근거: {1줄 근거}
+    Screen ID: SCR-NNN
+    Related UC: UC-XXX
+    Related FR: FR-XXX
+    Design tone: {DESIGN_TONE}
+    Tone rationale: {one-line rationale}
   -->
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header class="gnb"> ... </header>          <!-- 필요 시 -->
-  <aside class="sidebar"> ... </aside>         <!-- 필요 시 -->
+  <header class="gnb"> ... </header>          <!-- when needed -->
+  <aside class="sidebar"> ... </aside>         <!-- when needed -->
   <main class="page-content">
-    <!-- 와이어프레임의 UI 요소를 시멘틱 HTML로 구현 -->
+    <!-- implement the UI elements from the wireframe in semantic HTML -->
   </main>
-  <footer> ... </footer>                       <!-- 필요 시 -->
-  <a href="index.html" class="back-to-index">← 전체 화면 목록</a>
+  <footer> ... </footer>                       <!-- when needed -->
+  <a href="index.html" class="back-to-index">← All screens</a>
 </body>
 </html>
 ```
 
-생성 규칙:
+Generation rules:
 
-| 규칙 | 내용 |
-|------|------|
-| 시멘틱 HTML | `header`, `nav`, `main`, `section`, `article`, `aside`, `footer` 사용 |
-| 디자인 토큰 | 모든 색상/사이즈/간격은 `var(--*)`로만 (하드코딩 금지) |
-| 반응형 | 모바일(<768px) / 태블릿(768-1023px) / 데스크톱(≥1024px) 대응 |
-| 다크모드 | styles.css의 토큰 오버라이드로 자동 지원 (별도 작업 불필요) |
-| 접근성 | `aria-*` 속성, `alt` 텍스트, focus 관리, 충분한 대비, 44px 터치 타겟 |
-| 더미 데이터 | 인터뷰결과서의 페르소나 이름/특성 활용한 자연스러운 한국어 콘텐츠 |
-| 비활성 상호작용 | `<button>`/링크의 `onclick` 절대 작성 금지 (정적 목업) — `href="#"` 또는 `disabled` 사용 |
-| 아이콘 | 인라인 SVG 또는 CSS pseudo-element. 외부 폰트/이미지 의존성 금지 |
-| 페이지 간 이동 | 상단/하단에 "← 전체 화면 목록" 링크로 `index.html` 복귀 동선 제공 |
+| Rule | Content |
+|------|---------|
+| Semantic HTML | use `header`, `nav`, `main`, `section`, `article`, `aside`, `footer` |
+| Design tokens | all colors/sizes/spacing are `var(--*)` only (no hardcoding) |
+| Responsive | support mobile (<768px) / tablet (768-1023px) / desktop (≥1024px) |
+| Dark mode | auto-supported via the token overrides in styles.css (no extra work) |
+| Accessibility | `aria-*` attributes, `alt` text, focus management, sufficient contrast, 44px touch targets |
+| Dummy data | natural content using persona names/traits from the interview report |
+| Disabled interactions | never write `onclick` on `<button>`/links (static mockup) — use `href="#"` or `disabled` |
+| Icons | inline SVG or CSS pseudo-elements. No external font / image dependencies |
+| Cross-page navigation | provide a "← All screens" link at top/bottom returning to `index.html` |
 
-##### F.4 화면 인덱스(`index.html`) 생성
+##### F.4 Generate the screen index (`index.html`)
 
-모든 SCR-NNN 화면을 한눈에 보고 이동할 수 있는 네비게이션 허브를 생성한다.
+Generate a navigation hub showing all SCR-NNN screens at a glance.
 
 ```html
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{기능명} 기획화면 인덱스</title>
+  <title>{feature name} mockup index</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="page-header">
-    <h1>{기능명} 기획화면</h1>
-    <p class="meta">디자인 톤: {DESIGN_TONE} · 화면 수: {N}개 · 작성일: {YYYY-MM-DD}</p>
+    <h1>{feature name} mockups</h1>
+    <p class="meta">Design tone: {DESIGN_TONE} · Screens: {N} · Authored: {YYYY-MM-DD}</p>
   </header>
   <main class="screen-grid">
-    <!-- 각 화면을 카드로 -->
+    <!-- each screen as a card -->
     <a href="SCR-001.html" class="screen-card">
       <div class="screen-card__id">SCR-001</div>
-      <div class="screen-card__title">{화면명}</div>
-      <div class="screen-card__type">{유형}</div>
+      <div class="screen-card__title">{screen name}</div>
+      <div class="screen-card__type">{type}</div>
       <div class="screen-card__meta">UC-XXX · FR-XXX</div>
     </a>
     ...
   </main>
   <footer class="legend">
-    <p>관련 문서: <a href="ia-screen-design.md">ia-screen-design.md</a> · <a href="feature-definition.md">feature-definition.md</a></p>
+    <p>Related docs: <a href="ia-screen-design.md">ia-screen-design.md</a> · <a href="feature-definition.md">feature-definition.md</a></p>
   </footer>
 </body>
 </html>
 ```
 
-##### F.5 IA/화면설계서 보강
+##### F.5 Augment the IA / screen-design report
 
-`ia-screen-design.md` 본문에 HTML 프리뷰 안내 섹션을 추가한다 (Section 6 말미 또는 별도 섹션):
+Add an HTML-preview guidance section to the body of `ia-screen-design.md` (at the end of Section 6 or as its own section):
 
 ```markdown
-## 7. HTML 기획화면 프리뷰
+## 7. HTML mockup preview
 
-브라우저에서 `index.html`을 열면 모든 화면을 시각적으로 확인할 수 있습니다.
+Open `index.html` in a browser to visually verify every screen.
 
-| 화면ID | HTML 파일 | 화면명 |
-|--------|----------|--------|
-| SCR-001 | [SCR-001.html](SCR-001.html) | {화면명} |
-| SCR-002 | [SCR-002.html](SCR-002.html) | {화면명} |
+| Screen ID | HTML file | Screen name |
+|-----------|-----------|-------------|
+| SCR-001 | [SCR-001.html](SCR-001.html) | {screen name} |
+| SCR-002 | [SCR-002.html](SCR-002.html) | {screen name} |
 | ... | ... | ... |
 
-- 디자인 톤: **{DESIGN_TONE}** ({선택 근거 1줄})
-- 디자인 토큰 출처: `{토큰 경로}`
-- 반응형 대응: 모바일/태블릿/데스크톱
-- 다크모드: `prefers-color-scheme` 기반 자동 전환
+- Design tone: **{DESIGN_TONE}** ({one-line selection rationale})
+- Design-token source: `{token path}`
+- Responsive: mobile / tablet / desktop
+- Dark mode: auto-switch via `prefers-color-scheme`
 ```
 
-> **중요**: IA/화면설계서 + HTML 기획화면(`index.html`, `styles.css`, `SCR-NNN.html`)이 모두 생성된 후 사용자에게 "IA/화면설계서와 HTML 기획화면이 생성되었습니다. 브라우저에서 `{OUTPUT_DIR}/index.html`을 열어 확인할 수 있습니다. 다음 단계(기능 정의서)로 진행할까요?"라고 확인한다.
+> **Important**: after both the IA/screen-design report and the HTML mockups (`index.html`, `styles.css`, `SCR-NNN.html`) are generated, confirm with the user: "The IA/screen-design report and HTML mockups have been generated. You can open `{OUTPUT_DIR}/index.html` in the browser to check. Proceed to the next step (feature definition)?"
 
 ---
 
-### Step 7: 기능 정의서 생성
+### Step 7: Generate the feature definition
 
-인터뷰결과서, 요구사항정의서, 유즈케이스정의서, IA/화면설계서를 종합하여 최종 기능 정의서를 생성한다.
+Synthesize the interview report, requirements definition, use-case definition, and IA/screen-design report to author the final feature definition.
 
-#### A. 기능 구조화
+#### A. Feature structuring
 
-요구사항과 유즈케이스를 기반으로 기능을 구조화한다:
-- **대기능 (Feature Group)**: 상위 카테고리
-- **중기능 (Feature)**: 구현 단위
-- **소기능 (Sub-feature)**: 세부 동작
+Structure features based on requirements and use cases:
+- **Feature Group**: top category
+- **Feature**: implementation unit
+- **Sub-feature**: detailed behavior
 
 #### B. User Story Mapping
 
-기능을 User Story Map 형태로 재배치하여 MVP 범위를 시각화한다:
-- **User Activity** (행): 사용자의 큰 활동 단위 (대기능에 대응)
-- **User Task** (행): 활동 내 구체적 과업 (중기능에 대응)
-- **User Story** (열): 과업의 세부 스토리 (소기능에 대응)
-- **Release Slice**: MVP / v1.1 / v1.2 등 릴리스 단위로 수평 구분
+Rearrange features as a User Story Map to visualize the MVP scope:
+- **User Activity** (row): the user's big activity unit (corresponds to a Feature Group)
+- **User Task** (row): specific tasks within an activity (corresponds to a Feature)
+- **User Story** (column): detail stories of a task (corresponds to a Sub-feature)
+- **Release Slice**: horizontal division by release (MVP / v1.1 / v1.2)
 
-> **기존 서비스 개선 모드**: 기능 트리에서 기존 기능과 신규/변경 기능을 구분하여 표시한다 (예: `[NEW]`, `[CHANGED]`, `[AS-IS]`). User Story Map에서는 현재 릴리스에 포함될 변경사항만 MVP 슬라이스에 배치한다.
+> **Improve-existing-service mode**: in the feature tree, distinguish between existing and new/changed features (e.g., `[NEW]`, `[CHANGED]`, `[AS-IS]`). In the User Story Map, place only the changes included in the current release in the MVP slice.
 
-#### C. 기능 정의서 작성
+#### C. Author the feature definition
 
-`{OUTPUT_DIR}/feature-definition.md` 파일을 생성한다:
+Generate `{OUTPUT_DIR}/feature-definition.md`:
 
 ~~~markdown
-# 기능 정의서 — {기능명}
+# Feature definition — {feature name}
 
-## 1. 개요
+## 1. Overview
 
-| 항목 | 내용 |
-|------|------|
-| 기능 | {FEATURE_DESCRIPTION} |
-| 작성일 | {오늘 날짜} |
-| 기반 문서 | market-analysis.md, interview-report.md, requirements-definition.md, usecase-definition.md, ia-screen-design.md |
-| 대기능 수 | {N}개 |
-| 중기능 수 | {N}개 |
-| 소기능 수 | {N}개 |
+| Item | Content |
+|------|---------|
+| Feature | {FEATURE_DESCRIPTION} |
+| Authored | {today's date} |
+| Base documents | market-analysis.md, interview-report.md, requirements-definition.md, usecase-definition.md, ia-screen-design.md |
+| Feature Groups | {N} |
+| Features | {N} |
+| Sub-features | {N} |
 
-## 2. 기능 구조
+## 2. Feature structure
 
-### 2.1 기능 트리
+### 2.1 Feature tree
 
 ```
-{기능명}
-├── FG-01: {대기능 1}
-│   ├── FT-01-01: {중기능 1}
-│   │   ├── SF-01-01-01: {소기능 1}
-│   │   └── SF-01-01-02: {소기능 2}
-│   └── FT-01-02: {중기능 2}
-│       ├── SF-01-02-01: {소기능 1}
-│       └── SF-01-02-02: {소기능 2}
-├── FG-02: {대기능 2}
+{feature name}
+├── FG-01: {Feature Group 1}
+│   ├── FT-01-01: {Feature 1}
+│   │   ├── SF-01-01-01: {Sub-feature 1}
+│   │   └── SF-01-01-02: {Sub-feature 2}
+│   └── FT-01-02: {Feature 2}
+│       ├── SF-01-02-01: {Sub-feature 1}
+│       └── SF-01-02-02: {Sub-feature 2}
+├── FG-02: {Feature Group 2}
 │   └── ...
 ```
 
 ## 3. User Story Map
 
-### 3.1 스토리 맵 뷰
+### 3.1 Story-map view
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -1172,148 +1179,148 @@ HTML 기획화면 생성에 사용할 디자인 토큰과 디자인 톤을 결�
 └───────────────┴────────────────────┴────────────────────┴──────────┘
 ```
 
-### 3.2 릴리스 범위 정의
+### 3.2 Release-scope definition
 
-| 릴리스 | 포함 기능 | 목표 | 예상 소기능 수 |
-|--------|---------|------|-------------|
-| MVP (Release 1) | {핵심 기능 목록} | {최소 가치 제공} | {N}개 |
-| v1.1 (Release 2) | {추가 기능 목록} | {사용성 향상} | {N}개 |
-| v1.2 (Release 3) | {확장 기능 목록} | {고도화} | {N}개 |
+| Release | Included features | Goal | Expected sub-feature count |
+|---------|--------------------|------|-----------------------------|
+| MVP (Release 1) | {core features list} | {minimum value delivery} | {N} |
+| v1.1 (Release 2) | {additional features list} | {usability improvements} | {N} |
+| v1.2 (Release 3) | {extended features list} | {sophistication} | {N} |
 
-## 4. 기능 상세
+## 4. Feature details
 
-### FG-01: {대기능명}
+### FG-01: {Feature Group name}
 
-#### FT-01-01: {중기능명}
+#### FT-01-01: {Feature name}
 
-| 항목 | 내용 |
-|------|------|
-| 기능 ID | FT-01-01 |
-| 기능명 | {중기능명} |
-| 설명 | {기능 설명} |
-| 관련 요구사항 | FR-001, FR-002 |
-| 관련 유즈케이스 | UC-001 |
-| 관련 화면 | SCR-001, SCR-002 |
-| 관련 액터 | {액터 목록} |
-| 관련 KPI | {KPI명} |
-| 우선순위 | 필수 / 중요 / 선택 |
-| 구현 난이도 | 상 / 중 / 하 |
-| 릴리스 | MVP / v1.1 / v1.2 |
+| Item | Content |
+|------|---------|
+| Feature ID | FT-01-01 |
+| Name | {Feature name} |
+| Description | {feature description} |
+| Related requirements | FR-001, FR-002 |
+| Related use cases | UC-001 |
+| Related screens | SCR-001, SCR-002 |
+| Related actors | {actor list} |
+| Related KPI | {KPI} |
+| Priority | Must / Should / Could |
+| Implementation difficulty | high / medium / low |
+| Release | MVP / v1.1 / v1.2 |
 
-**소기능 목록:**
+**Sub-feature list:**
 
-| # | ID | 소기능명 | 설명 | 입력 | 출력 | 비즈니스 규칙/정책 | 우선순위 |
-|---|-----|---------|------|------|------|----------------|---------|
-| 1 | SF-01-01-01 | {소기능명} | {설명} | {입력 데이터} | {출력 데이터} | {비즈니스 규칙 및 서비스 정책} | {우선순위} |
-| 2 | SF-01-01-02 | {소기능명} | {설명} | {입력 데이터} | {출력 데이터} | {비즈니스 규칙 및 서비스 정책} | {우선순위} |
+| # | ID | Sub-feature | Description | Input | Output | Business rule / policy | Priority |
+|---|----|-------------|-------------|-------|--------|--------------------------|----------|
+| 1 | SF-01-01-01 | {sub-feature} | {description} | {input data} | {output data} | {business rule and service policy} | {priority} |
+| 2 | SF-01-01-02 | {sub-feature} | {description} | {input data} | {output data} | {business rule and service policy} | {priority} |
 
-(모든 대기능/중기능에 대해 반복)
+(repeat for every Feature Group / Feature)
 
-## 5. 서비스 정책
+## 5. Service policy
 
-### 5.1 서비스 운영 정책
+### 5.1 Service-operation policy
 
-| # | 정책 항목 | 정책 내용 | 관련 기능 | 비고 |
-|---|---------|---------|---------|------|
-| 1 | {정책 항목} | {구체적 정책 내용} | FT-{N} | {비고} |
-| 2 | {정책 항목} | {구체적 정책 내용} | FT-{N} | {비고} |
+| # | Policy item | Policy content | Related features | Notes |
+|---|-------------|----------------|------------------|-------|
+| 1 | {policy item} | {concrete policy} | FT-{N} | {notes} |
+| 2 | {policy item} | {concrete policy} | FT-{N} | {notes} |
 
-### 5.2 데이터 처리 정책
+### 5.2 Data-handling policy
 
-| # | 데이터 항목 | 보존 기간 | 처리 방식 | 관련 기능 |
-|---|-----------|---------|---------|---------|
-| 1 | {데이터} | {기간} | {암호화/마스킹/삭제 등} | FT-{N} |
+| # | Data item | Retention | Processing | Related features |
+|---|-----------|-----------|-------------|--------------------|
+| 1 | {data} | {duration} | {encryption / masking / deletion, etc.} | FT-{N} |
 
-### 5.3 예외 처리 정책
+### 5.3 Exception-handling policy
 
-| # | 예외 상황 | 처리 방식 | 사용자 안내 메시지 | 관련 기능 |
-|---|---------|---------|---------------|---------|
-| 1 | {예외 상황} | {처리 방식} | {메시지} | FT-{N} |
+| # | Exception | Handling | User-facing message | Related features |
+|---|-----------|----------|----------------------|--------------------|
+| 1 | {exception} | {handling} | {message} | FT-{N} |
 
-## 6. 기능 우선순위 매트릭스 (MoSCoW)
+## 6. Feature priority matrix (MoSCoW)
 
-| 우선순위 | 기능 ID | 기능명 | 근거 |
-|---------|---------|--------|------|
-| **Must** | FT-01-01 | {기능명} | {근거} |
-| **Should** | FT-01-02 | {기능명} | {근거} |
-| **Could** | FT-02-01 | {기능명} | {근거} |
-| **Won't** | - | - | {이번 범위에서 제외하는 이유} |
+| Priority | Feature ID | Feature | Rationale |
+|----------|------------|---------|-----------|
+| **Must** | FT-01-01 | {Feature} | {rationale} |
+| **Should** | FT-01-02 | {Feature} | {rationale} |
+| **Could** | FT-02-01 | {Feature} | {rationale} |
+| **Won't** | - | - | {reason for exclusion from this scope} |
 
-## 7. 리스크 분석
+## 7. Risk analysis
 
-### 7.1 리스크 레지스터
+### 7.1 Risk register
 
-| # | 리스크 ID | 리스크 항목 | 유형 | 발생 가능성 (1-5) | 영향도 (1-5) | 리스크 점수 | 대응 전략 |
-|---|---------|-----------|------|---------------|-----------|-----------|---------|
-| 1 | RSK-001 | {리스크 항목} | 기술/일정/리소스/외부 | {점수} | {점수} | {가능성×영향도} | {회피/전가/완화/수용} |
-| 2 | RSK-002 | {리스크 항목} | {유형} | {점수} | {점수} | {점수} | {전략} |
+| # | Risk ID | Risk | Type | Likelihood (1-5) | Impact (1-5) | Risk score | Response strategy |
+|---|---------|------|------|-------------------|---------------|------------|--------------------|
+| 1 | RSK-001 | {risk} | tech / schedule / resource / external | {score} | {score} | {likelihood × impact} | {avoid / transfer / mitigate / accept} |
+| 2 | RSK-002 | {risk} | {type} | {score} | {score} | {score} | {strategy} |
 
-### 7.2 대응 계획
+### 7.2 Response plan
 
-| 리스크 ID | 대응 전략 | 구체적 대응 방안 | 담당 | 트리거 조건 |
-|---------|---------|-------------|------|-----------|
-| RSK-001 | {전략} | {구체적 방안} | {담당} | {언제 대응을 시작할 것인가} |
+| Risk ID | Response strategy | Concrete actions | Owner | Trigger condition |
+|---------|--------------------|-------------------|-------|--------------------|
+| RSK-001 | {strategy} | {concrete actions} | {owner} | {when to start the response} |
 
-### 7.3 제약사항
+### 7.3 Constraints
 
-| # | 제약 유형 | 내용 | 영향 받는 기능 | 대안 |
-|---|---------|------|-------------|------|
-| 1 | 기술적 | {제약 내용} | FT-{N} | {대안} |
-| 2 | 비즈니스 | {제약 내용} | FT-{N} | {대안} |
+| # | Constraint type | Content | Affected features | Alternatives |
+|---|-----------------|---------|---------------------|---------------|
+| 1 | Technical | {constraint} | FT-{N} | {alternative} |
+| 2 | Business | {constraint} | FT-{N} | {alternative} |
 
-## 8. 기능 ↔ 요구사항 ↔ 유즈케이스 ↔ 화면 통합 추적 매트릭스
+## 8. Feature ↔ requirement ↔ use-case ↔ screen integrated traceability matrix
 
-| 기능 ID | 기능명 | 요구사항 | JTBD | 유즈케이스 | 화면 | 액터 | 페인포인트 | KPI | 우선순위 | 릴리스 |
-|---------|--------|---------|------|-----------|------|------|----------|-----|---------|-------|
-| FT-01-01 | {기능명} | FR-001 | J1 | UC-001 | SCR-001 | {액터} | PP-{N} | {KPI} | Must | MVP |
+| Feature ID | Feature | Requirement | JTBD | Use case | Screen | Actor | Pain point | KPI | Priority | Release |
+|------------|---------|--------------|------|----------|--------|-------|------------|-----|----------|---------|
+| FT-01-01 | {Feature} | FR-001 | J1 | UC-001 | SCR-001 | {actor} | PP-{N} | {KPI} | Must | MVP |
 | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... |
 ~~~
 
-> **중요**: 기능정의서를 작성한 후 사용자에게 "기능정의서가 생성되었습니다. 최종 완료 보고를 출력할까요?"라고 확인한다.
+> **Important**: after authoring the feature definition, confirm with the user: "The feature definition has been generated. Print the final completion report?"
 
 ---
 
-### Step 8: 완료 보고
+### Step 8: Completion report
 
-모든 산출물 생성이 완료되면 사용자에게 결과를 보고한다:
+When every deliverable is generated, report the result to the user:
 
 ```
-## 기획 산출물 생성 완료
+## Planning deliverables generation complete
 
-📁 산출물 위치: {OUTPUT_DIR}
+📁 Deliverables location: {OUTPUT_DIR}
 
-| # | 산출물 | 파일명 | 상태 |
-|---|--------|--------|------|
-| 1 | 시장/경쟁사분석서 | market-analysis.md | ✅ 완료 |
-| 2 | 인터뷰결과서 | interview-report.md | ✅ 완료 |
-| 3 | 요구사항정의서 | requirements-definition.md | ✅ 완료 |
-| 4 | 유즈케이스정의서 | usecase-definition.md | ✅ 완료 |
-| 5 | IA/화면설계서 | ia-screen-design.md | ✅ 완료 |
-| 6 | HTML 기획화면 인덱스 | index.html | ✅ 완료 |
-| 7 | 공통 스타일 | styles.css | ✅ 완료 |
-| 8 | 화면별 HTML 목업 | SCR-001.html ~ SCR-{N}.html | ✅ 완료 ({N}개) |
-| 9 | 기능정의서 | feature-definition.md | ✅ 완료 |
+| # | Deliverable | File | Status |
+|---|-------------|------|--------|
+| 1 | Market / competitor analysis | market-analysis.md | ✅ done |
+| 2 | Interview report | interview-report.md | ✅ done |
+| 3 | Requirements definition | requirements-definition.md | ✅ done |
+| 4 | Use-case definition | usecase-definition.md | ✅ done |
+| 5 | IA / screen-design report | ia-screen-design.md | ✅ done |
+| 6 | HTML mockup index | index.html | ✅ done |
+| 7 | Shared styles | styles.css | ✅ done |
+| 8 | Per-screen HTML mockups | SCR-001.html ~ SCR-{N}.html | ✅ done ({N}) |
+| 9 | Feature definition | feature-definition.md | ✅ done |
 
-▶︎ 브라우저에서 `{OUTPUT_DIR}/index.html`을 열어 HTML 기획화면을 확인하세요.
+▶︎ Open `{OUTPUT_DIR}/index.html` in your browser to view the HTML mockups.
 
-### 요약
-- 기획 모드: {신규 서비스 기획 / 기존 서비스 개선}
-- 분석 대상 액터: {N}개 유형, {N × 3}명 페르소나
-- 시장/경쟁사 분석: 경쟁사 {N}개, SWOT 전략 {N}개
-- 도출된 페인포인트: {N}개
-- 도출된 JTBD: {N}개
-- 채택된 아이디어: {N}개
-- 정의된 KPI: {N}개 (OKR {N}개)
-- 정의된 요구사항: 기능 {N}개 + 비기능 {N}개
-- 정의된 유즈케이스: {N}개
-- 고객 여정맵: {N}개
-- IA 메뉴 항목: {N}개
-- 와이어프레임: {N}개 화면 (markdown + HTML)
-- HTML 기획화면: {N}개 SCR-NNN.html (디자인 톤 {DESIGN_TONE} 적용, 반응형 + 다크모드)
-- 정의된 기능: 대기능 {N}개, 중기능 {N}개, 소기능 {N}개
-- User Story Map: MVP {N}개, v1.1 {N}개, v1.2 {N}개
-- 리스크: {N}개 식별
-- 서비스 정책: {N}개 정의
+### Summary
+- Planning mode: {new service planning / improve existing service}
+- Analyzed actors: {N} types, {N × 3} personas
+- Market / competitor analysis: {N} competitors, {N} SWOT strategies
+- Derived pain points: {N}
+- Derived JTBDs: {N}
+- Adopted ideas: {N}
+- Defined KPIs: {N} (OKRs: {N})
+- Defined requirements: functional {N} + non-functional {N}
+- Defined use cases: {N}
+- Customer journey maps: {N}
+- IA menu items: {N}
+- Wireframes: {N} screens (markdown + HTML)
+- HTML mockups: {N} SCR-NNN.html (design tone {DESIGN_TONE} applied, responsive + dark mode)
+- Defined features: Feature Groups {N}, Features {N}, Sub-features {N}
+- User Story Map: MVP {N}, v1.1 {N}, v1.2 {N}
+- Risks: {N} identified
+- Service policies: {N} defined
 
-다음 단계로 `/project-init`(프로젝트 초기 셋업) 또는 청사진(`docs/blueprints/{NNN}-{feature}/blueprint.md`) 작성을 진행할 수 있습니다. 디자이너/QA 협업이 필요한 장기 운영 기능이라면 `/handoff-publish`로 Screen ID 기반 협업 패키지를 추가 생성할 수 있습니다.
+Next, run `/project-init` (initial project setup) or author a blueprint (`docs/blueprints/{NNN}-{feature}/blueprint.md`). For long-running features that need designer/QA collaboration, you can additionally generate a Screen-ID-based collaboration package via `/handoff-publish`.
 ```

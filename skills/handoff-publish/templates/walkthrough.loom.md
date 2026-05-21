@@ -1,62 +1,62 @@
-# Walkthrough 영상 (Loom)
+# Walkthrough Video (Loom)
 
-**기능**: {{FEATURE_NAME}}
-**최종 수정**: {{TODAY}}
-
----
-
-## 녹화 정보
-
-- **녹화 담당**: {{OWNER}} (UX) — PDF §19.1 UX DoD
-- **길이**: 5~10분
-- **대상 시청자**: UI 디자이너 / 개발자 / QA / 신규 합류자
+**Feature**: {{FEATURE_NAME}}
+**Last updated**: {{TODAY}}
 
 ---
 
-## 녹화 내용 체크리스트
+## Recording info
 
-영상에 포함할 내용:
-
-- [ ] **Handoff 패키지 전체 투어** (1~2분)
-  - `0-README.md`부터 `11-decision-log.md`까지 각 파일의 역할 설명
-  - 디자이너/개발자/QA가 각각 어떤 파일을 중점적으로 봐야 하는지 안내
-
-- [ ] **핵심 화면 시나리오 데모** (3~5분)
-  - Top 3 시나리오 (`10-personas.md` 기준)에 대해 화면 흐름 설명
-  - Screen ID와 화면을 1:1로 매칭하며 시연
-
-- [ ] **상태/권한 분기 설명** (1~2분)
-  - LOADING / EMPTY / ERROR 상태가 실제로 언제 노출되는지
-  - 권한별 UI 차이가 있는 화면 하이라이트
-
-- [ ] **Edge Case 중 중요한 것** (1분)
-  - 예: 토큰 부족 / 비로그인 차단 / 채택 취소 시도 등
-
-- [ ] **Claude Code 활용 예시** (선택, 1분)
-  - Screen ID를 컨텍스트로 전달하는 프롬프트 예시 시연
+- **Recording owner**: {{OWNER}} (UX) — PDF §19.1 UX DoD
+- **Length**: 5–10 minutes
+- **Target audience**: UI designers / developers / QA / new joiners
 
 ---
 
-## Loom 링크
+## Recording content checklist
 
-<!-- 녹화 후 아래에 Loom URL을 붙여넣으세요 -->
+Items to include in the video:
 
-- **URL**: _(여기에 Loom URL 추가)_
-- **녹화일**: _(녹화 완료일)_
-- **만료 여부**: _(Loom 무료 플랜은 기본 30일 — 중요 영상은 Workspace 업그레이드 권장)_
+- [ ] **Full tour of the handoff package** (1–2 min)
+  - Explain the role of each file from `0-README.md` to `11-decision-log.md`
+  - Guide which files designers / developers / QA should focus on respectively
+
+- [ ] **Core screen scenario demo** (3–5 min)
+  - Walk through the screen flows for the Top 3 scenarios (per `10-personas.md`)
+  - Demonstrate by matching Screen IDs 1:1 with screens
+
+- [ ] **State / permission branching explanation** (1–2 min)
+  - When LOADING / EMPTY / ERROR states actually appear
+  - Highlight screens whose UI differs by permission
+
+- [ ] **Important edge cases** (1 min)
+  - e.g., insufficient tokens / unauthenticated block / cancel-after-adopt attempt
+
+- [ ] **Claude Code usage example** (optional, 1 min)
+  - Demonstrate a prompt example that passes a Screen ID as context
 
 ---
 
-## 대체 수단
+## Loom link
 
-영상 녹화가 어려운 경우:
+<!-- After recording, paste the Loom URL below -->
 
-1. **텍스트 워크스루**: 이 파일에 시나리오별 단계 설명 작성
-2. **Figma 프로토타입 링크**: 인터랙티브 플로우 대체
-3. **Storybook 링크**: 컴포넌트 단위 인터랙션 확인
-
-이 경우에도 **시청 후 질문이 없도록** 충분한 설명을 포함해야 합니다.
+- **URL**: _(add the Loom URL here)_
+- **Recording date**: _(date recording was completed)_
+- **Expiration**: _(Loom free plan defaults to 30 days — for important videos, upgrade Workspace is Recommended)_
 
 ---
 
-_Tip: Loom의 Chapters 기능으로 섹션을 구분하면 디자이너/개발자가 필요한 부분만 빠르게 탐색할 수 있습니다._
+## Alternatives
+
+If recording a video is difficult:
+
+1. **Text walkthrough**: write step-by-step descriptions per scenario in this file
+2. **Figma prototype link**: substitute for the interactive flow
+3. **Storybook link**: verify component-level interactions
+
+Even in these cases, include enough explanation so that **no follow-up questions remain after viewing**.
+
+---
+
+_Tip: Using Loom's Chapters feature to segment sections lets designers and developers jump to just the parts they need._

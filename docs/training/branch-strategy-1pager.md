@@ -1,268 +1,269 @@
-# 브랜치 관리 전략 1-페이저 (ASTRA)
+# Branch Management Strategy 1-Pager (ASTRA)
 
-> **대상**: Git/PR 워크플로우를 처음 다루는 신규 입사자
-> **핵심 메시지**: 외워야 할 것은 명령어가 아니라 **"어느 브랜치에서 출발해서 어디로 합치는가"**입니다.
+> **Audience**: new hires encountering Git/PR workflows for the first time
+> **Core message**: what you need to memorize is not commands but **"which branch do I start from, and where do I merge to"**.
 
 ---
 
-## 1. 전체 흐름 (한 장 도식)
+## 1. End-to-End Flow (single diagram)
 
 ```
-   ┌──────────────────────── 격리 작업 공간 ────────────────────┐
+   ┌──────────────────────── isolated working area ────────────┐
    │   feat/login                                                │
    │   ┌──────────────┐                                          │
-   │   │  내 작업     │ ← 여기서 코딩                            │
+   │   │  my work     │ ← code here                              │
    │   └──────┬───────┘                                          │
    └──────────┼──────────────────────────────────────────────────┘
               │  Pull Request
               ▼
-        ┌──────────┐   프로모션 (dev→staging)   ┌──────────┐   프로모션 (staging→main)   ┌──────────┐
-        │   dev    │ ─────────────────────────► │ staging  │ ──────────────────────────► │   main   │
-        │ (통합)   │                            │ (검증)   │                             │ (릴리스) │
-        └────▲─────┘                            └────▲─────┘                             └────┬─────┘
-             │                                       │                                        │
-             │             ◄── 캐스케이드 머지 (위→아래, 매 PR 자동) ──                       │
-             └───────────────────────────────────────┴────────────────────────────────────────┘
-                              main의 변경이 항상 staging, dev로 흘러내린다
+        ┌──────────┐   promotion (dev→staging)   ┌──────────┐   promotion (staging→main)   ┌──────────┐
+        │   dev    │ ──────────────────────────► │ staging  │ ───────────────────────────► │   main   │
+        │ (integ.) │                             │ (verify) │                              │ (release)│
+        └────▲─────┘                             └────▲─────┘                              └────┬─────┘
+             │                                        │                                         │
+             │             ◄── cascade merge (top→bottom, automatic on every PR) ──             │
+             └────────────────────────────────────────┴─────────────────────────────────────────┘
+                              changes on main always flow down to staging and dev
 ```
 
-**4-tier 흐름**: `feature → dev → staging → main`. 위에서 아래로 코드가 합쳐지고, **위에서 변경이 생기면 즉시 아래로도 흘러내려야** 합니다(캐스케이드).
+**4-tier flow**: `feature → dev → staging → main`. Code merges from top to bottom, and **whenever a change appears upstream it must immediately flow downstream** (cascade).
 
-각 브랜치의 역할:
+Role of each branch:
 
-| 브랜치 | 역할 | 어떻게 변경되나 |
+| Branch | Role | How it changes |
 |--------|------|----------------|
-| `feat/*`, `fix/*`, `docs/*`, `refactor/*`, `chore/*` | 개별 작업 | 각자 직접 커밋 |
-| `dev` | 모든 작업이 모이는 통합 라인 | PR 머지로만 |
-| `staging` | 릴리스 검증 라인 | 프로모션으로만 |
-| `main` | 운영 릴리스 | 프로모션으로만 |
+| `feat/*`, `fix/*`, `docs/*`, `refactor/*`, `chore/*` | Individual work | Committed to directly by the author |
+| `dev` | Integration line where all work gathers | Via PR merges only |
+| `staging` | Release verification line | Via promotion only |
+| `main` | Production release | Via promotion only |
 
 ---
 
-## 2. 공유 브랜치 vs 작업 브랜치 — 여기서부터 다릅니다
+## 2. Shared Branches vs Work Branches — this is the key split
 
-| 구분 | 브랜치 | 직접 커밋 | 만드는 시점 |
-|------|--------|----------|-------------|
-| **공유 브랜치** | `main`, `staging`, `dev`, `master` | **금지** (PR만 받음) | 저장소 초기에 한 번 |
-| **작업 브랜치** | `feat/*`, `fix/*`, `docs/*`, `refactor/*`, `chore/*` | OK (본인 브랜치) | 작업 시작 시마다 |
+| Category | Branch | Direct commit | When created |
+|----------|--------|---------------|--------------|
+| **Shared branch** | `main`, `staging`, `dev`, `master` | **Forbidden** (PR only) | Once, at repository init |
+| **Work branch** | `feat/*`, `fix/*`, `docs/*`, `refactor/*`, `chore/*` | OK (your own branch) | Every time a new piece of work starts |
 
-### 작업 브랜치 네이밍 — 블루프린트·스프린트와 한 단어로 이어붙입니다
+### Work Branch Naming — tied to the blueprint and sprint with the same single word
 
-ASTRA는 **블루프린트 디렉토리명·스프린트 디렉토리명·작업 브랜치명**을 동일한 `{feature-name}` 한 단어로 연결합니다. PR을 받았을 때 "어느 블루프린트의 어느 스프린트 작업인지"가 한눈에 보이도록 하기 위함입니다.
+ASTRA links the **blueprint directory name, sprint directory name, and work branch name** with the same `{feature-name}` single token. The purpose is that, given a PR, you can instantly tell "which sprint of which blueprint is this work for".
 
-| 산출물 | 경로/이름 형식 | 실제 예시 |
-|--------|----------------|-----------|
-| 블루프린트 | `docs/blueprints/{NNN}-{feature-name}/blueprint.md` | `docs/blueprints/003-payment/blueprint.md` |
-| 스프린트 | `docs/sprints/sprint-{N}-{feature-name}/` | `docs/sprints/sprint-2-payment/` |
-| 작업 브랜치 | `{prefix}/{feature-name}` | `feat/payment`, `fix/payment-overflow` |
+| Deliverable | Path/Name format | Concrete example |
+|-------------|------------------|------------------|
+| Blueprint | `docs/blueprints/{NNN}-{feature-name}/blueprint.md` | `docs/blueprints/003-payment/blueprint.md` |
+| Sprint | `docs/sprints/sprint-{N}-{feature-name}/` | `docs/sprints/sprint-2-payment/` |
+| Work branch | `{prefix}/{feature-name}` | `feat/payment`, `fix/payment-overflow` |
 
-**규칙 4가지**:
+**Four rules**:
 
-1. **`{feature-name}`**: kebab-case, 영문 소문자 + 하이픈만 (예: `user-auth`, `payment-checkout`). 한국어·대문자·언더스코어 금지.
-2. **`{NNN}`**: 블루프린트 번호. 3자리 zero-padded (`001`, `002`, `003`...). 저장소에서 가장 큰 번호 + 1.
-3. **`{N}`**: 스프린트 순번 (`1`, `2`, `3`...). zero-padding 없음.
-4. **`{prefix}`**: 변경 성격에 따라 선택.
+1. **`{feature-name}`**: kebab-case, lowercase Latin + hyphens only (e.g., `user-auth`, `payment-checkout`). No Korean, uppercase, or underscores.
+2. **`{NNN}`**: blueprint number. 3-digit zero-padded (`001`, `002`, `003`...). The largest existing number in the repository + 1.
+3. **`{N}`**: sprint sequence (`1`, `2`, `3`...). No zero-padding.
+4. **`{prefix}`**: chosen by the nature of the change.
 
-| Prefix | 언제 쓰나 | 예시 |
-|--------|-----------|------|
-| `feat/` | 새 기능 추가 — 블루프린트 기반 작업의 기본값 | `feat/payment` |
-| `fix/` | 버그 수정 | `fix/login-error`, `fix/checkout-crash` |
-| `docs/` | 문서만 변경 (코드 무수정) | `docs/onboarding-guide` |
-| `refactor/` | 동작 불변, 구조 개선 | `refactor/payment-module` |
-| `chore/` | 빌드·설정·도구 (앱 동작 무관) | `chore/eslint-bump` |
+| Prefix | When to use | Example |
+|--------|-------------|---------|
+| `feat/` | Adding a new feature — default for blueprint-based work | `feat/payment` |
+| `fix/` | Bug fix | `fix/login-error`, `fix/checkout-crash` |
+| `docs/` | Documentation only (no code change) | `docs/onboarding-guide` |
+| `refactor/` | Behavior-preserving structural improvement | `refactor/payment-module` |
+| `chore/` | Build/config/tooling (unrelated to app behavior) | `chore/eslint-bump` |
 
-**한 줄 매칭 예시**: `docs/blueprints/003-payment/blueprint.md` (블루프린트) → `docs/sprints/sprint-2-payment/` (스프린트) → `feat/payment` (브랜치) → PR title `feat: 결제 기능 추가`.
+**One-line matching example**: `docs/blueprints/003-payment/blueprint.md` (blueprint) → `docs/sprints/sprint-2-payment/` (sprint) → `feat/payment` (branch) → PR title `feat: add payment feature`.
 
-> **자동 결정**: 작업 브랜치명은 표준 도구가 변경 성격을 분석해 자동으로 결정합니다(예: 새 파일 추가 → `feat/`, 기존 파일 수정+테스트 → `fix/`). 직접 만들 필요 없습니다.
+> **Auto-decision**: the work branch name is determined automatically by the standard tool analyzing the nature of the change (e.g., new file added → `feat/`, existing file modified + test → `fix/`). You do not need to make it yourself.
 
-### 작업 공간 격리 — 같은 저장소에서 여러 Claude Code 세션을 동시에
+### Working-Area Isolation — multiple Claude Code sessions concurrently in the same repository
 
-한 컴퓨터의 같은 로컬 저장소 안에서 **여러 Claude Code 세션을 동시에 띄워** 서로 다른 작업을 병렬로 진행할 수 있습니다. 평범한 `git checkout`만으로는 이게 불가능합니다 — 세션 A가 `feat/payment`로 체크아웃한 순간 세션 B의 작업 디렉토리 파일이 모두 바뀌어 버려서, B가 진행 중이던 코드가 사라진 것처럼 보이게 됩니다.
+In the same local repository on one computer, you can **run multiple Claude Code sessions in parallel** to work on different things. A plain `git checkout` cannot do this — the moment session A checks out `feat/payment`, all files in session B's working directory change, and session B's in-progress code appears to vanish.
 
-ASTRA는 작업 브랜치마다 **OS-수준 별도 디렉토리**(git worktree)를 둬서 이를 해결합니다:
+ASTRA solves this by placing **a separate OS-level directory** (git worktree) for each work branch:
 
 ```
-저장소 루트/                          ← 메인 worktree: 항상 dev/staging/main 유지
-├── .astra-worktrees/                ← 작업 브랜치별 격리 디렉토리
-│   ├── feat-payment/                ← Claude 세션 A 작업 중 (feat/payment)
-│   └── fix-login-error/             ← Claude 세션 B 작업 중 (fix/login-error)
+repo root/                            ← main worktree: always on dev/staging/main
+├── .astra-worktrees/                ← per-work-branch isolated directories
+│   ├── feat-payment/                ← Claude session A working here (feat/payment)
+│   └── fix-login-error/             ← Claude session B working here (fix/login-error)
 ├── src/
 └── ...
 ```
 
-각 디렉토리는 독립된 작업 트리이므로, A 세션이 결제 코드를 편집하는 동안 B 세션이 로그인 코드를 편집해도 **서로의 파일이 영향받지 않습니다**.
+Each directory is an independent working tree, so while session A edits payment code, session B can edit login code and **neither's files affect the other**.
 
-**핵심 동작 4가지**:
+**Four core behaviors**:
 
-1. **메인 worktree는 공유 브랜치만 유지** — 저장소 루트는 항상 `dev`/`staging`/`main`/`master` 중 하나에 머무름. 캐스케이드 머지·프로모션은 여기서.
-2. **격리 디렉토리 이름 규칙** — 브랜치명의 `/`를 `-`로 치환. 예: `feat/payment` → `.astra-worktrees/feat-payment/`.
-3. **자동 생성·자동 정리** — 새 작업 브랜치를 만들 때 worktree도 함께 생성, PR 머지 완료 후 자동 제거 + 메인 worktree는 `dev`로 복귀.
-4. **중단되면 그대로 남음** — 충돌·검토 대기 등으로 워크플로우가 중단되면 worktree는 자동 정리되지 않고 그대로 남아 있어서, 나중에 같은 위치에서 이어 작업할 수 있음.
+1. **Main worktree holds only shared branches** — the repo root always stays on one of `dev`/`staging`/`main`/`master`. Cascade merges and promotions happen here.
+2. **Isolated directory naming rule** — replace `/` in the branch name with `-`. Example: `feat/payment` → `.astra-worktrees/feat-payment/`.
+3. **Auto-create, auto-clean** — when you start a new work branch, the worktree is also created; after a PR is merged it is automatically removed and the main worktree returns to `dev`.
+4. **Left intact if interrupted** — if the workflow is halted (conflicts, review pending), the worktree is not automatically cleaned and stays put so you can resume in the same place later.
 
-> **결과**: 한 사람이 Claude 세션 두세 개를 열어 결제·로그인·문서 작업을 동시에 진행해도 충돌 없이 병행됩니다.
+> **Result**: one person can open two or three Claude sessions and work on payment, login, and docs simultaneously without conflicts.
 
-### 절대 하지 말 것
+### Never Do
 
-- ❌ `main`/`staging`/`dev`에 직접 `git commit` — 반드시 PR로
-- ❌ `git checkout main` 후 거기서 코딩 — 작업 브랜치를 먼저 분기할 것
-- ❌ GitHub 웹에서 PR 직접 생성 — 표준 도구를 거쳐 캐스케이드·검증이 자동으로 걸리도록
-- ❌ `.astra-worktrees/`를 손으로 만들거나 지우기 — 자동 관리 영역
-- ❌ 브랜치명에 한국어·대문자·언더스코어 사용 (`feat/결제`, `feat/Payment_Module` 금지)
-- ❌ 블루프린트와 다른 `{feature-name}`으로 브랜치 만들기 — 추적 끊김
-
----
-
-## 3. 캐스케이드 머지 — 모든 PR이 따르는 불변식
-
-PR을 생성하기 **전에** 다음 동기화가 항상 일어나야 합니다:
-
-```
-   원격 fetch
-        │
-        ▼
-   main을 staging으로 머지   ──► staging에 push
-        │
-        ▼
-   staging을 dev로 머지      ──► dev에 push
-        │
-        ▼
-   dev를 내 작업 브랜치로 머지 ──► 이제 PR 안전하게 생성 가능
-```
-
-### 왜 매번 이렇게 하나?
-
-내 `feat/login` 브랜치가 일주일 전 `dev`에서 갈라져 나왔다면, 그 사이에 `dev`에는 다른 동료의 코드가 잔뜩 들어왔을 것입니다. 그 상태로 PR을 올리면:
-
-1. 충돌이 PR에서 폭발 → 리뷰 흐름이 끊김
-2. CI가 옛날 `dev` 기준으로 통과해도 머지 후 깨질 수 있음
-3. `main`에 핫픽스가 들어갔는데 `dev`에 반영되지 않으면 다음 릴리스에서 역행
-
-**캐스케이드는 "위에서 흘러내린 변경이 모든 하위 브랜치에 항상 있다"는 불변식을 매 PR마다 강제**합니다. 사람이 잊지 않게 도구가 매번 합니다.
-
-### 충돌이 나면?
-
-캐스케이드 중 충돌이 발생하면 **자동 해결하지 않습니다** — 작업자가 직접 해결한 뒤 다시 진행합니다. 충돌은 코드의 의도를 사람만 알 수 있기 때문입니다.
+- ❌ Direct `git commit` to `main`/`staging`/`dev` — always via PR
+- ❌ `git checkout main` and coding there — branch off into a work branch first
+- ❌ Creating a PR directly on the GitHub web — go through the standard tool so cascade and verification are wired automatically
+- ❌ Creating or deleting `.astra-worktrees/` by hand — automatically managed
+- ❌ Using Korean, uppercase, or underscores in branch names (forbidden: `feat/결제`, `feat/Payment_Module`)
+- ❌ Creating a branch with a `{feature-name}` different from the blueprint's — traceability is lost
 
 ---
 
-## 4. 버그픽스(`fix/*`) — 분기 원본이 다르면 머지 경로도 다릅니다
+## 3. Cascade Merge — the invariant every PR follows
 
-같은 `fix/*` 브랜치라도 **어디서 분기했는가**에 따라 테스트 환경과 머지 대상이 달라집니다. 기준은 "**버그가 어느 환경에서 발견되었는가**"입니다.
-
-| 상황 | 분기 원본 | 테스트 환경 | 머지 대상 |
-|------|-----------|-------------|-----------|
-| 개발 통합 단계에서 버그 발견 | `dev` | `dev.fect.vn` | `dev` |
-| 릴리스 검증/운영에서 버그 발견 | `staging` | `staging.fect.vn` | `staging` → `dev` → `main` (3곳 모두) |
-
-### 환경 도메인 = 분기 원본 (헷갈리면 이 표)
-
-| 버그를 본 곳 | 어디서 분기? | 어디서 확인? |
-|--------------|--------------|--------------|
-| 로컬 / `dev.fect.vn` | `dev` | `dev.fect.vn` |
-| `staging.fect.vn` / 운영(`main`) | `staging` | `staging.fect.vn` |
-
-> **규칙**: 발견한 환경의 브랜치에서 분기, 같은 환경에서 검증. 그래야 "내가 본 그 상태"에서 고친다는 보장이 생깁니다.
-
-### Case A — `dev` 분기 (일반 버그)
+The following sync must always happen **before** a PR is created:
 
 ```
-   dev ──► fix/login-error ──► dev.fect.vn 검증 ──► PR ──► dev에 머지
+   fetch remote
+        │
+        ▼
+   merge main into staging   ──► push staging
+        │
+        ▼
+   merge staging into dev    ──► push dev
+        │
+        ▼
+   merge dev into my work    ──► PR can now be created safely
+   branch
 ```
 
-QA·개발자가 통합 환경에서 발견한 일반 버그. 평소 기능 개발과 동일한 흐름입니다.
+### Why is this done every time?
 
-### Case B — `staging` 분기 (릴리스 직전/직후 버그)
+If my `feat/login` branched off `dev` a week ago, plenty of teammates' code has since landed on `dev`. If you raise a PR in that state:
+
+1. Conflicts explode on the PR → review flow breaks
+2. CI may pass against the old `dev` but break after merge
+3. If a hotfix landed on `main` but is not reflected in `dev`, the next release regresses
+
+**Cascade enforces the invariant "all changes from upstream are always reflected downstream" on every PR**. The tool does it every time so people don't forget.
+
+### What if there's a conflict?
+
+When a conflict occurs during cascade, **it is not auto-resolved** — the author resolves it manually, then proceeds. Only a human knows the intent behind code.
+
+---
+
+## 4. Bug Fixes (`fix/*`) — different origin, different merge route
+
+Even with the same `fix/*` branch, **where it was branched from** changes test environment and merge target. The criterion is "**in which environment was the bug observed**".
+
+| Situation | Branch origin | Test environment | Merge target |
+|-----------|---------------|------------------|--------------|
+| Bug found in development integration | `dev` | `dev.fect.vn` | `dev` |
+| Bug found in release verification / production | `staging` | `staging.fect.vn` | `staging` → `dev` → `main` (all three) |
+
+### Environment domain = branch origin (when confused, use this table)
+
+| Where you saw the bug | Branch from | Verify in |
+|-----------------------|-------------|-----------|
+| Local / `dev.fect.vn` | `dev` | `dev.fect.vn` |
+| `staging.fect.vn` / production (`main`) | `staging` | `staging.fect.vn` |
+
+> **Rule**: branch off the branch of the environment where you saw the bug, and verify in the same environment. That gives the guarantee that "the state I saw" is what gets fixed.
+
+### Case A — `dev` branch (typical bug)
 
 ```
-   staging ──► fix/checkout-crash ──► staging.fect.vn 검증
+   dev ──► fix/login-error ──► verify on dev.fect.vn ──► PR ──► merge to dev
+```
+
+A typical bug found by QA/dev in the integration environment. Same flow as normal feature development.
+
+### Case B — `staging` branch (just-before/after-release bug)
+
+```
+   staging ──► fix/checkout-crash ──► verify on staging.fect.vn
                                               │
                                               ▼
-                                        ┌──► staging  (현재 릴리스 후보 수정)
-                                        ├──► main     (운영 반영 — 긴급 릴리스)
-                                        └──► dev      (다음 스프린트 역행 방지)
+                                        ┌──► staging  (fix the current release candidate)
+                                        ├──► main     (reflect into production — emergency release)
+                                        └──► dev      (prevent regression in the next sprint)
 ```
 
-**왜 3곳 모두에 머지하나?**
+**Why merge to all three?**
 
-`staging`은 곧 `main`이 됩니다. 그래서 `staging`에만 고치면:
+`staging` is about to become `main`. So if you fix only on `staging`:
 
-1. **`main`에 안 가면** → 운영은 여전히 버그 상태
-2. **`dev`에 안 가면** → 다음 스프린트에서 새 코드가 `dev`→`staging`으로 흐르며 같은 버그가 부활(역행)
+1. **If it never reaches `main`** → production stays buggy
+2. **If it never reaches `dev`** → in the next sprint, new code flows `dev`→`staging` and the same bug returns (regression)
 
-즉 Case B는 "**고친 곳 + 위(main) + 아래(dev)**" 세 방향으로 동시에 흘려야 안전합니다. 빠뜨리면 며칠 뒤 같은 버그가 다시 올라옵니다.
+In other words, Case B must be flowed in "the fixed place + upstream (main) + downstream (dev)" three directions at once to be safe. Miss any and the same bug reappears days later.
 
-### 절대 하지 말 것
+### Never Do
 
-- ❌ `staging`에서 봤는데 `dev`에서 분기 — 환경 차이로 재현 안 될 수 있음
-- ❌ Case B에서 `staging`에만 머지하고 `main`/`dev` 백포팅 누락 — 위 "역행" 발생
-- ❌ Case B를 Case A처럼 `dev`만 거쳐 보내기 — `staging`→`main` 라인이 그동안 노출 상태
-
----
-
-## 5. 프로모션 시점·권한
-
-> **⚠️ 회사 고유 규정 — 직접 채워 넣으세요**
-
-`dev → staging`, `staging → main` 전이는 일반 머지가 아니라 **프로모션(promote)**입니다. 누가, 언제, 무엇을 확인하고 진행하는지가 팀 규정으로 정해져 있어야 합니다.
-
-| 전이 | 누가 진행하나? | 언제? | 사전 확인 사항 |
-|------|---------------|-------|---------------|
-| `dev → staging` | TODO: (예: 스프린트 리드) | TODO: (예: 스프린트 종료 목요일 17시) | TODO: (예: dev에서 E2E 통과, QA 사인오프) |
-| `staging → main` | TODO: (예: 릴리스 매니저) | TODO: (예: 격주 화요일 10시) | TODO: (예: staging에서 48시간 무이슈, 릴리스 노트 작성) |
-
-### 버전 범프 (SemVer)
-
-`staging → main` 프로모션 시 릴리스 버전이 올라갑니다.
-
-- `patch`: `1.2.3 → 1.2.4` — 버그 수정만
-- `minor`: `1.2.3 → 1.3.0` — 기능 추가
-- `major`: `1.2.3 → 2.0.0` — 호환성 깨짐
-
-> **결정 기준**: 기존 사용자의 코드가 깨지면 major, 새 기능이면 minor, 그 외는 patch.
+- ❌ Saw the bug in `staging` but branched from `dev` — may not reproduce due to environment differences
+- ❌ In Case B, merge only to `staging` and skip the `main`/`dev` backports — causes the "regression" above
+- ❌ Treating Case B like Case A by going through `dev` only — the `staging`→`main` line stays exposed in the meantime
 
 ---
 
-## 6. 한 줄 의사결정 트리
+## 5. Promotion Timing & Authority
+
+> **⚠️ Company-specific policy — fill in directly**
+
+`dev → staging`, `staging → main` transitions are not ordinary merges but **promotions**. Who runs them, when, and what is checked must be defined as a team policy.
+
+| Transition | Who runs it? | When? | Pre-check items |
+|------------|--------------|-------|-----------------|
+| `dev → staging` | TODO: (e.g., sprint lead) | TODO: (e.g., 17:00 Thursday at sprint end) | TODO: (e.g., E2E pass on dev, QA sign-off) |
+| `staging → main` | TODO: (e.g., release manager) | TODO: (e.g., 10:00 every other Tuesday) | TODO: (e.g., 48 hours of issue-free time on staging, release notes drafted) |
+
+### Version Bump (SemVer)
+
+At `staging → main` promotion, the release version is bumped.
+
+- `patch`: `1.2.3 → 1.2.4` — bug fixes only
+- `minor`: `1.2.3 → 1.3.0` — new features added
+- `major`: `1.2.3 → 2.0.0` — compatibility broken
+
+> **Decision criterion**: if existing users' code breaks it's major; if it's a new feature it's minor; otherwise it's patch.
+
+---
+
+## 6. One-Line Decision Tree
 
 ```
-지금 무엇을 하려는가?
-├── 새 기능을 만들고 싶다                →  dev에서 feat/* 분기
-├── dev 환경 버그를 고친다                →  dev에서 fix/* 분기, dev.fect.vn 검증, dev에 머지
-├── staging/운영 환경 버그를 고친다       →  staging에서 fix/* 분기, staging.fect.vn 검증,
-│                                              staging + main + dev 3곳 모두 머지
-├── 스프린트 종료, 릴리스 검증 시작       →  프로모션 dev → staging
-└── 릴리스 (운영 배포)                    →  프로모션 staging → main + SemVer 범프
+What are you about to do?
+├── add a new feature                            →  branch feat/* off dev
+├── fix a bug found on dev                       →  branch fix/* off dev, verify on dev.fect.vn, merge to dev
+├── fix a bug found on staging/production        →  branch fix/* off staging, verify on staging.fect.vn,
+│                                                     merge to all three of staging + main + dev
+├── sprint ends, start release verification      →  promote dev → staging
+└── release (production deploy)                  →  promote staging → main + SemVer bump
 ```
 
 ---
 
-## 7. 자주 묻는 질문 (FAQ)
+## 7. Frequently Asked Questions (FAQ)
 
-**Q. 작업 중 다른 일이 끼어들면?**
-A. 현재 작업 브랜치는 그대로 두고, 새 작업 브랜치를 따로 분기해 진행합니다. 작업 공간이 격리되어 있어 영향이 없습니다.
+**Q. What if another piece of work interrupts the current one?**
+A. Leave the current work branch as-is and branch off a new work branch to proceed. Working areas are isolated, so there is no interference.
 
-**Q. PR 리뷰에서 Critical 이슈가 나오면?**
-A. **Critical 이슈가 1건이라도 남으면 머지 차단**입니다. 수정 후 같은 PR을 갱신합니다.
+**Q. What if a PR review surfaces Critical issues?**
+A. **Any single remaining Critical issue blocks merge**. Fix and update the same PR.
 
-**Q. `git push --force` 써도 되나요?**
-A. 공유 브랜치(`main`/`staging`/`dev`)에는 **절대 금지**. 작업 브랜치는 본인 PR에 한해 가능하지만, 일반적으로 필요 없습니다.
+**Q. Can I use `git push --force`?**
+A. **Strictly forbidden** on shared branches (`main`/`staging`/`dev`). Allowed on your own work branch for your own PR, but normally unnecessary.
 
-**Q. 어디서 분기해야 할지 헷갈리면?**
-A. **버그를 본 환경의 브랜치에서 분기**한다는 규칙을 외우세요. `dev.fect.vn`에서 봤으면 `dev`, `staging.fect.vn`에서 봤으면 `staging`.
+**Q. Confused about where to branch from?**
+A. Memorize the rule: **branch off the branch of the environment where you saw the bug**. If on `dev.fect.vn`, use `dev`; if on `staging.fect.vn`, use `staging`.
 
-**Q. 캐스케이드 충돌이 너무 자주 납니다.**
-A. 작업 브랜치 수명을 짧게 가져가세요. 1주 이상 안 합치는 브랜치는 위험합니다. 작게 자주 합치는 것이 정답입니다.
-
----
-
-## 다음 단계 (교육 후)
-
-1. 신입 입사 첫날: 이 문서 인쇄해서 책상 옆에 비치
-2. 첫 PR은 멘토와 함께 단계별로 확인 — **어디서 분기했고 어디로 합치는지**에 집중
-3. 1주차 끝에 `dev → staging` 프로모션을 옆에서 관찰
-4. 첫 `staging` 분기 버그가 생기면 멘토와 함께 §4 Case B 흐름 실습
-5. 막힐 때마다 이 문서로 돌아오기 — **외울 것은 명령어가 아니라 흐름입니다**
+**Q. Cascade conflicts happen too often.**
+A. Keep work branches short-lived. Branches that go unmerged for over a week are risky. **Small, frequent merges are the right answer**.
 
 ---
 
-*Last updated: TODO (날짜 채우기) | Maintainer: TODO (담당자 채우기)*
+## Next Steps (post-training)
+
+1. Day 1 as a new hire: print this document and keep it by your desk
+2. First PR: walk through it step by step with a mentor — focus on **where it branched from and where it merges to**
+3. End of week 1: observe a `dev → staging` promotion alongside someone
+4. When your first `staging`-branched bug occurs: practice the §4 Case B flow with a mentor
+5. Return to this document whenever you get stuck — **what to memorize is the flow, not the commands**
+
+---
+
+*Last updated: TODO (fill in date) | Maintainer: TODO (fill in name)*

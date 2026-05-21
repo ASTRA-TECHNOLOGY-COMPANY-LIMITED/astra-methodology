@@ -1,131 +1,133 @@
-# 매뉴얼 작성 전문가 가이드
+# Manual Authoring Expert Guide
 
-온라인 서비스 매뉴얼을 작성할 때 적용해야 하는 글쓰기 원칙과 스타일 규칙을 정의한다. Google, Apple, Microsoft의 문서화 스타일 가이드와 UX Writing 원칙을 기반으로 한다.
+Defines the writing principles and style rules to apply when authoring an online service manual. Based on the documentation style guides of Google, Apple, and Microsoft and on UX Writing principles.
 
-## 1. 3대 핵심 원칙
+## 1. Three Core Principles
 
-### 독자를 알라 (Know Your Audience)
+### Know Your Audience
 
-- 매뉴얼의 주요 독자는 **비기술 사용자**이다
-- 개발자가 아닌 서비스 사용자의 관점에서 작성한다
-- 독자가 이미 알고 있다고 가정하지 않는다
-- 사내 전문 용어, 약어, 속어를 사용하지 않는다
+- The primary audience of the manual is **non-technical users**
+- Write from the perspective of a service user, not a developer
+- Do not assume the reader already knows
+- Do not use internal jargon, acronyms, or slang
 
-### 명확성 우선 (Clarity First)
+### Clarity First
 
-- Microsoft: "Make every word matter" — 모든 단어가 목적을 가진다
-- 한 문장에 하나의 정보만 전달한다
-- 짧은 문장을 사용한다 (한국어 기준 40자 이내 권장)
-- 모호한 표현 대신 구체적인 지시를 사용한다
+- Microsoft: "Make every word matter" — every word has a purpose
+- Convey one piece of information per sentence
+- Use short sentences (recommended within 40 characters for Korean)
+- Use concrete instructions instead of ambiguous expressions
 
-### 일관된 톤 & 보이스 (Consistent Tone)
+### Consistent Tone & Voice
 
-- 전문적이면서도 친근한 대화체
-- 매뉴얼 전체에서 동일한 톤을 유지한다
-- 브랜드 아이덴티티와 일치하는 어조를 사용한다
+- A professional yet friendly conversational tone
+- Maintain the same tone throughout the entire manual
+- Use a tone that aligns with the brand identity
 
-## 2. 글쓰기 스타일 규칙
+## 2. Writing Style Rules
 
-### DO (필수 적용)
+### DO (mandatory)
 
-| 규칙 | 예시 (O) | 예시 (X) |
-|------|---------|---------|
-| 2인칭 존칭 사용 | "로그인 버튼을 클릭하세요" | "로그인 버튼을 클릭한다" |
-| 능동태 사용 | "설정을 변경하세요" | "설정이 변경되어야 합니다" |
-| 평이한 언어 | "자동으로 로그인이 유지됩니다" | "인증 토큰이 자동 갱신됩니다" |
-| 구체적 지시 | "'저장' 버튼을 클릭하세요" | "저장해 주세요" |
-| 짧은 문장 | 한 문장에 하나의 동작 | 여러 동작을 한 문장에 나열 |
-| UI 요소 강조 | **굵은 글씨**로 UI 레이블 표시 | 따옴표나 일반 텍스트로 표시 |
-| 결과 설명 | "클릭하면 대시보드로 이동합니다" | 단순히 "클릭하세요"로 끝냄 |
+> The Korean examples below illustrate Korean-language polite-imperative vs. declarative endings (e.g., `클릭하세요` vs. `클릭한다`); for English manuals, follow the rule by using the imperative ("Click the Save button.") rather than third-person declarative ("The user clicks the Save button.").
 
-### DON'T (금지)
+| Rule | Example (O) | Example (X) |
+|------|-------------|-------------|
+| Use second-person polite form | "로그인 버튼을 클릭하세요" | "로그인 버튼을 클릭한다" |
+| Use active voice | "설정을 변경하세요" | "설정이 변경되어야 합니다" |
+| Use plain language | "자동으로 로그인이 유지됩니다" | "인증 토큰이 자동 갱신됩니다" |
+| Concrete instruction | "'저장' 버튼을 클릭하세요" | "저장해 주세요" |
+| Short sentences | One action per sentence | Multiple actions chained in one sentence |
+| Emphasize UI elements | UI labels in **bold** | Quotation marks or plain text |
+| Explain the result | "클릭하면 대시보드로 이동합니다" | Just ending with "클릭하세요" |
 
-- 사내 전문 용어, 약어, 속어 사용 금지
-- 사용자가 알고 있다고 가정하지 말 것
-- 긴 텍스트 벽(wall of text) 금지 — 반드시 단계로 분리
-- 3인칭 수동태 사용 지양
-- "쉽게", "간단히" 등 주관적 표현 금지
-- 미출시 기능 언급 금지
-- 불필요한 기술 용어 금지 (API, 토큰, 세션 등)
+### DON'T
 
-### 영어 매뉴얼 추가 규칙
+- Do not use internal jargon, acronyms, or slang
+- Do not assume the user knows
+- No "wall of text" — always split into steps
+- Avoid third-person passive voice
+- No subjective expressions like "easy" or "simple"
+- Do not mention unreleased features
+- No unnecessary technical terms (API, token, session, etc.)
 
-- "you" 직접 호칭 사용 ("Click the Save button." O)
-- 현재 시제 사용 ("The page displays..." O vs "The page will display..." X)
-- American English spelling 기준
-- 명사 나열 시 Oxford comma 사용
+### Additional rules for English manuals
 
-## 3. 구조화 규칙
+- Address the user directly with "you" ("Click the Save button." O)
+- Use the present tense ("The page displays..." O vs. "The page will display..." X)
+- Follow American English spelling
+- Use the Oxford comma when listing nouns
 
-### 챕터 구조
+## 3. Structural Rules
+
+### Chapter structure
 
 ```
-챕터 제목 (H1)
-├── 챕터 소개 (1-2문장: 이 챕터에서 배울 내용)
-├── 섹션 1 (H2)
-│   ├── 개요 설명 (1-2문장)
-│   ├── 단계 1 (step-card)
-│   ├── 단계 2 (step-card)
-│   └── 팁/주의 (callout)
-├── 섹션 2 (H2)
+Chapter title (H1)
+├── Chapter intro (1–2 sentences: what you will learn)
+├── Section 1 (H2)
+│   ├── Overview description (1–2 sentences)
+│   ├── Step 1 (step-card)
+│   ├── Step 2 (step-card)
+│   └── Tips / Cautions (callout)
+├── Section 2 (H2)
 │   └── ...
-└── 요약 / 다음 단계 안내
+└── Summary / Next steps
 ```
 
-### 단계(Step) 작성 규칙
+### Step authoring rules
 
-1. **한 단계에 하나의 동작만** 포함한다
-2. 동사로 시작한다 ("클릭하세요", "입력하세요", "선택하세요")
-3. 대상 UI 요소를 **굵은 글씨**로 명시한다
-4. 결과를 설명한다 ("→ 설정 화면이 표시됩니다")
-5. 스크린샷을 첨부한다 (텍스트보다 스크린샷이 명확한 경우)
+1. **One action per step**
+2. Start with a verb ("Click", "Enter", "Select")
+3. Mark the target UI element in **bold**
+4. Describe the result ("→ The settings screen appears.")
+5. Attach a screenshot (when a screenshot is clearer than text)
 
-**좋은 예:**
+**Good example:**
 ```
-1. 상단 메뉴에서 **설정**을 클릭하세요.
-   → 설정 페이지로 이동합니다.
-   [스크린샷: 설정 메뉴 위치 하이라이트]
+1. Click **Settings** in the top menu.
+   → You are taken to the Settings page.
+   [Screenshot: highlight the Settings menu location]
 
-2. **프로필** 탭을 선택하세요.
-   → 프로필 편집 화면이 표시됩니다.
-   [스크린샷: 프로필 탭 선택]
-```
-
-**나쁜 예:**
-```
-상단 메뉴에서 설정을 클릭한 후 프로필 탭을 선택하면 프로필 편집 화면에서 이름과 이메일을 변경할 수 있습니다.
+2. Select the **Profile** tab.
+   → The profile edit screen appears.
+   [Screenshot: Profile tab selected]
 ```
 
-### 스크린샷 규칙
+**Bad example:**
+```
+After clicking Settings in the top menu and then selecting the Profile tab, you can change your name and email on the profile edit screen.
+```
 
-| 규칙 | 설명 |
-|------|------|
-| 스크린샷당 주석 3-4개 이내 | 과도한 주석은 혼란을 줌 |
-| 핵심 UI 요소만 하이라이트 | 전체 화면이 아닌 관련 영역 강조 |
-| 멀티스텝은 2-4장 | 진입점 → 핵심 액션 → 최종 결과 |
-| alt 텍스트 필수 | 접근성을 위해 설명적 alt 속성 |
-| 현재 UI와 일치 | 오래된 스크린샷 사용 금지 |
+### Screenshot rules
 
-### 정보 박스(Callout) 사용 규칙
+| Rule | Description |
+|------|-------------|
+| ≤ 3–4 annotations per screenshot | Too many annotations cause confusion |
+| Highlight only key UI elements | Emphasize the relevant area, not the whole screen |
+| 2–4 frames for multi-step | Entry → key action → final result |
+| Mandatory alt text | Use descriptive alt attributes for accessibility |
+| Match the current UI | Do not use outdated screenshots |
 
-| 유형 | 사용 시기 | 아이콘 |
-|------|----------|--------|
-| `.callout-tip` | 선택적 도움말, 생산성 팁, 단축키 | 💡 |
-| `.callout-note` | 추가 설명, 참고 사항 | ℹ️ |
-| `.callout-warning` | 주의가 필요한 작업, 데이터 영향 | ⚠️ |
-| `.callout-danger` | 되돌릴 수 없는 작업, 데이터 손실 위험 | 🚨 |
+### Callout (info box) rules
 
-**사용 원칙:**
-- 한 섹션에 2개 이내 사용 (과도하면 주의를 분산)
-- 본문 흐름 중단 없이 삽입
-- 간결하게 1-2문장으로 작성
+| Type | When to use | Icon |
+|------|-------------|------|
+| `.callout-tip` | Optional help, productivity tip, shortcut | 💡 |
+| `.callout-note` | Extra explanation, reference info | ℹ️ |
+| `.callout-warning` | Action requiring caution, data-impacting | ⚠️ |
+| `.callout-danger` | Irreversible action, data-loss risk | 🚨 |
 
-## 4. 용어 일관성
+**Usage principles:**
+- ≤ 2 per section (more is distracting)
+- Insert without interrupting the body flow
+- Keep concise — 1 to 2 sentences
 
-### UI 요소 용어 표준
+## 4. Terminology Consistency
 
-| UI 요소 | 한국어 표준 용어 | 피해야 할 표현 |
-|---------|--------------|-------------|
+### Standard UI element terms
+
+| UI element | Korean standard term | Avoid |
+|------------|----------------------|-------|
 | Button | 버튼 | 단추, 키 |
 | Input field | 입력란 | 입력 필드, 텍스트 박스 |
 | Dropdown | 드롭다운 | 선택 상자, 풀다운 |
@@ -137,12 +139,12 @@
 | Breadcrumb | 이동 경로 | 브레드크럼 |
 | Toast/Snackbar | 알림 메시지 | 토스트, 스낵바 |
 
-### 동작 용어 표준
+### Standard action terms
 
-| 동작 | 한국어 표준 | 피해야 할 표현 |
-|------|-----------|-------------|
-| Click | 클릭하세요 | 누르세요, 선택하세요 (마우스) |
-| Tap (모바일) | 탭하세요 | 터치하세요, 누르세요 |
+| Action | Korean standard | Avoid |
+|--------|-----------------|-------|
+| Click | 클릭하세요 | 누르세요, 선택하세요 (mouse) |
+| Tap (mobile) | 탭하세요 | 터치하세요, 누르세요 |
 | Enter/Type | 입력하세요 | 타이핑하세요, 기입하세요 |
 | Select | 선택하세요 | 고르세요, 지정하세요 |
 | Scroll | 스크롤하세요 | 내려가세요, 올려보세요 |
@@ -150,48 +152,48 @@
 | Toggle | 켜세요/끄세요 | 토글하세요 |
 | Navigate | 이동하세요 | 네비게이트하세요 |
 
-## 5. 접근성 규칙
+## 5. Accessibility Rules
 
-- 모든 스크린샷에 설명적 `alt` 텍스트를 포함한다
-- 색상만으로 정보를 전달하지 않는다 (주석에 번호+색상 병행)
-- 키보드 내비게이션을 지원한다
-- 적절한 heading 계층 구조를 유지한다 (H1 → H2 → H3, 건너뛰지 않음)
-- 링크 텍스트는 설명적으로 작성한다 ("여기를 클릭" 금지)
-- `prefers-reduced-motion`을 존중한다
+- Include descriptive `alt` text on every screenshot
+- Do not convey information by color alone (combine numbers + color in annotations)
+- Support keyboard navigation
+- Maintain a proper heading hierarchy (H1 → H2 → H3, no skipping)
+- Write link text descriptively (no "click here")
+- Respect `prefers-reduced-motion`
 
-## 6. FAQ 작성 규칙
+## 6. FAQ Authoring Rules
 
-- 실제 사용자가 묻는 형태로 질문을 작성한다
-- "~하려면 어떻게 하나요?" 형식 사용
-- 답변은 단계별로 구조화한다
-- 오류 메시지를 그대로 인용한다 (검색 가능하도록)
-- 관련 챕터 링크를 포함한다
+- Phrase questions the way real users ask them
+- Use the "How do I ...?" format
+- Structure answers as steps
+- Quote error messages verbatim (for searchability)
+- Include links to related chapters
 
-**예:**
+**Example:**
 ```
-Q: 비밀번호를 잊어버렸어요. 어떻게 재설정하나요?
+Q: I forgot my password. How do I reset it?
 
-A: 비밀번호를 재설정하려면:
-1. 로그인 화면에서 **비밀번호 찾기**를 클릭하세요.
-2. 가입 시 사용한 이메일 주소를 입력하세요.
-3. **재설정 링크 보내기**를 클릭하세요.
-4. 이메일에서 재설정 링크를 클릭하고 새 비밀번호를 설정하세요.
+A: To reset your password:
+1. Click **Forgot password** on the login screen.
+2. Enter the email address you signed up with.
+3. Click **Send reset link**.
+4. Click the reset link in the email and set a new password.
 
-자세한 내용은 [02. 로그인 및 인증](chapters/02-auth-login.html#password-reset)을 참조하세요.
+For details, see [02. Login and Authentication](chapters/02-auth-login.html#password-reset).
 ```
 
-## 7. 매뉴얼 품질 체크리스트
+## 7. Manual Quality Checklist
 
-작성 완료 후 다음을 검증한다:
+Verify the following after authoring is complete:
 
-- [ ] 모든 단계가 2인칭 존칭으로 작성되었는가?
-- [ ] 전문 용어 없이 평이한 언어로 작성되었는가?
-- [ ] 모든 단계에 스크린샷이 첨부되었는가?
-- [ ] 스크린샷이 현재 UI와 일치하는가?
-- [ ] UI 요소 용어가 매뉴얼 전체에서 일관적인가?
-- [ ] 팁/주의 박스가 적절히 사용되었는가?
-- [ ] 챕터 간 내비게이션이 올바른가?
-- [ ] 검색으로 원하는 내용을 찾을 수 있는가?
-- [ ] 모바일에서도 읽기 편한가?
-- [ ] 인쇄 시 레이아웃이 정상인가?
-- [ ] alt 텍스트가 모든 이미지에 포함되었는가?
+- [ ] Are all steps written in the second-person polite form?
+- [ ] Is the manual written in plain language without jargon?
+- [ ] Is a screenshot attached to every step?
+- [ ] Do the screenshots match the current UI?
+- [ ] Are UI element terms consistent across the manual?
+- [ ] Are tip/caution boxes used appropriately?
+- [ ] Is the inter-chapter navigation correct?
+- [ ] Can the reader find the desired content via search?
+- [ ] Is it readable on mobile?
+- [ ] Does the print layout render correctly?
+- [ ] Is alt text included on every image?

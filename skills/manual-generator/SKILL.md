@@ -1,249 +1,249 @@
 ---
 name: manual-generator
-description: "실행 중인 서비스 URL과 프로젝트 문서를 기반으로 전문적인 온라인 서비스 매뉴얼을 자동 생성합니다. Chrome MCP로 화면별 스크린샷을 캡처하고, 블루프린트/기획 문서에서 기능 설명을 추출하여 단계별 가이드를 HTML 패키지로 퍼블리싱합니다. 매뉴얼 생성, 사용자 가이드 작성, 도움말 문서 생성 시 사용합니다."
-argument-hint: "[대상 URL 또는 기능명]"
+description: "Automatically generates a professional online service manual from a running service URL and project documents. Captures per-screen screenshots via Chrome MCP, extracts feature descriptions from blueprints / planner documents, and publishes step-by-step guides as an HTML package. Use when generating a manual, writing a user guide, or producing help documentation."
+argument-hint: "[target URL or feature name]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent, Skill, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__new_page, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__emulate, mcp__chrome-devtools__hover, mcp__chrome-devtools__fill_form, mcp__chrome-devtools__press_key
 ---
 
-# ASTRA 서비스 매뉴얼 자동 생성
+# ASTRA Service Manual Auto-Generator
 
-실행 중인 서비스 URL과 프로젝트 문서(blueprints, planner)를 분석하여, **전문적인 온라인 서비스 매뉴얼**을 자기완결형 HTML 패키지로 생성합니다.
+Analyzes a running service URL and project documents (blueprints, planner) and generates a **professional online service manual** as a self-contained HTML package.
 
-**핵심 원칙**:
-- **Chrome MCP 스크린샷 캡처** — 실제 서비스 화면을 탐색하며 단계별 스크린샷을 자동 캡처
-- **스크린샷 주석 자동화** — CSS 주입으로 UI 요소 하이라이트 + 단계 번호 오버레이
-- **`/frontend-design` 스킬 연동** — 세련되고 읽기 편한 프로덕션급 매뉴얼 디자인
-- **전문가 수준 글쓰기** — 2인칭 존칭("~하세요"), 평이한 언어, step-by-step 형식
-- 프로젝트의 `src/styles/design-tokens.css`를 참조 (하드코딩 금지)
-- 다크 모드, 클라이언트 검색, 반응형, 인쇄용 스타일 지원
-- 브라우저에서 바로 열어 확인 가능 (별도 빌드 불필요)
+**Core principles**:
+- **Chrome MCP screenshot capture** — explores the actual service screens and captures step-by-step screenshots automatically
+- **Screenshot annotation automation** — CSS injection highlights UI elements + overlays step numbers
+- **Integration with the `/frontend-design` skill** — production-grade, refined and readable manual design
+- **Expert-level writing** — second-person polite form, plain language, step-by-step format
+- References the project's `src/styles/design-tokens.css` (no hardcoding)
+- Supports dark mode, client-side search, responsive layout, and print styles
+- Opens directly in a browser (no separate build needed)
 
-**생성물 위치**: `docs/manual/{feature-name}/`
+**Output location**: `docs/manual/{feature-name}/`
 
-**글쓰기 품질 기준**:
-- 비기술 사용자도 따라할 수 있는 명확한 단계별 안내
-- 모든 단계에 스크린샷 첨부 (67% 더 높은 이해도 — TechSmith 연구)
-- 일관된 톤, 전문 용어 없는 평이한 언어
-- 팁/주의/경고 박스로 핵심 정보 강조
+**Writing-quality criteria**:
+- Clear step-by-step guidance that even non-technical users can follow
+- Attach a screenshot to every step (67% higher comprehension — TechSmith research)
+- Consistent tone, plain language without jargon
+- Highlight key info with Tip / Caution / Warning boxes
 
 > **🌐 LANGUAGE RULE**: Before executing this skill, read the project's `CLAUDE.md` and check the `## Language` section to detect the project language. If the project language is NOT Korean (`ko`), you MUST translate ALL user-facing output — including HTML page titles, labels, chapter titles, step descriptions, callout text — into the project language. Technical identifiers (file paths, CSS variable names, class names) remain untranslated. If no `CLAUDE.md` exists or no `## Language` section is found, default to Korean.
 
-## 추가 리소스
+## Additional resources
 
-- **글쓰기 원칙/스타일 규칙**: [references/manual-writing-guide.md](references/manual-writing-guide.md) 참조
-- **CSS 컴포넌트 템플릿**: [references/manual-css-template.md](references/manual-css-template.md) 참조
-- **HTML 구조 템플릿**: [references/manual-html-templates.md](references/manual-html-templates.md) 참조 (챕터, 인덱스, FAQ, 용어집)
+- **Writing principles / style rules**: see [references/manual-writing-guide.md](references/manual-writing-guide.md)
+- **CSS component templates**: see [references/manual-css-template.md](references/manual-css-template.md)
+- **HTML structure templates**: see [references/manual-html-templates.md](references/manual-html-templates.md) (chapter, index, FAQ, glossary)
 
 ---
 
-## 실행 절차
+## Procedure
 
-### Step 0: 사전 준비 및 컨텍스트 수집
+### Step 0: Preparation and context collection
 
-#### A. 인자 파싱
+#### A. Parse arguments
 
-`$ARGUMENTS`를 확인한다:
+Inspect `$ARGUMENTS`:
 
-| 인자 형태 | 동작 |
-|-----------|------|
-| URL (`http://` 또는 `https://` 시작) | 해당 URL을 대상 서비스로 사용 |
-| 기능명 문자열 (예: `인증`, `결제`) | 해당 기능의 문서와 URL을 검색 |
-| URL + 기능명 (예: `http://localhost:3000 인증`) | URL과 기능 범위를 모두 사용 |
-| _(없음)_ | `AskUserQuestion`으로 대상 정보를 질문 |
+| Argument form | Behavior |
+|---------------|----------|
+| URL (starts with `http://` or `https://`) | Use the URL as the target service |
+| Feature-name string (e.g., `auth`, `payment`) | Search for documents and URLs related to the feature |
+| URL + feature name (e.g., `http://localhost:3000 auth`) | Use both the URL and the feature scope |
+| _(none)_ | Ask for the target via `AskUserQuestion` |
 
-인자가 없으면 다음을 질문한다:
-
-```
-## 서비스 매뉴얼 생성
-
-매뉴얼을 생성할 서비스 정보를 알려주세요.
-
-1. **서비스 URL** (선택): 실행 중인 서비스 URL (예: http://localhost:3000)
-   → URL이 있으면 실제 화면 스크린샷을 캡처합니다.
-   → URL이 없으면 문서 기반으로만 매뉴얼을 생성합니다.
-
-2. **문서화 대상**: 매뉴얼로 작성할 기능 (예: "인증 기능", "결제 시스템", "전체")
-
-입력:
-```
-
-사용자 입력에서 `{SERVICE_URL}`과 `{TARGET_FEATURE}`를 추출한다.
-
-#### B. 프로젝트 컨텍스트 로드
-
-1. `CLAUDE.md` 읽기 — 프로젝트명, 기술 스택, 언어 설정(LANGUAGE RULE 적용)
-2. `docs/blueprints/` 스캔 — 기능별 블루프린트 목록 수집
-3. `docs/planner/` 스캔 — 기획 산출물 목록 수집
-4. `ux/` 스캔 — 기존 UX 프로토타입 확인 (라우트/화면 참고)
-5. `src/styles/design-tokens.css` 존재 확인
-
-> **검증**: `src/styles/design-tokens.css`가 없으면 사용자에게 알린다:
-> "디자인 토큰 파일이 없습니다. `/project-init`으로 프로젝트를 먼저 초기화해 주세요."
-> 파일이 없어도 `$CLAUDE_PLUGIN_ROOT/skills/project-init/templates/design-tokens.css`의 기본 토큰으로 대체할 수 있다.
-
-#### C. URL 접근성 검증
-
-`{SERVICE_URL}`이 제공된 경우:
-
-1. `mcp__chrome-devtools__navigate_page`로 URL에 접근
-2. `mcp__chrome-devtools__wait_for`로 페이지 로드 대기 (최대 15초)
-3. 접근 실패 시 사용자에게 알리고 문서 기반 모드로 전환:
-   "서비스에 접근할 수 없습니다. 서비스가 실행 중인지 확인해 주세요. 문서 기반으로만 매뉴얼을 생성할까요?"
-
-#### D. 문서 소스 분석
-
-다음 문서들을 읽어 기능 맵을 구축한다:
-
-| 소스 | 경로 | 추출 정보 |
-|------|------|----------|
-| 블루프린트 | `docs/blueprints/{NNN}-*/blueprint.md` | 기능 설계, API 엔드포인트, 유저 스토리 |
-| 기능 정의서 | `docs/planner/{NNN}-*/feature-definition.md` | 기능 구조, 소기능 상세, 서비스 정책 |
-| IA/화면 설계서 | `docs/planner/{NNN}-*/ia-screen-design.md` | IA 구조, 화면 목록, 화면 흐름도 |
-| 유즈케이스 | `docs/planner/{NNN}-*/usecase-definition.md` | 사용자 흐름, 대안 흐름, 예외 흐름 |
-| UX 프로토타입 | `ux/*/index.html` | 화면 인덱스, 라우트 구조 |
-
-`{TARGET_FEATURE}`가 "전체"가 아닌 경우, 해당 기능과 관련된 문서만 필터링한다.
-
-#### E. 매뉴얼 설정 선택
-
-`AskUserQuestion`으로 매뉴얼 생성 옵션을 선택한다:
+If no arguments are provided, ask:
 
 ```
-## 매뉴얼 생성 설정
+## Generate service manual
 
-### 1. 매뉴얼 범위
-문서화할 기능을 선택하세요.
+Please provide the target service information.
 
-| # | 기능 | 소스 | 화면 수 |
-|---|------|------|---------|
+1. **Service URL** (optional): URL of the running service (e.g., http://localhost:3000)
+   → If a URL is provided, real screen screenshots will be captured.
+   → If no URL is provided, the manual will be generated from documents only.
+
+2. **Documentation target**: the feature to document (e.g., "auth feature", "payment system", "all")
+
+Input:
+```
+
+Extract `{SERVICE_URL}` and `{TARGET_FEATURE}` from the user's input.
+
+#### B. Load project context
+
+1. Read `CLAUDE.md` — project name, tech stack, language setting (apply LANGUAGE RULE)
+2. Scan `docs/blueprints/` — collect the list of per-feature blueprints
+3. Scan `docs/planner/` — collect the list of planner deliverables
+4. Scan `ux/` — check for existing UX prototypes (reference routes / screens)
+5. Verify the existence of `src/styles/design-tokens.css`
+
+> **Validation**: if `src/styles/design-tokens.css` is missing, notify the user:
+> "Design tokens file not found. Please initialize the project first with `/project-init`."
+> Even if the file is missing, the default tokens at `$CLAUDE_PLUGIN_ROOT/skills/project-init/templates/design-tokens.css` can be used as a fallback.
+
+#### C. Verify URL accessibility
+
+When `{SERVICE_URL}` is provided:
+
+1. Navigate to the URL via `mcp__chrome-devtools__navigate_page`
+2. Wait for the page to load via `mcp__chrome-devtools__wait_for` (up to 15s)
+3. On failure, notify the user and switch to document-based mode:
+   "Cannot access the service. Please verify the service is running. Generate the manual from documents only?"
+
+#### D. Analyze document sources
+
+Read the following documents and build a feature map:
+
+| Source | Path | Extracted info |
+|--------|------|----------------|
+| Blueprint | `docs/blueprints/{NNN}-*/blueprint.md` | feature design, API endpoints, user stories |
+| Feature definition | `docs/planner/{NNN}-*/feature-definition.md` | feature structure, sub-feature detail, service policy |
+| IA / screen design | `docs/planner/{NNN}-*/ia-screen-design.md` | IA structure, screen list, screen flow |
+| Use case | `docs/planner/{NNN}-*/usecase-definition.md` | user flow, alternative flow, exception flow |
+| UX prototype | `ux/*/index.html` | screen index, route structure |
+
+If `{TARGET_FEATURE}` is not "all", filter only the documents related to that feature.
+
+#### E. Choose manual settings
+
+Use `AskUserQuestion` to choose manual-generation options:
+
+```
+## Manual generation settings
+
+### 1. Manual scope
+Select the features to document.
+
+| # | Feature | Source | Screen count |
+|---|---------|--------|--------------|
 | 1 | {feature-1} | {blueprint + URL / blueprint only / planner only} | {N} |
-| 2 | {feature-2} | {소스} | {N} |
+| 2 | {feature-2} | {source} | {N} |
 | ... | ... | ... | ... |
 
-선택 (전체: all, 선택: 1,3):
+Select (all: all, partial: 1,3):
 
-### 2. 언어
-| # | 언어 |
-|---|------|
-| 1 | 한국어 |
+### 2. Language
+| # | Language |
+|---|----------|
+| 1 | Korean |
 | 2 | English |
-| 3 | Auto (CLAUDE.md 기준) |
+| 3 | Auto (per CLAUDE.md) |
 
-### 3. 디자인 톤
-| # | 톤 | 설명 |
-|---|-----|------|
-| 1 | Professional Enterprise | 안정적이고 신뢰감 있는 엔터프라이즈 문서 |
-| 2 | Refined Minimal | 깔끔하고 정제된 미니멀 문서 |
-| 3 | Soft & Warm | 부드럽고 친근한 도움말 스타일 |
-| 4 | Auto | 프로젝트 특성에 맞게 자동 선택 |
+### 3. Design tone
+| # | Tone | Description |
+|---|------|-------------|
+| 1 | Professional Enterprise | stable, trustworthy enterprise docs |
+| 2 | Refined Minimal | clean, refined minimal docs |
+| 3 | Soft & Warm | soft, friendly help-doc style |
+| 4 | Auto | choose automatically based on project traits |
 
-### 4. 반응형 스크린샷
-| # | 옵션 |
-|---|------|
-| 1 | 데스크톱만 |
-| 2 | 데스크톱 + 모바일 |
-| 3 | 데스크톱 + 태블릿 + 모바일 |
+### 4. Responsive screenshots
+| # | Option |
+|---|--------|
+| 1 | Desktop only |
+| 2 | Desktop + Mobile |
+| 3 | Desktop + Tablet + Mobile |
 ```
 
-선택 결과를 `{SELECTED_FEATURES}`, `{LANGUAGE}`, `{DESIGN_TONE}`, `{RESPONSIVE_MODE}`로 저장한다.
+Save the selections as `{SELECTED_FEATURES}`, `{LANGUAGE}`, `{DESIGN_TONE}`, `{RESPONSIVE_MODE}`.
 
 ---
 
-### Step 1: 대상 서비스 분석 및 목차 설계
+### Step 1: Analyze the target service and design the table of contents
 
-#### A. 기능 맵 구축
+#### A. Build the feature map
 
-Step 0에서 수집한 문서를 분석하여 기능별로 다음을 추출한다:
+Analyze the documents collected in Step 0 to extract per feature:
 
-| 항목 | 소스 |
-|------|------|
-| 기능명/설명 | blueprint.md → 개요 섹션 |
-| 화면 목록 | ia-screen-design.md → 화면 목록 테이블 |
-| 사용자 흐름 | usecase-definition.md → 기본 흐름 / 대안 흐름 |
-| API 엔드포인트 | blueprint.md → API 설계 섹션 |
-| 비즈니스 규칙 | feature-definition.md → 서비스 정책 |
-| 화면 흐름도 | ia-screen-design.md → 화면 전환 다이어그램 |
+| Item | Source |
+|------|--------|
+| Feature name / description | blueprint.md → overview section |
+| Screen list | ia-screen-design.md → screen list table |
+| User flow | usecase-definition.md → base flow / alternative flow |
+| API endpoints | blueprint.md → API design section |
+| Business rules | feature-definition.md → service policy |
+| Screen flow diagram | ia-screen-design.md → screen-transition diagram |
 
-#### B. 서비스 탐색 (URL 있는 경우)
+#### B. Explore the service (when URL is provided)
 
-`{SERVICE_URL}`이 제공된 경우, Chrome MCP로 실제 서비스를 탐색한다:
+When `{SERVICE_URL}` is provided, explore the actual service via Chrome MCP:
 
-1. `mcp__chrome-devtools__navigate_page`로 기본 URL 접근
-2. `mcp__chrome-devtools__take_snapshot`으로 페이지 구조 파악
-3. 내비게이션 메뉴/라우트를 분석하여 문서의 화면 목록과 대조
-4. 문서에 없는 추가 화면이 발견되면 기능 맵에 추가
+1. Navigate to the base URL via `mcp__chrome-devtools__navigate_page`
+2. Capture page structure via `mcp__chrome-devtools__take_snapshot`
+3. Analyze the navigation menu / routes and cross-check against the documents' screen list
+4. If additional screens not present in documents are discovered, add them to the feature map
 
-#### C. 목차(TOC) 생성
+#### C. Generate the TOC
 
-기능 맵을 기반으로 매뉴얼 목차를 설계한다:
-
-```
-챕터 구조 규칙:
-- 01: 시작하기 (Getting Started) — 항상 첫 번째
-  - 서비스 소개, 접속 방법, 시스템 요구사항, 첫 로그인
-- 02~NN-2: 기능별 가이드 — 문서 순서 또는 사용자 여정 순서
-  - 각 기능: 개요 → 단계별 사용법 → 팁/주의사항
-  - 대기능은 여러 챕터로 분리 (예: 02-auth-login, 03-auth-signup)
-- NN-1: FAQ / 문제 해결 — usecase의 대안/예외 흐름에서 추출
-- NN: 용어집 (선택) — 프로젝트 도메인 용어 정의
-```
-
-#### D. TOC 승인 요청
-
-`AskUserQuestion`으로 목차를 사용자에게 보여주고 승인을 받는다:
+Design the manual's table of contents based on the feature map:
 
 ```
-## 매뉴얼 목차 확인
+Chapter-structure rules:
+- 01: Getting Started — always first
+  - service intro, how to access, system requirements, first login
+- 02 ~ NN-2: Per-feature guides — by document order or user-journey order
+  - each feature: overview → step-by-step usage → tips / cautions
+  - split large features into multiple chapters (e.g., 02-auth-login, 03-auth-signup)
+- NN-1: FAQ / Troubleshooting — extracted from alternative / exception flows in usecase
+- NN: Glossary (optional) — define project-domain terms
+```
 
-다음 목차로 매뉴얼을 생성합니다.
+#### D. Request TOC approval
 
-| # | 챕터 | 포함 내용 | 예상 스크린샷 수 |
-|---|------|----------|---------------|
-| 01 | 시작하기 | 서비스 소개, 접속, 첫 화면 | 3-5 |
-| 02 | {기능명} — {서브기능} | {설명} | {N} |
-| 03 | {기능명} — {서브기능} | {설명} | {N} |
+Show the TOC and get approval via `AskUserQuestion`:
+
+```
+## Confirm manual TOC
+
+The manual will be generated with the following TOC.
+
+| # | Chapter | Contents | Expected screenshot count |
+|---|---------|----------|---------------------------|
+| 01 | Getting Started | service intro, access, first screen | 3-5 |
+| 02 | {feature} — {sub-feature} | {description} | {N} |
+| 03 | {feature} — {sub-feature} | {description} | {N} |
 | ... | ... | ... | ... |
-| {NN-1} | FAQ / 문제 해결 | 자주 묻는 질문, 오류 해결 | 0-3 |
-| {NN} | 용어집 | 서비스 용어 정의 | 0 |
+| {NN-1} | FAQ / Troubleshooting | frequently asked questions, error resolution | 0-3 |
+| {NN} | Glossary | definitions of service terms | 0 |
 
-총 {N}개 챕터, 예상 스크린샷 약 {N}장
+Total {N} chapters, approximately {N} screenshots expected
 
-이대로 진행할까요? (수정이 필요하면 변경사항을 알려주세요):
+Proceed as-is? (if changes are needed, describe them):
 ```
 
-수정 요청이 있으면 TOC를 조정하고, 승인되면 `{APPROVED_TOC}` 배열로 저장한다.
+Apply requested changes; when approved, store as `{APPROVED_TOC}` array.
 
-#### E. dev 브랜치 전환 및 최신화
+#### E. Switch to the dev branch and sync to latest
 
-산출물 파일을 생성하기 전에, `dev` 브랜치로 전환하고 최신 상태로 동기화한다. 작업 브랜치는 생성하지 않으며, `dev`에서 직접 작업한다. 작업 브랜치 생성은 `/pr-merge` 실행 시 자동으로 처리된다.
+Before creating deliverables, switch to `dev` and sync. Do not create a work branch; work directly on `dev`. Work-branch creation is handled automatically when `/pr-merge` runs.
 
-0. **메인 worktree 가드**: 격리 worktree(`.astra-worktrees/<slug>/`) 안에서 호출된 경우 중단한다. dev-sync는 메인 worktree에서만 실행한다:
+0. **Main-worktree guard**: if called from inside an isolated worktree (`.astra-worktrees/<slug>/`), abort. dev-sync runs only in the main worktree:
    ```bash
    PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
    if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$PLUGIN_ROOT/scripts/worktree-helpers.sh" ]; then
-     echo "ERROR: CLAUDE_PLUGIN_ROOT를 찾을 수 없습니다. 플러그인 캐시 경로를 확인하세요." >&2
+     echo "ERROR: CLAUDE_PLUGIN_ROOT not found. Check the plugin cache path." >&2
      exit 1
    fi
    source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
    astra_ensure_main_worktree || exit 1
    ```
-1. **현재 브랜치 확인**: `git branch --show-current`
-2. **이미 `dev` 브랜치인 경우 스킵**: 현재 브랜치가 `dev`이면 아래 3~5단계를 건너뛰고 pull만 실행한다 (`git pull origin dev`)
-3. **미커밋 변경사항 보존**: `git status --porcelain`으로 확인하여 변경사항이 있으면 `git stash --include-untracked`로 임시 저장한다 (untracked 파일도 포함)
-4. **dev 브랜치 전환 및 최신화**: `git fetch origin dev && git checkout dev && git pull origin dev`
-5. **stash 복원**: step 3에서 stash 했으면 `git stash pop`으로 복원한다. 충돌 발생 시 충돌 파일 목록을 사용자에게 보고하고 수동 해결을 요청한다.
+1. **Check the current branch**: `git branch --show-current`
+2. **Skip if already on `dev`**: if the current branch is `dev`, skip steps 3–5 below and just pull (`git pull origin dev`)
+3. **Preserve uncommitted changes**: check with `git status --porcelain`; if changes exist, stash temporarily via `git stash --include-untracked` (untracked files included)
+4. **Switch to dev and sync**: `git fetch origin dev && git checkout dev && git pull origin dev`
+5. **Restore stash**: if you stashed in step 3, restore via `git stash pop`. On conflict, report the conflicting files to the user and request manual resolution.
 
-> **참고**: `dev` 브랜치가 존재하지 않으면 `main` 또는 `master` 브랜치에서 작업한다. 어떤 기본 브랜치도 없으면 현재 브랜치에서 작업한다.
+> **Note**: if the `dev` branch does not exist, work on `main` or `master`. If no default branch exists, work on the current branch.
 
 ---
 
-### Step 2: 공통 리소스 생성
+### Step 2: Generate shared resources
 
-#### A. 디렉토리 구조 생성
+#### A. Create directory structure
 
-`docs/manual/{feature-name}/` 디렉토리를 생성한다. `{feature-name}`은:
-- 단일 기능: 기능명 (예: `auth`, `payment`)
-- 전체: 프로젝트명 또는 `service-guide`
+Create the `docs/manual/{feature-name}/` directory. `{feature-name}` is:
+- Single feature: the feature name (e.g., `auth`, `payment`)
+- All: the project name or `service-guide`
 
 ```
 docs/manual/{feature-name}/
@@ -252,311 +252,311 @@ docs/manual/{feature-name}/
 ├── assets/
 ├── screenshots/
 │   ├── desktop/
-│   ├── tablet/    (RESPONSIVE_MODE >= 3일 때)
-│   └── mobile/    (RESPONSIVE_MODE >= 2일 때)
+│   ├── tablet/    (when RESPONSIVE_MODE >= 3)
+│   └── mobile/    (when RESPONSIVE_MODE >= 2)
 └── shared/
 ```
 
-#### B. 디자인 토큰 복사
+#### B. Copy design tokens
 
-`src/styles/design-tokens.css` → `docs/manual/{feature-name}/assets/tokens.css`로 **그대로 복사**한다.
+Copy `src/styles/design-tokens.css` → `docs/manual/{feature-name}/assets/tokens.css` **as-is**.
 
-#### C. `/frontend-design` 스킬 연동
+#### C. Integrate the `/frontend-design` skill
 
-`/frontend-design` 스킬을 호출하여 매뉴얼 전용 CSS를 생성한다. 호출 시 다음 컨텍스트를 전달한다:
+Call the `/frontend-design` skill to generate manual-specific CSS. Pass the following context:
 
 ```
-문서/매뉴얼용 CSS를 생성해 주세요.
-디자인 톤: {DESIGN_TONE}
-용도: 온라인 서비스 매뉴얼 (읽기 최적화)
-필요 컴포넌트: 사이드바 TOC, step-card, callout boxes, screenshot-frame, breadcrumb, chapter-nav, search overlay
-디자인 토큰: assets/tokens.css를 var() 참조
-다크 모드: 지원 필수
-반응형: 모바일/태블릿/데스크톱
+Please generate CSS for a documentation/manual.
+Design tone: {DESIGN_TONE}
+Use case: online service manual (read-optimized)
+Required components: sidebar TOC, step-card, callout boxes, screenshot-frame, breadcrumb, chapter-nav, search overlay
+Design tokens: reference assets/tokens.css via var()
+Dark mode: required
+Responsive: mobile / tablet / desktop
 ```
 
-> `/frontend-design`이 사용 불가한 경우, `references/manual-css-template.md`의 CSS 템플릿을 직접 사용한다.
+> If `/frontend-design` is unavailable, use the CSS template at `references/manual-css-template.md` directly.
 
-#### D. CSS 파일 생성
+#### D. Generate CSS files
 
-`/frontend-design` 결과를 기반으로 다음 파일들을 생성한다. 각 CSS 파일의 상세 컴포넌트 스펙은 `references/manual-css-template.md`를 참조한다:
+Generate the following files based on the `/frontend-design` output. Detailed component specs for each CSS file are in `references/manual-css-template.md`:
 
-1. **`assets/manual-base.css`** — 읽기 최적화 레이아웃:
-   - `max-width: 800px` 콘텐츠 영역 (가독성 최적)
-   - 왼쪽 사이드바 TOC (240px, 접을 수 있음, sticky)
-   - 64px 상단 헤더바
-   - 타이포그래피: 문서 최적화 (line-height 1.7, 충분한 문단 간격)
-   - 반응형: 태블릿에서 사이드바 접힘, 모바일에서 오버레이
-   - 다크 모드: `[data-theme="dark"]` 셀렉터
+1. **`assets/manual-base.css`** — read-optimized layout:
+   - `max-width: 800px` content area (optimal readability)
+   - Left sidebar TOC (240px, collapsible, sticky)
+   - 64px top header bar
+   - Typography: document-optimized (line-height 1.7, generous paragraph spacing)
+   - Responsive: sidebar collapses on tablet, becomes overlay on mobile
+   - Dark mode: `[data-theme="dark"]` selector
 
-2. **`assets/manual-components.css`** — 매뉴얼 전용 컴포넌트:
-   - `.step-card` — 번호가 매겨진 단계 카드 (번호 원형 + 내용 + 스크린샷)
-   - `.callout-tip`, `.callout-warning`, `.callout-note`, `.callout-danger` — 정보 박스
-   - `.screenshot-frame` — 브라우저 크롬 모의 프레임 + 스크린샷 이미지
-   - `.screenshot-annotation` — 위치 지정 번호 원형 (스크린샷 위 오버레이)
-   - `.breadcrumb` — 챕터 브레드크럼
-   - `.chapter-nav` — 이전/다음 챕터 내비게이션
-   - `.responsive-tabs` — 데스크톱/태블릿/모바일 스크린샷 탭 전환
-   - `.toc-sidebar` — 사이드바 목차
-   - `.search-overlay` — 검색 모달
+2. **`assets/manual-components.css`** — manual-specific components:
+   - `.step-card` — numbered step card (number circle + content + screenshot)
+   - `.callout-tip`, `.callout-warning`, `.callout-note`, `.callout-danger` — info boxes
+   - `.screenshot-frame` — mock browser-chrome frame + screenshot image
+   - `.screenshot-annotation` — positioned numbered circles (overlay on screenshot)
+   - `.breadcrumb` — chapter breadcrumb
+   - `.chapter-nav` — previous/next chapter navigation
+   - `.responsive-tabs` — desktop/tablet/mobile screenshot tab switching
+   - `.toc-sidebar` — sidebar table of contents
+   - `.search-overlay` — search modal
 
-3. **`assets/manual-print.css`** — 인쇄용:
-   - 사이드바/헤더/내비게이션 숨김
-   - 스크린샷 페이지 넘김 방지
-   - 링크 URL 텍스트 출력
+3. **`assets/manual-print.css`** — print:
+   - Hide sidebar / header / nav
+   - Avoid page-breaks in screenshots
+   - Print link URLs as text
 
-> **참고**: 검색 오버레이 스타일은 `manual-components.css`에 포함되어 있다 (별도 파일 불필요).
+> **Note**: search-overlay styles are included in `manual-components.css` (no separate file needed).
 
-#### E. JavaScript 파일 생성
+#### E. Generate JavaScript files
 
 1. **`shared/nav.js`**:
-   - 사이드바 TOC 토글 (모바일: 햄버거 메뉴)
-   - 챕터 이전/다음 내비게이션
-   - 스크롤스파이: 현재 읽고 있는 섹션을 TOC에서 하이라이트
-   - 키보드 내비게이션: `←` / `→`로 챕터 이동
+   - Sidebar TOC toggle (mobile: hamburger menu)
+   - Chapter prev/next navigation
+   - Scrollspy: highlight the section currently being read in the TOC
+   - Keyboard navigation: `←` / `→` to move between chapters
 
 2. **`shared/search.js`**:
-   - `search-index.json` 로드
-   - 검색어 입력 시 실시간 결과 표시
-   - 결과 클릭 시 해당 챕터+섹션으로 이동
-   - 키보드: `Ctrl+K` / `Cmd+K`로 검색 열기
+   - Load `search-index.json`
+   - Real-time results when typing a query
+   - Click a result to jump to the chapter + section
+   - Keyboard: `Ctrl+K` / `Cmd+K` to open search
 
 3. **`shared/theme.js`**:
-   - 다크 모드 토글 (`localStorage` 저장)
-   - 폰트 크기 A+/A- 조절 (3단계)
-   - 시스템 테마 감지 (`prefers-color-scheme`)
+   - Dark-mode toggle (persisted in `localStorage`)
+   - Font-size A+/A- adjustment (3 levels)
+   - System theme detection (`prefers-color-scheme`)
 
-#### F. 진행 보고
+#### F. Progress report
 
 ```
-✅ 공통 리소스 생성 완료
+✅ Shared resources generated
    - CSS: manual-base.css, manual-components.css, manual-print.css
    - JS: nav.js, search.js, theme.js
-   - 디자인 토큰: tokens.css
+   - Design tokens: tokens.css
 ```
 
 ---
 
-### Step 3: 스크린샷 캡처
+### Step 3: Screenshot capture
 
-> `{SERVICE_URL}`이 없는 경우(문서 기반 모드), 이 단계를 건너뛰고 Step 4에서 스크린샷 없이 매뉴얼을 생성한다. `ux/` 디렉토리에 UX 프로토타입이 있으면 해당 HTML을 열어 스크린샷을 캡처할 수 있다.
+> If `{SERVICE_URL}` is not provided (document-based mode), skip this step and generate the manual without screenshots in Step 4. If UX prototypes exist in the `ux/` directory, you may open those HTML files to capture screenshots.
 
-승인된 TOC의 각 챕터에 필요한 스크린샷을 캡처한다.
+For each chapter in the approved TOC, capture the required screenshots.
 
-#### A. 스크린샷 캡처 워크플로우 (화면별)
+#### A. Per-screen screenshot workflow
 
-각 화면에 대해:
+For each screen:
 
-1. **페이지 이동**:
+1. **Navigate**:
    ```
    mcp__chrome-devtools__navigate_page({ url: "{SERVICE_URL}/{route}" })
    ```
 
-2. **콘텐츠 로드 대기**:
+2. **Wait for content to load**:
    ```
    mcp__chrome-devtools__wait_for({ selector: "{main-content-selector}", timeout: 10000 })
    ```
 
-3. **하이라이트 CSS 주입** — `evaluate_script`로 `.manual-highlight` 클래스를 대상 요소에 추가:
-   - 스타일: `outline: 3px solid #2563EB`, `outline-offset: 2px`, `box-shadow: 0 0 0 6px rgba(37,99,235,0.15)`
-   - (의도적 예외: 대상 서비스 DOM에는 매뉴얼 디자인 토큰이 없으므로 하드코딩 사용. 서비스 색상과 충돌 시 `#FF3B30` 등 대비 색상으로 대체)
-   - `<style id="manual-highlight-style">`을 head에 주입 후 `querySelector('{target-selector}').classList.add('manual-highlight')`
+3. **Inject highlight CSS** — use `evaluate_script` to add the `.manual-highlight` class to the target element:
+   - Style: `outline: 3px solid #2563EB`, `outline-offset: 2px`, `box-shadow: 0 0 0 6px rgba(37,99,235,0.15)`
+   - (Intentional exception: the target service's DOM doesn't have the manual's design tokens, so hardcoding is used. If it clashes with the service's colors, substitute a contrasting color like `#FF3B30`)
+   - Inject `<style id="manual-highlight-style">` into head, then `querySelector('{target-selector}').classList.add('manual-highlight')`
 
-4. **단계 번호 오버레이 주입** — `evaluate_script`로 대상 요소 우상단에 원형 배지 추가:
-   - 28x28px 파란 원형, 흰 글씨, `z-index: 10001`
-   - `getBoundingClientRect()`로 위치 계산, `position: fixed`
+4. **Inject step-number overlay** — use `evaluate_script` to add a circular badge at the top-right of the target element:
+   - 28x28px blue circle, white text, `z-index: 10001`
+   - Compute position via `getBoundingClientRect()`, `position: fixed`
 
-5. **스크린샷 캡처** — `take_screenshot()` → `screenshots/desktop/{chapter}-step-{N}.png`
+5. **Capture screenshot** — `take_screenshot()` → `screenshots/desktop/{chapter}-step-{N}.png`
 
-6. **주입 요소 제거** — `evaluate_script`로 `.manual-highlight` 클래스 제거, `.manual-step-badge` 요소 제거, 스타일 태그 제거
+6. **Remove injected elements** — use `evaluate_script` to remove the `.manual-highlight` class, the `.manual-step-badge` element, and the style tag
 
-#### B. 반응형 스크린샷 (RESPONSIVE_MODE >= 2일 때)
+#### B. Responsive screenshots (when RESPONSIVE_MODE >= 2)
 
-각 화면의 주요 스크린샷(첫 번째 또는 대표 스크린샷)에 대해:
+For each screen's main screenshot (first or representative):
 
-1. **태블릿** (RESPONSIVE_MODE >= 3):
+1. **Tablet** (RESPONSIVE_MODE >= 3):
    ```
    mcp__chrome-devtools__resize_page({ width: 768, height: 1024 })
    ```
-   → 캡처 → `screenshots/tablet/{chapter}-overview.png`
+   → capture → `screenshots/tablet/{chapter}-overview.png`
 
-2. **모바일** (RESPONSIVE_MODE >= 2):
+2. **Mobile** (RESPONSIVE_MODE >= 2):
    ```
    mcp__chrome-devtools__resize_page({ width: 375, height: 812 })
    ```
-   → 캡처 → `screenshots/mobile/{chapter}-overview.png`
+   → capture → `screenshots/mobile/{chapter}-overview.png`
 
-3. **데스크톱으로 원복**:
+3. **Restore to desktop**:
    ```
    mcp__chrome-devtools__resize_page({ width: 1280, height: 800 })
    ```
 
-#### C. 멀티스텝 흐름 캡처
+#### C. Multi-step flow capture
 
-사용자 흐름(로그인, 폼 제출, CRUD 등)이 있는 챕터에서:
+For chapters that include user flows (login, form submit, CRUD, etc.):
 
-1. 시작 화면 캡처 (Step A 워크플로우)
-2. 인터랙션 실행:
-   - 입력: `mcp__chrome-devtools__fill({ selector: "{input}", value: "{test-data}" })`
-   - 클릭: `mcp__chrome-devtools__click({ selector: "{button}" })`
-   - 키입력: `mcp__chrome-devtools__press_key({ key: "Enter" })`
-3. 결과 대기: `mcp__chrome-devtools__wait_for({ selector: "{result-indicator}" })`
-4. 다음 단계 캡처 (Step A 워크플로우 반복)
-5. 최종 결과 화면 캡처
+1. Capture the starting screen (Step A workflow)
+2. Execute the interaction:
+   - Input: `mcp__chrome-devtools__fill({ selector: "{input}", value: "{test-data}" })`
+   - Click: `mcp__chrome-devtools__click({ selector: "{button}" })`
+   - Key press: `mcp__chrome-devtools__press_key({ key: "Enter" })`
+3. Wait for result: `mcp__chrome-devtools__wait_for({ selector: "{result-indicator}" })`
+4. Capture the next step (repeat Step A workflow)
+5. Capture the final result screen
 
-> **주의**: 테스트 데이터로만 인터랙션한다. 실제 데이터를 변경하지 않도록 주의한다. 가능하면 읽기 전용 흐름(조회, 검색)을 우선 캡처하고, 쓰기 흐름(생성, 수정, 삭제)은 사용자에게 확인 후 진행한다.
+> **Caution**: interact only with test data. Be careful not to modify real data. Capture read-only flows (view, search) first when possible; for write flows (create, update, delete), confirm with the user before proceeding.
 
-#### D. 진행 보고
+#### D. Progress report
 
 ```
-📸 스크린샷 캡처 진행: {completed}/{total} 챕터
-   - 챕터 01 시작하기: 3장 완료
-   - 챕터 02 {기능}: {N}장 완료
+📸 Screenshot capture progress: {completed}/{total} chapters
+   - Chapter 01 Getting Started: 3 done
+   - Chapter 02 {feature}: {N} done
    - ...
 ```
 
 ---
 
-### Step 4: 챕터 작성
+### Step 4: Author chapters
 
-승인된 TOC의 각 챕터를 HTML로 작성한다.
+Write each chapter from the approved TOC as HTML.
 
-#### A. 글쓰기 규칙
+#### A. Writing rules
 
-`references/manual-writing-guide.md`를 읽어 글쓰기 규칙을 적용한다. 핵심 규칙:
+Read `references/manual-writing-guide.md` and apply the writing rules. Key rules:
 
-| 규칙 | 적용 |
-|------|------|
-| 2인칭 존칭 | "로그인 버튼을 클릭하세요" (O), "로그인 버튼을 클릭한다" (X) |
-| 평이한 언어 | "인증 토큰이 갱신됩니다" (X) → "자동으로 로그인이 유지됩니다" (O) |
-| 단계별 형식 | 모든 절차를 번호가 매겨진 단계로 분리 |
-| 시각 우선 | 텍스트보다 스크린샷이 명확한 경우 스크린샷 사용 |
-| 일관된 용어 | 동일 UI 요소는 매뉴얼 전체에서 동일 이름 사용 |
-| 팁/주의 박스 | 선택적 정보는 `.callout-tip`, 위험한 작업은 `.callout-warning` |
+| Rule | Application |
+|------|-------------|
+| Second-person polite form | "Please click the Login button" (O), "Click the Login button" (X — too curt for end-user docs) |
+| Plain language | "An auth token is refreshed" (X) → "You stay logged in automatically" (O) |
+| Step-by-step format | Split every procedure into numbered steps |
+| Visual-first | Use a screenshot when a screenshot is clearer than text |
+| Consistent terminology | Use the same name for the same UI element throughout the manual |
+| Tip / caution boxes | Optional info uses `.callout-tip`, dangerous actions use `.callout-warning` |
 
-#### B. 챕터 HTML 구조
+#### B. Chapter HTML structure
 
-`references/manual-html-templates.md`의 **챕터 HTML 템플릿**을 참조하여 각 챕터를 생성한다.
+Refer to the **chapter HTML template** in `references/manual-html-templates.md` to generate each chapter.
 
-핵심 구조 요약:
-- `manual-header` — 상단 고정 헤더 (프로젝트명, 검색/테마/폰트 버튼)
-- `toc-sidebar` — 왼쪽 고정 사이드바 (전체 챕터 링크)
-- `breadcrumb` — 이동 경로 (매뉴얼 › 챕터명)
-- `chapter` > `steps` > `step-card` — 번호 매겨진 단계별 가이드
-- `screenshot-frame` > `screenshot-chrome` + `screenshot-body` — 브라우저 모의 프레임
-- `callout-tip/warning/note/danger` — 정보 박스
-- `responsive-preview` > `responsive-tabs` — 반응형 스크린샷 탭 (선택)
-- `chapter-nav` — 이전/다음 챕터 내비게이션
-- `search-overlay` — 검색 모달
+Key structural elements:
+- `manual-header` — sticky top header (project name, search / theme / font buttons)
+- `toc-sidebar` — left fixed sidebar (links to all chapters)
+- `breadcrumb` — navigation path (Manual › Chapter name)
+- `chapter` > `steps` > `step-card` — numbered step-by-step guide
+- `screenshot-frame` > `screenshot-chrome` + `screenshot-body` — mock browser frame
+- `callout-tip/warning/note/danger` — info boxes
+- `responsive-preview` > `responsive-tabs` — responsive screenshot tabs (optional)
+- `chapter-nav` — previous/next chapter navigation
+- `search-overlay` — search modal
 
-#### C. 챕터별 콘텐츠 작성
+#### C. Per-chapter content
 
-**01-getting-started.html** (시작하기):
-- 서비스 소개 (1-2 문단, 프로젝트 CLAUDE.md에서 추출)
-- 시스템 요구사항 (브라우저, 해상도 등)
-- 접속 방법 (URL + 스크린샷)
-- 첫 로그인/가입 흐름 (step-card)
-- 메인 화면 구성 안내 (주요 영역 설명 + annotated 스크린샷)
+**01-getting-started.html** (Getting Started):
+- Service introduction (1–2 paragraphs, extracted from the project CLAUDE.md)
+- System requirements (browsers, resolution, etc.)
+- How to access (URL + screenshot)
+- First login / signup flow (step-card)
+- Main-screen composition (description of main regions + annotated screenshot)
 
-**02~NN-2: 기능별 챕터**:
-- 기능 개요 (blueprint/feature-definition에서 추출)
-- 단계별 사용법 (usecase의 기본 흐름 → step-card)
-- 고급 기능/설정 (선택적)
-- 주의사항 (usecase의 대안/예외 흐름 → callout-warning)
-- 관련 팁 (callout-tip)
+**02 ~ NN-2: per-feature chapters**:
+- Feature overview (extracted from blueprint / feature-definition)
+- Step-by-step usage (usecase base flow → step-card)
+- Advanced features / settings (optional)
+- Caveats (usecase alternative/exception flow → callout-warning)
+- Related tips (callout-tip)
 
-**NN-1: FAQ / 문제 해결**:
-- usecase의 예외 흐름에서 추출한 FAQ
-- 일반적인 오류 상황과 해결 방법
-- 질문-답변 형식 (`<details><summary>` 아코디언)
+**NN-1: FAQ / Troubleshooting**:
+- FAQ extracted from usecase exception flows
+- Common error situations and resolutions
+- Q&A format (`<details><summary>` accordion)
 
-**NN: 용어집** (선택):
-- 서비스에서 사용되는 전문 용어 정의
-- 알파벳/가나다 순 정렬
-- `<dl>` 정의 목록 사용
+**NN: Glossary** (optional):
+- Definitions of technical terms used in the service
+- Alphabetical / Hangul order
+- Use a `<dl>` definition list
 
-#### D. 진행 보고 (2챕터마다)
+#### D. Progress report (every 2 chapters)
 
 ```
-📝 챕터 작성 진행: {completed}/{total}
-   - ✅ 01 시작하기
-   - ✅ 02 {기능}
-   - 🔄 03 {기능} (작성 중)
-   - ⏳ 04 {기능}
+📝 Chapter authoring progress: {completed}/{total}
+   - ✅ 01 Getting Started
+   - ✅ 02 {feature}
+   - 🔄 03 {feature} (in progress)
+   - ⏳ 04 {feature}
 ```
 
 ---
 
-### Step 5: 표지 + 목차 인덱스 생성
+### Step 5: Generate cover page + TOC index
 
-#### A. index.html 생성
+#### A. Generate index.html
 
-`references/manual-html-templates.md`의 **인덱스(표지) HTML 템플릿**을 참조하여 생성한다.
+Refer to the **index (cover) HTML template** in `references/manual-html-templates.md` to generate it.
 
-핵심 구조 요약:
-- `cover` — 프로젝트명, 매뉴얼 제목, 버전/생성일 메타 정보
-- `quick-start-callout` — "처음 사용하시나요?" CTA → 01-getting-started.html 링크
-- `index-search` — 대형 검색 입력란
-- `index-toc` > `toc-grid` > `toc-card` — 챕터별 카드 (번호, 제목, 설명, 메타)
+Key structural elements:
+- `cover` — project name, manual title, meta info (version / generation date)
+- `quick-start-callout` — "First time here?" CTA → link to 01-getting-started.html
+- `index-search` — large search input
+- `index-toc` > `toc-grid` > `toc-card` — per-chapter cards (number, title, description, meta)
 
-#### B. search-index.json 생성
+#### B. Generate search-index.json
 
-모든 챕터를 스캔하여 검색 인덱스를 생성한다:
+Scan every chapter to build the search index:
 
 ```json
 [
   {
     "chapter": "01",
-    "title": "시작하기",
+    "title": "Getting Started",
     "url": "chapters/01-getting-started.html",
     "sections": [
-      { "heading": "서비스 소개", "anchor": "#intro", "content": "..." },
-      { "heading": "접속 방법", "anchor": "#access", "content": "..." }
+      { "heading": "Service introduction", "anchor": "#intro", "content": "..." },
+      { "heading": "How to access", "anchor": "#access", "content": "..." }
     ]
   }
 ]
 ```
 
-각 섹션의 `content`는 본문 텍스트의 처음 200자를 포함한다 (검색 매칭용).
+The `content` of each section includes the first 200 characters of the body text (for search matching).
 
 ---
 
-### Step 6: 검증 및 마무리
+### Step 6: Validation and wrap-up
 
-#### A. 파일 무결성 검증
+#### A. File-integrity validation
 
-1. 모든 챕터 HTML 파일이 생성되었는지 확인
-2. 모든 스크린샷 참조가 실제 파일과 매칭되는지 검증:
+1. Verify every chapter HTML file was generated
+2. Verify every screenshot reference matches a real file:
    ```
-   Glob으로 screenshots/ 하위 모든 이미지 수집
-   각 챕터 HTML에서 <img src=""> 추출
-   매칭되지 않는 참조가 있으면 경고
+   Collect every image under screenshots/ via Glob
+   Extract <img src=""> from every chapter HTML
+   Warn on any unmatched reference
    ```
-3. 챕터 간 링크 (prev/next, 브레드크럼) 검증
-4. `search-index.json`에 모든 챕터가 포함되었는지 확인
+3. Verify cross-chapter links (prev/next, breadcrumb)
+4. Verify every chapter is included in `search-index.json`
 
-#### B. 생성 결과 보고
+#### B. Generation result report
 
 ```
-## ✅ 매뉴얼 생성 완료
+## ✅ Manual generation complete
 
-| 항목 | 값 |
-|------|-----|
-| 위치 | docs/manual/{feature-name}/ |
-| 챕터 수 | {N}개 |
-| 스크린샷 | desktop {N}장, tablet {N}장, mobile {N}장 |
-| 총 파일 수 | {N}개 |
-| 총 크기 | {N} MB |
+| Item | Value |
+|------|-------|
+| Location | docs/manual/{feature-name}/ |
+| Chapter count | {N} |
+| Screenshots | desktop {N}, tablet {N}, mobile {N} |
+| Total file count | {N} |
+| Total size | {N} MB |
 
-### 브라우저에서 열기
+### Open in browser
 \`\`\`bash
 open docs/manual/{feature-name}/index.html
 \`\`\`
 
-### 생성된 챕터
-| # | 챕터 | 스크린샷 |
-|---|------|---------|
-| 01 | 시작하기 | {N}장 |
-| 02 | {기능} | {N}장 |
+### Generated chapters
+| # | Chapter | Screenshots |
+|---|---------|-------------|
+| 01 | Getting Started | {N} |
+| 02 | {feature} | {N} |
 | ... | ... | ... |
 ```

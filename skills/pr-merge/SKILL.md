@@ -1,196 +1,196 @@
 ---
 name: pr-merge
-description: "PR 생성부터 코드 리뷰, 이슈 수정, 머지까지 자동화된 반복 사이클을 실행합니다. 커밋→푸시→PR 생성→코드 리뷰→수정→재리뷰→머지→worktree 제거 워크플로우를 단일 명령으로 처리합니다. --auto 플래그로 무인 모드(autorun 등)에서 호출 시 안전한 HITL 지점(gh 인증·머지 충돌·Critical 이슈)을 제외한 모든 확인 프롬프트를 자동 승인합니다."
+description: "Runs an automated iterative cycle from PR creation through code review, issue fixes, and merge. Handles the commit → push → PR-create → code-review → fix → re-review → merge → worktree-removal workflow in a single command. With the --auto flag, when invoked in unattended mode (autorun, etc.), every confirmation prompt is auto-approved except for safe HITL points (gh authentication, merge conflicts, Critical issues)."
 argument-hint: "[max-iterations] [--no-review] [--draft] [--auto] [--patch|--minor|--major] [--staging] [--main]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 ---
 
 # ASTRA PR Review & Merge Workflow (v5.0+)
 
-커밋부터 코드 리뷰, 이슈 수정, 머지, worktree 제거까지 전체 사이클을 자동화합니다.
-리뷰 → 수정 → 재리뷰 반복 사이클을 최대 반복 횟수까지 자동 실행합니다.
+Automates the entire cycle from commit through code review, issue fixes, merge, and worktree removal.
+The review → fix → re-review loop runs automatically up to the max iteration count.
 
-**브랜치 전략**: `feature → dev → staging → main`
+**Branch strategy**: `feature → dev → staging → main`
 
-**Worktree 격리 정책 (v5.0+)**: sprint 단위 작업은 `/sprint-init`이 만든 `.astra-worktrees/sprint-<N>-<name>/`에서 진행한다. `/pr-merge`는 해당 worktree 안에서 호출되어야 하며, 공유 브랜치(dev)에 머지를 완료한 직후 worktree를 자동 제거하고 메인 worktree(dev)로 복귀한다. 메인 worktree는 항상 공유 브랜치(main/staging/dev/master)를 유지하므로 다른 Claude Code 세션이 브랜치 전환 영향을 받지 않는다. 헬퍼는 `$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh`에서 source 한다.
+**Worktree isolation policy (v5.0+)**: sprint-unit work happens inside the `.astra-worktrees/sprint-<N>-<name>/` worktree created by `/sprint-init`. `/pr-merge` must be invoked from inside that worktree; immediately after merging into a shared branch (dev), it automatically removes the worktree and returns to the main worktree (dev). The main worktree always stays on a shared branch (main/staging/dev/master), so other Claude Code sessions are not affected by branch switches. Source the helpers from `$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh`.
 
-> **v5.0+ 변경**: `--start` 모드는 제거됨. 모든 worktree 생성은 `/sprint-init`이 담당한다. sprint 없이 단발성으로 작업하던 사용자가 메인 worktree에서 직접 변경 후 `/pr-merge`를 호출한 경우의 폴백은 Step 4.1에서 자동 처리한다.
+> **v5.0+ change**: `--start` mode is removed. All worktree creation is handled by `/sprint-init`. For users who worked one-off in the main worktree without `/sprint-init` and then invoked `/pr-merge`, Step 4.1 handles the fallback automatically.
 
 ## Execution Procedure
 
-### Step 1: 인자 파싱 및 사전 검증
+### Step 1: Argument parsing and preconditions
 
-`$ARGUMENTS`를 파싱하여 옵션을 결정한다:
+Parse `$ARGUMENTS` to determine options:
 
-- **max-iterations**: 숫자 인자 → 최대 리뷰 반복 횟수 (기본값: 3)
-- **--no-review**: 코드 리뷰 없이 커밋→푸시→PR 생성→머지만 실행
-- **--draft**: PR을 Draft 상태로 생성
-- **--auto**: 무인 모드 — 안전한 HITL 지점(아래 표 참조)을 제외한 모든 `AskUserQuestion` 프롬프트를 자동 승인. `/autorun` 등 상위 파이프라인에서 호출 시 사용.
-- **--patch / --minor / --major**: 버전 범프 유형 (기본값: --patch)
-- **--staging**: 프로모션 모드 — `dev` → `staging`으로 머지
-- **--main**: 프로모션 모드 — `staging` → `main`으로 머지
+- **max-iterations**: numeric argument → max review-iteration count (default: 3)
+- **--no-review**: skip code review; just commit → push → create PR → merge
+- **--draft**: create the PR in Draft state
+- **--auto**: unattended mode — auto-approve every `AskUserQuestion` prompt except for safe HITL points (see table below). Used when invoked from a parent pipeline like `/autorun`.
+- **--patch / --minor / --major**: version-bump type (default: --patch)
+- **--staging**: promotion mode — merge `dev` → `staging`
+- **--main**: promotion mode — merge `staging` → `main`
 
-**모드 결정**:
-- `--staging` 또는 `--main` → 프로모션 모드
-- 그 외 → 기본 모드 (sprint worktree → dev 머지)
+**Mode decision**:
+- `--staging` or `--main` → promotion mode
+- Otherwise → default mode (sprint worktree → dev merge)
 
-**`--auto` 플래그 정책**:
+**`--auto` flag policy**:
 
-| 지점 | `--auto` 동작 | 비고 |
-|------|---------------|------|
-| Step 6 커밋 확인 (line 233) | 자동 승인 → 즉시 커밋 | 변경 요약은 그대로 출력 |
-| Step 8.3 최종 머지 확인 (line 339) | 자동 승인 → 즉시 머지 | PR 메타데이터는 그대로 출력 |
-| Step 8.1 MAX 도달 + Critical 0건 | **HITL 유지** (기존 AskUserQuestion 그대로) | High 잔존은 사용자 판단 필요 |
-| Step 8.1 MAX 도달 + Critical ≥ 1건 | **무조건 halt** | 자동/수동 무관 |
-| gh CLI 미인증 | **halt** + 안내 | 진짜 차단 (인증은 자동 불가) |
-| 캐스케이드/rebase 머지 충돌 | **halt** + 충돌 파일 안내 | 진짜 차단 (병합 판단 필요) |
-| dev 브랜치 원격 부재 (line 91) | 자동 생성 후 진행 | 안전한 디폴트 |
+| Point | `--auto` behavior | Notes |
+|-------|-------------------|-------|
+| Step 6 commit confirmation (line 233) | auto-approve → commit immediately | change summary is still printed |
+| Step 8.3 final-merge confirmation (line 339) | auto-approve → merge immediately | PR metadata is still printed |
+| Step 8.1 MAX reached + 0 Critical | **HITL preserved** (the existing AskUserQuestion as-is) | remaining High requires user judgment |
+| Step 8.1 MAX reached + ≥ 1 Critical | **always halt** | unconditional, auto or manual |
+| gh CLI not authenticated | **halt** + guidance | true blocker (auth cannot be automated) |
+| Cascade / rebase merge conflict | **halt** + show conflicting files | true blocker (merge requires judgment) |
+| dev branch absent on remote (line 91) | auto-create and proceed | safe default |
 
-> `--auto`는 *안전 게이트*를 우회하지 않는다 — 진짜 차단(인증·충돌·Critical)에서는 일반 모드와 동일하게 멈춘다.
+> `--auto` does not bypass *safety gates* — on true blockers (auth, conflict, Critical), it halts just like normal mode.
 
-다음 사전 조건을 검증한다:
+Validate the following preconditions:
 
-1. **gh CLI 인증**: `gh auth status`를 실행하여 GitHub CLI 인증 상태를 확인한다. 인증되지 않은 경우 `gh auth login`을 안내하고 중단한다.
-2. **클린 상태 확인**: `git status`로 현재 상태를 파악한다 (커밋되지 않은 변경사항, 스테이징된 파일 등).
-   - 프로모션 모드에서 미커밋 변경사항이 있으면 경고하고 중단한다 (클린 상태에서만 실행). 미커밋 변경사항이 있다면 먼저 commit, stash, 또는 discard 후 재실행하도록 안내한다.
-3. **Worktree 헬퍼 로드**: 모든 Bash 단계에서 worktree 헬퍼를 source 한다:
+1. **gh CLI authentication**: run `gh auth status` to check the GitHub CLI auth state. If not authenticated, instruct the user to run `gh auth login` and abort.
+2. **Clean-state check**: run `git status` to understand the current state (uncommitted changes, staged files, etc.).
+   - In promotion mode, if there are uncommitted changes, warn and abort (run only from a clean state). Instruct the user to commit, stash, or discard them first and re-run.
+3. **Load worktree helpers**: source the worktree helpers in every Bash step:
    ```bash
    PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
    if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$PLUGIN_ROOT/scripts/worktree-helpers.sh" ]; then
-     echo "ERROR: CLAUDE_PLUGIN_ROOT를 찾을 수 없습니다. 플러그인 캐시 경로를 확인하세요." >&2
+     echo "ERROR: CLAUDE_PLUGIN_ROOT not found. Check the plugin cache path." >&2
      exit 1
    fi
    source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
    ```
-   이후 `astra_*` 함수를 사용한다.
+   After that, use the `astra_*` functions.
 
-   **모드별 worktree 위치 가드**:
-   - **프로모션 모드 (`--staging`, `--main`)**: 메인 worktree에서만 실행 가능. 격리 worktree 안에서 호출되면 메인 worktree로 이동 후 재실행을 안내하고 중단한다:
+   **Per-mode worktree-location guard**:
+   - **Promotion mode (`--staging`, `--main`)**: must run in the main worktree. If invoked inside an isolated worktree, instruct the user to move to the main worktree and re-run, then abort:
      ```bash
      astra_ensure_main_worktree || exit 1
      ```
-   - **기본 모드**: sprint worktree 안에서 호출되는 것이 정상 흐름이다. 메인 worktree에서 호출되면 Step 4.1에서 폴백으로 임시 격리 worktree를 자동 생성한다. sprint worktree 안에서 호출되면 Step 4에서 현재 브랜치를 sprint 브랜치로 인식하고 Step 5로 직행한다.
+   - **Default mode**: invocation from inside a sprint worktree is the normal flow. If invoked from the main worktree, Step 4.1 auto-creates a temporary isolated worktree as a fallback. If invoked from inside a sprint worktree, Step 4 recognizes the current branch as the sprint branch and goes straight to Step 5.
 
-### Step 1.1: 대상 브랜치 자동 선택 (기본 모드만)
+### Step 1.1: Auto-select target branch (default mode only)
 
-프로모션 모드가 아닌 경우, 대상 브랜치를 **자동으로 `dev`**로 설정한다. 사용자에게 묻지 않는다.
+If not in promotion mode, set the target branch automatically to **`dev`**. Do not ask the user.
 
 `{target-branch}` = `dev`
 
-> **참고**: 이후 모든 단계에서 `{target-branch}`는 `dev` 브랜치를 참조한다.
+> **Note**: in every subsequent step, `{target-branch}` refers to the `dev` branch.
 
-### Step 2: 브랜치 동기화 (모든 모드 공통)
+### Step 2: Branch sync (common to all modes)
 
-모든 모드에서 실행 전 `main`, `staging`, `dev` 브랜치를 최신 상태로 동기화하고, 상위 브랜치의 변경사항을 하위 브랜치로 캐스케이드 머지한다.
+Before all modes, pull `main`, `staging`, `dev` to the latest, and cascade-merge upstream changes into downstream branches.
 
-현재 브랜치를 `{current-branch}`로 저장한다.
+Save the current branch as `{current-branch}`.
 
-#### Step 2.1: 원격 fetch 및 브랜치 pull
+#### Step 2.1: Remote fetch and per-branch pull
 
 ```bash
 git fetch origin
 ```
 
-`main`, `staging`, `dev`는 **공유 브랜치**이므로 메인 worktree에서 직접 처리한다 (worktree 격리 대상 아님). 각 브랜치에 대해:
-1. `git ls-remote --heads origin {branch}`로 원격 존재 여부를 확인한다.
-2. 원격에 존재하지 않는 브랜치는 건너뛴다 (경고만 출력).
-3. 원격에 존재하는 브랜치에 대해 로컬 브랜치가 없으면 `git checkout -b {branch} origin/{branch}`로 트래킹 브랜치를 생성한다.
-4. 로컬 브랜치가 이미 있으면 checkout 후 pull 한다:
+`main`, `staging`, `dev` are **shared branches**, so handle them directly in the main worktree (not subject to worktree isolation). For each branch:
+1. Check remote existence with `git ls-remote --heads origin {branch}`.
+2. Skip branches that don't exist on the remote (warning only).
+3. For remote-existing branches, if there's no local branch, create a tracking branch with `git checkout -b {branch} origin/{branch}`.
+4. If the local branch already exists, checkout and pull:
    ```bash
    git checkout {branch}
    git pull --rebase origin {branch}
    ```
 
-> **참고**: 공유 브랜치 간 checkout은 메인 worktree에서 합쳐서 수행한다. 다른 세션이 격리 worktree에서 작업 브랜치를 보고 있는 경우 영향받지 않는다.
+> **Note**: shared-branch checkouts happen consolidated in the main worktree. Other sessions working on a work branch in an isolated worktree are not affected.
 
-> **필수**: `{target-branch}` 브랜치는 반드시 존재해야 한다. 원격에 `{target-branch}`가 없으면:
-> - **일반 모드**: **AskUserQuestion**으로 사용자에게 기본 브랜치로부터 `{target-branch}`를 생성할지 확인한다. 거부 시 중단한다.
-> - **`--auto` 모드**: 기본 브랜치(`main`/`master`)로부터 `{target-branch}`를 자동 생성하고 push 후 계속 진행한다.
+> **Required**: the `{target-branch}` branch must exist. If `{target-branch}` is missing from the remote:
+> - **Normal mode**: ask the user via **AskUserQuestion** whether to create `{target-branch}` from the default branch. If declined, abort.
+> - **`--auto` mode**: auto-create `{target-branch}` from the default branch (`main`/`master`), push, and continue.
 >
-> (기본 모드에서 Step 1.1이 Step 2보다 먼저 실행되므로 `{target-branch}` 값이 이미 결정되어 있다.)
+> (Since Step 1.1 runs before Step 2 in default mode, the `{target-branch}` value is already determined.)
 
-#### Step 2.2: 캐스케이드 머지 (main → staging → dev)
+#### Step 2.2: Cascade merge (main → staging → dev)
 
-상위 브랜치의 변경사항을 하위 브랜치로 순차적으로 머지한다. 원격에 존재하는 브랜치만 대상으로 한다.
+Sequentially merge upstream changes into downstream branches. Target only branches that exist on the remote.
 
-**모드별 캐스케이드 범위** (Step 1.1에서 기본 모드의 `{target-branch}`는 항상 `dev`로 고정됨):
-- **기본 모드**: 전체 캐스케이드 실행 (`main → staging → dev`)
-- **`--staging` 프로모션**: `main → staging`까지만 실행 (dev는 머지 대상이 아님)
-- **`--main` 프로모션**: 캐스케이드를 건너뛴다 (staging → main 방향이므로 역방향 동기화 불필요)
+**Per-mode cascade scope** (in default mode, Step 1.1 fixes `{target-branch}` to `dev`):
+- **Default mode**: run the full cascade (`main → staging → dev`)
+- **`--staging` promotion**: run only up to `main → staging` (dev is not a merge target)
+- **`--main` promotion**: skip the cascade (staging → main direction; no reverse sync needed)
 
-캐스케이드 실행 대상인 경우:
+When the cascade should run:
 
-1. **main → staging** (staging이 원격에 존재하는 경우):
+1. **main → staging** (when staging exists on the remote):
    ```bash
    git checkout staging
    git merge main
    ```
-   - 충돌 발생 시: 충돌 파일 목록을 출력하고 사용자에게 수동 해결을 안내한 후 중단한다.
-   - 머지 후 변경이 있으면: `git push origin staging`
+   - On conflict: print the conflict file list and instruct the user to resolve manually; abort.
+   - If there are changes after the merge: `git push origin staging`
 
-2. **staging → dev** (staging이 원격에 존재하고, 기본 모드이며, `{target-branch}` = `dev`인 경우):
+2. **staging → dev** (when staging exists on the remote, in default mode, and `{target-branch}` = `dev`):
    ```bash
    git checkout dev
    git merge staging
    ```
-   - 충돌 발생 시: 충돌 파일 목록을 출력하고 사용자에게 수동 해결을 안내한 후 중단한다.
-   - 머지 후 변경이 있으면: `git push origin dev`
+   - On conflict: print the conflict file list and instruct the user to resolve manually; abort.
+   - If there are changes after the merge: `git push origin dev`
 
-3. **main → dev** (staging이 원격에 존재하지 않고, 기본 모드이며, `{target-branch}` = `dev`인 경우):
+3. **main → dev** (when staging does not exist on the remote, in default mode, and `{target-branch}` = `dev`):
    ```bash
    git checkout dev
    git merge main
    ```
-   - 충돌 발생 시: 충돌 파일 목록을 출력하고 사용자에게 수동 해결을 안내한 후 중단한다.
-   - 머지 후 변경이 있으면: `git push origin dev`
+   - On conflict: print the conflict file list and instruct the user to resolve manually; abort.
+   - If there are changes after the merge: `git push origin dev`
 
-4. `git checkout {current-branch}`로 원래 브랜치로 복귀한다.
+4. `git checkout {current-branch}` to return to the original branch.
 
-> **참고**: 캐스케이드 머지에서 변경사항이 없으면 (Already up to date) 해당 단계를 조용히 건너뛴다.
+> **Note**: when the cascade merge has no changes (Already up to date), silently skip that step.
 
-### Step 3: 모드별 분기
+### Step 3: Per-mode branching
 
-- **프로모션 모드** (`--staging` / `--main`): **Step 10**으로 진행
-- **기본 모드**: **Step 4**로 진행
+- **Promotion mode** (`--staging` / `--main`): proceed to **Step 10**
+- **Default mode**: proceed to **Step 4**
 
 ---
 
-## 기본 모드 (feature → {target-branch})
+## Default mode (feature → {target-branch})
 
-### Step 4: 작업 브랜치 확인
+### Step 4: Verify the work branch
 
-현재 브랜치 및 worktree 위치를 분석하여 분기한다:
+Analyze the current branch and worktree location and branch:
 
 ```bash
 CURRENT_BRANCH=$(git branch --show-current)
 ```
 
-세 가지 분기 케이스:
+Three branching cases:
 
-- **sprint worktree 안 + 작업 브랜치** (`astra_is_isolated_worktree`가 true이고 현재 브랜치가 공유 브랜치가 아닌 경우): `/sprint-init`으로 만든 sprint worktree에서 호출된 *정상 흐름*. 다음 변수를 설정하고 **Step 5**로 진행:
+- **Inside a sprint worktree + work branch** (`astra_is_isolated_worktree` returns true and the current branch is not a shared branch): the *normal flow* — invoked from the sprint worktree created by `/sprint-init`. Set the following variables and proceed to **Step 5**:
   ```bash
   WT_PATH="$(pwd)"
   BRANCH_NAME="$CURRENT_BRANCH"
   STARTED_FROM_ISOLATED=1
   ```
-  > **참고**: sprint worktree의 브랜치명은 `feat/sprint-<N>-<name>` 형식이지만, 다른 prefix(`fix/`, `docs/` 등)로 시작하는 격리 worktree도 동일하게 처리된다.
-- **메인 worktree + 공유 브랜치(main/master/staging/dev)**: `/sprint-init` 없이 dev에서 직접 변경한 폴백 케이스. 임시 격리 worktree 자동 생성 → **Step 4.1**로 진행.
-- **메인 worktree + 작업 브랜치(feat/fix/docs 등)**: v4.1 이전 정책에서 메인 worktree에서 작업 중이던 호환성 케이스. 강제 마이그레이션 없이 다음 변수를 설정하고 **Step 5**로 진행:
+  > **Note**: the sprint worktree's branch name is typically `feat/sprint-<N>-<name>`, but isolated worktrees starting with other prefixes (`fix/`, `docs/`, etc.) are handled the same way.
+- **Main worktree + shared branch (main/master/staging/dev)**: fallback case — direct dev changes without `/sprint-init`. Auto-create a temporary isolated worktree → proceed to **Step 4.1**.
+- **Main worktree + work branch (feat/fix/docs/etc.)**: compatibility case for users who worked in the main worktree under pre-v4.1 policy. Set the following variables without forcing migration and proceed to **Step 5**:
   ```bash
   WT_PATH="$(pwd)"
   BRANCH_NAME="$CURRENT_BRANCH"
   STARTED_FROM_ISOLATED=0
   ```
 
-### Step 4.1: 폴백 — 임시 격리 worktree 자동 생성
+### Step 4.1: Fallback — auto-create a temporary isolated worktree
 
-> **언제 도달하는가**: `/sprint-init` 없이 메인 worktree(dev)에서 직접 변경 후 `/pr-merge`를 호출한 사용자를 위한 폴백 경로. 정상 흐름은 `/sprint-init`이 미리 sprint worktree를 만들어두고 거기서 작업하는 것이다.
+> **When you reach this**: fallback path for users who invoke `/pr-merge` after making changes directly in the main worktree (dev) without `/sprint-init`. The normal flow is `/sprint-init` creates the sprint worktree in advance and you work there.
 
-1. `git status`와 `git log`로 현재 변경사항 및 최근 작업 컨텍스트를 분석하여 적절한 *희망* 브랜치명을 **자동으로 결정**한다 (예: `feat/user-auth`, `fix/login-error`). 사용자에게 묻지 않는다.
-   - 변경사항의 성격을 분석하여 prefix를 결정: `feat/` (기능 추가), `fix/` (버그 수정), `docs/` (문서), `refactor/` (리팩토링), `chore/` (설정/빌드)
-   - 변경된 파일명, 커밋 로그, 디렉토리 구조에서 핵심 키워드를 추출하여 suffix를 결정
-   - 이 시점에는 *희망* 이름이다. 헬퍼가 이미 점유된 브랜치명/디렉토리를 감지하면 `-2`, `-3` suffix를 자동 추가하므로 **실제 사용된 이름은 헬퍼 반환값으로 확인**한다.
-2. 메인 worktree에 미커밋 변경사항이 있으면 stash로 임시 보관한다:
+1. Analyze the current changes and recent work context via `git status` and `git log` to **auto-decide** an appropriate *intended* branch name (e.g., `feat/user-auth`, `fix/login-error`). Do not ask the user.
+   - Determine the prefix from the nature of the changes: `feat/` (new feature), `fix/` (bug fix), `docs/` (documentation), `refactor/` (refactoring), `chore/` (config/build)
+   - Determine the suffix by extracting key keywords from changed file names, the commit log, and directory structure
+   - At this point this is an *intended* name. If the helper detects that the branch name/directory is already taken, it auto-appends `-2`, `-3` suffixes, so **the actually-used name must be read from the helper's return value**.
+2. If there are uncommitted changes in the main worktree, stash them temporarily:
    ```bash
    STASHED=0
    if [ -n "$(git status --porcelain)" ]; then
@@ -198,316 +198,316 @@ CURRENT_BRANCH=$(git branch --show-current)
      STASHED=1
    fi
    ```
-3. 격리 worktree에 신규 브랜치를 생성한다. 헬퍼가 `(branch, slug, .gitignore)` 충돌을 모두 흡수하고 *최종* 브랜치명과 worktree 절대경로를 탭 구분으로 반환한다.
+3. Create a new branch in an isolated worktree. The helper absorbs `(branch, slug, .gitignore)` collisions and returns the *final* branch name and the absolute worktree path tab-separated.
    ```bash
-   if ! out=$(astra_create_worktree_new "{희망 브랜치명}" "origin/{target-branch}"); then
-     # 생성 실패 시 stash 복원 후 종료 — 사용자 변경사항이 stash에 갇히지 않도록 보장
+   if ! out=$(astra_create_worktree_new "{intended-branch-name}" "origin/{target-branch}"); then
+     # On creation failure, restore the stash and exit — ensure the user's changes are not trapped in stash
      if [ "$STASHED" = "1" ]; then
-       git stash pop || echo "WARN: stash pop 실패. 'git stash list'에서 확인하세요."
+       git stash pop || echo "WARN: stash pop failed. Check 'git stash list'."
      fi
      exit 1
    fi
    IFS=$'\t' read -r BRANCH_NAME WT_PATH <<< "$out"
-   # read 결과 검증 — 빈 문자열이면 cd가 홈으로 가서 다른 repo를 오염시킬 수 있음
+   # Validate the read result — empty string would cause cd to home and pollute another repo
    if [ -z "$WT_PATH" ] || [ ! -d "$WT_PATH" ]; then
-     echo "ERROR: worktree 경로를 확정할 수 없습니다. 헬퍼 출력: '$out'" >&2
+     echo "ERROR: cannot determine the worktree path. Helper output: '$out'" >&2
      [ "$STASHED" = "1" ] && git stash pop || true
      exit 1
    fi
-   echo "작업 worktree: $WT_PATH (branch: $BRANCH_NAME)"
+   echo "Work worktree: $WT_PATH (branch: $BRANCH_NAME)"
    ```
-4. stash가 있으면 새 worktree로 이동해 거기서 복원한다 (linked worktree는 메인과 stash 리스트를 공유하므로 `git stash pop`이 메인의 stash를 옮겨와 적용한다):
+4. If a stash exists, move into the new worktree and restore there (linked worktrees share the main's stash list, so `git stash pop` brings the main's stash here and applies it):
    ```bash
    cd "$WT_PATH"
    if [ "$STASHED" = "1" ]; then
      git stash pop || {
-       echo "WARN: stash 복원 충돌. 'cd $WT_PATH && git stash list'로 확인 후 수동 해결하세요."
+       echo "WARN: stash-restore conflict. Resolve manually via 'cd $WT_PATH && git stash list'."
        exit 1
      }
    fi
    ```
-5. 이후 모든 git 작업(commit, push, 머지 후 정리)은 `$WT_PATH` 안에서 수행한다. SKILL.md의 후속 단계에서 "현재 브랜치"는 격리 worktree에 체크아웃된 `$BRANCH_NAME`을 의미한다.
-6. `{branch-name}`은 `$BRANCH_NAME` (헬퍼가 결정한 실제 사용된 이름), `{work-tree-path}`는 `$WT_PATH`를 참조한다. 자동 suffix가 붙었을 수 있으므로 후속 단계에서 *희망 이름이 아니라 헬퍼 반환값*을 사용한다.
-7. `STARTED_FROM_ISOLATED=1` 플래그를 설정한다 (Step 9에서 worktree 제거 및 로컬 브랜치 삭제 여부 판단에 사용).
+5. From here on, all git operations (commit, push, post-merge cleanup) happen inside `$WT_PATH`. In subsequent steps of this SKILL.md, "current branch" means `$BRANCH_NAME` checked out in the isolated worktree.
+6. `{branch-name}` refers to `$BRANCH_NAME` (the actual name decided by the helper); `{work-tree-path}` refers to `$WT_PATH`. A numeric suffix may have been appended, so subsequent steps use *the helper return value, not the intended name*.
+7. Set the `STARTED_FROM_ISOLATED=1` flag (used in Step 9 to decide worktree removal and local-branch deletion).
 
-### Step 5: 대상 브랜치 동기화
+### Step 5: Sync the target branch
 
-Step 2에서 이미 캐스케이드 머지를 완료했으므로, 작업 브랜치에 `{target-branch}`의 최신 변경사항을 반영한다. **격리 worktree(`{work-tree-path}`) 안에서 실행**한다:
+Step 2 already completed the cascade merge, so reflect the latest `{target-branch}` changes into the work branch. **Run inside the isolated worktree (`{work-tree-path}`)**:
 
 ```bash
-cd "$WT_PATH"  # 또는 이미 cd 한 상태
+cd "$WT_PATH"  # or already cd-ed
 git merge origin/{target-branch}
 ```
 
-- **충돌 없음**: 다음 단계로 진행
-- **충돌 발생**: 충돌 파일 목록을 출력하고, 사용자에게 수동 해결을 안내한 후 중단한다. 사용자는 격리 worktree(`$WT_PATH`)에 남은 채로 충돌을 해결한 뒤 `/pr-merge`를 재실행하면 이어진다 — worktree는 자동 제거되지 않는다.
+- **No conflict**: proceed to the next step
+- **Conflict**: print the conflict file list and instruct the user to resolve manually, then abort. The user remains inside the isolated worktree (`$WT_PATH`); after resolving the conflict, re-run `/pr-merge` — worktree is not auto-removed.
 
-**건너뛰기 조건**: Step 4.1을 방금 실행한 경우 (격리 worktree를 `origin/{target-branch}`로부터 생성) 이미 동기화 상태이므로 건너뛴다.
+**Skip condition**: if Step 4.1 was just executed (isolated worktree created from `origin/{target-branch}`), it is already in sync, so skip.
 
-### Step 6: 커밋 & 푸시
+### Step 6: Commit & push
 
-격리 worktree 안에서 미커밋 변경사항을 처리한다:
+Process uncommitted changes inside the isolated worktree:
 
-1. `git status`로 변경사항을 확인한다 (작업 디렉토리는 `$WT_PATH`).
-2. 변경사항이 있으면 변경 내용 요약을 출력한다.
-   - **일반 모드**: **AskUserQuestion**으로 커밋 진행 여부를 확인한다.
-   - **`--auto` 모드**: 확인 프롬프트를 건너뛰고 바로 다음 단계로 진행한다.
-3. (자동 또는 사용자 확인 후):
-   - 변경된 파일을 `git add`로 스테이징 (민감 파일 `.env`, `credentials` 등 제외)
-   - `git diff --staged`로 스테이징된 변경사항 분석
-   - `git log`로 최근 커밋 메시지 스타일 확인
-   - 변경사항을 분석하여 커밋 메시지 작성 후 `git commit` 실행
-4. `git push -u origin "$BRANCH_NAME"`으로 원격에 푸시한다 (Step 4.1을 거친 경우 — 아니면 `git push -u origin {branch-name}`).
+1. Check changes via `git status` (working directory is `$WT_PATH`).
+2. If there are changes, print a change summary.
+   - **Normal mode**: confirm whether to commit via **AskUserQuestion**.
+   - **`--auto` mode**: skip the confirmation prompt and proceed to the next step.
+3. (Auto or after user confirmation):
+   - Stage modified files with `git add` (excluding sensitive files like `.env`, `credentials`, etc.)
+   - Analyze staged changes via `git diff --staged`
+   - Check the recent commit-message style via `git log`
+   - Analyze changes, write a commit message, and run `git commit`
+4. Push to the remote via `git push -u origin "$BRANCH_NAME"` (when going through Step 4.1 — otherwise `git push -u origin {branch-name}`).
 
-변경사항이 없으면 이 단계를 건너뛴다.
+If there are no changes, skip this step.
 
-> **참고**: 격리 worktree는 메인 worktree와 git 메타데이터(`.git`)를 공유하므로 push/remote 설정은 별도 구성이 필요 없다.
+> **Note**: the isolated worktree shares git metadata (`.git`) with the main worktree, so push/remote settings do not need separate configuration.
 
-### Step 7: PR 생성
+### Step 7: Create the PR
 
-기존 PR이 있는지 확인하고, 없으면 새로 생성한다:
+Check whether an existing PR exists, and create a new one if not:
 
-1. `gh pr list --head "$BRANCH_NAME" --base {target-branch} --state open`으로 기존 PR 확인 (Step 4.1을 거친 경우 — 아니면 `{branch-name}` 값으로 치환).
-2. **기존 PR이 있으면**: PR URL을 출력하고 Step 8로 진행
-3. **기존 PR이 없으면**: ASTRA 템플릿으로 PR 생성
+1. Check existing PRs via `gh pr list --head "$BRANCH_NAME" --base {target-branch} --state open` (when going through Step 4.1 — otherwise substitute `{branch-name}`).
+2. **If an existing PR exists**: print the PR URL and proceed to Step 8
+3. **If no existing PR**: create a PR with the ASTRA template
 
 ```bash
-gh pr create --base {target-branch} --title "{PR 제목}" --body "$(cat <<'EOF'
+gh pr create --base {target-branch} --title "{PR title}" --body "$(cat <<'EOF'
 ## Summary
-- {변경사항 요약 1}
-- {변경사항 요약 2}
+- {change summary 1}
+- {change summary 2}
 
 ## Test plan
-- [ ] 코드 리뷰 통과
-- [ ] 테스트 실행 확인
+- [ ] Code review passes
+- [ ] Verify the tests run
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 EOF
 )"
 ```
 
-- `--draft` 옵션이 지정된 경우 `--draft` 플래그 추가
-- PR 제목은 70자 이내로 작성
-- PR URL을 출력한다
+- If `--draft` is specified, add the `--draft` flag
+- The PR title must be ≤ 70 chars
+- Print the PR URL
 
-**Step 8로 진행한다.**
+**Proceed to Step 8.**
 
 ---
 
-## 공통: 코드 리뷰 & 머지 사이클
+## Common: code-review & merge cycle
 
-### Step 8: 코드 리뷰
+### Step 8: Code review
 
-리뷰 반복 횟수를 0으로 초기화한다.
+Initialize the review iteration count to 0.
 
-`--no-review` 옵션이 지정된 경우 이 단계를 건너뛰고 Step 8.3으로 진행한다.
+If `--no-review` is specified, skip this step and proceed to Step 8.3.
 
-`feature-dev:code-reviewer` Agent를 스폰하여 코드 리뷰를 실행한다:
+Spawn the `feature-dev:code-reviewer` agent to run a code review:
 
 ```
 Agent tool (subagent_type: "feature-dev:code-reviewer")
-- PR의 변경사항을 기준으로 코드 리뷰 실행
-- 버그, 로직 오류, 보안 취약점, 코드 품질 이슈를 분석
-- **중요**: kubernetes/ 디렉토리 하위의 파일을 제거하라는 제안은 하지 않는다
+- Run a code review based on the PR's changes
+- Analyze bugs, logic errors, security vulnerabilities, code-quality issues
+- **Important**: do not suggest removing any file under the kubernetes/ directory
 ```
 
-리뷰 결과를 다음 4단계로 분류하여 출력한다:
+Classify the review results into 4 severity levels and print:
 
-| 심각도 | 설명 | 예시 |
-|--------|------|------|
-| **Critical** | 즉시 수정 필수, 프로덕션 장애 위험 | SQL injection, null 참조, 데이터 손실 |
-| **High** | 수정 권장, 중요 버그 또는 보안 이슈 | 미처리 예외, 인증 우회 가능성 |
-| **Medium** | 코드 품질 개선, 기능에는 영향 없음 | 중복 코드, 비효율 로직, 불명확한 네이밍 |
-| **Low** | 스타일/컨벤션, 선택적 개선 | 포매팅, 주석 누락, 미사용 import |
+| Severity | Description | Examples |
+|----------|-------------|----------|
+| **Critical** | Must fix immediately; risk of production outage | SQL injection, null reference, data loss |
+| **High** | Recommended fix; important bug or security issue | Unhandled exception, possible auth bypass |
+| **Medium** | Code-quality improvement; no functional impact | Duplicate code, inefficient logic, unclear naming |
+| **Low** | Style/convention; optional improvement | Formatting, missing comments, unused imports |
 
-### Step 8.1: 리뷰 결과 판정
+### Step 8.1: Review-result decision
 
-리뷰 결과를 바탕으로 다음 행동을 결정한다:
+Based on the review results, decide the next action:
 
-- **Critical + High = 0건**: 리뷰 통과 → **Step 8.3**으로 진행
-- **Critical + High > 0건 AND 반복 횟수 < MAX**: 이슈 수정 필요 → **Step 8.2**로 진행
-- **반복 횟수 = MAX에 도달**: **AskUserQuestion**으로 사용자에게 선택지를 제공
-  - (a) 추가 반복 허용 (MAX 증가)
-  - (b) 남은 이슈를 무시하고 머지 진행 (단, Critical 이슈가 있으면 이 선택지는 제공하지 않음)
-  - (c) 워크플로우 중단
+- **Critical + High = 0**: review passes → proceed to **Step 8.3**
+- **Critical + High > 0 AND iteration < MAX**: issues need fixing → proceed to **Step 8.2**
+- **Iteration = MAX reached**: provide options via **AskUserQuestion**
+  - (a) Allow additional iterations (raise MAX)
+  - (b) Ignore remaining issues and proceed to merge (but: do not offer this option if any Critical issue remains)
+  - (c) Abort the workflow
 
-**머지 차단 조건**: Critical 이슈가 1건이라도 남아있으면 머지를 진행할 수 없다.
+**Merge-block condition**: if even one Critical issue remains, the merge cannot proceed.
 
-### Step 8.2: 이슈 자동 수정 & 재리뷰
+### Step 8.2: Auto-fix issues & re-review
 
-1. 이슈 목록을 사용자에게 표시한다.
-2. **사용자 확인 없이 즉시 자동 수정을 진행한다.**
-3. 각 이슈를 순서대로 수정한다 — **외과적 변경(Surgical Changes) 원칙 적용**:
-   - 해당 파일을 읽고 이슈 위치를 파악한다.
-   - Edit tool로 **리뷰에서 지적된 라인만** 수정한다. 인접 코드의 포매팅·주석·네이밍을 임의로 "개선"하지 않는다.
-   - 망가지지 않은 코드를 리팩토링하지 않는다 (이슈로 지적되지 않았다면 그대로 둔다).
-   - 본인 수정으로 미사용이 된 import/변수만 제거한다. 사전부터 존재하던 데드 코드는 그대로 둔다.
-   - 본인 취향과 다르더라도 기존 스타일을 따른다.
-   - 수정 내용 요약 출력
-   - **테스트 기준**: 변경된 모든 라인이 리뷰 이슈 항목에 직접 추적 가능해야 한다. 무관한 변경은 별도 PR로 분리하도록 사용자에게 제안한다.
-   - **금지 규칙**: `kubernetes/` 디렉토리 하위의 파일은 절대 삭제하지 않는다. 수정은 허용하되, 파일 제거 제안은 무시한다.
-4. **검증 가능한 성공 기준(Goal-Driven Execution)**: 프로젝트에 테스트가 설정되어 있으면 테스트를 실행하여 수정이 기존 기능을 깨뜨리지 않았는지 확인한다. 테스트가 실패하면 다음 반복에서 우선 해결한다.
-5. 수정된 파일을 `git add`로 스테이징
-6. 반복 횟수를 1 증가시킨다.
-7. `git commit` — 메시지는 "fix: address code review issues (iteration {N})" 형식 (N은 1부터 시작)
-8. `git push`로 원격에 푸시
-9. **Step 8로 복귀**하여 재리뷰 실행 (반복 횟수는 유지, 재초기화하지 않음)
+1. Show the issue list to the user.
+2. **Proceed with auto-fix immediately, without user confirmation.**
+3. Fix each issue in order — **apply the Surgical Changes principle**:
+   - Read the relevant file and locate the issue.
+   - With the Edit tool, **only modify the lines the review points out**. Do not arbitrarily "improve" adjacent code's formatting / comments / naming.
+   - Do not refactor unbroken code (leave it alone unless flagged by an issue).
+   - Remove only imports/variables made unused by your own fix. Leave pre-existing dead code as is.
+   - Follow the existing style even if it differs from your taste.
+   - Output a summary of the changes
+   - **Test criterion**: every modified line must trace directly to an issue. Suggest splitting unrelated changes into a separate PR.
+   - **Forbidden rule**: never delete files under the `kubernetes/` directory. Edits are allowed, but file-removal suggestions are ignored.
+4. **Verifiable success criterion (Goal-Driven Execution)**: if the project has tests configured, run them to verify the fixes did not break existing functionality. If tests fail, address them first in the next iteration.
+5. Stage the modified files with `git add`
+6. Increment the iteration count by 1.
+7. `git commit` — message format: "fix: address code review issues (iteration {N})" (N starts at 1)
+8. Push to the remote with `git push`
+9. **Return to Step 8** to re-review (keep the iteration count; do not reset)
 
-> **루프 정합성**: 이 5회 자동 디버그 루프는 "강한 성공 기준이 있을 때 LLM이 독립적으로 루프할 수 있다"는 원리에 기반한다. 약한 기준("일단 동작하게")으로는 루프가 발산한다 — 따라서 매 반복은 *리뷰 통과* 또는 *테스트 통과*라는 명확한 검증 게이트를 가진다.
+> **Loop integrity**: this 5-attempt auto-debug loop is based on the principle that "an LLM can loop autonomously when there is a strong success criterion." With a weak criterion ("just make it work") the loop diverges — so every iteration has a clear verification gate of *review pass* or *test pass*.
 
-### Step 8.3: PR 머지 확인
+### Step 8.3: PR-merge confirmation
 
-PR URL, 리뷰 결과 요약 (통과 여부, 반복 횟수), 변경 파일 수를 출력한다.
+Print the PR URL, the review-result summary (pass/fail, iteration count), and the changed-file count.
 
-- **일반 모드**: **AskUserQuestion**으로 사용자에게 최종 머지 확인을 요청한다. 거부 시 워크플로우를 중단한다.
-- **`--auto` 모드**: 확인 프롬프트를 건너뛰고 바로 Step 8.4로 진행한다.
+- **Normal mode**: ask for final merge confirmation via **AskUserQuestion**. On decline, abort the workflow.
+- **`--auto` mode**: skip the confirmation prompt and proceed to Step 8.4.
 
-### Step 8.4: PR 머지
+### Step 8.4: PR merge
 
-사용자 확인 후 PR을 머지한다:
+After user confirmation, merge the PR:
 
-1. Draft PR인 경우 먼저 `gh pr ready`로 Ready 상태로 변경
-2. `gh pr merge --merge`로 머지 실행
-   - **`--delete-branch` 옵션은 사용하지 않는다** — 머지된 원격 작업 브랜치는 머지 이력 추적·롤백 참조·다른 환경 동기화를 위해 보존한다.
-   - 로컬 브랜치 정리는 Step 9에서 `git branch -d`(안전 삭제)로 별도 수행한다.
-   - 프로모션 모드의 소스 브랜치(`dev`, `staging`)도 동일하게 보존된다 (영구 브랜치).
+1. If the PR is a Draft, first change to Ready via `gh pr ready`
+2. Run the merge via `gh pr merge --merge`
+   - **Do not use the `--delete-branch` option** — preserve the merged remote work branch for merge-history tracking, rollback reference, and syncing to other environments.
+   - Local-branch cleanup is performed separately in Step 9 via `git branch -d` (safe delete).
+   - Promotion-mode source branches (`dev`, `staging`) are likewise preserved (they are permanent branches).
 
-**모드 확인**: `--staging` 또는 `--main` 플래그가 지정된 경우 **Step 11**로, 그 외는 **Step 9**로 진행한다.
+**Mode check**: if `--staging` or `--main` is specified, proceed to **Step 11**; otherwise proceed to **Step 9**.
 
 ---
 
-## 기본 모드: 정리
+## Default mode: cleanup
 
-### Step 9: 정리 및 버전 업데이트
+### Step 9: Cleanup and version update
 
-머지 후 격리 worktree와 로컬 환경을 정리한다. **메인 worktree로 먼저 이동**한 뒤 정리한다 (격리 worktree에서 자기 자신을 remove할 수 없음):
+After the merge, clean up the isolated worktree and the local environment. **First move into the main worktree** before cleaning up (an isolated worktree cannot remove itself):
 
-1. **메인 worktree로 이동**:
+1. **Move into the main worktree**:
    ```bash
    MAIN_ROOT=$(astra_main_worktree_root)
    cd "$MAIN_ROOT"
    ```
-2. `git fetch origin`으로 원격 최신 상태를 가져온다.
-3. `git checkout dev`로 전환한다 (`{target-branch}`가 dev가 아닌 경우에도 종료 위치는 dev로 통일).
-4. `git pull --rebase origin dev`로 최신 상태 동기화.
-5. **격리 worktree 제거**: `STARTED_FROM_ISOLATED=1`인 경우(sprint worktree 안에서 호출되었거나 Step 4.1에서 자동 생성된 임시 worktree에서 시작한 경우)에만 제거한다:
+2. Fetch the latest remote state with `git fetch origin`.
+3. Switch to `dev` with `git checkout dev` (even when `{target-branch}` is not dev, the final position is unified to dev).
+4. Sync to latest with `git pull --rebase origin dev`.
+5. **Remove the isolated worktree**: only when `STARTED_FROM_ISOLATED=1` (invoked from inside a sprint worktree, or started from a temporary worktree auto-created in Step 4.1):
    ```bash
    if [ "${STARTED_FROM_ISOLATED:-0}" = "1" ] && [ -n "${BRANCH_NAME:-}" ]; then
      astra_remove_worktree "$BRANCH_NAME"
    fi
    ```
-   `git worktree remove`가 실패하면 (`{work-tree-path}`에 dirty 변경사항 등) 헬퍼는 경고만 출력하고 워크플로우는 계속 진행한다. 메인 worktree에서 작업 브랜치로 시작한 호환성 케이스(`STARTED_FROM_ISOLATED=0`)는 worktree 제거를 건너뛴다 (메인 worktree 자체를 제거하면 안 됨).
-6. **머지된 로컬 브랜치 삭제**: `STARTED_FROM_ISOLATED=1`인 경우에만 실행한다. PR이 실제로 머지 완료된 경우만 `git branch -d "$BRANCH_NAME"` (안전 삭제 — 미머지면 실패):
+   If `git worktree remove` fails (e.g., dirty changes in `{work-tree-path}`), the helper only prints a warning and the workflow continues. The compatibility case where you started on a work branch in the main worktree (`STARTED_FROM_ISOLATED=0`) skips worktree removal (the main worktree itself must not be removed).
+6. **Delete the merged local branch**: only when `STARTED_FROM_ISOLATED=1`. Only if the PR has actually been merged, `git branch -d "$BRANCH_NAME"` (safe delete — fails if not merged):
    ```bash
    if [ "${STARTED_FROM_ISOLATED:-0}" = "1" ] && [ -n "${BRANCH_NAME:-}" ]; then
-     git branch -d "$BRANCH_NAME" || echo "INFO: $BRANCH_NAME 삭제 건너뜀 (미머지 또는 원격에서 이미 삭제됨)"
+     git branch -d "$BRANCH_NAME" || echo "INFO: skipped deleting $BRANCH_NAME (not merged or already deleted on remote)"
    fi
    ```
-   메인 worktree에서 작업 브랜치로 시작한 호환성 케이스(`STARTED_FROM_ISOLATED=0`)는 현재 브랜치가 메인 worktree에 체크아웃된 상태라 `git branch -d`로 삭제할 수 없으므로 건너뛴다. 미머지로 실패하면 사용자에게 안내만 하고 강제 삭제하지 않는다.
-7. 최종 요약을 출력한다:
+   The compatibility case where you started on a work branch in the main worktree (`STARTED_FROM_ISOLATED=0`) is skipped because the current branch is checked out in the main worktree and cannot be deleted with `git branch -d`. If safe delete fails (not merged), only inform the user; do not force delete.
+7. Print the final summary:
 
-> **참고**: 기본 모드에서는 버전 범프를 수행하지 않는다. 버전 범프는 `--main` 프로모션 (Step 11)에서만 실행된다.
+> **Note**: in default mode, version bumping is not performed. Version bumps run only in `--main` promotion (Step 11).
 
 ```
-## PR Review & Merge 완료
+## PR Review & Merge complete
 
-### 결과 요약
+### Result summary
 - PR: {PR URL}
-- 머지: {branch-name} → {target-branch}
-- 리뷰 반복: {N}회
-- 수정된 이슈: Critical {n}건, High {n}건
-- 상태: ✅ 머지 완료
+- Merge: {branch-name} → {target-branch}
+- Review iterations: {N}
+- Fixed issues: Critical {n}, High {n}
+- Status: ✅ merged
 
-### 변경사항
-- {커밋 요약 1}
-- {커밋 요약 2}
+### Changes
+- {commit summary 1}
+- {commit summary 2}
 ```
 
 ---
 
-## 프로모션 모드 (--staging / --main)
+## Promotion mode (--staging / --main)
 
-### Step 10: 프로모션 준비
+### Step 10: Promotion prep
 
-프로모션 모드는 브랜치 간 코드를 승격(promote)하는 워크플로우이다.
+Promotion mode is the workflow that *promotes* code between branches.
 
-**브랜치 매핑**:
+**Branch mapping**:
 - `--staging`: `{source-branch}` = `dev`, `{target-branch}` = `staging`
 - `--main`: `{source-branch}` = `staging`, `{target-branch}` = `main`
 
-**검증 절차**:
+**Validation procedure**:
 
-> **참고**: 프로모션 모드의 source/target은 항상 공유 브랜치(dev/staging/main)이므로 worktree 격리 대상이 아니다. 모든 checkout은 메인 worktree에서 수행한다.
+> **Note**: in promotion mode, source/target are always shared branches (dev/staging/main), so they are not subject to worktree isolation. All checkouts run in the main worktree.
 
-1. **소스 브랜치 확인**: `git ls-remote --heads origin {source-branch}`로 원격에 `{source-branch}`가 존재하는지 확인한다. 없으면 에러 메시지를 출력하고 중단한다.
-2. **대상 브랜치 확인**: `git ls-remote --heads origin {target-branch}`로 원격에 `{target-branch}`가 존재하는지 확인한다.
-   - **존재하지 않으면**: **AskUserQuestion**으로 `{target-branch}` 브랜치를 `{source-branch}`로부터 생성할지 확인한다. 승인 시 생성하고 push, 거부 시 중단한다.
-3. **소스 브랜치로 전환**: 메인 worktree에서 `git checkout {source-branch}`
-4. **차이 확인**: `git log origin/{target-branch}..origin/{source-branch} --oneline`으로 프로모션할 커밋이 있는지 확인한다. 차이가 없으면 "프로모션할 변경사항이 없습니다"를 출력하고 중단한다.
-5. 커밋 목록을 사용자에게 표시한다.
+1. **Verify the source branch**: with `git ls-remote --heads origin {source-branch}`, check whether `{source-branch}` exists on the remote. If not, print an error message and abort.
+2. **Verify the target branch**: with `git ls-remote --heads origin {target-branch}`, check whether `{target-branch}` exists on the remote.
+   - **If it does not exist**: ask via **AskUserQuestion** whether to create `{target-branch}` from `{source-branch}`. On approval, create and push; on decline, abort.
+3. **Switch to the source branch**: in the main worktree, `git checkout {source-branch}`
+4. **Verify the diff**: with `git log origin/{target-branch}..origin/{source-branch} --oneline`, check whether commits to promote exist. If there is no diff, print "No changes to promote" and abort.
+5. Show the commit list to the user.
 
-### Step 10.1: 프로모션 PR 생성
+### Step 10.1: Create the promotion PR
 
-1. `gh pr list --head {source-branch} --base {target-branch} --state open`으로 기존 프로모션 PR 확인
-2. **기존 PR이 있으면**: PR URL을 출력하고 Step 8로 진행
-3. **기존 PR이 없으면**: 프로모션 PR 생성
+1. Check existing promotion PRs via `gh pr list --head {source-branch} --base {target-branch} --state open`
+2. **If an existing PR exists**: print the PR URL and proceed to Step 8
+3. **If no existing PR**: create a promotion PR
 
 ```bash
 gh pr create --head {source-branch} --base {target-branch} --title "promote: {source-branch} → {target-branch}" --body "$(cat <<'EOF'
 ## Promotion: {source-branch} → {target-branch}
 
 ### Commits included
-{커밋 목록}
+{commit list}
 
 ### Checklist
-- [ ] 코드 리뷰 통과
-- [ ] 테스트 통과 확인
+- [ ] Code review passes
+- [ ] Tests pass
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 EOF
 )"
 ```
 
-- `--draft` 옵션이 지정된 경우 `--draft` 플래그 추가
-- PR URL을 출력하고 **Step 8**로 진행 (공통 코드 리뷰 & 머지 사이클)
+- If `--draft` is specified, add the `--draft` flag
+- Print the PR URL and proceed to **Step 8** (common code-review & merge cycle)
 
-> **Note**: Step 8.2에서 이슈 수정 시 `{source-branch}`에서 커밋하고 푸시한다.
+> **Note**: when fixing issues in Step 8.2, commit and push from `{source-branch}`.
 
 ---
 
-## 프로모션 모드: 정리
+## Promotion mode: cleanup
 
-### Step 11: 프로모션 완료 정리
+### Step 11: Promotion-completion cleanup
 
-1. `git fetch origin`으로 원격 최신 상태를 가져온다.
-2. `git checkout {target-branch}`으로 전환한다.
-3. `git pull --rebase`로 최신 상태 동기화
-4. 프로모션에서는 소스 브랜치를 삭제하지 않는다 (`dev`, `staging`은 영구 브랜치).
-5. 버전 범프는 `--main` 프로모션일 때만 실행한다 (릴리스 버전 관리):
-   - `.claude-plugin/plugin.json`과 `.claude-plugin/marketplace.json`의 존재 여부를 확인한다.
-   - 파일이 존재하면 `--patch` / `--minor` / `--major` 옵션에 따라 SemVer 버전을 범프한다:
-     - `--patch` (기본값): `x.y.z` → `x.y.z+1`
+1. Fetch the latest remote with `git fetch origin`.
+2. Switch to `{target-branch}` with `git checkout {target-branch}`.
+3. Sync to latest with `git pull --rebase`
+4. Do not delete the source branch in promotion (`dev`, `staging` are permanent branches).
+5. Version bump runs only for `--main` promotion (release version management):
+   - Verify the existence of `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`.
+   - When the files exist, bump the SemVer version per the `--patch` / `--minor` / `--major` option:
+     - `--patch` (default): `x.y.z` → `x.y.z+1`
      - `--minor`: `x.y.z` → `x.y+1.0`
      - `--major`: `x.y.z` → `x+1.0.0`
-   - 두 파일 모두 동일한 버전으로 업데이트한다.
-   - `main`에 직접 커밋하고 푸시한다: "chore: bump version to {new-version}"
-6. **`dev` 브랜치로 복귀**: 프로모션 완료 후 `dev` 브랜치로 전환하여 다음 개발 작업을 바로 이어갈 수 있도록 한다:
+   - Update both files to the same version.
+   - Commit directly to `main` and push: "chore: bump version to {new-version}"
+6. **Return to the `dev` branch**: after promotion, switch to `dev` so subsequent development can continue seamlessly:
    ```bash
    git checkout dev
    git pull --rebase origin dev
    ```
-7. 최종 요약을 출력한다:
+7. Print the final summary:
 
 ```
-## Promotion 완료
+## Promotion complete
 
-### 결과 요약
+### Result summary
 - PR: {PR URL}
-- 프로모션: {source-branch} → {target-branch}
-- 포함 커밋: {N}건
-- 리뷰 반복: {N}회
-- 버전: {old-version} → {new-version} (--main일 때만)
-- 상태: ✅ 프로모션 완료
+- Promotion: {source-branch} → {target-branch}
+- Commits included: {N}
+- Review iterations: {N}
+- Version: {old-version} → {new-version} (only with --main)
+- Status: ✅ promoted
 ```
 
 ---
@@ -515,52 +515,52 @@ EOF
 ## Quick Run Examples
 
 ```
-# 기본 실행 — feature → 선택한 브랜치 머지, 기본값 dev (최대 3회 리뷰 반복)
+# Default — feature → selected branch merge, default dev (up to 3 review iterations)
 /pr-merge
 
-# 리뷰 반복 최대 5회
+# Up to 5 review iterations
 /pr-merge 5
 
-# 코드 리뷰 없이 빠른 머지
+# Quick merge without code review
 /pr-merge --no-review
 
-# Draft PR로 생성 후 리뷰
+# Create as Draft PR then review
 /pr-merge --draft
 
-# minor 버전 범프와 함께 실행
+# Run with minor version bump
 /pr-merge --minor
 
-# 옵션 조합
+# Option combinations
 /pr-merge 5 --minor --draft
 
-# 프로모션: dev → staging
+# Promotion: dev → staging
 /pr-merge --staging
 
-# 프로모션: staging → main (릴리스)
+# Promotion: staging → main (release)
 /pr-merge --main
 
-# 프로모션 + minor 버전 범프
+# Promotion + minor version bump
 /pr-merge --main --minor
 
-# 프로모션 + 리뷰 스킵
+# Promotion + skip review
 /pr-merge --staging --no-review
 ```
 
 ## Notes
 
-- **브랜치 전략**: `feature → dev → staging → main` 순서로 코드를 승격한다.
-- **Worktree 정책 (v5.0+)**: sprint worktree는 `/sprint-init`이 생성한다 (`.astra-worktrees/sprint-<N>-<name>/`). `/pr-merge`는 그 안에서 호출되어 dev에 머지를 완료한 직후 worktree를 자동 제거하고 메인 worktree(dev)로 복귀한다. 공유 브랜치(main/staging/dev/master) 간 캐스케이드 머지·프로모션은 메인 worktree에서 직접 수행한다. 충돌 등으로 워크플로우가 중단되면 worktree는 그대로 남는다 — 해결 후 `/pr-merge` 재실행으로 이어진다.
-- **폴백 흐름**: `/sprint-init` 없이 메인 worktree(dev)에서 직접 변경한 사용자가 `/pr-merge`를 호출하면 Step 4.1에서 임시 격리 worktree를 자동 생성한다. 단발성 작업에 한해 사용하고, 일반적으로는 `/sprint-init`부터 시작하는 것이 권장된다.
-- **공통 전처리**: 모든 모드에서 실행 전 `main` / `staging` / `dev`를 pull 받는다. 캐스케이드 머지는 모드에 따라 범위가 다르다: 기본 모드는 전체(`main → staging → dev`), `--staging` 프로모션은 `main → staging`까지만, `--main` 프로모션은 건너뛴다.
-- **기본 모드**: 머지 대상 브랜치는 자동으로 `dev`로 설정된다 (사용자에게 묻지 않음). `main`/`master`/`staging`/`dev` 브랜치에서 실행하면 자동으로 작업 브랜치를 생성한다. 브랜치명도 변경사항을 분석하여 자동 결정한다. 원격에 `{target-branch}`가 없으면 기본 브랜치로부터 자동 생성한다.
-- **프로모션 모드 (`--staging`)**: `dev` → `staging`으로 승격한다. 작업 브랜치 생성/커밋 단계를 건너뛰고 PR 기반 머지에 집중한다.
-- **프로모션 모드 (`--main`)**: `staging` → `main`으로 승격한다. 릴리스 프로모션이므로 버전 범프가 이 단계에서 실행된다.
-- 머지 완료 후 최종 체크아웃 위치: 기본 모드는 `{target-branch}` (`dev`), 프로모션 모드는 `dev` 브랜치로 복귀한다.
-- Critical 이슈가 남아있으면 머지가 차단된다.
-- 충돌 발생 시 자동 해결을 시도하지 않고, 사용자에게 안내 후 중단한다.
-- 버전 범프는 `--main` 프로모션에서만 실행되며, `.claude-plugin/plugin.json`이 존재하는 프로젝트에서만 적용된다.
-- 커밋, 머지 전에는 반드시 사용자 확인을 거친다. 단, 코드 리뷰 후 이슈 수정은 사용자 확인 없이 자동으로 진행한다.
-- **kubernetes 보호 규칙**: 코드 리뷰 및 이슈 수정 시 `kubernetes/` 디렉토리 하위의 파일을 제거하지 않는다.
-- **원격 브랜치 보존 정책**: 머지 후에도 원격 작업 브랜치(`feat/*`, `fix/*`, `docs/*`, `refactor/*`, `chore/*` 등)는 원격에서 삭제하지 않는다. 머지 이력 추적, 롤백 참조, 다른 환경에서의 재사용을 위해 보존한다. 로컬 브랜치만 `git branch -d`로 안전 삭제한다 (미머지면 자동으로 건너뜀).
-- 프로모션 모드에서 소스 브랜치(`dev`, `staging`)는 삭제하지 않는다.
-- **외과적 변경 원칙**: Step 8.2 이슈 수정 시 리뷰에서 지적된 라인만 변경한다. 인접 코드의 임의 리팩토링, 포매팅 변경, 네이밍 개선은 금지한다. 변경된 모든 라인은 리뷰 이슈 항목에 직접 추적 가능해야 한다. 무관한 개선은 별도 PR로 분리한다. (참고: `coding-convention` skill의 Behavioral Guardrails)
+- **Branch strategy**: promote code in the order `feature → dev → staging → main`.
+- **Worktree policy (v5.0+)**: sprint worktrees are created by `/sprint-init` (`.astra-worktrees/sprint-<N>-<name>/`). `/pr-merge` is invoked inside one, and right after merging into dev it auto-removes the worktree and returns to the main worktree (dev). Cross-shared-branch (main/staging/dev/master) cascade merges and promotions run directly in the main worktree. If the workflow halts due to a conflict, the worktree remains — after resolving, re-run `/pr-merge` to continue.
+- **Fallback flow**: when a user without `/sprint-init` invokes `/pr-merge` after making changes directly in the main worktree (dev), Step 4.1 auto-creates a temporary isolated worktree. Use this for one-off work; starting with `/sprint-init` is Recommended in general.
+- **Common preprocessing**: in every mode, pull `main` / `staging` / `dev` before execution. The cascade-merge scope differs per mode: default mode runs the full cascade (`main → staging → dev`), `--staging` promotion only up to `main → staging`, `--main` promotion skips it.
+- **Default mode**: the merge target branch is automatically set to `dev` (no user prompt). When running from `main`/`master`/`staging`/`dev`, a work branch is auto-created. The branch name is also auto-decided by analyzing the changes. If `{target-branch}` is missing on the remote, it is auto-created from the default branch.
+- **Promotion mode (`--staging`)**: promote `dev` → `staging`. Skips the work-branch creation/commit steps and focuses on PR-based merging.
+- **Promotion mode (`--main`)**: promote `staging` → `main`. As this is a release promotion, the version bump runs at this stage.
+- Final checkout location after merge: default mode goes to `{target-branch}` (`dev`); promotion mode returns to the `dev` branch.
+- If Critical issues remain, merging is blocked.
+- On conflict, do not attempt auto-resolution; instruct the user and abort.
+- The version bump runs only in `--main` promotion, and applies only to projects with `.claude-plugin/plugin.json`.
+- Before commits and merges, user confirmation is always required. However, after-review issue fixes proceed automatically without user confirmation.
+- **kubernetes protection rule**: during code review and issue fixes, do not delete files under the `kubernetes/` directory.
+- **Remote-branch preservation policy**: after merging, remote work branches (`feat/*`, `fix/*`, `docs/*`, `refactor/*`, `chore/*`, etc.) are not deleted from the remote. They are preserved for merge-history tracking, rollback reference, and reuse in other environments. Only local branches are safely deleted with `git branch -d` (auto-skipped if unmerged).
+- In promotion mode, source branches (`dev`, `staging`) are not deleted.
+- **Surgical Changes principle**: during Step 8.2 issue fixes, change only the lines flagged by the review. Arbitrary refactoring, format changes, or naming "improvements" on adjacent code are forbidden. Every modified line must trace directly to an issue. Split unrelated improvements into a separate PR. (See: Behavioral Guardrails in the `coding-convention` skill.)
