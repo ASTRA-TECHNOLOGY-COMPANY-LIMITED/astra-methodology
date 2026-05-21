@@ -574,17 +574,24 @@ After `/sprint-init` returns, `/blueprint`'s parent context remains in the main 
 ```bash
 # 6.5.4 Discover the worktree path (read-only — no cd)
 if [ "$WORKTREE_CREATED" = "1" ]; then
-  SPRINT_BRANCH="feat/sprint-${SPRINT_N:-?}-${FEATURE_SLUG}"   # SPRINT_N is whatever /sprint-init resolved to
-  # Use git worktree list to find the worktree path for the sprint branch — survives slug collision suffixes
-  WT_PATH=$(git worktree list --porcelain 2>/dev/null | awk -v b="$SPRINT_BRANCH" '
+  # /blueprint has no knowledge of the sprint number /sprint-init resolved to.
+  # Locate the worktree by slug-prefix match — survives both arbitrary sprint
+  # numbers and collision suffixes (e.g., "feat/sprint-1-auth-2" when "auth"
+  # already existed).
+  WT_PATH=$(git worktree list --porcelain 2>/dev/null | awk -v slug="${FEATURE_SLUG}" '
     /^worktree / { p=$2 }
     /^branch refs\/heads\// {
-      if ($2 == "refs/heads/" b) { print p; exit }
+      b=$2; sub("refs/heads/", "", b)
+      if (b ~ "^feat/sprint-[0-9]+-" slug "(-[0-9]+)?$") { print p; exit }
     }
   ')
   if [ -z "$WT_PATH" ]; then
-    # Fallback: glob by slug pattern, pick most recent
-    WT_PATH=$(ls -td .astra-worktrees/sprint-*-${FEATURE_SLUG} 2>/dev/null | head -1)
+    # Fallback: glob both bare and collision-suffixed dirs, pick most recent
+    WT_PATH=$(ls -td .astra-worktrees/sprint-*-${FEATURE_SLUG} .astra-worktrees/sprint-*-${FEATURE_SLUG}-* 2>/dev/null | head -1)
+  fi
+  # Derive SPRINT_BRANCH from the resolved worktree (single source of truth)
+  if [ -n "$WT_PATH" ] && [ -d "$WT_PATH" ]; then
+    SPRINT_BRANCH=$(git -C "$WT_PATH" branch --show-current 2>/dev/null)
   fi
   # Read the port base from the env file (do not cd into the worktree)
   if [ -n "$WT_PATH" ] && [ -f "$WT_PATH/.astra-worktree.env" ]; then

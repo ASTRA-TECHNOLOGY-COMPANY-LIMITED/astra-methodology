@@ -79,7 +79,7 @@ Parse from `$ARGUMENTS`:
 - **Sprint name** (optional): The primary blueprint/feature name for this sprint.
 - **`--auto`** (optional flag): If present, set `AUTO_MODE=1` and proceed to Step 5 (Auto Continue) after scaffolding. Without this flag, the skill stops at Step 4 (Output Sprint Planning Guide) as before.
 - **`--max-iter=N`** (optional, only meaningful with `--auto`): max self-improving iteration count for the test loop (1 ≤ N ≤ 10). If `--auto` is set but `--max-iter` is missing, ask the user **once** via `AskUserQuestion` (default 3).
-- **`--from-blueprint`** (optional flag, v5.8+): Indicates this invocation was delegated from `/blueprint` Step 6.5 (auto-worktree creation). The flag itself does not change behavior — it serves as a signal for log messages and to skip redundant blueprint-existence checks. Set `FROM_BLUEPRINT=1` when present.
+- **`--from-blueprint`** (optional flag, v5.8+): Indicates this invocation was delegated from `/blueprint` Step 6.5 (auto-worktree creation). Set `FROM_BLUEPRINT=1` when present. **Read site**: Step 4 below — when `FROM_BLUEPRINT=1`, suppress the full Sprint Planning Guide body so `/blueprint` Step 7 can render a single consolidated Next-Steps block. No other behavior changes.
 
 **Directory name format**: `sprint-{N}-{sprint-name}/` (e.g., `sprint-1-auth/`, `sprint-2-payment/`, `sprint-3-dashboard/`)
 

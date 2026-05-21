@@ -198,12 +198,13 @@ git log -1 --oneline -- "docs/blueprints/{NNN}-{feature-slug}/" || {
 }
 
 # Discover the worktree path /blueprint Step 6.5 created (autorun is still in main worktree).
-SPRINT_BRANCH_PATTERN="feat/sprint-.*-${feature_slug}"
-WT_PATH=$(git worktree list --porcelain 2>/dev/null | awk -v pat="$SPRINT_BRANCH_PATTERN" '
+# Anchored prefix match — matches both bare ("feat/sprint-N-slug") and collision-suffixed
+# ("feat/sprint-N-slug-2") branches, but not unrelated slugs like "slug-ui".
+WT_PATH=$(git worktree list --porcelain 2>/dev/null | awk -v slug="${feature_slug}" '
   /^worktree / { p=$2 }
   /^branch refs\/heads\// {
     b=$2; sub("refs/heads/", "", b)
-    if (b ~ pat) { print p; exit }
+    if (b ~ "^feat/sprint-[0-9]+-" slug "(-[0-9]+)?$") { print p; exit }
   }
 ')
 
@@ -249,7 +250,7 @@ else
     /^worktree / { p=$2 }
     /^branch refs\/heads\// {
       b=$2; sub("refs/heads/", "", b)
-      if (b ~ "^feat/sprint-.*-" slug "$") { print p; exit }
+      if (b ~ "^feat/sprint-[0-9]+-" slug "(-[0-9]+)?$") { print p; exit }
     }
   ')
   WORKTREE_READY=1
