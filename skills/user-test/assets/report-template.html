@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UAT Report — {{SESSION_ID}}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+    color: #1f2937;
+    background: #f3f4f6;
+    padding: 24px 12px;
+  }
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    overflow: hidden;
+  }
+  header {
+    background: linear-gradient(135deg, #0891b2 0%, #06b6d4 50%, #22d3ee 100%);
+    color: #fff;
+    padding: 36px 48px;
+  }
+  header h1 { font-size: 26px; margin-bottom: 6px; font-weight: 700; }
+  header .meta {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    font-size: 13px;
+    flex-wrap: wrap;
+  }
+  header .meta span {
+    background: rgba(255,255,255,0.2);
+    padding: 5px 14px;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+  }
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    padding: 28px 48px;
+    background: #fafafa;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .stat {
+    background: #fff;
+    border-radius: 8px;
+    padding: 18px;
+    text-align: center;
+    border: 1px solid #e5e7eb;
+  }
+  .stat .num { font-size: 30px; font-weight: 700; line-height: 1.1; }
+  .stat .label { font-size: 12px; color: #6b7280; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat.pass .num { color: #059669; }
+  .stat.fail .num { color: #dc2626; }
+  .stat.total .num { color: #0891b2; }
+  .stat.time .num { color: #6366f1; font-size: 22px; }
+  main { padding: 36px 48px 48px; }
+  section { margin-bottom: 32px; }
+  h2 {
+    font-size: 22px;
+    color: #0891b2;
+    border-bottom: 2px solid #cffafe;
+    padding-bottom: 8px;
+    margin-bottom: 18px;
+  }
+  .tc {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-bottom: 18px;
+    overflow: hidden;
+  }
+  .tc-head {
+    padding: 14px 20px;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .tc-head .name { font-weight: 600; font-size: 15px; }
+  .tc-head .id { color: #6b7280; font-size: 12px; margin-right: 8px; font-family: "SF Mono", monospace; }
+  .tc-status {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .tc-status.pass { background: #d1fae5; color: #065f46; }
+  .tc-status.fail { background: #fee2e2; color: #991b1b; }
+  .tc-status.skipped { background: #e5e7eb; color: #374151; }
+  .steps { padding: 0; }
+  .step {
+    display: flex;
+    gap: 16px;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f3f4f6;
+    align-items: flex-start;
+  }
+  .step:last-child { border-bottom: none; }
+  .step .num {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    background: #06b6d4;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .step.fail .num { background: #dc2626; }
+  .step.skip .num { background: #9ca3af; }
+  .step .body { flex: 1; }
+  .step .body .title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .step .body .action { font-size: 12.5px; color: #6b7280; font-family: "SF Mono", monospace; }
+  .step .body .asserts { margin-top: 8px; font-size: 12.5px; }
+  .step .body .asserts ul { list-style: none; margin: 0; padding: 0; }
+  .step .body .asserts li { padding: 2px 0; }
+  .step .body .asserts li.ok::before { content: "✅ "; }
+  .step .body .asserts li.ng::before { content: "❌ "; }
+  .step .thumb {
+    flex-shrink: 0;
+    width: 120px;
+    height: 80px;
+    background: #f3f4f6;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+  }
+  .step .thumb img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
+  .step .thumb a { display: block; width: 100%; height: 100%; }
+  .severity {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-left: 8px;
+  }
+  .severity.critical { background: #fee2e2; color: #991b1b; }
+  .severity.high { background: #fef3c7; color: #92400e; }
+  .severity.medium { background: #ddd6fe; color: #5b21b6; }
+  .severity.low { background: #d1fae5; color: #065f46; }
+  .empty {
+    text-align: center;
+    padding: 48px;
+    color: #9ca3af;
+    font-size: 14px;
+  }
+  .empty .icon { font-size: 36px; margin-bottom: 10px; }
+  footer {
+    text-align: center;
+    padding: 22px;
+    color: #9ca3af;
+    font-size: 12px;
+    border-top: 1px solid #e5e7eb;
+    background: #fafafa;
+  }
+  footer a { color: #0891b2; text-decoration: none; }
+  @media (max-width: 768px) {
+    .summary { grid-template-columns: repeat(2, 1fr); padding: 20px 24px; }
+    main { padding: 24px; }
+    header { padding: 24px; }
+    .step { flex-direction: column; }
+    .step .thumb { width: 100%; height: 160px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>📋 UAT Report</h1>
+    <p style="font-size: 14px; opacity: 0.95;">Báo cáo kiểm thử người dùng cuối — Session {{SESSION_ID}}</p>
+    <div class="meta">
+      <span>🕒 Bắt đầu: {{STARTED_AT}}</span>
+      <span>🏁 Kết thúc: {{FINISHED_AT}}</span>
+      <span>⚙️ Mode: {{MODE}}</span>
+    </div>
+  </header>
+
+  <div class="summary">
+    <div class="stat total">
+      <div class="num">{{TOTAL_CASES}}</div>
+      <div class="label">Test Cases</div>
+    </div>
+    <div class="stat pass">
+      <div class="num">{{PASS_COUNT}}</div>
+      <div class="label">PASS</div>
+    </div>
+    <div class="stat fail">
+      <div class="num">{{FAIL_COUNT}}</div>
+      <div class="label">FAIL</div>
+    </div>
+    <div class="stat time">
+      <div class="num">{{DURATION}}</div>
+      <div class="label">Thời gian</div>
+    </div>
+  </div>
+
+  <main>
+    <section>
+      <h2>Chi tiết test cases</h2>
+      {{TEST_CASES_HTML}}
+    </section>
+
+    <section>
+      <h2>Issues</h2>
+      {{ISSUES_HTML}}
+    </section>
+  </main>
+
+  <footer>
+    Sinh bởi ASTRA <a href="https://github.com/ASTRA-TECHNOLOGY-COMPANY-LIMITED/astra-methodology">/user-test</a>
+    · Session {{SESSION_ID}}
+  </footer>
+</div>
+
+<!--
+  RENDERING GUIDE for Claude:
+
+  {{TEST_CASES_HTML}}: for each test case render:
+
+  <div class="tc">
+    <div class="tc-head">
+      <div>
+        <span class="id">{ID}</span>
+        <span class="name">{NAME}</span>
+      </div>
+      <span class="tc-status {pass|fail|skipped}">{PASS|FAIL|SKIPPED}</span>
+    </div>
+    <div class="steps">
+      [FOR EACH STEP]
+      <div class="step {fail if failed, skip if skipped}">
+        <div class="num">{N}</div>
+        <div class="body">
+          <div class="title">{step_name}
+            [IF FAIL] <span class="severity {critical|high|medium|low}">{SEVERITY}</span>
+          </div>
+          <div class="action">{action string}</div>
+          <div class="asserts">
+            <ul>
+              <li class="ok">{assertion 1}</li>
+              <li class="ng">{assertion 2 if it failed}</li>
+            </ul>
+          </div>
+        </div>
+        <div class="thumb">
+          <a href="./screenshots/step-NN-slug.png" target="_blank">
+            <img src="./screenshots/step-NN-slug.png" alt="step NN">
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {{ISSUES_HTML}}: if no FAIL render:
+    <div class="empty"><div class="icon">🎉</div>Không có lỗi nào trong session này.</div>
+  Else:
+    <p>Xem chi tiết tại <a href="./issues.md">issues.md</a> ({M} lỗi: {breakdown})</p>
+-->
+</body>
+</html>
