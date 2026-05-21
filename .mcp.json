@@ -1,11 +1,22 @@
 {
   "mcpServers": {
-    "fect-slack": {
+    "fect-image": {
       "command": "npx",
-      "args": ["-y", "-p", "@astra-group/fect-mcp-server", "fect-slack"],
+      "args": ["-y", "-p", "@astra-group/fect-mcp-server", "fect-image"],
       "env": {
-        "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}"
+        "GOOGLE_API_KEY": "${GOOGLE_API_KEY}"
       }
+    },
+    "fect-gpt-image": {
+      "command": "npx",
+      "args": ["-y", "-p", "@astra-group/fect-mcp-server", "fect-gpt-image"],
+      "env": {
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}"
+      }
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest"]
     }
   }
 }

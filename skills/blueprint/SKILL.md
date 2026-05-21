@@ -1,60 +1,60 @@
 ---
 name: blueprint
-description: "기능에 대한 청사진(설계 문서)을 작성합니다. 구현 예제 코드를 포함하지 않고 데이터 플로우, 스키마 정의, API 계약, 시퀀스 다이어그램, 로직 설계, 그리고 구현 단계에서 사용자 결정이 필요한 HITL 트리거 조건에 집중한 10개 표준 섹션을 생성합니다. /service-planner 산출물(docs/planner/{NNN}-{slug}/)이 있으면 자동으로 로드하여 초안을 만들고, 청사진 작성 시 사람의 판단이 꼭 필요한 핵심 결정 1-3개(PK 전략, 트랜잭션 경계, 외부 의존성 동기/비동기)만 AskUserQuestion으로 묻습니다. 청사진 안에 명시된 'Section 10: HITL Triggers'는 이후 /feature-dev가 구현할 때 참조하여 꼭 필요한 결정에서만 사용자에게 묻게 만듭니다. 작성 완료 후 blueprint-reviewer 에이전트를 호출해 품질을 검증합니다. /feature-dev로 청사진을 만들 때 발생하던 코드 혼입과 과도한 HITL 문제를 해결한 전용 스킬입니다."
+description: "Authors a Blueprint (design document) for a feature. Generates 10 standard sections focused on data flow, schema definition, API contract, sequence diagrams, logic design, and HITL trigger conditions that require user decisions during implementation — excluding executable implementation code. If /service-planner deliverables (docs/planner/{NNN}-{slug}/) exist, they are auto-loaded to draft the blueprint. Only 1–3 core decisions that genuinely require human judgment (PK strategy, transaction boundary, sync/async for external dependencies) are asked via AskUserQuestion. The 'Section 10: HITL Triggers' block written into the blueprint is later consulted by /feature-dev during implementation so that the user is only asked on essential decisions. After authoring, the blueprint-reviewer agent is invoked to validate quality. This dedicated skill resolves the code-pollution and over-HITL problems that occurred when blueprints were authored inside /feature-dev."
 argument-hint: "[feature-slug-or-blueprint-path] [--auto] [--from-planner=<planner-dir>]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Task, TodoWrite
 ---
 
-# Blueprint Skill — 청사진 작성 전용
+# Blueprint Skill — Dedicated Blueprint Authoring
 
-`/service-planner`가 만든 기획 산출물(또는 사용자 설명)을 입력으로 받아, **데이터 플로우 · 스키마 정의 · 로직 설계**에 집중한 청사진을 `docs/blueprints/{NNN}-{feature-slug}/blueprint.md`에 작성한다.
+Taking the planning deliverables produced by `/service-planner` (or a direct user description) as input, this skill writes a blueprint focused on **data flow · schema definition · logic design** to `docs/blueprints/{NNN}-{feature-slug}/blueprint.md`.
 
-## 설계 철학
+## Design Philosophy
 
-이 스킬은 청사진을 "**구현 직전의 설계 합의서**"로 정의한다. 구현 코드는 `/feature-dev`(또는 `/generate-entity`)가 청사진을 읽어 작성한다. 청사진 단계에서 코드를 미리 쓰면 (a) 구현 단계에서 청사진을 무시하기 쉽고, (b) 설계 의도가 코드 디테일에 가려지며, (c) 리뷰어가 "코드 리뷰"로 빠져 데이터 모델·계약을 놓친다.
+This skill defines the blueprint as "**the design agreement immediately before implementation**". Implementation code is written by `/feature-dev` (or `/generate-entity`) after reading the blueprint. Writing code at the blueprint stage causes (a) the implementation step to easily ignore the blueprint, (b) design intent to be obscured by code details, and (c) reviewers to fall into "code review" mode and miss the data model and contracts.
 
-### 허용되는 표현 (DO)
+### Allowed expressions (DO)
 
-| 분류 | 허용 산출물 |
-|------|-------------|
-| **데이터 모델** | ER 다이어그램(Mermaid), 테이블 DDL(`CREATE TABLE TB_xxx ...`), 컬럼 타입·제약·인덱스 명시, FK 관계 표 |
-| **데이터 플로우** | 시퀀스 다이어그램(Mermaid `sequenceDiagram`), 상태 다이어그램(`stateDiagram-v2`), 액티비티 플로우(`flowchart`) |
-| **API 계약** | OpenAPI 스타일 표(엔드포인트·메서드·요청 스키마·응답 스키마·에러 코드), JSON Schema |
-| **로직 설계** | 의사코드(언어 무관, `IF/WHILE/RETURN` 키워드), 결정 트리, 비즈니스 규칙 표 |
-| **이벤트/메시지** | 이벤트 페이로드 JSON Schema, 큐/토픽 이름, 발행자/구독자 목록 |
+| Category | Allowed deliverables |
+|----------|---------------------|
+| **Data model** | ER diagram (Mermaid), table DDL (`CREATE TABLE TB_xxx ...`), column types/constraints/indexes specified, FK relation tables |
+| **Data flow** | Sequence diagrams (Mermaid `sequenceDiagram`), state diagrams (`stateDiagram-v2`), activity flow (`flowchart`) |
+| **API contract** | OpenAPI-style tables (endpoint · method · request schema · response schema · error codes), JSON Schema |
+| **Logic design** | Pseudocode (language-agnostic, `IF/WHILE/RETURN` keywords), decision trees, business rule tables |
+| **Events/messages** | Event payload JSON Schema, queue/topic names, publisher/subscriber lists |
 
-### 금지되는 표현 (DON'T)
+### Forbidden expressions (DON'T)
 
-| 분류 | 금지 이유 |
-|------|----------|
-| 실행 가능한 함수/메서드 본문 (Java·TS·Python 등) | 구현은 `/feature-dev` 단계 작업 |
-| 실제 컨트롤러/서비스 클래스 정의 | 위와 동일 |
-| import/require/주석 포함된 코드 블록 | 청사진은 언어 중립 |
-| ORM 어노테이션(`@Entity`, `@Column` 등) | 스키마는 DDL 또는 표로 표현 |
-| 테스트 코드 | `/test-scenario`의 영역 |
+| Category | Reason |
+|----------|--------|
+| Executable function/method bodies (Java · TS · Python, etc.) | Implementation belongs to `/feature-dev` |
+| Actual controller/service class definitions | Same as above |
+| Code blocks with `import`/`require`/comments | Blueprint is language-neutral |
+| ORM annotations (`@Entity`, `@Column`, etc.) | Schema is expressed via DDL or tables |
+| Test code | This is `/test-scenario`'s area |
 
-**예외**: 의사코드는 허용하되 마크다운 코드 블록에 ` ```pseudo ` 언어 태그를 사용한다. 실제 언어 태그(`java`, `typescript` 등)를 쓰면 구현 코드로 오해된다.
+**Exception**: Pseudocode is allowed but must use the ` ```pseudo ` language tag in the Markdown code block. Using a real language tag (`java`, `typescript`, etc.) causes it to be misread as implementation code.
 
-## 실행 절차
+## Procedure
 
-### Step 0: 인자 파싱 및 모드 결정
+### Step 0: Argument parsing and mode determination
 
-`$ARGUMENTS`에서 파싱:
+Parse from `$ARGUMENTS`:
 
-| 토큰 | 의미 | 예시 |
-|------|------|------|
-| 첫 번째 위치 인자 | 기능 슬러그 또는 기존 청사진 경로 | `user-auth`, `docs/blueprints/001-user-auth/blueprint.md` |
-| `--auto` | HITL 스킵 (autorun 호환). 모든 결정에 보수적 디폴트 적용 | — |
-| `--from-planner=<dir>` | 명시적 planner 디렉토리 지정. 미지정 시 `docs/planner/`에서 슬러그 매칭 자동 탐색 | `--from-planner=docs/planner/003-user-auth` |
+| Token | Meaning | Example |
+|-------|---------|---------|
+| First positional argument | Feature slug or existing blueprint path | `user-auth`, `docs/blueprints/001-user-auth/blueprint.md` |
+| `--auto` | Skip HITL (autorun-compatible). Conservative defaults applied to every decision | — |
+| `--from-planner=<dir>` | Explicit planner directory. If omitted, slug-matched auto-detection under `docs/planner/` | `--from-planner=docs/planner/003-user-auth` |
 
-`AUTO_MODE` 변수 설정 (0 또는 1). `--auto`면 `AUTO_MODE=1`.
+Set the `AUTO_MODE` variable (0 or 1). `--auto` → `AUTO_MODE=1`.
 
-기능 슬러그가 제공되지 않으면 `AskUserQuestion`으로 한 번 묻는다 (kebab-case 형식 안내).
+If no feature slug is provided, ask once via `AskUserQuestion` (with kebab-case guidance).
 
-### Step 1: 디렉토리 번호 결정 + Planner 산출물 로드
+### Step 1: Determine directory number + load planner deliverables
 
 ```bash
-# 1.1 청사진 디렉토리 번호 결정 (3자리 zero-padding)
+# 1.1 Determine blueprint directory number (3-digit zero-padded)
 NEXT_NUM=$(ls -d docs/blueprints/[0-9][0-9][0-9]-* 2>/dev/null | \
   awk -F'[/-]' '{print $3}' | sort -n | tail -1)
 NEXT_NUM=$((${NEXT_NUM:-0} + 1))
@@ -62,7 +62,7 @@ printf -v NUM "%03d" "$NEXT_NUM"
 BLUEPRINT_DIR="docs/blueprints/${NUM}-${FEATURE_SLUG}"
 BLUEPRINT_PATH="${BLUEPRINT_DIR}/blueprint.md"
 
-# 1.2 Planner 디렉토리 탐색
+# 1.2 Locate planner directory
 if [ -n "$FROM_PLANNER" ]; then
   PLANNER_DIR="$FROM_PLANNER"
 else
@@ -70,72 +70,72 @@ else
 fi
 ```
 
-**Planner 산출물이 있으면 6종을 모두 읽는다**:
-- `market-analysis.md` — 시장 분석 (배경 섹션 입력)
-- `interview-report.md` — 페르소나 인터뷰 (사용자 시나리오 입력)
-- `requirements-definition.md` — KPI/OKR, 기능/비기능 요구사항 (성능·보안 섹션 입력)
-- `usecase-definition.md` — 유스케이스/저니맵 (시퀀스 다이어그램 입력)
-- `ia-screen-design.md` — IA/화면 (API 명세 입력 — 화면당 API 호출)
-- `feature-definition.md` — 스토리맵·리스크 (테스트 전략 입력)
+**If planner deliverables exist, read all 6**:
+- `market-analysis.md` — market analysis (input for the Background section)
+- `interview-report.md` — persona interviews (input for user scenarios)
+- `requirements-definition.md` — KPI/OKR, functional/non-functional requirements (input for performance/security sections)
+- `usecase-definition.md` — use cases / journey maps (input for sequence diagrams)
+- `ia-screen-design.md` — IA / screens (input for API spec — API calls per screen)
+- `feature-definition.md` — story map · risks (input for test strategy)
 
-**Planner 산출물이 없으면** 사용자 설명만으로 진행. 이 경우 모호한 섹션은 "❓ 추가 정보 필요" 마커를 둔다.
+**If planner deliverables are missing**, proceed from user description alone. In that case, leave a "❓ Additional information needed" marker for ambiguous sections.
 
-### Step 2: 10개 표준 섹션 자동 초안 작성
+### Step 2: Auto-draft the 10 standard sections
 
-`BLUEPRINT_PATH`에 다음 골격으로 작성한다. 각 섹션은 planner 산출물에서 자동 도출하되, 도출 불가능한 부분은 보수적 디폴트로 채운다.
+Write to `BLUEPRINT_PATH` using the skeleton below. Each section is derived from planner deliverables automatically; portions that cannot be derived are filled with conservative defaults.
 
-> **Section 10 (HITL Triggers) 작성 규칙**: 청사진 본문(Section 1~9)을 모두 쓴 뒤, *그 본문을 다시 훑어보며* 구현 중 결정이 필요한 항목을 식별해 10.2 표에 채운다. 청사진 본문에 명확한 답이 이미 있는 항목은 "자동" 처리로 표시하고, 미명시 항목은 "사용자 질문 필요"로 표시한다. 이 표는 `/feature-dev`가 구현 단계에서 그대로 따라 HITL 발동 여부를 결정한다.
+> **Section 10 (HITL Triggers) authoring rule**: After Sections 1–9 of the blueprint body are written, *re-scan that body* to identify items that require decisions during implementation, and fill the 10.2 table. Items that already have a clear answer in the body are marked "auto"; items that are not specified are marked "user question required". `/feature-dev` consults this table during implementation to decide whether HITL fires.
 
-#### 청사진 골격
+#### Blueprint skeleton
 
 ```markdown
-# Blueprint: {기능 이름}
+# Blueprint: {feature name}
 
 > **Generated by**: `/blueprint` skill v1
-> **Planner Source**: {PLANNER_DIR 또는 "직접 입력"}
-> **Status**: Draft (blueprint-reviewer 검증 대기)
+> **Planner Source**: {PLANNER_DIR or "direct input"}
+> **Status**: Draft (awaiting blueprint-reviewer verification)
 
-## 1. 개요 (Overview)
+## 1. Overview
 
-### 1.1 목적
-{이 기능이 해결하는 사용자/비즈니스 문제 — interview-report.md의 pain point}
+### 1.1 Purpose
+{the user/business problem this feature solves — pain point from interview-report.md}
 
-### 1.2 배경
-{왜 지금 이 기능이 필요한가 — market-analysis.md의 시장 신호}
+### 1.2 Background
+{why this feature is needed now — market signal from market-analysis.md}
 
-### 1.3 범위
-- **포함 (In Scope)**:
-  - {feature-definition.md의 스토리맵 항목}
-- **제외 (Out of Scope)**:
-  - {명시적으로 다음 sprint 또는 별도 기능으로 분리되는 항목}
+### 1.3 Scope
+- **In Scope**:
+  - {story map items from feature-definition.md}
+- **Out of Scope**:
+  - {items explicitly split out to a later sprint or a separate feature}
 
-### 1.4 성공 지표 (KPI)
-| 지표 | 목표 | 측정 방법 |
-|------|------|----------|
-| {requirements-definition.md의 KPI} | {목표값} | {측정 방식} |
+### 1.4 Success Metrics (KPI)
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| {KPI from requirements-definition.md} | {target value} | {measurement method} |
 
-## 2. 기능 명세 (Functional Spec)
+## 2. Functional Spec
 
-### 2.1 액터
-{usecase-definition.md의 액터 — 사용자 유형, 시스템, 외부 시스템}
+### 2.1 Actors
+{actors from usecase-definition.md — user types, systems, external systems}
 
-### 2.2 사용자 시나리오 (Mermaid User Journey)
+### 2.2 User Scenario (Mermaid User Journey)
 
 \`\`\`mermaid
 journey
-    title {기능 이름}
-    section {단계}
-      {액션}: {만족도}: {액터}
+    title {feature name}
+    section {stage}
+      {action}: {satisfaction}: {actor}
 \`\`\`
 
-### 2.3 비즈니스 규칙
-| ID | 규칙 | 출처 |
-|----|------|------|
-| BR-01 | {예: "이메일은 중복 가입 불가"} | {requirements-definition.md 항목 번호} |
+### 2.3 Business Rules
+| ID | Rule | Source |
+|----|------|--------|
+| BR-01 | {e.g., "duplicate sign-up by the same email is not allowed"} | {requirements-definition.md item number} |
 
-## 3. 데이터 모델 (Data Model)
+## 3. Data Model
 
-### 3.1 ER 다이어그램
+### 3.1 ER Diagram
 
 \`\`\`mermaid
 erDiagram
@@ -149,46 +149,46 @@ erDiagram
     }
 \`\`\`
 
-### 3.2 테이블 정의 (DDL)
+### 3.2 Table Definitions (DDL)
 
-> **공공데이터 표준**: 모든 테이블은 `TB_`/`TC_`/`TH_`/`TL_`/`TR_` 접두사, 컬럼은 `_YMD`/`_DT`/`_AMT`/`_NM`/`_CD`/`_NO`/`_CN`/`_YN`/`_SN`/`_ADDR` 접미사 규칙을 따른다. `data-standard` 자동 스킬이 Write 시점에 검증한다.
+> **Korean public data standard**: every table follows the `TB_`/`TC_`/`TH_`/`TL_`/`TR_` prefix and every column follows the `_YMD`/`_DT`/`_AMT`/`_NM`/`_CD`/`_NO`/`_CN`/`_YN`/`_SN`/`_ADDR` suffix rules. The `data-standard` auto-skill validates this at Write time.
 
 \`\`\`sql
--- TB_USER: 사용자 마스터
+-- TB_USER: user master
 CREATE TABLE TB_USER (
-  USER_ID     BIGINT       NOT NULL AUTO_INCREMENT COMMENT '사용자 ID',
-  USER_NM     VARCHAR(50)  NOT NULL COMMENT '사용자명',
-  EMAIL_ADDR  VARCHAR(255) NOT NULL COMMENT '이메일 주소',
-  USE_YN      CHAR(1)      NOT NULL DEFAULT 'Y' COMMENT '사용 여부',
-  REG_DT      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
+  USER_ID     BIGINT       NOT NULL AUTO_INCREMENT COMMENT 'User ID',
+  USER_NM     VARCHAR(50)  NOT NULL COMMENT 'User name',
+  EMAIL_ADDR  VARCHAR(255) NOT NULL COMMENT 'Email address',
+  USE_YN      CHAR(1)      NOT NULL DEFAULT 'Y' COMMENT 'Use flag',
+  REG_DT      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Registration datetime',
   PRIMARY KEY (USER_ID),
   UNIQUE KEY UK_USER_EMAIL (EMAIL_ADDR)
 );
 \`\`\`
 
-### 3.3 인덱스 전략
-| 인덱스 | 컬럼 | 용도 |
-|--------|------|------|
-| `UK_USER_EMAIL` | `EMAIL_ADDR` | 로그인 조회 (O(log N)) |
+### 3.3 Index Strategy
+| Index | Columns | Purpose |
+|-------|---------|---------|
+| `UK_USER_EMAIL` | `EMAIL_ADDR` | Login lookup (O(log N)) |
 
-### 3.4 FK 관계 표
-| 자식 테이블.컬럼 | 부모 테이블.컬럼 | ON DELETE | ON UPDATE |
-|------------------|------------------|-----------|-----------|
+### 3.4 FK Relations
+| Child table.column | Parent table.column | ON DELETE | ON UPDATE |
+|---------------------|---------------------|-----------|-----------|
 | `TB_USER_AUTH.USER_ID` | `TB_USER.USER_ID` | CASCADE | RESTRICT |
 
-## 4. API 명세 (API Contract)
+## 4. API Contract
 
-### 4.1 엔드포인트 목록
-| 메서드 | 경로 | 용도 | 인증 |
-|--------|------|------|------|
-| POST | `/api/users` | 사용자 등록 | 불필요 |
-| GET | `/api/users/{id}` | 사용자 조회 | Bearer |
+### 4.1 Endpoint List
+| Method | Path | Purpose | Auth |
+|--------|------|---------|------|
+| POST | `/api/users` | Register a user | none |
+| GET | `/api/users/{id}` | Look up a user | Bearer |
 
-### 4.2 요청/응답 스키마
+### 4.2 Request/Response Schemas
 
 **POST /api/users**
 
-요청 (JSON Schema):
+Request (JSON Schema):
 \`\`\`json
 {
   "type": "object",
@@ -200,25 +200,25 @@ CREATE TABLE TB_USER (
 }
 \`\`\`
 
-응답 200:
+Response 200:
 \`\`\`json
 {
   "userId": 1,
-  "userName": "홍길동",
-  "emailAddress": "hong@example.com",
+  "userName": "John Doe",
+  "emailAddress": "john@example.com",
   "registeredAt": "2026-05-20T12:34:56Z"
 }
 \`\`\`
 
-### 4.3 에러 응답 코드
-| HTTP | code | message | 발생 조건 |
-|------|------|---------|----------|
-| 400 | `INVALID_EMAIL` | 이메일 형식 오류 | RFC 5322 미충족 |
-| 409 | `DUPLICATE_EMAIL` | 이미 가입된 이메일 | UK 위반 |
+### 4.3 Error Response Codes
+| HTTP | code | message | Trigger |
+|------|------|---------|---------|
+| 400 | `INVALID_EMAIL` | Invalid email format | RFC 5322 not satisfied |
+| 409 | `DUPLICATE_EMAIL` | Email already registered | UK violation |
 
-## 5. 시퀀스 다이어그램 (Sequence Diagrams)
+## 5. Sequence Diagrams
 
-### 5.1 정상 경로 (Happy Path)
+### 5.1 Happy Path
 
 \`\`\`mermaid
 sequenceDiagram
@@ -230,14 +230,14 @@ sequenceDiagram
     User->>API: POST /api/users {userName, emailAddress}
     API->>Service: registerUser(dto)
     Service->>DB: SELECT 1 FROM TB_USER WHERE EMAIL_ADDR = ?
-    DB-->>Service: 없음
+    DB-->>Service: none
     Service->>DB: INSERT INTO TB_USER
     DB-->>Service: USER_ID
     Service-->>API: UserResponse
     API-->>User: 200 OK
 \`\`\`
 
-### 5.2 예외 경로 (이메일 중복)
+### 5.2 Error Path (Duplicate Email)
 
 \`\`\`mermaid
 sequenceDiagram
@@ -249,16 +249,16 @@ sequenceDiagram
     User->>API: POST /api/users
     API->>Service: registerUser(dto)
     Service->>DB: SELECT 1 FROM TB_USER WHERE EMAIL_ADDR = ?
-    DB-->>Service: 존재
+    DB-->>Service: exists
     Service-->>API: throw DuplicateEmailException
     API-->>User: 409 {code: DUPLICATE_EMAIL}
 \`\`\`
 
-## 6. 비즈니스 로직 설계 (Logic Design)
+## 6. Business Logic Design
 
-> **표현 형식**: 의사코드(언어 무관). 실행 가능한 코드는 작성하지 않는다.
+> **Notation**: pseudocode (language-agnostic). Executable code is not written here.
 
-### 6.1 핵심 로직: 사용자 등록
+### 6.1 Core logic: register user
 
 \`\`\`pseudo
 FUNCTION registerUser(userName, emailAddress):
@@ -274,238 +274,238 @@ FUNCTION registerUser(userName, emailAddress):
     RETURN user
 \`\`\`
 
-### 6.2 결정 트리: 인증 분기
-{필요 시 의사결정 다이어그램}
+### 6.2 Decision tree: authentication branching
+{decision diagram if needed}
 
-## 7. 에러 처리 정책
+## 7. Error Handling Policy
 
-| 영역 | 처리 방침 |
-|------|----------|
-| 입력 검증 | API Gateway 레이어에서 400 응답, 트랜잭션 진입 전 차단 |
-| 비즈니스 규칙 위반 | Service 레이어 도메인 예외 → 409/422 응답 |
-| DB 무결성 위반 | UK/FK 위반 시 도메인 예외로 변환 후 동일 처리 |
-| 외부 의존성 실패 | 재시도 3회(지수 백오프 200ms/400ms/800ms) → Circuit Breaker → 503 |
-| 예상치 못한 예외 | 5xx + correlation_id 로깅, 사용자에게는 일반 메시지 |
+| Area | Handling policy |
+|------|-----------------|
+| Input validation | 400 response at the API Gateway layer; blocked before entering transactions |
+| Business-rule violation | Domain exception at the Service layer → 409/422 response |
+| DB integrity violation | UK/FK violation is converted to a domain exception and handled the same way |
+| External-dependency failure | 3 retries (exponential backoff 200ms/400ms/800ms) → Circuit Breaker → 503 |
+| Unexpected exception | 5xx + correlation_id logging; generic message shown to the user |
 
-## 8. 비기능 요구사항 (Non-Functional)
+## 8. Non-Functional Requirements
 
-### 8.1 성능
-- **P95 응답 시간**: 200ms 이내 (등록 API 기준)
-- **동시 처리량**: 100 RPS
-- **트랜잭션 경계**: {Step 3 HITL로 결정}
+### 8.1 Performance
+- **P95 response time**: under 200 ms (registration API baseline)
+- **Concurrent throughput**: 100 RPS
+- **Transaction boundary**: {decided by Step 3 HITL}
 
-### 8.2 보안
-- **인증 방식**: {Step 3 HITL로 결정}
-- **민감 데이터**: 이메일은 PII, 로깅 시 마스킹(`h***@example.com`)
-- **OWASP 대응**: SQL Injection(Prepared Statement), Mass Assignment(DTO whitelist)
+### 8.2 Security
+- **Authentication method**: {decided by Step 3 HITL}
+- **Sensitive data**: email is PII; masked when logged (`h***@example.com`)
+- **OWASP coverage**: SQL Injection (Prepared Statement), Mass Assignment (DTO whitelist)
 
-### 8.3 가용성
-- **장애 격리**: {외부 의존성 → Step 3 HITL로 결정}
-- **롤백 전략**: 마이그레이션은 forward-only, FK 추가 시 NULL 허용 후 백필 후 NOT NULL
+### 8.3 Availability
+- **Failure isolation**: {external dependency → decided by Step 3 HITL}
+- **Rollback strategy**: migrations are forward-only; when adding FKs, allow NULL → backfill → NOT NULL
 
-## 9. 테스트 전략 개요
+## 9. Test Strategy Overview
 
-> **상세 시나리오**: `/test-scenario` 스킬이 청사진을 입력으로 받아 `docs/tests/test-cases/sprint-{N}/`에 작성한다.
+> **Detailed scenarios**: the `/test-scenario` skill takes this blueprint as input and writes to `docs/tests/test-cases/sprint-{N}/`.
 
-| 레벨 | 범위 | 도구 |
-|------|------|------|
-| Unit | Section 6의 의사코드 분기 | JUnit / Vitest / pytest |
-| Integration | Section 4의 API 계약 + Section 3의 DB | Testcontainers |
-| E2E | Section 2.2의 사용자 시나리오 | Playwright / cmux browser |
+| Level | Scope | Tool |
+|-------|-------|------|
+| Unit | Pseudocode branches from Section 6 | JUnit / Vitest / pytest |
+| Integration | Section 4 API contract + Section 3 DB | Testcontainers |
+| E2E | Section 2.2 user scenario | Playwright / cmux browser |
 
-### 9.1 필수 테스트 케이스 (커버리지 우선순위)
-- [ ] {Section 5.1 정상 경로}
-- [ ] {Section 5.2 예외 경로 모두}
-- [ ] {Section 2.3 비즈니스 규칙 BR-01 ~ BR-N}
-- [ ] {Section 7 에러 처리 정책 각 항목}
+### 9.1 Required test cases (coverage priority)
+- [ ] {Section 5.1 happy path}
+- [ ] {all Section 5.2 error paths}
+- [ ] {all Section 2.3 business rules BR-01 ~ BR-N}
+- [ ] {each Section 7 error-handling policy item}
 
-## 10. HITL Triggers (구현 단계용)
+## 10. HITL Triggers (for implementation phase)
 
-> **이 섹션은 `/feature-dev`가 이 청사진을 기반으로 구현할 때 참조한다**. 여기에 명시된 트리거 조건에 해당하지 *않는* 모든 결정은 청사진의 명세대로 **사용자에게 묻지 않고 자동 진행**한다. 트리거에 해당하는 결정만 사용자에게 묻는다.
+> **This section is consulted by `/feature-dev` when it implements based on this blueprint**. Any decision that does *not* match a trigger condition listed here is **automatically applied per the blueprint spec without asking the user**. Only decisions matching a trigger are asked of the user.
 
-### 10.1 HITL 발동 원칙
+### 10.1 HITL firing principles
 
-구현 중 다음 4가지 조건에 해당할 때만 `AskUserQuestion`으로 사용자에게 묻는다. 그 외에는 청사진의 명세를 따라 자동 진행한다:
+During implementation, ask via `AskUserQuestion` only when one of the four conditions below applies. Otherwise proceed automatically per the blueprint spec:
 
-| # | 트리거 | 이유 |
-|---|--------|------|
-| T1 | 청사진에 명확한 답이 없는 비즈니스 결정 | LLM 추측이 도메인 룰을 어긋나게 만들 위험 |
-| T2 | 보안/권한/인증 정책 선택 | 잘못된 자동 결정이 보안 사고로 직결 |
-| T3 | 외부 의존성/3rd-party 라이브러리 도입 결정 | package.json/build.gradle에 항구적 영향 |
-| T4 | 파괴적 변경 (DB 마이그레이션 시 DROP/RENAME, 기존 공개 API 시그니처 변경) | 되돌리기 어렵고 다른 호출자 영향 |
+| # | Trigger | Reason |
+|---|---------|--------|
+| T1 | Business decision with no clear answer in the blueprint | An LLM guess risks violating domain rules |
+| T2 | Security/permission/authentication policy choice | A wrong auto-decision can become a security incident |
+| T3 | Introducing an external dependency / 3rd-party library | Permanent impact on package.json / build.gradle |
+| T4 | Destructive change (DROP/RENAME in DB migration, breaking a public API signature) | Hard to roll back and may impact other callers |
 
-### 10.2 이 기능에 특화된 HITL 트리거 (구체 항목)
+### 10.2 HITL triggers specific to this feature (concrete items)
 
-> 이 표는 청사진 작성 단계에서 *예상 가능한* 결정점만 채운다. 작성 시점에 보이지 않던 결정은 구현 중 위 원칙(10.1)에 따라 판단한다.
+> Only *foreseeable* decision points are filled in during blueprint authoring. Decisions invisible at authoring time are judged during implementation per principle 10.1 above.
 
-| ID | 트리거 카테고리 | 구현 중 결정해야 하는 항목 | 옵션 (이미 청사진에 답이 있으면 자동 적용) |
-|----|----------------|-------------------------|-----------------------------------------|
-| HITL-01 | T1 비즈니스 | {예: "이메일 인증 코드 유효 시간"} | {답: Section 2.3 BR-03에 "10분"으로 명시} → **자동** |
-| HITL-02 | T2 보안 | {예: "비밀번호 해싱 알고리즘 선택"} | {청사진 미명시} → **사용자 질문 필요** |
-| HITL-03 | T3 외부 의존성 | {예: "이메일 발송 라이브러리"} | {예: SendGrid/AWS SES/Mailgun} → **사용자 질문 필요** |
-| HITL-04 | T4 파괴적 | {예: "기존 TB_USER의 USER_NM 컬럼을 FULL_NM으로 RENAME 또는 GET /api/users 응답 필드 제거"} | {청사진 미명시 — 다운스트림 호출자/마이그레이션 영향 검토 필요} → **사용자 질문 필요** |
+| ID | Trigger category | Decision required during implementation | Options (if the blueprint already answers, auto-applied) |
+|----|------------------|-----------------------------------------|----------------------------------------------------------|
+| HITL-01 | T1 business | {e.g., "Validity duration of the email verification code"} | {answer: BR-03 in Section 2.3 specifies "10 minutes"} → **auto** |
+| HITL-02 | T2 security | {e.g., "Password hashing algorithm choice"} | {not specified in blueprint} → **user question required** |
+| HITL-03 | T3 external dependency | {e.g., "Email-sending library"} | {e.g., SendGrid / AWS SES / Mailgun} → **user question required** |
+| HITL-04 | T4 destructive | {e.g., "RENAME of existing TB_USER.USER_NM to FULL_NM, or removal of a response field from GET /api/users"} | {not specified in blueprint — downstream caller / migration impact must be reviewed} → **user question required** |
 
-### 10.3 HITL 질문 작성 규칙
+### 10.3 HITL question authoring rules
 
-`/feature-dev`가 위 표를 참조해 사용자에게 물을 때 다음 형식을 따른다:
+When `/feature-dev` consults this table to ask the user, it follows this format:
 
-1. **질문은 한 문장**으로 — 무엇을 묻는지 명확히
-2. **옵션은 2-4개** — 각 옵션마다 다음 3가지를 모두 포함:
-   - 옵션 이름 (5단어 이내)
-   - 한 줄 설명 (트레이드오프 핵심)
-   - 영향 범위 (어디에 어떻게 반영되는지)
-3. **첫 옵션을 권장안으로** — 가장 보수적/안전한 선택을 맨 위에 두고 "(권장)" 명시
-4. **자유 입력은 'Other'로** — 4개 옵션에 안 맞으면 사용자가 직접 입력 가능
-5. **답변은 청사진에 역기록** — 답을 받으면 청사진의 해당 섹션을 `Edit`으로 갱신 (예: HITL-02 답을 8.2에 반영)
+1. **Question in a single sentence** — clearly state what is being asked
+2. **2–4 options** — every option must include all three of:
+   - Option name (within 5 words)
+   - One-line description (the trade-off in a sentence)
+   - Impact scope (where and how the choice is reflected)
+3. **The first option is the recommended one** — place the most conservative/safe choice on top and append "(Recommended)"
+4. **Free input via 'Other'** — if the 4 options do not fit, the user can type a custom answer
+5. **Answers are written back into the blueprint** — when an answer arrives, the relevant blueprint section is updated via `Edit` (e.g., HITL-02 answer reflected in 8.2)
 
-**예시 질문 형식**:
-
-```
-Q. 비밀번호 해싱 알고리즘을 무엇으로 할까요? (HITL-02)
-
-옵션 1: Argon2id (권장)
-  설명: 메모리 하드 함수. 2025 OWASP 권장. GPU/ASIC 공격에 강함.
-  영향: build.gradle에 `de.mkammerer:argon2-jvm:2.11` 추가, Section 8.2 갱신.
-
-옵션 2: bcrypt
-  설명: 오래된 표준. 검증된 라이브러리. 메모리 하드성은 낮음.
-  영향: Spring Security 기본 PasswordEncoder 사용, 추가 의존성 없음.
-
-옵션 3: scrypt
-  설명: 메모리 하드 + 시간 조절. Argon2 이전 표준.
-  영향: bouncy castle 라이브러리 추가.
-```
-
-### 10.4 사용자가 묻지 *않아야* 하는 결정 (Anti-HITL)
-
-다음은 사용자에게 묻지 말고 청사진/관례를 따라 자동 결정한다:
-
-- 변수명, 함수명, 클래스명 — 코딩 컨벤션 자동 적용
-- 코드 포맷팅 (들여쓰기, 줄바꿈, 따옴표) — 컨벤션 자동 적용
-- 로깅 위치/레벨 — 관례(INFO: 비즈니스 이벤트, DEBUG: 분기, ERROR: 예외)
-- 단위 테스트 케이스 추가 여부 — Section 9.1 체크리스트가 있으면 작성 강제
-- 파일 분할/디렉토리 구조 — 프로젝트 기존 구조 답습
-- import 순서, 와일드카드 여부 — 컨벤션 자동 적용
-- DTO/Entity 분리 여부 — 프로젝트 관례
-- 응답 코드 미세 조정(예: 200 vs 201) — REST 관례
-
-> **원칙**: "사용자에게 물을지 말지 애매하면 묻지 않고 청사진에 명시된 디폴트나 보수적 자동 결정을 선택한다." LLM이 사용자를 너무 자주 깨우면 자동화의 가치가 사라진다.
-```
-
-### Step 3: 핵심 결정 HITL (조건부 1-3개)
-
-자동 초안에서 보수적 디폴트로 채운 항목 중, **사람의 판단이 비용 절감에 큰 영향을 주는 결정**만 골라 `AskUserQuestion`으로 묻는다. **`AUTO_MODE=1`이면 이 단계 건너뛰고 디폴트 유지**.
-
-다음 3개 결정 영역에서 **planner 산출물이나 사용자 설명에 명시되지 않은 것만** 묻는다 (최대 3개):
-
-#### 3.1 PK 전략 (always)
+**Example question format**:
 
 ```
-question: "데이터 모델의 PK 전략을 무엇으로 할까요? (Section 3.2의 USER_ID 등에 적용됩니다)"
-header: "PK 전략"
+Q. Which password hashing algorithm should we use? (HITL-02)
+
+Option 1: Argon2id (Recommended)
+  Description: Memory-hard function. Recommended by OWASP 2025. Strong against GPU/ASIC attacks.
+  Impact: add `de.mkammerer:argon2-jvm:2.11` to build.gradle; update Section 8.2.
+
+Option 2: bcrypt
+  Description: Older standard. Battle-tested library. Memory-hardness is lower.
+  Impact: use Spring Security's default PasswordEncoder; no additional dependency.
+
+Option 3: scrypt
+  Description: Memory-hard + tunable cost. Predecessor to Argon2.
+  Impact: add bouncy castle library.
+```
+
+### 10.4 Decisions the user must *not* be asked (Anti-HITL)
+
+The following are auto-decided per the blueprint / conventions and must not surface a question:
+
+- Variable, function, and class names — coding convention auto-applied
+- Code formatting (indent, line breaks, quotes) — convention auto-applied
+- Logging location/level — convention (INFO: business events, DEBUG: branches, ERROR: exceptions)
+- Whether to add unit test cases — if Section 9.1 has a checklist, writing them is mandatory
+- File splitting / directory structure — follow the project's existing structure
+- Import order, wildcard imports — convention auto-applied
+- DTO/Entity separation — project convention
+- Fine response-code tuning (e.g., 200 vs. 201) — REST convention
+
+> **Principle**: "If it is ambiguous whether to ask the user, do not ask — pick the default specified in the blueprint or a conservative auto-decision." If the LLM wakes the user too often, the value of automation disappears.
+```
+
+### Step 3: Core-decision HITL (conditional 1–3 questions)
+
+Among items filled with conservative defaults in the auto-draft, ask **only the decisions whose human judgment has a major cost impact** via `AskUserQuestion`. **If `AUTO_MODE=1`, skip this step and keep the defaults**.
+
+Ask **only** those decisions, in the 3 decision areas below, **not already specified by planner deliverables or the user description** (up to 3 questions):
+
+#### 3.1 PK strategy (always)
+
+```
+question: "Which PK strategy should the data model use? (Applies to USER_ID etc. in Section 3.2)"
+header: "PK strategy"
 options:
-  - "auto-increment BIGINT (권장 — 단일 DB 환경 표준)"
-    description: "MySQL/PostgreSQL의 IDENTITY 컬럼. 가장 단순하고 인덱스 효율 최상. 단일 RDBMS 환경 디폴트."
-  - "UUID v7 (시간 정렬 가능)"
-    description: "분산/멀티 리전 환경. ID 노출이 보안적으로 부담스러운 경우. 인덱스 크기 16바이트로 증가."
+  - "auto-increment BIGINT (Recommended — standard for single-DB environments)"
+    description: "MySQL/PostgreSQL IDENTITY column. Simplest and best index efficiency. Default for a single RDBMS environment."
+  - "UUID v7 (time-sortable)"
+    description: "Distributed / multi-region environments. Useful when ID exposure is a security concern. Index size grows to 16 bytes."
   - "Snowflake ID (Twitter)"
-    description: "초당 수천 건 이상 + 다중 노드 발급. 단조 증가 64비트. 별도 발급 서비스 필요."
+    description: "Thousands of inserts per second + multi-node ID issuance. Monotonic 64-bit. Requires a separate ID-issuance service."
 ```
 
-#### 3.2 트랜잭션 경계 (when DB writes > 1)
+#### 3.2 Transaction boundary (when DB writes > 1)
 
-Step 2의 의사코드에 다중 쓰기(`INSERT` + 이벤트 발행 등)가 있으면 묻는다:
+If the Step 2 pseudocode contains multiple writes (`INSERT` + event publication, etc.), ask:
 
 ```
-question: "Section 6 의사코드에서 DB 쓰기와 이벤트 발행을 어떻게 묶을까요?"
-header: "트랜잭션 경계"
+question: "How should DB writes and event publication be grouped in the Section 6 pseudocode?"
+header: "Transaction boundary"
 options:
-  - "단일 DB 트랜잭션 + Outbox 패턴 (권장)"
-    description: "이벤트도 같은 트랜잭션 안에서 outbox 테이블에 INSERT. 별도 publisher가 발행. 일관성 보장."
-  - "단일 DB 트랜잭션 + 트랜잭션 직후 발행"
-    description: "트랜잭션 커밋 후 try/catch로 발행. 구현 단순하지만 발행 실패 시 메시지 손실."
-  - "2단계 커밋 (XA)"
-    description: "DB + 메시지 브로커가 모두 XA 지원해야 함. 성능 부담 큼. 금융 등 강한 정합성 필요 시."
+  - "Single DB transaction + Outbox pattern (Recommended)"
+    description: "Events are also INSERTed into an outbox table inside the same transaction. A separate publisher dispatches them. Guarantees consistency."
+  - "Single DB transaction + publish immediately after commit"
+    description: "After the transaction commits, publish inside a try/catch. Simpler to implement but messages may be lost on publish failure."
+  - "Two-phase commit (XA)"
+    description: "Both DB and message broker must support XA. Heavy performance overhead. Use when strong consistency is required (e.g., finance)."
 ```
 
-#### 3.3 외부 의존성 호출 (when external system in sequence diagram)
+#### 3.3 External-dependency call (when external system in sequence diagram)
 
-Section 5에 외부 API/서비스가 있으면 묻는다:
+If Section 5 contains an external API/service, ask:
 
 ```
-question: "외부 시스템({시스템명}) 호출을 동기/비동기 중 무엇으로 할까요?"
-header: "외부 호출 동기성"
+question: "Should the external system ({system name}) be called synchronously or asynchronously?"
+header: "External-call sync mode"
 options:
-  - "동기 호출 + Circuit Breaker (권장)"
-    description: "사용자 응답 시간에 외부 응답이 포함됨. 외부 장애 시 회로 차단 후 fallback. 단순하고 즉시 일관성."
-  - "비동기 메시지 (이벤트 발행)"
-    description: "외부에 메시지 발행 후 즉시 응답. 최종 일관성. 결과 추적용 상태 컬럼 필요."
-  - "비동기 + 폴링 콜백"
-    description: "외부에 요청 ID 받아 저장 → 주기적 폴링 또는 webhook 수신. 가장 복잡, 가장 견고."
+  - "Synchronous call + Circuit Breaker (Recommended)"
+    description: "The external response is on the user-facing latency path. On external failure, the circuit opens and falls back. Simple, with immediate consistency."
+  - "Asynchronous message (event publication)"
+    description: "Publish a message to the external system and respond immediately. Eventual consistency. A status column is needed to track the result."
+  - "Asynchronous + polling/callback"
+    description: "Receive a request ID from the external system, store it → poll periodically or receive a webhook. Most complex, most robust."
 ```
 
-각 답변을 Section 3.2 (PK), 7 (트랜잭션 정책), 8.3 (가용성)에 반영해 청사진을 `Edit`으로 업데이트한다.
+Reflect each answer in Section 3.2 (PK), 7 (transaction policy), and 8.3 (availability), updating the blueprint via `Edit`.
 
-### Step 4: data-standard 자동 스킬 위임 + 금칙어 검증
+### Step 4: data-standard auto-skill delegation + forbidden-word verification
 
-청사진의 DDL 섹션(Section 3.2)에 대해 `data-standard` 자동 스킬과 PostToolUse 훅이 다음을 자동 수행한다 (별도 호출 불필요):
-- 테이블 접두사 검증 (`TB_`/`TC_`/`TH_`/`TL_`/`TR_`)
-- 컬럼 접미사 검증 (`_YMD`/`_DT`/`_AMT`/`_NM`/`_CD` 등)
-- 금칙어 검사 (`standard_words.json`의 `금칙어목록`)
+For the DDL section of the blueprint (Section 3.2), the `data-standard` auto-skill and the PostToolUse hook automatically perform the following (no separate invocation required):
+- Table prefix verification (`TB_`/`TC_`/`TH_`/`TL_`/`TR_`)
+- Column suffix verification (`_YMD`/`_DT`/`_AMT`/`_NM`/`_CD`, etc.)
+- Forbidden-word check (`금칙어목록` field in `standard_words.json`)
 
-위반 발견 시 hook이 stderr로 경고를 출력한다. 스킬은 경고를 받아 사용자에게 한 번 보고하고 진행 (비차단).
+When a violation is found, the hook prints a warning to stderr. The skill receives the warning, reports it to the user once, and proceeds (non-blocking).
 
-### Step 5: blueprint-reviewer 호출
+### Step 5: Invoke blueprint-reviewer
 
 ```
-REVIEW_OUTPUT=$(Task(blueprint-reviewer, "{BLUEPRINT_PATH} 품질 검증 — 10개 표준 섹션 완전성, 데이터 모델 일관성, API 계약 명확성을 확인. 코드 혼입(Section 6 외 실제 언어 코드 블록) 여부 추가 검증. Section 10의 HITL Triggers 표가 비어 있거나 미명시 결정이 누락되었는지 확인. 응답은 Overall Score, P0/P1/P2 이슈 목록, 권장 조치를 포함한 마크다운 리포트로 작성하여 반환."))
+REVIEW_OUTPUT=$(Task(blueprint-reviewer, "Verify quality of {BLUEPRINT_PATH} — check completeness of the 10 standard sections, data-model consistency, and API-contract clarity. Additionally verify code pollution (executable language code blocks outside Section 6). Check whether the HITL Triggers table in Section 10 is empty or missing unspecified decisions. Return the response as a Markdown report containing Overall Score, P0/P1/P2 issue lists, and recommended actions."))
 ```
 
-`blueprint-reviewer` 에이전트는 `disallowedTools: Write, Edit`이므로 직접 파일을 쓸 수 없다. 스킬(부모 컨텍스트)이 위 `Task()` 호출의 반환값을 받아 `Write` 도구로 `$BLUEPRINT_DIR/review.md`에 저장한다.
+The `blueprint-reviewer` agent has `disallowedTools: Write, Edit`, so it cannot write files directly. The skill (parent context) takes the return value of the `Task()` call and writes it to `$BLUEPRINT_DIR/review.md` via the `Write` tool.
 
 ```
 Write("$BLUEPRINT_DIR/review.md", REVIEW_OUTPUT)
 ```
 
-`review.md` 작성 후 P0 이슈를 사용자에게 요약 보고. Step 6.2.5에서 `Overall Score: NN` 라인을 grep해 `REVIEW_SCORE`로 추출한다.
+After `review.md` is written, summarize the P0 issues to the user. In Step 6.2.5, grep the `Overall Score: NN` line to extract `REVIEW_SCORE`.
 
-### Step 6: dev 브랜치 자동 커밋 (worktree 가시성 보장)
+### Step 6: Auto-commit to the dev branch (worktree visibility guarantee)
 
-청사진을 메인 worktree에서 작성한 후 `/sprint-init`이 dev base로 sprint worktree를 만들 때 청사진이 보이려면, **청사진이 dev HEAD에 commit되어 있어야 한다**. sprint worktree는 별개 working directory이므로, uncommitted 파일은 carry되지 않는다.
+After the blueprint is written in the main worktree, for it to be visible when `/sprint-init` creates a sprint worktree from `dev` as the base, **the blueprint must be committed to dev HEAD**. The sprint worktree is a separate working directory, so uncommitted files are not carried over.
 
 ```bash
-# 6.1 현재 브랜치 + worktree 위치 확인
+# 6.1 Identify current branch + worktree location
 CURRENT_BRANCH=$(git branch --show-current)
 CWD=$(pwd)
 
-# 6.2 위치별 안전 가드
+# 6.2 Location-specific safety guards
 if [[ "$CWD" == *"/.astra-worktrees/sprint-"* ]]; then
-  # sprint worktree 내부 — sprint 브랜치에 commit하는 것이 정상 흐름 (prompt-map Step 1.1)
+  # Inside a sprint worktree — committing to the sprint branch is the normal flow (prompt-map Step 1.1)
   IN_SPRINT_WORKTREE=1
 elif [ "$CURRENT_BRANCH" != "dev" ] && [ "$CURRENT_BRANCH" != "main" ] && [ "$CURRENT_BRANCH" != "master" ]; then
-  echo "⚠️  메인 worktree의 비표준 브랜치 '$CURRENT_BRANCH'에서 청사진을 작성했습니다."
-  echo "    sprint worktree는 dev base로 생성되므로 이 브랜치의 청사진은 sprint에서 보이지 않을 수 있습니다."
-  # AUTO_MODE에서는 그대로 진행 (autorun은 메인 worktree dev에서 호출되므로 정상)
+  echo "⚠️  Blueprint was authored on the non-standard branch '$CURRENT_BRANCH' of the main worktree."
+  echo "    Sprint worktrees are created from dev as base, so a blueprint on this branch may not be visible in the sprint."
+  # In AUTO_MODE, proceed as-is (autorun is called from the dev branch of the main worktree, so this is normal)
   IN_SPRINT_WORKTREE=0
 else
-  # 메인 worktree의 dev/main/master — 정상 (autorun 또는 수동 호출)
+  # dev/main/master in the main worktree — normal (autorun or manual invocation)
   IN_SPRINT_WORKTREE=0
 fi
 
-# 6.2.5 blueprint-reviewer 점수 추출 (review.md는 Step 5에서 작성됨)
+# 6.2.5 Extract the blueprint-reviewer score (review.md is written in Step 5)
 REVIEW_SCORE=$(grep -oE 'Overall Score: [0-9]+' "$BLUEPRINT_DIR/review.md" 2>/dev/null | grep -oE '[0-9]+' || echo "N/A")
 ```
 
-**커밋 처리**:
+**Commit handling**:
 
-- **`AUTO_MODE=1` (autorun 호출)**: 자동으로 커밋. 메시지: `docs(blueprint): scaffold {NNN}-{feature-slug} blueprint (autorun)`
-- **수동 모드**: `git status -- "$BLUEPRINT_DIR/"`로 변경 파일을 보여주고, `AskUserQuestion`으로 한 번만 묻기:
-  - "지금 작성한 청사진을 dev에 커밋할까요? (sprint-init이 worktree를 만들 때 청사진이 보이려면 commit이 필요합니다.)"
-  - 옵션 1: "예, 지금 커밋 (권장 — sprint-init 다음에 호출할 예정이면 필수)" — 자동 commit + 안내
-  - 옵션 2: "아니오, 직접 커밋하겠습니다" — commit 스킵, 사용자에게 명령 안내(`git add docs/blueprints/{NNN}-... && git commit -m "..."`)
+- **`AUTO_MODE=1` (called by autorun)**: commit automatically. Message: `docs(blueprint): scaffold {NNN}-{feature-slug} blueprint (autorun)`
+- **Manual mode**: show changed files via `git status -- "$BLUEPRINT_DIR/"` and ask once via `AskUserQuestion`:
+  - "Commit the blueprint you just authored to dev now? (A commit is required for the blueprint to be visible when sprint-init creates a worktree.)"
+  - Option 1: "Yes, commit now (Recommended — required if /sprint-init will be called next)" — auto commit + guidance
+  - Option 2: "No, I will commit it myself" — skip commit, show the user the commands (`git add docs/blueprints/{NNN}-... && git commit -m "..."`)
 
 ```bash
-# 6.3 커밋 실행 (AUTO_MODE 또는 사용자 동의 시)
+# 6.3 Execute the commit (in AUTO_MODE or upon user consent)
 git add "$BLUEPRINT_DIR"
 git commit -m "docs(blueprint): scaffold ${NUM}-${FEATURE_SLUG} blueprint
 
@@ -515,46 +515,46 @@ git commit -m "docs(blueprint): scaffold ${NUM}-${FEATURE_SLUG} blueprint
 "
 ```
 
-> **sprint worktree 안에서 호출된 경우**: commit은 sprint 브랜치(`feat/sprint-N-name`)에 들어간다. 이것은 prompt-map Step 1.1의 정상 흐름이므로 추가 처리 불필요 — `/pr-merge`가 sprint 종료 시 dev로 머지한다.
+> **When called from inside a sprint worktree**: the commit lands on the sprint branch (`feat/sprint-N-name`). That is the normal flow per prompt-map Step 1.1, so no additional handling is needed — `/pr-merge` merges it into dev at the end of the sprint.
 
-> **원격 push는 하지 않는다** — `/pr-merge`가 sprint 종료 시점에 sprint 브랜치 푸시와 함께 처리한다. dev에 commit만 해 두면 다음 `/sprint-init`의 `astra_create_sprint_worktree`가 청사진을 자동으로 가져간다.
+> **No remote push** — `/pr-merge` handles pushing the sprint branch at the end of the sprint. As long as the commit is on dev, the next `/sprint-init`'s `astra_create_sprint_worktree` will automatically carry the blueprint over.
 
-### Step 7: 출력
+### Step 7: Output
 
 ```
-✅ Blueprint 작성 완료
+✅ Blueprint authoring complete
 
-📄 청사진: {BLUEPRINT_PATH}
-📋 리뷰: {BLUEPRINT_DIR}/review.md ({score}/100)
-📦 커밋: {커밋 SHA 또는 "사용자 직접 커밋 예정"}
+📄 Blueprint: {BLUEPRINT_PATH}
+📋 Review:    {BLUEPRINT_DIR}/review.md ({score}/100)
+📦 Commit:    {commit SHA or "to be committed manually by user"}
 
-🎯 다음 단계 (sprint 안에서):
-  /sprint-init {feature-slug}              # 아직 sprint 미생성 시
-  /feature-dev "{BLUEPRINT_PATH}의 데이터 모델/API/로직을 구현. Section 10 HITL Triggers를 준수할 것."
-  /test-scenario {feature-slug}            # 청사진 기반 테스트 케이스 생성
+🎯 Next steps (inside the sprint):
+  /sprint-init {feature-slug}              # if no sprint has been created yet
+  /feature-dev "Implement the data model / API / logic in {BLUEPRINT_PATH}. Comply with Section 10 HITL Triggers."
+  /test-scenario {feature-slug}            # generate blueprint-based test cases
 
-⚠️ P0 이슈 ({count}개):
-  - {요약}
+⚠️ P0 issues ({count}):
+  - {summary}
 ```
 
-## autorun에서의 호출 패턴
+## Invocation pattern from autorun
 
 ```
 Skill('blueprint', '{feature-slug} --auto --from-planner=docs/planner/{NNN}-{feature-slug}')
 ```
 
-`--auto` 플래그로 Step 3 HITL은 모두 스킵하고 디폴트(auto-inc PK / 단일 트랜잭션+Outbox / 동기+CB)를 적용한다. 무인 실행 보장.
+With `--auto`, all Step 3 HITL questions are skipped and the defaults (auto-inc PK / single transaction + Outbox / sync + CB) are applied. This guarantees unattended execution.
 
-## 자주 묻는 질문
+## FAQ
 
-**Q. 청사진에 의사코드도 코드 아닌가요?**
-의사코드는 알고리즘 의도를 언어 중립으로 표현하는 설계 도구다. 실행 불가능하므로 "구현"이 아니다. 단, 마크다운 언어 태그를 ` ```pseudo `로 쓰지 않으면 LLM이 실제 코드로 오해할 수 있어 강제한다.
+**Q. Isn't pseudocode also code?**
+Pseudocode is a design tool that expresses algorithmic intent in a language-neutral form. It is not executable, hence not "implementation". The ` ```pseudo ` language tag is mandated because, without it, an LLM may misread it as real code.
 
-**Q. ORM 어노테이션이 왜 금지인가요?**
-`@Entity`, `@Column`은 특정 프레임워크(JPA/Hibernate) 종속 표현이다. 청사진은 DDL과 표로 충분하며, 어노테이션 번역은 `/generate-entity`가 담당한다. 청사진 단계에서 어노테이션을 쓰면 (a) 비-JVM 프로젝트로 이식 시 폐기, (b) 변환된 DDL과 어노테이션 사이 불일치 발생.
+**Q. Why are ORM annotations forbidden?**
+`@Entity`, `@Column`, etc. are framework-specific (JPA/Hibernate). The blueprint is sufficient with DDL + tables, and annotation translation is `/generate-entity`'s job. Writing annotations at the blueprint stage (a) is wasted when porting to a non-JVM project, and (b) creates inconsistencies between translated DDL and annotations.
 
-**Q. planner 산출물이 없는 신규 기능은요?**
-Step 2에서 빈 골격을 만들고 사용자 설명만으로 채운다. 도출 불가능한 섹션(예: 1.4 KPI)은 `❓ 추가 정보 필요 — planner 산출물 또는 사용자 입력 필요` 마커를 남겨 blueprint-reviewer가 P0로 잡게 한다.
+**Q. What about a brand-new feature without planner deliverables?**
+In Step 2, create the empty skeleton and fill it from the user description alone. Sections that cannot be derived (e.g., 1.4 KPI) leave the marker `❓ Additional information needed — planner deliverables or user input required`, so that blueprint-reviewer flags them as P0.
 
-**Q. 기존 청사진을 갱신하려면?**
-첫 인자에 기존 경로(`docs/blueprints/003-user-auth/blueprint.md`)를 주면 새로 만들지 않고 `Edit`으로 갱신한다. 갱신 후 Step 5의 reviewer가 변경 영향을 평가한다.
+**Q. How do I update an existing blueprint?**
+Pass an existing path (`docs/blueprints/003-user-auth/blueprint.md`) as the first argument; the skill updates via `Edit` rather than creating a new one. After the update, the reviewer in Step 5 evaluates the change impact.

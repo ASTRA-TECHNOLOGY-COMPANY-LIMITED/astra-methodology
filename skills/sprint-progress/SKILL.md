@@ -83,33 +83,33 @@ When a file under `docs/tests/test-reports/` is written:
 3. Set the **Test Report** column to `Done`
 4. Check if the feature is now fully complete (all columns are `Done` or `N/A`)
 5. If fully complete, set the **Status** column to `Completed`
-6. If Status가 `Completed`로 변경되었으면, **Procedure 6**을 실행하여 Slack List Item 상태를 "완료"로 업데이트한다. Procedure 6이 실패하거나 매핑 섹션이 없으면 경고만 출력하고 다음 단계로 진행한다 (비차단).
+6. If the Status was changed to `Completed`, run **Procedure 6** to update the Slack List Item status to "Completed". If Procedure 6 fails or there is no mapping section, emit a warning only and proceed to the next step (non-blocking).
 7. Recalculate the Summary section
 
-### Procedure 6: Slack List Item 상태 업데이트 (→ 완료)
+### Procedure 6: Update Slack List Item Status (→ Completed)
 
-Test Report가 생성되어 feature의 Status가 `Completed`로 변경될 때, Slack List Item의 **상태 선택 옵션**을 **"완료"**로 업데이트한다.
+When a Test Report is created and a feature's Status changes to `Completed`, update the Slack List Item's **status select option** to **"Completed"**.
 
-> **주의**: Slack List Item의 체크박스(완료 체크)는 절대 건드리지 않는다. 체크박스는 담당자가 직접 테스트를 완료한 후 수동으로 체크하는 용도이다. 이 절차에서는 **상태(status) 선택 컬럼의 옵션값만** 변경한다.
+> **Note**: Never touch the Slack List Item's checkbox (completion check). The checkbox is for the assignee to manually check after they have personally finished testing. This procedure only changes the **option value of the status (status) select column**.
 
-1. `docs/sprints/sprint-{N}-{name}/progress.md`에서 `<!-- SLACK_LIST_MAPPING_START -->` ~ `<!-- SLACK_LIST_MAPPING_END -->` 섹션을 확인한다
-2. 해당 섹션이 없으면 이 절차를 건너뛴다 (Slack List 기반 스프린트가 아님)
-3. 섹션이 있으면 다음 정보를 파싱한다:
-   - **List ID**: Slack List 파일 ID
-   - **List Name**: Slack List 이름
-   - **Status Column**: 상태 컬럼 ID (select 타입 컬럼)
-   - **Status Options**: `완료` 옵션 ID
-   - **Feature ↔ Slack Item ID** 매핑 테이블
-4. 완료된 feature에 매핑된 Slack Item ID를 찾는다
-5. 각 Slack Item의 현재 상태를 확인한다. 이미 "완료" 상태인 Item은 건너뛰고 Activity Log에 "(이미 완료 상태)" 메모를 남긴다.
-6. "완료"가 아닌 Item에 대해서만 `mcp__fect-slack__slack_list_items_update`를 **Item마다 개별 호출**하여 **상태 선택 컬럼만** 업데이트한다:
-   - `list_id`: 파싱된 List ID
-   - `cells`: `[{ "column_id": "{status_column_id}", "row_id": "{Slack_Item_ID}", "select": ["{완료_옵션_ID}"] }]`
-   - 여러 Item을 처리할 때는 Item마다 별도 API 호출을 수행한다
-7. 업데이트 결과를 Activity Log에 기록한다:
-   - `| {timestamp} | Slack Status Updated | {LIST_NAME} → {feature} | 완료 |`
+1. In `docs/sprints/sprint-{N}-{name}/progress.md`, look for the `<!-- SLACK_LIST_MAPPING_START -->` ~ `<!-- SLACK_LIST_MAPPING_END -->` section
+2. If the section is missing, skip this procedure (the sprint is not Slack-List-based)
+3. If the section exists, parse the following:
+   - **List ID**: Slack List file ID
+   - **List Name**: Slack List name
+   - **Status Column**: status column ID (select-type column)
+   - **Status Options**: ID for the `Completed` option
+   - **Feature ↔ Slack Item ID** mapping table
+4. Find the Slack Item IDs mapped to the completed feature
+5. Check each Slack Item's current status. Skip Items that are already in "Completed" status and leave a note "(already in Completed status)" in the Activity Log.
+6. For Items that are not "Completed", call `mcp__fect-slack__slack_list_items_update` **individually per Item** to update **only the status select column**:
+   - `list_id`: the parsed List ID
+   - `cells`: `[{ "column_id": "{status_column_id}", "row_id": "{Slack_Item_ID}", "select": ["{completed_option_ID}"] }]`
+   - When processing multiple Items, perform a separate API call per Item
+7. Record the update result in the Activity Log:
+   - `| {timestamp} | Slack Status Updated | {LIST_NAME} → {feature} | Completed |`
 
-> **주의**: 하나의 feature에 여러 Slack Item이 매핑된 경우 (병합된 요구사항), 모든 관련 Item을 업데이트한다. Item ID가 쉼표로 구분되어 있을 수 있다 (예: `Rec001,Rec002`).
+> **Note**: If a single feature is mapped to multiple Slack Items (merged requirements), update all related Items. Item IDs may be comma-separated (e.g., `Rec001,Rec002`).
 
 ## Tracker File Auto-Creation
 

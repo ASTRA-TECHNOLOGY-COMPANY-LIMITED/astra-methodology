@@ -39,9 +39,9 @@ If no standard term exists, combine words from `data/standard_words.json`.
 Generate an entity class matching the project language.
 If the language is unclear, generate Java JPA by default and also provide TypeScript and Python.
 
-**Field naming rule**: Physical DB column names use standard abbreviations (`CSTMR_NM`), but entity/DTO/interface field names must use **full English names** (`customerName`). Expand each standard word abbreviation to its `영문명` (full English name) from `data/standard_words.json`. Apply `lowerCamelCase` for Java/TypeScript, `snake_case` for Python.
+**Field naming rule**: Physical DB column names use standard abbreviations (`CSTMR_NM`), but entity/DTO/interface field names must use **full English names** (`customerName`). Expand each standard word abbreviation to its full English name from `data/standard_words.json`. Apply `lowerCamelCase` for Java/TypeScript, `snake_case` for Python.
 
-**Boolean field rule**: `_YN` (여부) columns must use `BOOLEAN` type in both DDL and entity code. Field names use `is`/`has` prefix with a past participle or adjective (e.g., `USE_YN` → `isUsed`, `DEL_YN` → `isDeleted`).
+**Boolean field rule**: `_YN` (yes/no flag) columns must use `BOOLEAN` type in both DDL and entity code. Field names use `is`/`has` prefix with a past participle or adjective (e.g., `USE_YN` → `isUsed`, `DEL_YN` → `isDeleted`).
 
 #### Java (JPA)
 - `@Entity`, `@Table(name = "TB_...")` annotations
@@ -67,7 +67,7 @@ If the language is unclear, generate Java JPA by default and also provide TypeSc
 
 ### Step 4: DDL Generation
 Also generate SQL DDL applying the standard table name rules (TB_ prefix).
-`_YN` (여부) columns must use `BOOLEAN` type with `DEFAULT true` or `DEFAULT false`.
+`_YN` (yes/no flag) columns must use `BOOLEAN` type with `DEFAULT true` or `DEFAULT false`.
 
 ```sql
 CREATE TABLE TB_{TABLE_ABBR} (

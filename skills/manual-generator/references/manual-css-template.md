@@ -1,13 +1,13 @@
-# 매뉴얼 CSS 컴포넌트 템플릿
+# Manual CSS Component Templates
 
-매뉴얼 생성 시 사용할 CSS 컴포넌트의 상세 스펙과 코드 템플릿을 정의한다. 모든 CSS는 `assets/tokens.css`의 디자인 토큰을 `var()` 참조한다.
+Defines the detailed specs and code templates for the CSS components used in manual generation. All CSS references design tokens from `assets/tokens.css` via `var()`.
 
-## 1. manual-base.css — 레이아웃
+## 1. manual-base.css — Layout
 
-### 핵심 레이아웃 구조
+### Core layout structure
 
 ```css
-/* 매뉴얼 레이아웃 — 읽기 최적화 */
+/* Manual layout — optimized for reading */
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -21,7 +21,7 @@ html {
   scroll-behavior: smooth;
 }
 
-/* 폰트 크기 조절 (theme.js 연동) */
+/* Font size adjustment (wired up by theme.js) */
 html[data-font="small"] { font-size: 14px; }
 html[data-font="medium"] { font-size: 16px; }
 html[data-font="large"] { font-size: 18px; }
@@ -35,13 +35,13 @@ body {
   transition: color 0.2s ease, background-color 0.2s ease;
 }
 
-/* 다크 모드 */
+/* Dark mode */
 [data-theme="dark"] body {
   color: var(--color-text-primary-dark, #e2e8f0);
   background-color: var(--color-bg-primary-dark, #0f172a);
 }
 
-/* 상단 헤더 (64px) */
+/* Top header (64px) */
 .manual-header {
   position: fixed;
   top: 0;
@@ -90,14 +90,14 @@ body {
   background: var(--color-bg-secondary, #f8fafc);
 }
 
-/* 메인 레이아웃 — 사이드바 + 콘텐츠 */
+/* Main layout — sidebar + content */
 .manual-layout {
   display: flex;
   min-height: 100vh;
   padding-top: 64px;
 }
 
-/* 사이드바 TOC (240px, sticky) */
+/* Sidebar TOC (240px, sticky) */
 .toc-sidebar {
   width: 240px;
   flex-shrink: 0;
@@ -118,7 +118,7 @@ body {
   border-right-color: var(--color-border-default-dark, #334155);
 }
 
-/* 메인 콘텐츠 (max-width 800px, 읽기 최적) */
+/* Main content (max-width 800px, reading-optimized) */
 .manual-content {
   flex: 1;
   margin-left: 240px;
@@ -163,7 +163,7 @@ body {
   margin-bottom: var(--spacing-8, 2rem);
 }
 
-/* 반응형: 태블릿 */
+/* Responsive: tablet */
 @media (max-width: 1023px) {
   .toc-sidebar {
     transform: translateX(-100%);
@@ -180,7 +180,7 @@ body {
   }
 }
 
-/* 반응형: 모바일 */
+/* Responsive: mobile */
 @media (max-width: 767px) {
   .manual-content {
     padding: var(--spacing-4, 1rem);
@@ -191,10 +191,10 @@ body {
 }
 ```
 
-### 인덱스 페이지 전용
+### Index page only
 
 ```css
-/* index.html — 표지 + 목차 */
+/* index.html — cover + table of contents */
 .index-content {
   max-width: 960px;
   margin: 0 auto;
@@ -255,7 +255,7 @@ body {
   background: var(--color-primary-hover, #1d4ed8);
 }
 
-/* 목차 카드 그리드 */
+/* TOC card grid */
 .toc-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -309,7 +309,7 @@ body {
   color: var(--color-text-tertiary, #94a3b8);
 }
 
-/* 푸터 */
+/* Footer */
 .manual-footer {
   text-align: center;
   padding: var(--spacing-8, 2rem) var(--spacing-4, 1rem);
@@ -319,7 +319,7 @@ body {
   color: var(--color-text-tertiary, #94a3b8);
 }
 
-/* 대형 검색 입력란 (인덱스 페이지) */
+/* Large search input (index page) */
 .search-input-large {
   width: 100%;
   max-width: 560px;
@@ -346,9 +346,9 @@ body {
 }
 ```
 
-## 2. manual-components.css — 컴포넌트
+## 2. manual-components.css — Components
 
-### Step Card (단계 카드)
+### Step Card
 
 ```css
 .steps {
@@ -411,7 +411,7 @@ body {
 }
 ```
 
-### Callout Boxes (정보 박스)
+### Callout Boxes
 
 ```css
 .callout-tip,
@@ -450,7 +450,7 @@ body {
   color: #991b1b;
 }
 
-/* 다크 모드 callout */
+/* Dark-mode callouts */
 [data-theme="dark"] .callout-tip {
   background: rgba(34, 197, 94, 0.1);
   color: #86efac;
@@ -480,7 +480,7 @@ body {
 }
 ```
 
-### Screenshot Frame (스크린샷 프레임)
+### Screenshot Frame
 
 ```css
 .screenshot-frame {
@@ -496,7 +496,7 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* 브라우저 크롬 모의 */
+/* Mock browser chrome */
 .screenshot-chrome {
   display: flex;
   align-items: center;
@@ -551,7 +551,7 @@ body {
   height: auto;
 }
 
-/* 스크린샷 위 번호 주석 원형 */
+/* Numbered annotation circle over screenshot */
 .screenshot-annotation {
   position: absolute;
   width: 28px;
@@ -575,7 +575,7 @@ body {
 }
 ```
 
-### Breadcrumb (이동 경로)
+### Breadcrumb
 
 ```css
 .breadcrumb {
@@ -597,7 +597,7 @@ body {
 }
 ```
 
-### Chapter Navigation (이전/다음)
+### Chapter Navigation (Prev/Next)
 
 ```css
 .chapter-nav {
@@ -642,7 +642,7 @@ body {
 }
 ```
 
-### Responsive Tabs (반응형 스크린샷 탭)
+### Responsive Tabs (responsive screenshot tabs)
 
 ```css
 .responsive-preview {
@@ -694,7 +694,7 @@ body {
 }
 ```
 
-### TOC Sidebar (사이드바 목차)
+### TOC Sidebar
 
 ```css
 .toc-nav {
@@ -734,14 +734,14 @@ body {
   font-weight: var(--font-weight-medium, 500);
 }
 
-/* 들여쓰기 (섹션 레벨) */
+/* Indentation (section level) */
 .toc-nav .toc-section {
   padding-left: var(--spacing-6, 1.5rem);
   font-size: var(--font-size-xs, 0.75rem);
 }
 ```
 
-### Search Overlay (검색 모달)
+### Search Overlay (search modal)
 
 ```css
 .search-overlay {
@@ -839,7 +839,7 @@ body {
 }
 ```
 
-## 3. manual-print.css — 인쇄용
+## 3. manual-print.css — Print
 
 ```css
 @media print {
@@ -907,37 +907,37 @@ body {
 }
 ```
 
-## 4. JavaScript 템플릿
+## 4. JavaScript Templates
 
-### shared/nav.js 핵심 기능
+### Core features of shared/nav.js
 
 ```javascript
-// 기능 목록 (구현 가이드):
-// 1. 사이드바 토글: .sidebar-toggle 클릭 시 .toc-sidebar에 .open 클래스 토글
-// 2. 스크롤스파이: IntersectionObserver로 현재 보이는 섹션 감지 → TOC에서 .active 클래스 이동
-// 3. 챕터 내비게이션: ← → 키보드 이벤트로 prev/next 링크 이동
-// 4. 모바일 오버레이 닫기: 사이드바 외부 클릭 시 닫기
-// 5. 반응형 탭: .responsive-tabs .tab 클릭 시 .tab-content 전환
+// Feature list (implementation guide):
+// 1. Sidebar toggle: clicking .sidebar-toggle toggles .open on .toc-sidebar
+// 2. Scrollspy: IntersectionObserver detects the section currently in view → moves .active on the TOC entry
+// 3. Chapter navigation: ← → keyboard events to follow the prev/next link
+// 4. Mobile overlay close: clicking outside the sidebar closes it
+// 5. Responsive tabs: clicking .responsive-tabs .tab switches the active .tab-content
 ```
 
-### shared/search.js 핵심 기능
+### Core features of shared/search.js
 
 ```javascript
-// 기능 목록 (구현 가이드):
-// 1. search-index.json fetch → 메모리에 저장
-// 2. Cmd+K / Ctrl+K → 검색 오버레이 열기
-// 3. 입력 시 실시간 필터링 (title + content 매칭)
-// 4. 결과 하이라이트 (매칭 키워드 <mark> 감싸기)
-// 5. ↑↓ 키로 결과 선택, Enter로 이동
-// 6. ESC로 닫기
+// Feature list (implementation guide):
+// 1. Fetch search-index.json → keep it in memory
+// 2. Cmd+K / Ctrl+K → open the search overlay
+// 3. Live filter on input (match against title + content)
+// 4. Highlight results (wrap matched keywords with <mark>)
+// 5. ↑↓ to select a result, Enter to navigate
+// 6. ESC to close
 ```
 
-### shared/theme.js 핵심 기능
+### Core features of shared/theme.js
 
 ```javascript
-// 기능 목록 (구현 가이드):
-// 1. 다크 모드 토글: html[data-theme] 속성 전환 + localStorage 저장
-// 2. 시스템 테마 감지: prefers-color-scheme 미디어 쿼리 → 초기값 설정
-// 3. 폰트 크기 조절: html[data-font] 속성 순환 (small → medium → large) + localStorage 저장
-// 4. 페이지 로드 시 저장된 설정 복원
+// Feature list (implementation guide):
+// 1. Dark-mode toggle: switch the html[data-theme] attribute + persist in localStorage
+// 2. System-theme detection: prefers-color-scheme media query → use as the initial value
+// 3. Font-size adjustment: cycle the html[data-font] attribute (small → medium → large) + persist in localStorage
+// 4. On page load, restore the saved settings
 ```
