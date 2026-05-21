@@ -1,6 +1,6 @@
 ---
 name: blueprint
-description: "Authors a Blueprint (design document) for a feature. Generates 10 standard sections focused on data flow, schema definition, API contract, sequence diagrams, logic design, and HITL trigger conditions that require user decisions during implementation — excluding executable implementation code. If /service-planner deliverables (docs/planner/{NNN}-{slug}/) exist, they are auto-loaded to draft the blueprint. Only 1–3 core decisions that genuinely require human judgment (PK strategy, transaction boundary, sync/async for external dependencies) are asked via AskUserQuestion. The 'Section 10: HITL Triggers' block written into the blueprint is later consulted by /feature-dev during implementation so that the user is only asked on essential decisions. After authoring, the blueprint-reviewer agent is invoked to validate quality. This dedicated skill resolves the code-pollution and over-HITL problems that occurred when blueprints were authored inside /feature-dev."
+description: "Authors a Blueprint (design document) for a feature. Generates 10 standard sections focused on data flow, schema definition, API contract, sequence diagrams, logic design, and HITL trigger conditions that require user decisions during implementation — excluding executable implementation code. If /service-planner deliverables (docs/planner/{NNN}-{slug}/) exist, they are auto-loaded to draft the blueprint. Only 1–3 core decisions that genuinely require human judgment (PK strategy, transaction boundary, sync/async for external dependencies) are asked via AskUserQuestion. The 'Section 10: HITL Triggers' block written into the blueprint is later consulted by /feature-dev during implementation so that the user is only asked on essential decisions. After authoring, the blueprint-reviewer agent is invoked to validate quality, and then (v5.8+) the skill automatically creates a sprint worktree by delegating to /sprint-init — the skill itself does not change the user's working directory, but the Step 7 output shows the user a concrete `cd <worktree-path>` command to run next so they can start implementation immediately. This dedicated skill resolves the code-pollution and over-HITL problems that occurred when blueprints were authored inside /feature-dev."
 argument-hint: "[feature-slug-or-blueprint-path] [--auto] [--from-planner=<planner-dir>]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Task, TodoWrite
 ---
@@ -519,19 +519,145 @@ git commit -m "docs(blueprint): scaffold ${NUM}-${FEATURE_SLUG} blueprint
 
 > **No remote push** — `/pr-merge` handles pushing the sprint branch at the end of the sprint. As long as the commit is on dev, the next `/sprint-init`'s `astra_create_sprint_worktree` will automatically carry the blueprint over.
 
+### Step 6.5: Auto-create sprint worktree (default behavior, v5.8+)
+
+After the blueprint is committed (Step 6), the skill **always** delegates to `/sprint-init` to create a sprint worktree. **The skill does NOT change the user's working directory** — it only creates the worktree and informs the user via Step 7 output. The user then runs `cd <worktree-path>` themselves to enter the worktree.
+
+> **Design note — no auto-cd**: Skill-to-skill `cd` propagation between separate Skill() invocations is unreliable (the existing `/autorun` Stage 4 explicitly re-cd's after `Skill('sprint-init', ...)` precisely because of this). Rather than depend on that propagation, `/blueprint` keeps the parent context's cwd at the main worktree and shows the user a concrete `cd` command in Step 7. This is also clearer for the user — they can see exactly where they are about to move to.
+
+Two safety guards skip the auto-creation:
+
+| Guard | Reason | Behavior |
+|-------|--------|----------|
+| Already inside a sprint worktree (`astra_is_isolated_worktree`) | This `/blueprint` invocation is a *secondary* blueprint added to an existing sprint (prompt-map Step 1.1 flow) | Skip — the existing worktree is reused |
+| Current branch is not `dev` / `main` / `master` | Worktree base ref would be an unintended branch | Skip with warning — user must switch branches and re-run `/sprint-init` manually |
+
+```bash
+# 6.5.1 Load worktree helpers
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$PLUGIN_ROOT/scripts/worktree-helpers.sh" ]; then
+  echo "⚠️  CLAUDE_PLUGIN_ROOT not found — skipping auto-worktree creation"
+  WORKTREE_CREATED=0
+  WORKTREE_SKIP_REASON="plugin root unavailable"
+else
+  source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
+
+  # 6.5.2 Location guards
+  if astra_is_isolated_worktree; then
+    echo "ℹ️  Already inside a sprint worktree — skipping auto-worktree creation (this is a secondary blueprint in the existing sprint)"
+    WORKTREE_CREATED=0
+    WORKTREE_SKIP_REASON="already in sprint worktree"
+  elif [ "$CURRENT_BRANCH" != "dev" ] && [ "$CURRENT_BRANCH" != "main" ] && [ "$CURRENT_BRANCH" != "master" ]; then
+    echo "⚠️  Current branch '$CURRENT_BRANCH' is not dev/main/master — skipping auto-worktree creation"
+    echo "    To create a sprint worktree manually: git checkout dev && /sprint-init ${FEATURE_SLUG}"
+    WORKTREE_CREATED=0
+    WORKTREE_SKIP_REASON="non-standard branch ($CURRENT_BRANCH)"
+  else
+    # 6.5.3 Delegate to /sprint-init (creates worktree + scaffolding)
+    echo "🌿 Auto-creating sprint worktree for '${FEATURE_SLUG}' (delegating to /sprint-init)..."
+    Skill('sprint-init', "${FEATURE_SLUG} --from-blueprint")
+    WORKTREE_CREATED=1
+  fi
+fi
+```
+
+**Why delegation (not inline worktree code)**:
+
+- `/sprint-init` owns 5 responsibilities (worktree creation, `.astra-worktree.env`, `prompt-map.md`, `progress.md`, `retrospective.md`, sprint-branch scaffolding commit). Duplicating its logic in `/blueprint` would risk drift.
+- The `--from-blueprint` flag tells `/sprint-init` that the blueprint commit is already on dev, so it does not need to verify blueprint existence separately.
+- `/sprint-init`'s `astra_ensure_main_worktree` gate guarantees this only runs from the main worktree — the same guard that protects `/sprint-init` direct invocations.
+
+**Post-delegation: discover the worktree path (no cd)**:
+
+After `/sprint-init` returns, `/blueprint`'s parent context remains in the main worktree (do NOT cd). Discover the worktree path by querying git directly — this is more reliable than parsing `/sprint-init`'s stdout:
+
+```bash
+# 6.5.4 Discover the worktree path (read-only — no cd)
+if [ "$WORKTREE_CREATED" = "1" ]; then
+  SPRINT_BRANCH="feat/sprint-${SPRINT_N:-?}-${FEATURE_SLUG}"   # SPRINT_N is whatever /sprint-init resolved to
+  # Use git worktree list to find the worktree path for the sprint branch — survives slug collision suffixes
+  WT_PATH=$(git worktree list --porcelain 2>/dev/null | awk -v b="$SPRINT_BRANCH" '
+    /^worktree / { p=$2 }
+    /^branch refs\/heads\// {
+      if ($2 == "refs/heads/" b) { print p; exit }
+    }
+  ')
+  if [ -z "$WT_PATH" ]; then
+    # Fallback: glob by slug pattern, pick most recent
+    WT_PATH=$(ls -td .astra-worktrees/sprint-*-${FEATURE_SLUG} 2>/dev/null | head -1)
+  fi
+  # Read the port base from the env file (do not cd into the worktree)
+  if [ -n "$WT_PATH" ] && [ -f "$WT_PATH/.astra-worktree.env" ]; then
+    PORT_BASE=$(grep -E '^ASTRA_PORT_BASE=' "$WT_PATH/.astra-worktree.env" | cut -d= -f2)
+  fi
+fi
+```
+
+These variables (`WT_PATH`, `SPRINT_BRANCH`, `PORT_BASE`) are read by Step 7 to render the `cd` instruction for the user.
+
+> **`--auto` mode behavior**: In manual mode, Step 7 shows the user a `cd` command and stops — the user runs `cd` and then `/feature-dev`. In `--auto` mode (called by `/autorun`), `/blueprint` does NOT cd either; `/autorun` Stage 3.5 owns the explicit cd into the worktree before Stage 5 begins. This keeps `/blueprint`'s side-effects consistent across modes.
+
+> **Edge case — secondary blueprint in same sprint**: When the user adds a second blueprint to an in-progress sprint (e.g., from inside `.astra-worktrees/sprint-1-auth/`), Guard 1 skips worktree creation. The blueprint commit lands on the existing sprint branch (per Step 6.2 logic), and `/pr-merge` carries it to dev at sprint end.
+
 ### Step 7: Output
 
+Output format branches on whether Step 6.5 created a worktree. **In all cases, this skill never changes the user's cwd** — Case A shows the user a `cd` command to run next.
+
+#### Case A: Worktree was created (`WORKTREE_CREATED=1`) — default path
+
 ```
-✅ Blueprint authoring complete
+✅ Blueprint authoring complete + sprint worktree created
+
+📄 Blueprint: {BLUEPRINT_PATH}
+📋 Review:    {BLUEPRINT_DIR}/review.md ({score}/100)
+📦 Commit:    {commit SHA}
+
+🌿 Sprint worktree created (you are still in the main worktree):
+   Path:      {WT_PATH}
+   Branch:    {SPRINT_BRANCH}
+   Port base: {PORT_BASE}
+   env file:  {WT_PATH}/.astra-worktree.env
+
+────────────────────────────────────────────────────────────────
+👉 Run this next to enter the sprint worktree:
+
+   cd {WT_PATH}
+
+   Then continue with the prompts below.
+────────────────────────────────────────────────────────────────
+
+🎯 Next steps (after `cd {WT_PATH}`):
+  /feature-dev "Implement the data model / API / logic in {BLUEPRINT_PATH}. Comply with Section 10 HITL Triggers."
+  /test-scenario {feature-slug}            # generate blueprint-based test cases
+  /test-run                                 # integration tests on the sprint-specific port
+  /pr-merge                                 # PR → review → merge → worktree auto-removal
+
+⚠️ P0 issues ({count}):
+  - {summary}
+```
+
+> **The skill does not auto-cd**. The user must run the `cd` command above before continuing — `/feature-dev`, `/test-scenario`, `/test-run`, `/pr-merge` will not isolate properly if invoked from the main worktree.
+
+#### Case B: Worktree creation was skipped (`WORKTREE_CREATED=0`)
+
+```
+✅ Blueprint authoring complete (worktree creation skipped)
 
 📄 Blueprint: {BLUEPRINT_PATH}
 📋 Review:    {BLUEPRINT_DIR}/review.md ({score}/100)
 📦 Commit:    {commit SHA or "to be committed manually by user"}
 
-🎯 Next steps (inside the sprint):
-  /sprint-init {feature-slug}              # if no sprint has been created yet
-  /feature-dev "Implement the data model / API / logic in {BLUEPRINT_PATH}. Comply with Section 10 HITL Triggers."
-  /test-scenario {feature-slug}            # generate blueprint-based test cases
+⚠️ Worktree skipped: {WORKTREE_SKIP_REASON}
+
+🎯 Next steps:
+  {if reason = "already in sprint worktree":}
+    /feature-dev "Implement the data model / API / logic in {BLUEPRINT_PATH}. Comply with Section 10 HITL Triggers."
+    /test-scenario {feature-slug}
+  {if reason = "non-standard branch":}
+    git checkout dev
+    /sprint-init {feature-slug}            # create sprint worktree manually
+  {otherwise:}
+    /sprint-init {feature-slug}
 
 ⚠️ P0 issues ({count}):
   - {summary}
@@ -544,6 +670,8 @@ Skill('blueprint', '{feature-slug} --auto --from-planner=docs/planner/{NNN}-{fea
 ```
 
 With `--auto`, all Step 3 HITL questions are skipped and the defaults (auto-inc PK / single transaction + Outbox / sync + CB) are applied. This guarantees unattended execution.
+
+> **v5.8+ note**: Step 6.5 auto-creates the sprint worktree in `--auto` mode just like in manual mode. After `/blueprint --auto` returns, the working directory is already inside the sprint worktree, so `/autorun` Stage 4 (sprint plan) becomes an idempotent re-entry — it detects the existing worktree and skips re-creation. See `/autorun` Stage 4 for details.
 
 ## FAQ
 
