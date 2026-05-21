@@ -509,10 +509,9 @@
       <text x="595" y="74" text-anchor="middle" font-size="9" fill="#475569">promotion</text>
 
       <line x1="420" y1="108" x2="370" y2="108" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow2)"/>
-      <line x1="620" y1="108" x2="570" y2="108" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow2)"/>
 
-      <text x="395" y="148" text-anchor="middle" font-size="9" fill="#64748b">↑ Cascade tự động (trên → dưới)</text>
-      <text x="595" y="148" text-anchor="middle" font-size="9" fill="#64748b">↑ Cascade tự động</text>
+      <text x="395" y="148" text-anchor="middle" font-size="9" fill="#64748b">↑ Cascade tự động (staging → dev)</text>
+      <text x="595" y="148" text-anchor="middle" font-size="9" fill="#94a3b8" font-style="italic">(main → staging không auto-cascade)</text>
 
       <text x="380" y="190" text-anchor="middle" font-size="10" font-style="italic" fill="#475569">Cá nhân → dev (phòng tập) → staging (tổng duyệt) → main (sân khấu chính)</text>
     </svg>
@@ -521,7 +520,7 @@
   <h2 class="subhead">Cách đọc</h2>
   <ul>
     <li>Mũi tên nét liền (→) là <em>luồng do con người khởi động</em>: tạo PR, sau khi xác minh thì "thăng cấp" lên bước tiếp theo.</li>
-    <li>Mũi tên nét đứt (↑) là <em>luồng do công cụ tự động xử lý</em>: khi nhánh phía trên có thay đổi, các nhánh phía dưới được đồng bộ ngay lập tức.</li>
+    <li>Mũi tên nét đứt (↑) là <em>luồng do công cụ tự động xử lý</em> — chỉ là <code>staging → dev</code>. Khi <code>staging</code> đi trước <code>dev</code> (thường ngay sau promotion <code>dev → staging</code> hoặc hotfix tách ra từ <code>staging</code>), công cụ đồng bộ <code>dev</code> ở mỗi PR. <code>main → staging</code> <strong>không</strong> được auto-cascade; <code>main</code> chỉ được chạm vào thông qua promotion <code>staging → main</code> rõ ràng.</li>
   </ul>
 
   <table>
@@ -823,7 +822,8 @@
   <h1 class="section-title">Đồng bộ hóa cascade — Cơ chế an toàn mỗi lần</h1>
 
   <h2 class="subhead">Điều gì xảy ra?</h2>
-  <p><strong>Ngay trước khi</strong> tạo PR, công cụ sẽ chảy thay đổi từ trên xuống dưới theo thứ tự sau.</p>
+  <p><strong>Ngay trước khi</strong> tạo PR, công cụ sẽ đồng bộ <code>staging → dev</code> để nhánh tích hợp bắt kịp nhánh release-candidate đã được xác minh.</p>
+  <p><strong>Phạm vi</strong>: cascade tự động <strong>chỉ là <code>staging → dev</code></strong>. <code>main → staging</code> được cố ý loại trừ — <code>main</code> chỉ được chạm vào thông qua promotion <code>staging → main</code> rõ ràng. Điều này ngăn code production rò rỉ vào nhánh tích hợp ngoài luồng release có kiểm soát.</p>
 
   <div class="diagram">
     <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg">
@@ -853,25 +853,22 @@
 
       <!-- info bar -->
       <rect x="20" y="68" width="705" height="28" rx="6" fill="#fef9c3" stroke="#fde047"/>
-      <text x="372" y="86" text-anchor="middle" class="svg-text svg-text-bold" fill="#854d0e">Ngay trước khi tạo PR, nhận thay đổi từ trên xuống theo thứ tự</text>
+      <text x="372" y="86" text-anchor="middle" class="svg-text svg-text-bold" fill="#854d0e">Ngay trước khi tạo PR, đồng bộ staging → dev (main → staging không auto-cascade)</text>
 
-      <!-- step 1: main → staging -->
-      <circle cx="90" cy="120" r="11" fill="#475569"/>
-      <text x="90" y="124" text-anchor="middle" fill="white" class="svg-text svg-text-bold" font-size="10">1</text>
-      <line x1="105" y1="120" x2="225" y2="120" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow5)"/>
-      <text x="165" y="113" text-anchor="middle" class="svg-text svg-text-sm">main → staging</text>
-
-      <!-- step 2: staging → dev -->
+      <!-- step 1: staging → dev -->
       <circle cx="265" cy="160" r="11" fill="#475569"/>
-      <text x="265" y="164" text-anchor="middle" fill="white" class="svg-text svg-text-bold" font-size="10">2</text>
+      <text x="265" y="164" text-anchor="middle" fill="white" class="svg-text svg-text-bold" font-size="10">1</text>
       <line x1="280" y1="160" x2="400" y2="160" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow5)"/>
       <text x="340" y="153" text-anchor="middle" class="svg-text svg-text-sm">staging → dev</text>
 
-      <!-- step 3: dev → branch -->
+      <!-- step 2: dev → branch -->
       <circle cx="440" cy="200" r="11" fill="#475569"/>
-      <text x="440" y="204" text-anchor="middle" fill="white" class="svg-text svg-text-bold" font-size="10">3</text>
+      <text x="440" y="204" text-anchor="middle" fill="white" class="svg-text svg-text-bold" font-size="10">2</text>
       <line x1="455" y1="200" x2="580" y2="200" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow5)"/>
       <text x="517" y="193" text-anchor="middle" class="svg-text svg-text-sm">dev → nhánh của tôi</text>
+
+      <!-- main is excluded from auto-cascade -->
+      <text x="90" y="124" text-anchor="middle" class="svg-text-sm" fill="#94a3b8" font-style="italic">(không auto-cascade)</text>
 
       <!-- done bar -->
       <rect x="500" y="225" width="225" height="32" rx="6" fill="#dcfce7" stroke="#86efac"/>
@@ -894,17 +891,17 @@
   </div>
 
   <h2 class="subhead">Tại sao phải làm điều này mỗi lần?</h2>
-  <p>Nếu nhánh <code>feat/login</code> của tôi đã được tách ra từ <code>dev</code> cách đây một tuần, thì trong khoảng thời gian đó, <code>dev</code> đã nhận rất nhiều code từ các đồng nghiệp khác. Nếu mở PR trong trạng thái đó:</p>
+  <p>Nếu nhánh <code>feat/login</code> của tôi đã được tách ra từ <code>dev</code> cách đây một tuần, trong khoảng thời gian đó <code>dev</code> đã nhận rất nhiều code từ các đồng nghiệp, và sau lần promotion gần nhất <code>staging</code> có thể cũng đi trước <code>dev</code>. Nếu mở PR trong trạng thái đó:</p>
   <ol>
     <li><strong>Bùng nổ xung đột</strong> — Luồng review bị gián đoạn và lãng phí thời gian</li>
     <li><strong>CI pass → vỡ sau khi merge</strong> — Vì được xác minh dựa trên dev cũ nên không thể tin cậy</li>
-    <li><strong>Hotfix vận hành bị quay ngược</strong> — Nếu sửa lỗi đã vào main không được phản ánh vào dev, lỗi cũ sẽ tái phát ở release tiếp theo</li>
+    <li><strong>Release-candidate bị quay ngược</strong> — Nếu sửa lỗi đã vào <code>staging</code> không được phản ánh vào <code>dev</code>, cùng lỗi đó sẽ tái phát ở sprint tiếp theo</li>
   </ol>
 
   <div class="callout callout-amber">
     <div class="callout-title">🌀 Vai trò của cascade</div>
     <div class="callout-body">
-      Ép buộc quy tắc <strong>"tất cả thay đổi của nhánh trên luôn có ở nhánh dưới"</strong> mỗi PR. Công cụ thực hiện mỗi lần để con người không bị quên.
+      Ép buộc quy tắc <strong>"thay đổi của staging luôn có mặt trong dev"</strong> mỗi PR. Công cụ thực hiện mỗi lần để con người không bị quên.
     </div>
   </div>
 
