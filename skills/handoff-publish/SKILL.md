@@ -1,398 +1,403 @@
 ---
 name: handoff-publish
-description: "UX/UI/Dev/QA 협업을 위한 Handoff 패키지(브랜치 루트 `{feature}-handoff/`)를 생성합니다. Screen ID 4-segment 체계(DOMAIN-PAGE-SECTION-UC)로 화면을 식별하고, SSoT인 1-screen-registry.md를 중심으로 11개 문서(상태 매트릭스, 엣지 케이스, 반응형, 컴포넌트 명세, 비즈니스 규칙, UX writing, IA/사이트맵, 페르소나, Decision log)를 구성합니다. service-planner 산출물이 있으면 자동으로 변환/활용합니다."
-argument-hint: "[feature-name 또는 기획 디렉토리명]"
+description: "Generates a handoff package (`{feature}-handoff/` at the branch root) for UX/UI/Dev/QA collaboration. Identifies screens via the 4-segment Screen ID scheme (DOMAIN-PAGE-SECTION-UC) and composes 11 documents centered on the SSoT `1-screen-registry.md` (state matrix, edge cases, responsive, component specs, business rules, UX writing, IA/sitemap, personas, Decision log). If service-planner deliverables exist, they are automatically converted and reused."
+argument-hint: "[feature-name or planner directory name]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill
 ---
 
-# ASTRA Handoff 패키지 자동 생성
+# ASTRA Handoff Package Auto-Generator
 
-HANDOFF_PROCESS_GUIDE v1.1 기반의 **Screen ID 중심 협업 패키지**를 생성합니다.
+Generates a **Screen-ID-centric collaboration package** based on HANDOFF_PROCESS_GUIDE v1.1.
 
-**핵심 원칙 (PDF §6)**:
-- **Screen ID 기반 협업**: 모든 화면은 `DOMAIN-PAGE-SECTION-UC{NN}` 형식의 고유 ID로 식별
-- **Single Source of Truth (SSoT)**: `1-screen-registry.md`가 모든 ID의 유일한 기준 (UX만 발행 권한)
-- **상태 기반 설계**: 모든 화면은 상태(State) × 권한(Permission) × 디바이스(Device) 조합으로 정의
+**Core principles (PDF §6)**:
+- **Screen-ID-based collaboration**: every screen is identified by a unique ID in the `DOMAIN-PAGE-SECTION-UC{NN}` format
+- **Single Source of Truth (SSoT)**: `1-screen-registry.md` is the sole source for every ID (only UX has issuance authority)
+- **State-based design**: every screen is defined as a combination of State × Permission × Device
 
-**생성 위치**: 브랜치 루트의 `{feature}-handoff/` 폴더 (PDF §8 구조 그대로)
+**Output location**: the `{feature}-handoff/` folder at the branch root (per PDF §8 structure)
 
-**출력물 (14개 파일 + screenshots/)**:
+**Deliverables (14 files + screenshots/)**:
 
-| # | 파일 | 역할 |
+| # | File | Role |
 |---|------|------|
-| 0 | `0-README.md` | 이 가이드 + Quick Start |
-| 1 | `1-screen-registry.md` | **SSoT** — 화면 등록부 |
-| 2 | `2-flows.md` | 사용자 흐름 (Flow) 정의 |
-| 3 | `3-state-matrix.md` | 상태 × 권한 매트릭스 |
-| 4 | `4-edge-cases.md` | 예외/주의 케이스 |
-| 5 | `5-responsive-guide.md` | 반응형 기준 |
-| 6 | `6-component-specs.md` | 카드/컴포넌트 명세 (data anatomy) |
-| 7 | `7-business-rules.md` | 화면별 비즈니스 규칙 / 노출 정책 |
-| 8 | `8-content-guide.md` | UX Writing + 데이터 표시 규칙 |
-| 9 | `9-ia-sitemap.md` | 정보 구조 / 사이트맵 |
-| 10 | `10-personas.md` | 페르소나 / 핵심 시나리오 |
-| 11 | `11-decision-log.md` | 디자인 결정 이력 |
-| — | `DoD-CHECKLIST.md` | 역할별 Definition of Done 체크리스트 |
-| — | `walkthrough.loom.md` | 설명 영상 링크 (수동 기록) |
-| — | `screenshots/` | 화면 ID 기준 캡처 디렉토리 |
+| 0 | `0-README.md` | this guide + Quick Start |
+| 1 | `1-screen-registry.md` | **SSoT** — Screen Registry |
+| 2 | `2-flows.md` | user-flow definitions |
+| 3 | `3-state-matrix.md` | state × permission matrix |
+| 4 | `4-edge-cases.md` | exception / caution cases |
+| 5 | `5-responsive-guide.md` | responsive baseline |
+| 6 | `6-component-specs.md` | card/component spec (data anatomy) |
+| 7 | `7-business-rules.md` | per-screen business rules / exposure policy |
+| 8 | `8-content-guide.md` | UX writing + data display rules |
+| 9 | `9-ia-sitemap.md` | information architecture / sitemap |
+| 10 | `10-personas.md` | personas / key scenarios |
+| 11 | `11-decision-log.md` | design decision history |
+| — | `DoD-CHECKLIST.md` | Definition of Done checklist per role |
+| — | `walkthrough.loom.md` | walkthrough video link (manually entered) |
+| — | `screenshots/` | captures keyed by Screen ID |
 
 > **LANGUAGE RULE**: Before executing this skill, read the project's `CLAUDE.md` and check the `## Language` section to detect the project language. If the project language is NOT Korean (`ko`), translate ALL user-facing output — prompts, messages, generated headers, table labels, descriptions — into the project language. Technical identifiers (Screen IDs, file names, code snippets) remain untranslated.
 
 ---
 
-## Out of Scope (PDF §24 — 본 프로세스를 적용하지 않는 경우)
+## Out of Scope (PDF §24 — cases where this process is not applied)
 
-다음의 경우 Handoff 프로세스를 적용하지 **않는다**. Step 0 초반에 사용자에게 명시적으로 확인한다:
+The handoff process is **not** applied in the following cases. Confirm with the user explicitly at the start of Step 0:
 
-- 1회성 마케팅/이벤트 페이지
-- 빠른 프로토타입/A-B 테스트용 화면
-- 외부 임베드 페이지 (Notion/Slack 임베드 등)
-- 백오피스 어드민 화면 (UX 협업 불필요한 경우)
+- One-off marketing / event pages
+- Quick prototype / A-B test screens
+- External embedded pages (Notion / Slack embeds, etc.)
+- Back-office admin screens (when UX collaboration is not needed)
 
-해당 사례에 해당하면 이 스킬을 조기 종료하고, 대신 `/blueprint` 또는 바로 구현을 권장한다.
+If a case matches, exit this skill early and Recommended `/blueprint` or direct implementation instead.
 
-또한 **기존 기능에는 자동 적용하지 않는다** (PDF §26). 큰 리뉴얼 시점에만 점진 적용한다.
-
----
-
-## 실행 절차
-
-### Step 0: Out of Scope 확인
-
-`AskUserQuestion`으로 아래를 확인한다. 하나라도 해당되면 스킬을 조기 종료한다:
-
-```
-## Handoff 적용 범위 확인
-
-본 Handoff 프로세스는 제품의 핵심 화면(여러 역할이 협업하는 장기 유지 화면)에만 적용합니다.
-다음 중 하나에 해당하나요?
-
-1. 1회성 마케팅/이벤트 페이지
-2. 빠른 프로토타입/A-B 테스트용
-3. 외부 임베드 페이지
-4. 백오피스 어드민 (UX 협업 불필요)
-5. 위 항목 해당 없음 (정상 진행)
-```
-
-1~4 선택 시:
-```
-Handoff 프로세스는 해당 화면에 적용하지 않습니다.
-대신 아래 워크플로우를 권장합니다:
-- 청사진 작성: /blueprint {feature-slug}
-- sprint 시작 후 구현: /sprint-init → /feature-dev "..."
-종료합니다.
-```
-→ 스킬 종료.
-
-5 선택 시 Step 1로 진행한다.
+Also, **do not apply retroactively to existing features** (PDF §26). Apply gradually only at major renewal points.
 
 ---
 
-### Step 1: 인자 파싱 및 Feature 컨텍스트 수집
+## Procedure
 
-#### A. `$ARGUMENTS` 분석
+### Step 0: Out-of-Scope confirmation
 
-| 인자 형태 | 동작 |
-|-----------|------|
-| 기획 디렉토리명 (예: `001-auth`) | `docs/planner/{디렉토리}/` 와 `docs/blueprints/{디렉토리}/` 를 컨텍스트로 사용 |
-| feature-name kebab-case (예: `expert-qa`) | 해당 feature를 주제로 설정, 기획 디렉토리 탐색 |
-| 없음 | `docs/planner/` 스캔 후 `AskUserQuestion`으로 선택 |
+Confirm via `AskUserQuestion`. If any item matches, exit the skill early:
 
-선택된 feature-name을 `{FEATURE_NAME}`으로 저장한다.
+```
+## Handoff scope confirmation
 
-#### B. Domain Code 결정
+This handoff process applies only to a product's core screens (long-lived screens with multi-role collaboration).
+Does any of the following apply?
 
-Screen ID의 첫 segment(`DOMAIN`)는 **프로덕트 약어**다. 예:
+1. One-off marketing / event page
+2. Quick prototype / A-B test
+3. External embedded page
+4. Back-office admin (no UX collaboration needed)
+5. None of the above (proceed normally)
+```
+
+If 1–4 is chosen:
+```
+The handoff process is not applied to this screen.
+The following workflow is Recommended instead:
+- Write a blueprint: /blueprint {feature-slug}
+- After sprint start, implement: /sprint-init → /feature-dev "..."
+Exiting.
+```
+→ End the skill.
+
+If 5 is chosen, proceed to Step 1.
+
+---
+
+### Step 1: Argument parsing and feature-context collection
+
+#### A. Parse `$ARGUMENTS`
+
+| Argument form | Behavior |
+|---------------|----------|
+| Planner directory name (e.g., `001-auth`) | Use `docs/planner/{dir}/` and `docs/blueprints/{dir}/` as context |
+| feature-name in kebab-case (e.g., `expert-qa`) | Set the feature as the subject; search for the planner directory |
+| (none) | Scan `docs/planner/` and pick via `AskUserQuestion` |
+
+Save the selected feature-name as `{FEATURE_NAME}`.
+
+#### B. Determine the Domain Code
+
+The first segment of the Screen ID (`DOMAIN`) is the **product abbreviation**. Examples:
 - FECT Academy → `ACAD`
 - FECTQ → `FECTQ`
-- AMA 결제 → `PAY`
+- AMA payments → `PAY`
 
-`CLAUDE.md`에서 프로젝트명/도메인을 읽고 후보를 제시한 뒤, `AskUserQuestion`으로 `{DOMAIN_CODE}` (2~6자 대문자)를 확정한다. 이 도메인 코드는 향후 모든 화면 ID에 일관되게 사용된다.
+Read the project name / domain from `CLAUDE.md`, present candidates, and confirm `{DOMAIN_CODE}` (2–6 uppercase characters) via `AskUserQuestion`. This domain code is used consistently across every screen ID thereafter.
 
-> 기존 Handoff 패키지가 있으면 해당 폴더의 `1-screen-registry.md`에서 DOMAIN을 자동 추출한다.
+> If an existing handoff package exists, auto-extract DOMAIN from that folder's `1-screen-registry.md`.
 
-#### C. 기존 산출물 로드 (있으면 활용, 없으면 스캐폴드)
+#### C. Load existing deliverables (use if present; otherwise scaffold)
 
-다음 파일이 있으면 읽어서 Handoff 파일에 반영한다:
+If the following files exist, read them and reflect them in the handoff files:
 
-| 소스 | 매핑 대상 |
-|------|-----------|
+| Source | Mapping target |
+|--------|----------------|
 | `docs/planner/{NNN}-{feature}/ia-screen-design.md` | `1-screen-registry.md`, `9-ia-sitemap.md`, `2-flows.md` |
 | `docs/planner/{NNN}-{feature}/interview-report.md` | `10-personas.md` |
-| `docs/planner/{NNN}-{feature}/requirements-definition.md` | `7-business-rules.md`의 노출 정책 초안 |
-| `docs/planner/{NNN}-{feature}/feature-definition.md` | `7-business-rules.md`, `3-state-matrix.md`의 권한 매트릭스 |
-| `docs/blueprints/{NNN}-{feature}/blueprint.md` | `7-business-rules.md`의 API/데이터 정책 |
-| `docs/design-system/components.md` | `6-component-specs.md` (글로벌 컴포넌트는 참조 링크만) |
+| `docs/planner/{NNN}-{feature}/requirements-definition.md` | draft exposure policy for `7-business-rules.md` |
+| `docs/planner/{NNN}-{feature}/feature-definition.md` | `7-business-rules.md`, permission matrix in `3-state-matrix.md` |
+| `docs/blueprints/{NNN}-{feature}/blueprint.md` | API/data policy in `7-business-rules.md` |
+| `docs/design-system/DESIGN.md` | `6-component-specs.md` (SSoT — reference Front Matter tokens + Body §4 component guidelines via reference links) |
+| `docs/design-system/components.md` | `6-component-specs.md` (legacy fallback — used only when DESIGN.md is absent) |
 
-> 모두 없으면 빈 스캐폴드를 생성하고 UX/PM이 채우도록 TODO 주석을 남긴다. 이 경우 Step 5~10의 AI 자동 채움은 생략된다.
+> If none are present, create an empty scaffold and leave TODO comments for UX/PM to fill. In this case, the AI auto-fill in Steps 5–10 is skipped.
 
-#### D. 출력 디렉토리 결정
+#### D. Determine the output directory
 
-기본값: 브랜치 루트의 `{FEATURE_NAME}-handoff/` (예: `fect-academy-handoff/`)
+Default: `{FEATURE_NAME}-handoff/` at the branch root (e.g., `fect-academy-handoff/`).
 
-이미 존재하면 `AskUserQuestion`:
-- 기존 유지 + 업데이트 (기본)
-- 삭제 후 재생성
-- 중단
+If it already exists, `AskUserQuestion`:
+- Keep + update (default)
+- Delete and recreate
+- Abort
 
-`{HANDOFF_DIR}`을 확정한다.
+Confirm `{HANDOFF_DIR}`.
 
-#### E. dev 브랜치 전환 및 최신화
+#### E. Switch to the dev branch and sync to latest
 
-산출물 파일을 생성하기 전에, `dev` 브랜치로 전환하고 최신 상태로 동기화한다. 작업 브랜치는 생성하지 않으며, `dev`에서 직접 작업한다. 작업 브랜치 생성은 `/pr-merge` 실행 시 자동으로 처리된다.
+Before creating deliverable files, switch to the `dev` branch and synchronize to the latest. Do not create a work branch; work directly on `dev`. Work-branch creation is handled automatically when `/pr-merge` runs.
 
-0. **메인 worktree 가드**: 격리 worktree(`.astra-worktrees/<slug>/`) 안에서 호출된 경우 중단한다. dev-sync는 메인 worktree에서만 실행한다:
+0. **Main-worktree guard**: if called from inside an isolated worktree (`.astra-worktrees/<slug>/`), abort. dev-sync runs only in the main worktree:
    ```bash
    PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
    if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$PLUGIN_ROOT/scripts/worktree-helpers.sh" ]; then
-     echo "ERROR: CLAUDE_PLUGIN_ROOT를 찾을 수 없습니다. 플러그인 캐시 경로를 확인하세요." >&2
+     echo "ERROR: CLAUDE_PLUGIN_ROOT not found. Check the plugin cache path." >&2
      exit 1
    fi
    source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
    astra_ensure_main_worktree || exit 1
    ```
-1. **현재 브랜치 확인**: `git branch --show-current`
-2. **이미 `dev` 브랜치인 경우 스킵**: 현재 브랜치가 `dev`이면 아래 3~5단계를 건너뛰고 pull만 실행한다 (`git pull origin dev`)
-3. **미커밋 변경사항 보존**: `git status --porcelain`으로 확인하여 변경사항이 있으면 `git stash --include-untracked`로 임시 저장한다 (untracked 파일도 포함)
-4. **dev 브랜치 전환 및 최신화**: `git fetch origin dev && git checkout dev && git pull origin dev`
-5. **stash 복원**: step 3에서 stash 했으면 `git stash pop`으로 복원한다. 충돌 발생 시 충돌 파일 목록을 사용자에게 보고하고 수동 해결을 요청한다.
+1. **Check the current branch**: `git branch --show-current`
+2. **Skip if already on `dev`**: if the current branch is `dev`, skip steps 3–5 below and just pull (`git pull origin dev`)
+3. **Preserve uncommitted changes**: check with `git status --porcelain`; if changes exist, stash temporarily via `git stash --include-untracked` (untracked files included)
+4. **Switch to dev and sync**: `git fetch origin dev && git checkout dev && git pull origin dev`
+5. **Restore stash**: if you stashed in step 3, restore via `git stash pop`. On conflict, report the conflicting files to the user and request manual resolution.
 
-> **참고**: `dev` 브랜치가 존재하지 않으면 `main` 또는 `master` 브랜치에서 작업한다. 어떤 기본 브랜치도 없으면 현재 브랜치에서 작업한다.
+> **Note**: if the `dev` branch does not exist, work on `main` or `master`. If none of those default branches exist, work on the current branch.
 
 ---
 
-### Step 2: Screen ID 발번 체계 설계
+### Step 2: Design the Screen ID issuance scheme
 
-#### A. Screen ID 포맷 (PDF §6.1)
+#### A. Screen ID format (PDF §6.1)
 
 ```
 {DOMAIN}-{PAGE}-{SECTION}-UC{NN}
 ────   ─────   ───────   ────
-도메인  페이지   섹션       유즈케이스 번호 (2자리)
+domain page    section   use-case number (2 digits)
 
-예시: ACAD-EXPERT-DETAIL-UC03
-      ACAD-EXPERT-LIST
-      ACAD-EXPERT-LIST-EMPTY
-      ACAD-EXPERT-MODAL01
+Example: ACAD-EXPERT-DETAIL-UC03
+         ACAD-EXPERT-LIST
+         ACAD-EXPERT-LIST-EMPTY
+         ACAD-EXPERT-MODAL01
 ```
 
-세부 규칙:
-- `DOMAIN`: 프로덕트 약어 (Step 1-B에서 결정)
-- `PAGE`: 메뉴/라우트 단위 (대문자 영문, 필요시 하이픈 허용)
-- `SECTION`: LIST / DETAIL / FORM / MODAL / DASHBOARD / SETTINGS 등 화면 유형. 없으면 생략 가능
-- `UC{NN}`: 같은 페이지의 **상태/케이스 구분** (예: UC01=기본, UC02=채택 전, UC03=채택 완료)
-- 상태 suffix: `-LOADING`, `-EMPTY`, `-ERROR`는 UC 대신 직접 접미사로 표기 가능
+Detailed rules:
+- `DOMAIN`: product abbreviation (decided in Step 1-B)
+- `PAGE`: menu/route unit (uppercase Latin letters; hyphens allowed when necessary)
+- `SECTION`: screen type — LIST / DETAIL / FORM / MODAL / DASHBOARD / SETTINGS, etc. Omit if not needed.
+- `UC{NN}`: **state/case discriminator** on the same page (e.g., UC01=default, UC02=before adoption, UC03=adopted)
+- State suffix: `-LOADING`, `-EMPTY`, `-ERROR` may be appended directly instead of UC
 
-#### B. 기존 SCR-NNN 변환 규칙
+#### B. Conversion rules for legacy SCR-NNN
 
-`docs/planner/.../ia-screen-design.md`에 `SCR-001` 형식이 있으면 다음 규칙으로 변환한다:
+If `docs/planner/.../ia-screen-design.md` contains `SCR-001`-style IDs, convert with these rules:
 
-1. 해당 화면의 `관련 UC`, `유형`, `화면명` 컬럼을 읽는다
-2. PAGE = 라우트 또는 주요 기능 키워드 (예: `전문가 Q&A 목록` → `EXPERT-LIST`)
-3. SECTION = 유형 매핑 (목록→LIST, 상세→DETAIL, 폼→WRITE, 모달→MODAL)
-4. UC{NN} = `관련 UC` 번호를 2자리 zero-pad (UC-1 → UC01)
-5. **변환 후 신/구 매핑 표를 `11-decision-log.md` 첫 엔트리에 기록**
+1. Read the screen's `Related UC`, `Type`, and `Screen Name` columns
+2. PAGE = route or main feature keyword (e.g., `Expert Q&A list` → `EXPERT-LIST`)
+3. SECTION = type mapping (list→LIST, detail→DETAIL, form→WRITE, modal→MODAL)
+4. UC{NN} = the `Related UC` number, 2-digit zero-padded (UC-1 → UC01)
+5. **Record the old/new mapping table as the first entry in `11-decision-log.md`** after conversion.
 
-예: `SCR-005` (질문 상세, 채택 완료, UC-3) → `ACAD-EXPERT-DETAIL-UC03`
+Example: `SCR-005` (question detail, adopted, UC-3) → `ACAD-EXPERT-DETAIL-UC03`
 
-#### C. 필수 포함 화면 (PDF §9.2)
+#### C. Required screens (PDF §9.2)
 
-등록부에 반드시 포함시켜야 할 최소 화면:
+Minimum screens that must be included in the Registry:
 
-- 기본 화면 (DEFAULT)
-- 모든 상태 (LOADING / EMPTY / DEFAULT / ERROR) — State Matrix 전개
-- 모든 모달 (Confirm / Form / Error 포함)
-- Edge case 화면
-- URL 파라미터로만 진입하는 숨은 화면
+- Default screen (DEFAULT)
+- All states (LOADING / EMPTY / DEFAULT / ERROR) — State Matrix expansion
+- All modals (Confirm / Form / Error included)
+- Edge-case screens
+- Hidden screens reachable only via URL parameters
 
-기획 문서의 화면 목록이 위를 커버하지 않으면 사용자에게 경고한다:
+If the planning document's screen list does not cover the above, warn the user:
 
 ```
-⚠️ 다음 화면이 기획 문서에 누락되어 있습니다:
-- {SCREEN-ID}-LOADING (로딩 상태)
-- {SCREEN-ID}-EMPTY (빈 상태)
-- {SCREEN-ID}-ERROR (에러 상태)
+⚠️ The following screens are missing from the planning document:
+- {SCREEN-ID}-LOADING (loading state)
+- {SCREEN-ID}-EMPTY (empty state)
+- {SCREEN-ID}-ERROR (error state)
 
-Registry에 플레이스홀더로 추가하고 "🔄 미착수"로 표기합니다.
-진행할까요? (예/아니오)
+They will be added to the Registry as placeholders with "🔄 not started" status.
+Proceed? (yes/no)
 ```
 
 ---
 
-### Step 3: 템플릿 복사 및 변수 치환
+### Step 3: Copy templates and substitute variables
 
-`$CLAUDE_PLUGIN_ROOT/skills/handoff-publish/templates/` 의 모든 파일(14개 템플릿)을 `{HANDOFF_DIR}`에 복사하고, 다음 변수를 치환한다:
+Copy all files (14 templates) from `$CLAUDE_PLUGIN_ROOT/skills/handoff-publish/templates/` to `{HANDOFF_DIR}`, and substitute the following variables:
 
-> 복사 대상: `0-README.md` (1개), `1-screen-registry.md` ~ `11-decision-log.md` (11개), `DoD-CHECKLIST.md`, `walkthrough.loom.md`
+> Copy targets: `0-README.md` (1), `1-screen-registry.md` ~ `11-decision-log.md` (11), `DoD-CHECKLIST.md`, `walkthrough.loom.md`.
 
-| 변수 | 값 |
-|------|-----|
-| `{{FEATURE_NAME}}` | Step 1의 feature-name |
-| `{{DOMAIN_CODE}}` | Step 1-B의 domain code |
-| `{{TODAY}}` | 오늘 날짜 (YYYY-MM-DD) |
-| `{{OWNER}}` | 프로젝트 UX Lead (CLAUDE.md 또는 `AskUserQuestion`으로 수집) |
-| `{{PROJECT_NAME}}` | CLAUDE.md의 프로젝트명 |
-| `{{LANGUAGE_POLICY}}` | 프로젝트 i18n 언어 목록 (기본: `ko / en / vi`) |
+| Variable | Value |
+|----------|-------|
+| `{{FEATURE_NAME}}` | feature-name from Step 1 |
+| `{{DOMAIN_CODE}}` | domain code from Step 1-B |
+| `{{TODAY}}` | today's date (YYYY-MM-DD) |
+| `{{OWNER}}` | project UX Lead (collected from CLAUDE.md or via `AskUserQuestion`) |
+| `{{PROJECT_NAME}}` | project name from CLAUDE.md |
+| `{{LANGUAGE_POLICY}}` | project i18n language list (default: `ko / en / vi`) |
 
-또한 `screenshots/` 빈 디렉토리를 생성한다 (`walkthrough.loom.md`는 이미 템플릿으로 복사됨).
-
----
-
-### Step 4: 1-screen-registry.md 자동 채움
-
-Step 1-C에서 로드한 기획 산출물이 있으면, `ia-screen-design.md`의 화면 목록을 Screen Registry 테이블 형식으로 변환한다.
-
-| 기획 컬럼 | Registry 컬럼 |
-|-----------|--------------|
-| 화면ID (SCR-NNN) | ID (변환된 4-segment) |
-| 화면명 | 화면명 |
-| 유형 | 상태/케이스 (기본 / 채택 전 / 답변 없음 등) |
-| 설명 | 트리거 (원인/진입 경로) |
-| — | 디자인 상태 (초기: 🔄 미착수) |
-
-기획 문서가 없으면 PDF §9.1 예시 4행 (LIST, LIST-EMPTY, LIST-LOADING, DETAIL-UC01)만 플레이스홀더로 남긴다.
+Also create an empty `screenshots/` directory (`walkthrough.loom.md` is already copied via the templates).
 
 ---
 
-### Step 5: 2-flows.md 자동 채움
+### Step 4: Auto-fill 1-screen-registry.md
 
-`usecase-definition.md`의 여정맵/Mermaid가 있으면 PDF §10 예시 형식의 트리 포맷으로 변환한다:
+If planning deliverables loaded in Step 1-C exist, convert the screen list from `ia-screen-design.md` into the Screen Registry table format.
+
+| Planner column | Registry column |
+|----------------|------------------|
+| Screen ID (SCR-NNN) | ID (converted 4-segment) |
+| Screen name | Screen name |
+| Type | State/Case (default / before adoption / no answers, etc.) |
+| Description | Trigger (cause / entry path) |
+| — | Design status (initial: 🔄 not started) |
+
+If there is no planning document, leave only the 4 placeholder rows from the PDF §9.1 example (LIST, LIST-EMPTY, LIST-LOADING, DETAIL-UC01).
+
+---
+
+### Step 5: Auto-fill 2-flows.md
+
+If a journey map / Mermaid diagram exists in `usecase-definition.md`, convert it to the PDF §10 example tree format:
 
 ```
-[{시나리오명} Flow]
+[{scenario name} Flow]
 
 {SCREEN-ID}
-    └ "{액션}" 클릭
-        ├ ({조건}) → {SCREEN-ID}
-        └ ({조건}) → {SCREEN-ID}
-            └ "{액션}" 클릭
-                ├ (성공)    → {SCREEN-ID}
-                ├ (토큰 부족) → {SCREEN-ID}
-                └ (네트워크 에러) → {SCREEN-ID}
+    └ Click "{action}"
+        ├ ({condition}) → {SCREEN-ID}
+        └ ({condition}) → {SCREEN-ID}
+            └ Click "{action}"
+                ├ (success)         → {SCREEN-ID}
+                ├ (insufficient tokens) → {SCREEN-ID}
+                └ (network error)   → {SCREEN-ID}
 ```
 
-모든 버튼 클릭/제출의 **성공/실패/예외 분기**를 ID로 매핑한다. 누락된 분기가 발견되면 `11-decision-log.md` 에 기록하고 Registry에도 placeholder ID를 추가한다.
+Map the **success/failure/exception branches** of every button-click/submit to IDs. If missing branches are found, record them in `11-decision-log.md` and add placeholder IDs to the Registry.
 
 ---
 
-### Step 6: 3-state-matrix.md, 4-edge-cases.md 자동 채움
+### Step 6: Auto-fill 3-state-matrix.md, 4-edge-cases.md
 
-**3-state-matrix.md**: 상태 정의(LOADING/EMPTY/DEFAULT/ERROR/PARTIAL)는 템플릿 그대로 유지. 권한 매트릭스 섹션은 `feature-definition.md`의 `액터별 권한` 표가 있으면 자동 변환, 없으면 6열 표 헤더만 남긴다 (비로그인 / 일반 사용자 / 작성자 본인 / 답변자 / 관리자 + 기능 열).
+**3-state-matrix.md**: keep the state definitions (LOADING/EMPTY/DEFAULT/ERROR/PARTIAL) as-is from the template. If `feature-definition.md` contains a `permissions per actor` table, auto-convert it for the permission matrix section; otherwise, leave only the 6-column table header (Not logged in / Regular user / Question owner / Answerer / Admin + Action column).
 
-**4-edge-cases.md**: PDF §13의 8개 기본 항목을 체크박스로 삽입. feature-definition.md의 리스크 섹션이 있으면 추가 항목으로 확장한다.
-
----
-
-### Step 7: 5-responsive-guide.md 자동 채움
-
-PDF §12 그대로. Desktop (≥1024) / Tablet (768~1023) / Mobile (<768) 분기점 + ID 표기 컨벤션(`-T`, `-M` suffix)만 유지. 프로젝트의 `src/styles/design-tokens.css`에 breakpoint가 정의되어 있으면 해당 값으로 오버라이드한다.
+**4-edge-cases.md**: insert the 8 base items from PDF §13 as checkboxes. If `feature-definition.md` has a risk section, extend with additional items.
 
 ---
 
-### Step 8: 6-component-specs.md 자동 채움
+### Step 7: Auto-fill 5-responsive-guide.md
 
-`docs/design-system/components.md`가 있으면 각 글로벌 컴포넌트를 참조 링크로 인용한다. Feature 고유 컴포넌트는 `feature-definition.md`의 UI 요소 섹션을 읽어 PDF §14.1 형식(props / variants / 사용처)으로 자동 생성한다. 카드류(CourseCard, QuestionCard, InsightCard, NoticeCard) + Modal(Confirm/Form/Error) 최소 4개는 틀만이라도 포함.
-
----
-
-### Step 9: 7-business-rules.md 자동 채움
-
-각 Registry ID에 대해 PDF §15.1 형식(노출 정책 / 사용 컴포넌트 / 권한별 분기 / 데이터 없을 때 / 데이터 소스 + 캐싱)의 빈 블록을 생성한다. `blueprint.md`의 API 엔드포인트가 있으면 `데이터 소스` 행을 자동 채움한다.
+Use PDF §12 as-is. Keep only the Desktop (≥1024) / Tablet (768~1023) / Mobile (<768) breakpoints + the ID-notation convention (`-T`, `-M` suffixes). If `docs/design-system/DESIGN.md` Front Matter `tokens.breakpoints` exists in the project, use those values as the top priority (legacy fallback: the breakpoint variables in `src/styles/design-tokens.css`).
 
 ---
 
-### Step 10: 8-content-guide.md 자동 채움
+### Step 8: Auto-fill 6-component-specs.md
 
-PDF §16~17의 전체 내용을 템플릿으로 그대로 반영:
-- 브랜드 보이스 (톤/호칭/금지 표현)
-- 마이크로카피 룰 (버튼/에러/Empty/모달)
-- 데이터 표시 규칙 (이미지/날짜/숫자/텍스트 자르기)
-- i18n 3개국어 정책 (ko/en/vi, 베트남어 1.4배 길이 가정)
+**Design system SSoT reference (v5.2.0+ priority)**:
+- 1st priority: `docs/design-system/DESIGN.md` Body §4 (Component Guidelines) — global components are referenced via reference links in this file. Front Matter `tokens.color.semantic.*`, `tokens.typography.*` token names are used as-is in the props tables of `6-component-specs.md`.
+- 2nd priority (legacy fallback): projects without DESIGN.md reference `docs/design-system/components.md`, and a `/design-init` Recommended note is added at the top of this file.
 
-프로젝트에 지정된 언어가 다르면 Step 3의 `{{LANGUAGE_POLICY}}`로 치환.
+For feature-specific components, read the UI elements section from `feature-definition.md` and auto-generate in the PDF §14.1 format (props / variants / usage). At minimum, include scaffolds for the 4 card types (CourseCard, QuestionCard, InsightCard, NoticeCard) + Modal (Confirm/Form/Error).
 
 ---
 
-### Step 11: 9-ia-sitemap.md, 10-personas.md, 11-decision-log.md 자동 채움
+### Step 9: Auto-fill 7-business-rules.md
 
-- **9-ia-sitemap.md**: `ia-screen-design.md`의 메뉴 트리가 있으면 PDF §3 형식의 ASCII 트리로 재구성. URL 컨벤션 및 depth 정책(최대 3 depth 권장)은 템플릿 그대로.
-- **10-personas.md**: `interview-report.md`의 페르소나 Top 3~5를 PDF §4 형식(목표/페인포인트/사용 맥락/디바이스)으로 정리. Top 5~10 핵심 시나리오도 추출.
-- **11-decision-log.md**: Step 2-B의 SCR-NNN → 4-segment ID 변환 내역을 첫 엔트리로 기록. 이후 변경 시마다 UX가 직접 추가.
+For each Registry ID, create an empty block in the PDF §15.1 format (exposure policy / components used / per-permission branching / handling when no data / data source + caching). If the `blueprint.md` contains API endpoints, auto-fill the `data source` row.
 
 ---
 
-### Step 12: 0-README.md 변수 치환 확인
+### Step 10: Auto-fill 8-content-guide.md
 
-- **0-README.md**: 템플릿 그대로 (PDF §7 Quick Start + 역할별 5분 가이드). Step 3의 `{{FEATURE_NAME}}`/`{{DOMAIN_CODE}}` 치환이 정상 반영되었는지만 확인한다.
-- **walkthrough.loom.md**: Step 3에서 템플릿으로 이미 복사되었으므로 별도 생성 불필요. UX가 녹화 후 Loom URL을 수동으로 추가한다.
-- **DoD-CHECKLIST.md**: Step 3에서 템플릿으로 이미 복사되었으며, 역할별(UX/UI/Dev/QA) 체크리스트 포맷 그대로 유지한다.
+Reflect the entire PDF §16–17 content in the template as-is:
+- Brand voice (tone / form of address / forbidden expressions)
+- Microcopy rules (buttons / errors / Empty / modals)
+- Data display rules (images / dates / numbers / text truncation)
+- i18n 3-language policy (ko/en/vi, Vietnamese 1.4× length assumption)
+
+If the project specifies different languages, substitute via `{{LANGUAGE_POLICY}}` from Step 3.
 
 ---
 
-### Step 13: 사용자에게 생성 결과 보고
+### Step 11: Auto-fill 9-ia-sitemap.md, 10-personas.md, 11-decision-log.md
 
-다음 포맷으로 보고한다:
+- **9-ia-sitemap.md**: if `ia-screen-design.md` has a menu tree, reconstruct it as an ASCII tree in the PDF §3 format. The URL conventions and depth policy (max 3 depth Recommended) stay as in the template.
+- **10-personas.md**: organize the Top 3–5 personas from `interview-report.md` in the PDF §4 format (goal / pain points / usage context / device). Also extract the Top 5–10 key scenarios.
+- **11-decision-log.md**: record the Step 2-B SCR-NNN → 4-segment ID conversion log as the first entry. Subsequent changes are added by UX directly.
+
+---
+
+### Step 12: Verify 0-README.md variable substitution
+
+- **0-README.md**: keep template as-is (PDF §7 Quick Start + 5-min guide per role). Only verify that `{{FEATURE_NAME}}`/`{{DOMAIN_CODE}}` from Step 3 were substituted correctly.
+- **walkthrough.loom.md**: already copied as a template in Step 3, so no separate creation needed. UX adds the Loom URL manually after recording.
+- **DoD-CHECKLIST.md**: already copied as a template in Step 3; keep the per-role (UX/UI/Dev/QA) checklist format as-is.
+
+---
+
+### Step 13: Report results to the user
+
+Report in the following format:
 
 ```
-✅ Handoff 패키지 생성 완료
+✅ Handoff package generation complete
 
-위치: {HANDOFF_DIR}
-도메인 코드: {DOMAIN_CODE}
-등록된 Screen ID: {N}개
+Location: {HANDOFF_DIR}
+Domain code: {DOMAIN_CODE}
+Registered Screen IDs: {N}
 
-생성된 파일:
+Generated files:
   0-README.md
-  1-screen-registry.md ({N}개 ID 등록)
-  2-flows.md ({N}개 Flow 정의)
+  1-screen-registry.md ({N} IDs registered)
+  2-flows.md ({N} Flows defined)
   3-state-matrix.md
   4-edge-cases.md
   5-responsive-guide.md
-  6-component-specs.md ({N}개 컴포넌트)
+  6-component-specs.md ({N} components)
   7-business-rules.md
   8-content-guide.md
   9-ia-sitemap.md
-  10-personas.md ({N}개 페르소나)
-  11-decision-log.md (변환 이력 {N}건)
+  10-personas.md ({N} personas)
+  11-decision-log.md ({N} conversion records)
   DoD-CHECKLIST.md
   walkthrough.loom.md
   screenshots/
 
-⚠️ 자동 채움이 제한적인 섹션 (UX가 직접 보완 필요):
-  - 1-screen-registry.md: 상태/트리거 정합성 검토
-  - 3-state-matrix.md: 권한 매트릭스 (기능별)
-  - 6-component-specs.md: feature 고유 컴포넌트 props
-  - 10-personas.md: 실제 인터뷰 기반 보정
+⚠️ Sections with limited auto-fill (UX must supplement directly):
+  - 1-screen-registry.md: review state/trigger consistency
+  - 3-state-matrix.md: permission matrix (per feature)
+  - 6-component-specs.md: props of feature-specific components
+  - 10-personas.md: refine based on real interviews
 
-다음 단계 (PDF §7 Quick Start):
-  1. UX: 1-screen-registry.md의 모든 ID 검증 및 결측 보완
-  2. UI: Figma 프레임명을 Screen ID 형식으로 작성
-  3. Dev: 컴포넌트에 `// @feature: {SCREEN-ID}` 주석 추가
-  4. UX: Loom 워크스루 녹화 (5-10분)
+Next steps (PDF §7 Quick Start):
+  1. UX: verify and fill in every ID in 1-screen-registry.md
+  2. UI: author Figma frame names in the Screen ID format
+  3. Dev: add `// @feature: {SCREEN-ID}` comments to components
+  4. UX: record the Loom walkthrough (5–10 min)
 
-DoD 체크는 PDF §19 참조. 향후 /check-dod 커맨드 예정.
+DoD checks are in PDF §19. A `/check-dod` command is planned.
 ```
 
 ---
 
 ## Anti-patterns (PDF §23)
 
-이 스킬이 방지하려는 10가지 문제:
+The 10 problems this skill aims to prevent:
 
-1. 모달/에러 화면 누락 → Registry에 모달 ID 등록
-2. 상태별 UI 미정의 → State Matrix 의무화
-3. Mobile 디자인 누락 → Responsive Guide 의무화
-4. 권한별 UI 차이 미반영 → 권한 매트릭스 의무화
-5. Figma/코드 ID 따로 생성 → SSoT (Registry) + UX만 발행 권한
-6. 변경이 한쪽만 반영 → Decision Log + 변경 관리 프로세스
-7. 카드 데이터 항목 제각각 → 6-component-specs.md 의무화
-8. 노출 조건 임의 결정 → 7-business-rules.md 의무화
-9. 베트남어 잘림 → 1.4배 길이 가정
-10. 접근성 미준수 → Accessibility 가이드 + DoD
+1. Missing modal/error screens → register modal IDs in the Registry
+2. Per-state UI undefined → mandate the State Matrix
+3. Missing Mobile design → mandate the Responsive Guide
+4. Per-permission UI differences not reflected → mandate the permission matrix
+5. Figma/code IDs created separately → SSoT (Registry) + UX-only issuance authority
+6. Changes reflected on only one side → Decision Log + change-management process
+7. Inconsistent card data items → mandate 6-component-specs.md
+8. Arbitrary exposure conditions → mandate 7-business-rules.md
+9. Vietnamese length truncation → assume 1.4× length
+10. Accessibility non-compliance → Accessibility guide + DoD
 
 ---
 
-## 주의 사항
+## Caveats
 
-- **Registry 없는 ID 임의 생성 금지** (PDF §20): UI/Dev가 발견 시 UX에 추가 요청
-- **화면 ID 발행은 UX 단독 권한**: 이 스킬 외에는 `1-screen-registry.md`를 직접 수정하지 말 것 (향후 `/register-screen` 커맨드로 강제 예정)
-- **기존 기능 소급 적용 금지**: 새 기능 또는 큰 리뉴얼 시점에만 적용 (PDF §26)
+- **Forbidden to issue an ID without registering** (PDF §20): if UI/Dev discover one, request UX to add it
+- **Screen ID issuance is UX's sole authority**: do not edit `1-screen-registry.md` outside of this skill (will be enforced via a future `/register-screen` command)
+- **No retroactive application to existing features**: apply only to new features or at major renewal points (PDF §26)

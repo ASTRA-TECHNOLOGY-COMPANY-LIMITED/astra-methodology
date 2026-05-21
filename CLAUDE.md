@@ -74,25 +74,25 @@ Data files: `iso_3166_1_countries.json` (249 countries), `iso_3166_2_regions.jso
 
 ### Worktree Isolation (v5.0+)
 
-ASTRA는 sprint 단위로 격리된 worktree를 사용해 다중 Claude Code 세션 환경에서 sprint 간 코드/포트 간섭을 방지한다.
+ASTRA uses sprint-level isolated worktrees to prevent code/port interference across sprints in multi-session Claude Code environments.
 
-- **공유 브랜치** (`main`, `master`, `staging`, `dev`): 메인 worktree에서 유지. 캐스케이드 머지(`main→staging→dev`)와 프로모션(`/pr-merge --staging`, `/pr-merge --main`)도 메인 worktree에서 진행한다.
-- **Sprint worktree** (`.astra-worktrees/sprint-<N>-<name>/`): `/sprint-init`이 생성하며 `feat/sprint-<N>-<name>` 브랜치를 보유한다. 해당 sprint의 *모든* feature 코드·테스트가 이 worktree 안에서 작성·커밋·푸시된다. `/pr-merge`가 dev 머지를 완료한 직후 worktree를 자동 제거하고 메인 worktree(dev)로 복귀한다.
-- **포트 격리**: `/sprint-init`이 worktree 안에 `.astra-worktree.env`를 작성한다. 포트 베이스는 `base + 100*N` (예: sprint 2 → 3200). 충돌 감지 시 헬퍼가 +100씩 시프트한다. `/test-run`은 이 파일을 source 해 sprint 전용 포트로 서버를 띄우고, 종료 시 4단계 cleanup(shell 정지 → SIGTERM → SIGKILL+자식 → 검증)으로 포트를 풀어준다.
-- **dev-sync 스킬 가드** (메인 worktree 전용, 5종): `service-planner`, `handoff-publish`, `manual-generator`, `slack-import`, `catalog-generator` — 모두 계획 단계 산출물이라 sprint 시작 전 메인 worktree(`dev`)에서 실행한다. v4.x에서 가드 대상이었던 `sprint-init`은 v5.0+에서 worktree 생성을 담당하므로 여전히 메인 worktree 전용이다. `test-scenario`, `test-run`은 v5.0+에서 가드를 제거해 sprint worktree 안에서 실행할 수 있다.
-- **헬퍼 스크립트**: `scripts/worktree-helpers.sh` (source 해서 사용). 주요 함수: `astra_ensure_main_worktree`, `astra_create_sprint_worktree`, `astra_remove_sprint_worktree`, `astra_compute_port_base`, `astra_port_in_use`, `astra_write_worktree_env`, `astra_is_isolated_worktree`. 격리 worktree 판정은 `git rev-parse --git-dir` vs `--git-common-dir` 비교 (경로 매칭 아님).
-- **`.gitignore`**: target project 초기화(`init-project.sh`) 시 `.astra-worktrees/`를 자동 등록한다.
-- **권장 워크플로우 (v5.0+)**:
-  1. `/sprint-init` — 메인 worktree(`dev`)에서 호출. sprint worktree 생성 + `.astra-worktree.env` 작성 + prompt-map/progress/retrospective를 worktree 안에 작성 후 cd 안내.
+- **Shared branches** (`main`, `master`, `staging`, `dev`): kept in the main worktree. Cascade merges (`main→staging→dev`) and promotions (`/pr-merge --staging`, `/pr-merge --main`) are also performed in the main worktree.
+- **Sprint worktree** (`.astra-worktrees/sprint-<N>-<name>/`): created by `/sprint-init`, holding the `feat/sprint-<N>-<name>` branch. *All* feature code and tests for that sprint are written, committed, and pushed inside this worktree. Right after `/pr-merge` completes the dev merge, the worktree is auto-removed and execution returns to the main worktree (dev).
+- **Port isolation**: `/sprint-init` writes `.astra-worktree.env` inside the worktree. The port base is `base + 100*N` (e.g., sprint 2 → 3200). On collision detection, the helper shifts by +100. `/test-run` sources this file to launch the server on the sprint-specific port, and on shutdown releases the port through a 4-step cleanup (shell stop → SIGTERM → SIGKILL + children → verify).
+- **dev-sync skill guards** (main-worktree-only, 5 skills): `service-planner`, `handoff-publish`, `manual-generator`, `slack-import`, `catalog-generator` — all planning-phase deliverables, so they run in the main worktree (`dev`) before sprint start. `sprint-init`, which was guarded in v4.x, is responsible for worktree creation in v5.0+ and therefore remains main-worktree-only. `test-scenario` and `test-run` had their guards removed in v5.0+ so they can run inside sprint worktrees.
+- **Helper script**: `scripts/worktree-helpers.sh` (use via `source`). Main functions: `astra_ensure_main_worktree`, `astra_create_sprint_worktree`, `astra_remove_sprint_worktree`, `astra_compute_port_base`, `astra_port_in_use`, `astra_write_worktree_env`, `astra_is_isolated_worktree`. Isolated-worktree detection compares `git rev-parse --git-dir` vs. `--git-common-dir` (not path matching).
+- **`.gitignore`**: when initializing a target project (`init-project.sh`), `.astra-worktrees/` is automatically registered.
+- **Recommended workflow (v5.0+)**:
+  1. `/sprint-init` — invoked from the main worktree (`dev`). Creates the sprint worktree + writes `.astra-worktree.env` + writes prompt-map / progress / retrospective inside the worktree, then prints the cd path.
   2. `cd .astra-worktrees/sprint-<N>-<name>/`
-  3. `/feature-dev "..."` — sprint worktree 내에서 feature별 코드 작성 (prompt-map 1.1~1.4 순서대로)
-  4. `/test-run` — sprint worktree 내에서 통합 테스트 (sprint 전용 포트 사용, 종료 시 포트 자동 해제)
-  5. `/pr-merge` — sprint worktree 내에서 호출 → 커밋·리뷰·dev 머지·worktree 자동 제거 → 메인 worktree(dev)로 복귀
+  3. `/feature-dev "..."` — write per-feature code inside the sprint worktree (follow prompt-map 1.1–1.4 in order).
+  4. `/test-run` — integration tests inside the sprint worktree (uses the sprint-specific port; releases the port on shutdown).
+  5. `/pr-merge` — invoked inside the sprint worktree → commit · review · dev merge · auto-remove worktree → return to the main worktree (dev).
 
-  `/sprint-init` 없이 메인 worktree에서 직접 변경 후 `/pr-merge`를 호출하는 단발성 흐름도 폴백으로 지원된다(`/pr-merge` Step 4.1이 임시 worktree를 생성).
-- **트레이드오프**: sprint당 단일 worktree = sprint당 PR 1개. feature별 코드 리뷰 granularity가 사라지고 롤백 단위가 sprint이다. 작은 단위 리뷰가 필요하면 sprint를 작게 끊거나 폴백(메인 worktree + `/pr-merge`)을 사용한다.
+  A one-shot fallback flow is also supported: change files directly in the main worktree and invoke `/pr-merge` (Step 4.1 creates a temporary worktree).
+- **Trade-off**: one worktree per sprint = one PR per sprint. Per-feature code-review granularity disappears and the rollback unit is the sprint. If small-unit review is required, split sprints smaller or use the fallback (main worktree + `/pr-merge`).
 
-> **v4.x → v5.0 breaking changes**: `/pr-merge --start <branch>` 모드가 제거되었다. `/test-run`이 더 이상 dev 머지·푸시를 수행하지 않으며 (그 역할은 `/pr-merge`로 이관) 머지 후 dev→staging 자동 프로모션 안내도 제거되었다. `test-scenario`/`test-run` 메인 worktree 가드는 해제되었다.
+> **v4.x → v5.0 breaking changes**: the `/pr-merge --start <branch>` mode has been removed. `/test-run` no longer performs dev merge/push (that role moved to `/pr-merge`), and the post-merge "dev→staging auto-promotion" prompt was removed. The main-worktree guards on `test-scenario`/`test-run` were lifted.
 
 ### Hooks Architecture
 
@@ -102,7 +102,8 @@ ASTRA는 sprint 단위로 격리된 worktree를 사용해 다중 Claude Code 세
 1. **check-forbidden-words.sh** — scans DB-related files for forbidden words from the standard dictionary
 2. **validate-naming.sh** — checks table name prefixes in SQL, Java (@Table), TypeScript (@Entity), Python (__tablename__)
 3. **track-sprint-progress.sh** — detects sprint-related file events and appends activity log entries to the sprint progress tracker
-4. All PostToolUse hooks are non-blocking (exit 0) — they emit warnings only
+4. **notify-design-md.sh** (v5.4.0+) — when UI source files (src/components/, *.tsx, *.css, etc.) are edited and `docs/design-system/DESIGN.md` exists, emits a one-time-per-session advisory pointing to the DESIGN.md SSoT and `/design-audit`. Throttled to once per hour via marker file under `.claude/.astra-hooks/`. Skips the design system docs themselves and generated `design-tokens.css`. Non-blocking.
+5. All PostToolUse hooks are non-blocking (exit 0) — they emit warnings only
 
 **UserPromptSubmit hooks** (run when user submits a prompt):
 1. **inject-feature-dev-cwd.sh** — when `/feature-dev` is invoked from inside a sprint worktree (`.astra-worktrees/sprint-*`), injects cwd-anchored sprint paths into the LLM context so the external feature-dev plugin does not fall back to the main worktree (where uncommitted sprint files are not visible). Non-blocking (exit 0). No output when the trigger does not match.
@@ -127,7 +128,7 @@ Stateless quality checkers that report violations without modifying files. Activ
 | `quality-gate-runner` | sonnet | Gate 3 | Integrated Gate 1/2/3 execution |
 
 #### Persona Agents (explicit invocation only, read-only orchestrators)
-Role-based mindset agents that bring senior-practitioner perspective. **Never auto-trigger** — must be explicitly invoked by user (e.g., "테스터 관점에서", "디자이너로서") or by orchestrating skills.
+Role-based mindset agents that bring senior-practitioner perspective. **Never auto-trigger** — must be explicitly invoked by the user (e.g., "as a tester", "as a designer", or their Korean equivalents "테스터 관점에서" / "디자이너로서") or by orchestrating skills.
 
 | Persona | Model | When to Invoke | Hands back to |
 |---------|-------|----------------|---------------|
@@ -147,14 +148,29 @@ Role-based mindset agents that bring senior-practitioner perspective. **Never au
 
 | Skill | Purpose |
 |-------|---------|
-| `/service-planner` | Design Thinking 기반 기획 (markdown 6종 + HTML 기획화면). 모드: 신규/개선. 자동 결정: 디자인 톤 5종 중 페르소나 기반 선택. |
-| `/blueprint` | 청사진(설계 문서) 작성 전용. 10개 표준 섹션(데이터 모델·API 계약·시퀀스·로직 의사코드·**HITL Triggers**) — 구현 코드 제외. planner 산출물 자동 로드. 1-3개 핵심 결정만 HITL. Section 10이 `/feature-dev`의 구현 단계 HITL 가드 역할. |
-| `/handoff-publish` | UX/UI/Dev/QA 협업 패키지 — Screen ID 기반 14파일. UX가 ID 발급 단독 권한. `{feature-name}-handoff/`에 출력. |
-| `/manual-generator` | Service URL + 프로젝트 docs → self-contained HTML 매뉴얼. Chrome MCP 스크린샷 + 어노테이션. |
-| `/catalog-generator` | 제품 데이터 → self-contained HTML 카탈로그. AI 이미지(fect-image) + 영업 전략 자동 적용. |
-| `/autorun` | 무인 풀 파이프라인: `/service-planner` → planner-reviewer → design-token-validator → blueprint → blueprint-reviewer → `/sprint-init` → `/test-scenario`(TDD) → 구현 → `/test-run` (5회 자동 디버그) → `/pr-merge --auto` → worktree 자동 제거. 진짜 차단(gh 인증·머지 충돌·Critical 리뷰)에서만 HITL 발동. `/sprint-init --auto`로도 동일한 후반부 파이프라인 진입 가능. |
-| `/slack-import` | Slack List/메시지 → 청사진 + 스프린트 프롬프트 맵 + 진행 트래커. `SLACK_BOT_TOKEN` 필요. |
-| `/extract-backlog` | Slack 채널 메시지 → 우선순위 백로그 표 (가벼운 명령). |
+| `/service-planner` | Design Thinking–based planning (6 markdown files + HTML mockups). Modes: new / improve. Auto-decision: persona-based selection among 5 design tones. |
+| `/blueprint` | Dedicated blueprint (design document) authoring. 10 standard sections (data model · API contract · sequences · pseudocode logic · **HITL Triggers**) — no implementation code. Planner deliverables auto-loaded. Only 1–3 core decisions surface as HITL. Section 10 serves as the HITL guard for `/feature-dev` during implementation. |
+| `/handoff-publish` | UX / UI / Dev / QA collaboration package — 14 Screen-ID–based files. UX holds the sole right to issue IDs. Outputs to `{feature-name}-handoff/`. |
+| `/manual-generator` | Service URL + project docs → self-contained HTML manual. Chrome MCP screenshots + annotations. |
+| `/catalog-generator` | Product data → self-contained HTML catalog. AI imagery (fect-image) + sales-strategy auto-applied. |
+| `/autorun` | Unattended full pipeline: `/service-planner` → planner-reviewer → design-token-validator → blueprint → blueprint-reviewer → `/sprint-init` → `/test-scenario` (TDD) → implementation → `/test-run` (5-pass auto-debug) → `/pr-merge --auto` → worktree auto-removal. HITL fires only on real blockers (gh auth, merge conflicts, Critical review issues). `/sprint-init --auto` can enter the same downstream pipeline. |
+| `/slack-import` | Slack List / messages → blueprint + sprint prompt map + progress tracker. Requires `SLACK_BOT_TOKEN`. |
+| `/extract-backlog` | Slack channel messages → prioritized backlog table (lightweight command). |
+| `/design-init` (v5.4.0+) | Create / update the design-system SSoT. Generates `docs/design-system/DESIGN.md` (YAML Front Matter + Markdown Body) and auto-regenerates `src/styles/design-tokens.css`. Modes: new / update / `--regenerate-css` / `--from-refs=...`. 4 core HITL questions (brand tone · primary color · typography · density). `--auto` proceeds with conservative defaults. |
+| `/design-extract` (v5.4.0+) | Extracts OKLCH tokens, fonts, and spacing from image / PDF / URL / screenshot references. Uses Vision MCP (fect-mcp) or WebFetch. Generates an extraction report (`docs/design-system/extract-report-{date}.md`) and feeds into `/design-init`. |
+| `/design-redesign` (v5.4.0+) | Audits and redesigns existing UI components / pages against DESIGN.md. Orchestrates `design-token-validator` (quantitative) + `designer-persona` (qualitative). P0 auto-applied; P1/P2 require user confirmation. `--apply` / `--pr` flags. |
+| `/design-audit` (v5.4.0+) | Lightweight token-violation report against DESIGN.md (no modifications). For CI gates and PR pre-checks. A lightweight entry point to `/design-redesign`. |
+| `/skill-author` | Author a new SKILL.md or refactor an existing skill (based on the 13-item best-practices checklist). Modes: new / improve. Auto-writes frontmatter + auto-blocks anti-patterns + 500-line gate + Progressive Disclosure separation recommendations. Triggered on `paths: skills/**/SKILL.md` as a complementary trigger. |
+
+### Design System SSoT (v5.4.0+) — DESIGN.md as Single Source of Truth
+
+ASTRA consolidates the design-system SSoT into the `docs/design-system/DESIGN.md` hybrid format (YAML Front Matter + Markdown Body). It combines the Google Stitch DESIGN.md spec with ASTRA's 3-tier token structure (Primitive → Semantic → Component).
+
+- **Front Matter (machine-readable)**: `meta`, `brand` (philosophy / personality / target_persona / voice_tone), `tokens.color/typography/spacing/radius/shadow/motion/breakpoints/z_index`, `accessibility` (WCAG · focus_ring · touch_target · motion_levels), `components` registry, `aesthetic_rules` (forbidden_generic_patterns · required_distinctive_elements).
+- **Body (humans + AI)**: §1 Design Philosophy → §2 Brand Identity & Persona → §3 Visual Language → §4 Component Guidelines → §5 Anti-AI Aesthetic Rules → §6 Animation & Motion → §7 Accessibility → §8 Token-to-CSS Generation → §9 Evolution Log.
+- **`src/styles/design-tokens.css`** is a **generated artifact** with an `AUTO-GENERATED from DESIGN.md` header. Never hand-edit — regenerate via `/design-init --regenerate-css` after DESIGN.md changes. Conversion: `tokens.color.primitive.primary.50` → `--primitive-primary-50`, `tokens.color.semantic.surface.base` → `--surface-base`, etc.
+- **Legacy `components.md` / `layout-grid.md`** remain as fallback references for pre-v5.4.0 projects. New projects use only DESIGN.md.
+- **Integration points**: `/project-init` Step 5-A bootstraps DESIGN.md → `/service-planner` Step E loads DESIGN.md as the primary token + persona source → `/handoff-publish` 6-component-specs.md references DESIGN.md §4 → `design-token-validator` enforces DESIGN.md Front Matter — at every layer, DESIGN.md is the single referenced document.
 
 ### Blueprint & Sprint Conventions
 
@@ -172,38 +188,44 @@ When the plugin initializes a target project, it creates a structured layout und
 - Agent files specify `tools`, `disallowedTools`, `model`, and `maxTurns` in frontmatter
 - The plugin uses `$ARGUMENTS` and `$CLAUDE_PLUGIN_ROOT` as runtime variables
 - Scripts receive tool input via stdin as JSON (parsed with `jq`)
-- All user-facing text is in Korean (code comments excluded)
+- All plugin-internal documentation, skill instructions, and user-facing strings inside this repository are written in English. The runtime output language for end users is controlled by the `/select-language` command (Korean / Vietnamese / English) — translating this repository's documentation does not change the deliverable language for existing projects.
 - The `data/` JSON files are large (13K+ terms) — use targeted `jq` queries rather than loading entirely
 
-## Behavioral Guardrails (LLM 코딩 4원칙)
+## Behavioral Guardrails (LLM Coding 4 Principles)
 
 Four behavioral principles apply to all coding work in target projects, derived from observations on common LLM coding pitfalls (Andrej Karpathy / forrestchang). They bias toward **caution over speed** — for trivial tasks, use judgment.
 
 These principles are inlined into the relevant skills rather than being a standalone skill:
 
 | Principle | Inlined location | Trigger |
-|-----------|-----------------|---------|
-| **Think Before Coding** | `skills/service-planner/SKILL.md` (Step 0.A.1 모호성 검증) | 기획 시작 시 모호한 기능 설명 → 해석 선택지 제시 |
-| **Simplicity First** | `skills/coding-convention/SKILL.md` (Behavioral Guardrails) | 모든 코드 작성/수정 시 자동 적용 |
-| **Surgical Changes** | `skills/coding-convention/SKILL.md` + `skills/pr-merge/SKILL.md` (Step 8.2) | 코드 편집 + PR 리뷰 이슈 수정 시 |
-| **Goal-Driven Execution** | `skills/pr-merge/SKILL.md` (Step 8.2 자동 디버그 루프) | 검증 가능한 성공 기준 기반 반복 |
+|-----------|------------------|---------|
+| **Think Before Coding** | `skills/service-planner/SKILL.md` (Step 0.A.1 ambiguity check) | At the start of planning, when feature descriptions are ambiguous → present interpretation options |
+| **Simplicity First** | `skills/coding-convention/SKILL.md` (Behavioral Guardrails) | Auto-applied on every code write/edit |
+| **Surgical Changes** | `skills/coding-convention/SKILL.md` + `skills/pr-merge/SKILL.md` (Step 8.2) | Code edits + PR review issue remediation |
+| **Goal-Driven Execution** | `skills/pr-merge/SKILL.md` (Step 8.2 auto-debug loop) | Iteration driven by verifiable success criteria |
 
 **Quick reference**: `/astra-guide principles`
 
-**ASTRA 자동 빌더 예외**: `/service-planner`, `/blueprint`, `/manual-generator`, `/catalog-generator`, `/handoff-publish`, `/project-init`, `/sprint-init`, `/autorun` 같은 *광범위 산출물 생성형 skill*은 사용자가 명시적으로 요청한 풀 스택 산출물을 생성하므로 "Simplicity First"의 범위 제한을 받지 않는다. 다만 그 내부에서 작성하는 *개별 코드*는 4원칙을 그대로 따른다.
+**ASTRA auto-builder exception**: *broad deliverable-generating skills* such as `/service-planner`, `/blueprint`, `/manual-generator`, `/catalog-generator`, `/handoff-publish`, `/project-init`, `/sprint-init`, `/autorun` produce the full-stack deliverables explicitly requested by the user, so the "Simplicity First" scope-restriction does not apply to them. The *individual code* they author internally still follows the 4 principles.
 
-> **⚠️ 완전 자동 머지 경고 (v5.x+)**: `/autorun`과 `/sprint-init --auto`는 테스트 통과 시 `/pr-merge --auto`까지 자동 호출하여 dev 브랜치에 머지한다. 무인 모드는 다음 안전 게이트로 보호되지만 *유효 게이트만큼만* 안전하다:
-> - 테스트 통과 (test-run의 자가 개선 5회 + autorun MAX iteration 자가 개선)
-> - 코드 리뷰 통과 (feature-dev:code-reviewer Agent의 Critical 이슈 0건 — 잔존 시 머지 차단)
-> - 머지 충돌 부재 (캐스케이드/rebase 충돌은 자동 정지)
+> **⚠️ Fully-automated merge warning (v5.x+)**: `/autorun` and `/sprint-init --auto` automatically invoke `/pr-merge --auto` upon test pass and merge to the dev branch. Unattended mode is protected by the safety gates below, but is *only as safe as those gates*:
+> - Test pass (test-run's 5-pass self-improvement + autorun MAX-iteration self-improvement)
+> - Code-review pass (Critical-issue count = 0 from the feature-dev:code-reviewer agent — any remaining Critical blocks the merge)
+> - No merge conflicts (cascade / rebase conflicts auto-halt)
 >
-> 민감한 비즈니스 로직, 컴플라이언스 영향 기능, 레거시 통합에는 `--auto` 사용을 권장하지 않는다 — `/autorun`(머지 안 함 모드는 없음) 대신 `/sprint-init`(스캐폴딩만) + 수동 prompt-map 진행 후 사용자 검토를 거쳐 `/pr-merge`를 명시 호출하는 흐름을 사용하라.
+> `--auto` is **not** recommended for sensitive business logic, compliance-impacting features, or legacy integrations — instead of `/autorun` (which has no "no-merge" mode), use `/sprint-init` (scaffold only) + run the prompt-map manually, then invoke `/pr-merge` explicitly after user review.
 
-**Source**: [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills) (MIT) — adapted into existing skills with Korean translation and ASTRA-specific scope clauses.
+**Source**: [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills) (MIT) — adapted into existing skills with English translation and ASTRA-specific scope clauses.
 
 ## Skill Authoring
 
-새 SKILL.md를 작성하거나 기존 스킬을 수정할 때는 [`docs/development/skill-authoring-guide.md`](docs/development/skill-authoring-guide.md)를 참조한다 — 핵심 원칙, frontmatter 필드, description 7원칙, progressive disclosure, 안티패턴, ASTRA 체크리스트.
+When authoring a new SKILL.md or modifying an existing skill, use [`docs/development/skill-best-practices.md`](docs/development/skill-best-practices.md) as the SSoT — core principles, frontmatter fields, the 7 description rules, progressive disclosure, anti-patterns, and the ASTRA checklist.
+
+**Authoring / modification entry points**:
+- **`/skill-author`** (skill) — author a new SKILL.md or refactor an existing skill. Interactive mentoring: auto-writes frontmatter → auto-blocks anti-patterns → 500-line separation gate → writes evaluation scenarios → final validation via `/skill-lint`.
+- **`/skill-lint <path>`** (command) — one-shot validation. Executes the 13-item checklist in auto/semi-auto/manual modes and reports as a PASS/FAIL/WARN/MANUAL table. With no argument, auto-detects SKILL.md changes from `git status`.
+
+The LLM is configured so that editing a path under `skills/**/SKILL.md` triggers the `/skill-author` skill's `paths` trigger automatically — explicit user invocation and the path trigger operate complementarily.
 
 ## Scripts
 
@@ -222,17 +244,15 @@ These principles are inlined into the relevant skills rather than being a standa
 
 ## Conventions
 
-- **버전업 필수**: main 브랜치에 푸시하기 전 반드시 `.claude-plugin/plugin.json`과 `.claude-plugin/marketplace.json`의 `version` 필드를 업데이트해야 한다. SemVer 규칙을 따른다 — 버그 수정은 patch(x.x.+1), 기능 추가는 minor(x.+1.0), 호환성 깨지는 변경은 major(+1.0.0).
-- **Skill description 언어 정책**:
-  - **영어 사용**: auto-trigger 스킬(`coding-convention`, `data-standard`, `code-standard`, `sprint-progress`), 검증/유틸 스킬(`project-checklist`, `astra-setup`, `sprint-init`, `astra-guide`, `test-run`, `test-scenario`, `project-init`, `catalog-generator`). LLM의 영어 description 매칭 정확도가 더 높아 자동 트리거/유틸 호출에 유리.
-  - **한국어 사용**: 사용자 워크플로우 진입점인 인터랙티브 도메인 스킬(`service-planner`, `blueprint`, `handoff-publish`, `manual-generator`, `pr-merge`, `slack-import`, `autorun`). 한국 사용자가 `/help`로 발견할 때 의도가 즉시 이해되어야 함.
-  - **frontmatter 형식**: auto-trigger 스킬은 `description: >` 블록 형식, 명시 호출 스킬은 `description: "..."` 단일 라인 형식.
-- **Agent description 가드**: 페르소나 에이전트(`tester-persona`, `designer-persona`, `developer-persona`)는 description 첫 줄에 `[EXPLICIT-INVOCATION-ONLY — DO NOT AUTO-MATCH]` 가드 prefix를 필수로 둔다.
-- Skill SKILL.md files follow a strict procedural format (단계: step-by-step instructions)
+- **Version bump required**: before pushing to the main branch, the `version` field in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` must be updated. Follows SemVer — bug fixes are patch (x.x.+1), feature additions are minor (x.+1.0), and breaking changes are major (+1.0.0).
+- **Skill description language policy**: all skill `description` fields are written in **English** (auto-trigger accuracy is highest with English descriptions, and the project's authoring language is English). Both auto-trigger skills (e.g., `coding-convention`, `data-standard`, `code-standard`, `sprint-progress`) and interactive user-workflow skills (e.g., `service-planner`, `blueprint`, `handoff-publish`, `manual-generator`, `pr-merge`, `slack-import`, `autorun`) use English. Runtime output language for end users is controlled separately by `/select-language`.
+  - **frontmatter form**: auto-trigger skills use the `description: >` block form; explicitly-invoked skills use the single-line `description: "..."` form.
+- **Agent description guard**: persona agents (`tester-persona`, `designer-persona`, `developer-persona`) MUST keep the `[EXPLICIT-INVOCATION-ONLY — DO NOT AUTO-MATCH]` guard prefix on the first line of their description.
+- Skill SKILL.md files follow a strict procedural format (Step-by-step instructions)
 - Commands are simpler than skills — they define input/output format and delegate to data files
 - All agents are read-only (`disallowedTools: Write, Edit`) — they analyze and report but never modify files
 - Agent model selection: `haiku` for rule-based validation (fast), `sonnet` for complex analysis (accurate)
-- Agent naming convention: `*-validator` (haiku, 규칙 검증), `*-reviewer` (sonnet, 산출물 품질 검토), `*-runner` (sonnet, 통합 실행), `*-analyzer` (sonnet, 패턴/메트릭), `*-persona` (sonnet, 시니어 관점 위임 — 명시 호출 전용)
+- Agent naming convention: `*-validator` (haiku, rule validation), `*-reviewer` (sonnet, deliverable quality review), `*-runner` (sonnet, integrated execution), `*-analyzer` (sonnet, pattern/metrics), `*-persona` (sonnet, senior-perspective delegation — explicit-invocation only)
 - Hook scripts must always `exit 0` to avoid blocking the user's workflow
 - `standard_terms.json` fields: `공통표준용어명` (Korean term), `공통표준용어영문약어명` (English abbreviation), `공통표준도메인명` (domain)
 - `standard_words.json` fields: `공통표준단어명` (word), `공통표준단어영문약어명` (abbreviation), `금칙어목록` (forbidden words), `이음동의어목록` (synonyms)

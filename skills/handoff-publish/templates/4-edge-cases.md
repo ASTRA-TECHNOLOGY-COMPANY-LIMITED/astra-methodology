@@ -1,99 +1,99 @@
-# 4. Edge Cases — 예외/주의 케이스
+# 4. Edge Cases — Exception / Caution Cases
 
-**기능**: {{FEATURE_NAME}}
-**최종 수정**: {{TODAY}}
+**Feature**: {{FEATURE_NAME}}
+**Last updated**: {{TODAY}}
 
-> 아래 항목은 반드시 포함하고, 각 케이스마다 노출 화면 ID / 처리 정책 / UX 메시지를 명시합니다.
-
----
-
-## 필수 포함 Edge Case
-
-- [ ] **토큰 부족 / 잔여 횟수 0**
-  - 노출 시점: 유료 기능 사용 직전 / API 호출 시 잔여량 체크
-  - 노출 화면: `{{DOMAIN_CODE}}-EXPERT-MODAL02` (토큰 부족 모달)
-  - 메시지: "토큰이 부족합니다. 충전 후 다시 시도하세요. [충전하기]"
-  - 처리: 모달 → "충전하기" → 결제 페이지 이동 / "취소" → 이전 화면 복귀
-
-- [ ] **권한 없음** (플랜 미해당, 만료 등)
-  - 노출 시점: 페이지 진입 시 권한 체크
-  - 노출 화면: `{{DOMAIN_CODE}}-EXPERT-MODAL-PERMISSION` 또는 업그레이드 유도 페이지
-  - 메시지: "이 기능은 Pro 플랜에서 이용 가능합니다. [플랜 업그레이드]"
-  - 처리: 서버에서 403 응답 → 클라이언트는 업그레이드 유도 UI 표시
-
-- [ ] **비로그인 차단**
-  - 노출 시점: 로그인 필요 기능 클릭 시
-  - 노출 화면: `{{DOMAIN_CODE}}-EXPERT-MODAL-LOGIN`
-  - 메시지: "이 기능을 사용하려면 로그인해 주세요. [로그인]"
-  - 처리: 현재 URL을 `returnTo` 파라미터로 저장 → 로그인 후 복귀
-
-- [ ] **데이터 없음** (EMPTY)
-  - 노출 시점: API 응답이 빈 배열
-  - 노출 화면: `{{DOMAIN_CODE}}-EXPERT-LIST-EMPTY` (및 각 리스트 화면의 EMPTY 상태)
-  - 메시지: "아직 질문이 없어요. [첫 질문 작성하기]"
-  - 처리: 다음 행동을 유도하는 CTA 필수
-
-- [ ] **네트워크 에러**
-  - 노출 시점: Fetch 실패 / Timeout
-  - 노출 화면: 각 화면의 `-ERROR` 상태 (`{{DOMAIN_CODE}}-EXPERT-LIST-ERROR`)
-  - 메시지: "연결이 원활하지 않습니다. [다시 시도]"
-  - 처리: 재시도 버튼 + 자동 재시도 정책 (최대 3회, 지수 백오프)
-
-- [ ] **상태 전환** (대기 → 채택, 모집 → 마감 등)
-  - 예시: 답변 채택 시 `UC02 → UC03` 전환
-  - 노출 정책: 실시간 반영 vs 새로고침 후 반영 결정
-  - UX: 전환 시 애니메이션/토스트로 피드백
-
-- [ ] **본인/타인 UI 차이**
-  - 예시: 작성자 본인에게만 수정/삭제 메뉴 노출
-  - 구현: `user.id === post.authorId` 체크 후 조건부 렌더링
-  - 서버 검증: 반드시 서버에서도 권한 재검증
-
-- [ ] **데모 모드** (비로그인 미리보기)
-  - 노출 시점: 비로그인 사용자가 "체험하기" 등으로 진입
-  - 데이터: Mock data (실제 DB 조회 없음)
-  - 제약: 데이터 변경 액션(작성/삭제/채택 등) 비활성화
-  - CTA: "실제로 사용하려면 [로그인]"
+> The items below must be included; for each case specify the screen ID exposed, the handling policy, and the UX message.
 
 ---
 
-## 추가 Edge Case (이 기능 특화)
+## Required edge cases
 
-<!-- TODO (UX): 아래 항목에 이 기능 특유의 edge case를 추가하세요 -->
+- [ ] **Insufficient tokens / remaining count is 0**
+  - When exposed: right before using a paid feature / when checking remaining balance during an API call
+  - Screen exposed: `{{DOMAIN_CODE}}-EXPERT-MODAL02` (insufficient-tokens modal)
+  - Message: "You don't have enough tokens. Recharge and try again. [Recharge]"
+  - Handling: modal → "Recharge" → navigate to payment page / "Cancel" → return to previous screen
 
-- [ ] **동시성 충돌**
-  - 예: 여러 사용자가 동시에 같은 질문에 답변 채택을 시도
-  - 정책: 서버가 먼저 도착한 요청 수락, 나머지는 409 응답
-  - UX: "이미 다른 답변이 채택되었습니다. 새로고침 후 확인하세요."
+- [ ] **No permission** (not on the plan, expired, etc.)
+  - When exposed: permission check on page entry
+  - Screen exposed: `{{DOMAIN_CODE}}-EXPERT-MODAL-PERMISSION` or an upgrade-prompt page
+  - Message: "This feature is available on the Pro plan. [Upgrade plan]"
+  - Handling: server returns 403 → client displays upgrade-prompt UI
 
-- [ ] **대량 데이터**
-  - 예: 한 질문에 답변이 100개 이상
-  - 정책: 페이지네이션 또는 무한 스크롤 (기본 20개)
-  - UX: 답변 수가 일정 이상이면 "더 보기" 버튼 표시
+- [ ] **Not-logged-in block**
+  - When exposed: clicking a feature that requires login
+  - Screen exposed: `{{DOMAIN_CODE}}-EXPERT-MODAL-LOGIN`
+  - Message: "Please log in to use this feature. [Log in]"
+  - Handling: save the current URL as a `returnTo` parameter → return after login
 
-- [ ] **텍스트 길이 초과**
-  - 예: 제목 200자 초과
-  - 정책: 클라이언트에서 실시간 카운트 + 서버에서도 검증
-  - UX: "최대 200자까지 입력 가능합니다."
+- [ ] **No data** (EMPTY)
+  - When exposed: API returns an empty array
+  - Screen exposed: `{{DOMAIN_CODE}}-EXPERT-LIST-EMPTY` (and the EMPTY state of each list screen)
+  - Message: "No questions yet. [Write your first question]"
+  - Handling: a CTA prompting the next action is required
 
-- [ ] **부적절한 컨텐츠 (신고 누적)**
-  - 예: 신고가 일정 기준 초과된 답변
-  - 정책: 자동 블라인드 처리 (관리자 검토 후 복구 or 삭제)
-  - UX: "이 답변은 신고로 숨겨졌습니다. [펼치기]"
+- [ ] **Network error**
+  - When exposed: fetch failure / timeout
+  - Screen exposed: the `-ERROR` state of each screen (`{{DOMAIN_CODE}}-EXPERT-LIST-ERROR`)
+  - Message: "Connection is unstable. [Retry]"
+  - Handling: retry button + auto-retry policy (up to 3 attempts, exponential backoff)
+
+- [ ] **State transitions** (waiting → adopted, recruiting → closed, etc.)
+  - Example: `UC02 → UC03` transition when an answer is adopted
+  - Exposure policy: decide between real-time update vs. update after refresh
+  - UX: feedback via animation / toast on transition
+
+- [ ] **Self vs. other UI differences**
+  - Example: edit/delete menu shown only to the question owner
+  - Implementation: conditional render after `user.id === post.authorId` check
+  - Server validation: permissions must also be re-validated on the server
+
+- [ ] **Demo mode** (preview when not logged in)
+  - When exposed: a not-logged-in user enters via "Try it" etc.
+  - Data: mock data (no real DB queries)
+  - Constraint: data-mutation actions (write/delete/adopt, etc.) are disabled
+  - CTA: "To actually use this, [Log in]"
 
 ---
 
-## Edge Case 검증 체크리스트 (QA 참고)
+## Additional edge cases (feature-specific)
 
-| # | 케이스 | 발생 경로 | 기대 결과 | 테스트 ID |
-|---|--------|----------|----------|-----------|
-| 1 | 토큰 부족 | 질문 작성 시 잔여 토큰 < 1 | MODAL02 노출 + 충전 유도 | — |
-| 2 | 권한 없음 | Free 플랜으로 Pro 기능 접근 | 업그레이드 유도 | — |
-| 3 | 비로그인 | 비로그인 > "질문하기" 클릭 | MODAL-LOGIN 노출 | — |
-| 4 | EMPTY | 첫 진입, 데이터 0건 | EMPTY 상태 + CTA | — |
-| 5 | ERROR | Network offline 상태에서 API 호출 | ERROR 상태 + 재시도 | — |
-| 6 | 동시성 | 2개 브라우저에서 동시 채택 | 1개만 성공, 다른 하나 409 | — |
+<!-- TODO (UX): add edge cases specific to this feature below -->
+
+- [ ] **Concurrency conflict**
+  - Example: multiple users simultaneously try to adopt an answer on the same question
+  - Policy: server accepts the first-arriving request; others get a 409 response
+  - UX: "Another answer has already been adopted. Please refresh."
+
+- [ ] **Large data volumes**
+  - Example: a single question has more than 100 answers
+  - Policy: pagination or infinite scroll (default 20 items)
+  - UX: when answer count exceeds the threshold, show a "Load more" button
+
+- [ ] **Text length exceeded**
+  - Example: title exceeds 200 characters
+  - Policy: real-time count on the client + server-side validation
+  - UX: "You can enter up to 200 characters."
+
+- [ ] **Inappropriate content (report accumulation)**
+  - Example: an answer that exceeds the report threshold
+  - Policy: auto-blind (restored or removed after admin review)
+  - UX: "This answer has been hidden due to reports. [Expand]"
 
 ---
 
-_이 목록은 누락된 엣지 케이스가 발견될 때마다 업데이트하세요. 발견한 사람이 직접 항목을 추가하고 `11-decision-log.md`에 기록합니다._
+## Edge-case verification checklist (QA reference)
+
+| # | Case | Trigger path | Expected result | Test ID |
+|---|------|--------------|------------------|---------|
+| 1 | Insufficient tokens | Remaining tokens < 1 when writing a question | MODAL02 shown + recharge prompt | — |
+| 2 | No permission | Free plan accesses a Pro feature | upgrade prompt | — |
+| 3 | Not logged in | Click "Ask" while not logged in | MODAL-LOGIN shown | — |
+| 4 | EMPTY | First entry, zero data | EMPTY state + CTA | — |
+| 5 | ERROR | API call while network is offline | ERROR state + retry | — |
+| 6 | Concurrency | Adopt simultaneously from 2 browsers | only one succeeds, the other gets 409 | — |
+
+---
+
+_Update this list whenever a missing edge case is discovered. The discoverer adds the item directly and records it in `11-decision-log.md`._

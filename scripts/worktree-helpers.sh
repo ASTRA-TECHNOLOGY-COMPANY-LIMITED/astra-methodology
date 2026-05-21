@@ -14,7 +14,7 @@
 # Usage:
 #   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
 #   if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$PLUGIN_ROOT/scripts/worktree-helpers.sh" ]; then
-#     echo "ERROR: CLAUDE_PLUGIN_ROOT를 찾을 수 없습니다." >&2; exit 1
+#     echo "ERROR: CLAUDE_PLUGIN_ROOT not found." >&2; exit 1
 #   fi
 #   source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
 #   astra_ensure_main_worktree || exit 1
@@ -65,8 +65,8 @@ astra_is_isolated_worktree() {
   local git_dir common_dir
   git_dir=$(git rev-parse --git-dir 2>/dev/null) || return 1
   common_dir=$(git rev-parse --git-common-dir 2>/dev/null) || return 1
-  # `.git`이 파일(submodule worktree)인 경우 실제 gitdir 디렉토리 경로로 정규화.
-  # 파일 경로를 그대로 비교하면 디렉토리인 common_dir와 결코 일치하지 않아 오탐이 발생한다.
+  # When `.git` is a file (submodule worktree), normalize to the actual gitdir directory path.
+  # Comparing the file path as-is would never match the directory `common_dir`, causing false positives.
   if [ -f "$git_dir" ]; then
     git_dir=$(git rev-parse --absolute-git-dir 2>/dev/null) || return 1
   fi
@@ -77,15 +77,15 @@ astra_is_isolated_worktree() {
 }
 
 # Guard for skills that must run from the main worktree (e.g. /service-planner,
-# /test-run, /pr-merge entry). Emits a Korean diagnostic and returns 1 when
+# /test-run, /pr-merge entry). Emits a diagnostic and returns 1 when
 # called from an isolated worktree.
 astra_ensure_main_worktree() {
   if astra_is_isolated_worktree; then
     local main_root
     main_root=$(astra_main_worktree_root) || main_root="(unknown)"
-    echo "ERROR: 이 명령은 메인 worktree에서만 실행할 수 있습니다." >&2
-    echo "       현재 위치는 격리 worktree(.astra-worktrees/)입니다." >&2
-    echo "       메인 worktree로 이동 후 다시 실행하세요:" >&2
+    echo "ERROR: This command can only run from the main worktree." >&2
+    echo "       Current location is an isolated worktree (.astra-worktrees/)." >&2
+    echo "       Switch to the main worktree and try again:" >&2
     echo "         cd \"$main_root\"" >&2
     return 1
   fi
@@ -151,7 +151,7 @@ astra_resolve_branch_and_slug() {
     slug=$(astra_branch_to_slug "$branch")
     n=$((n + 1))
     if [ "$n" -gt 50 ]; then
-      echo "ERROR: 브랜치/슬러그 충돌이 너무 많습니다 ($base_branch)" >&2
+      echo "ERROR: Too many branch/slug collisions ($base_branch)" >&2
       return 1
     fi
   done
@@ -184,7 +184,7 @@ astra_create_worktree_new() {
 
   mkdir -p "$(dirname "$wt_path")"
   if ! git worktree add -b "$branch" "$wt_path" "$base_ref" >&2; then
-    echo "ERROR: worktree 생성 실패: $branch (base=$base_ref)" >&2
+    echo "ERROR: worktree creation failed: $branch (base=$base_ref)" >&2
     return 1
   fi
   printf '%s\t%s' "$branch" "$wt_path"
@@ -207,14 +207,15 @@ astra_create_worktree_existing() {
   local root slug n=2
   root=$(astra_main_worktree_root) || return 1
 
-  # 해당 branch가 이미 다른 worktree에 체크아웃되어 있으면 즉시 실패 (git worktree add는
-  # "already checked out at <path>"로 거부하지만, 호출자가 원인을 명확히 알 수 있도록 선검사).
+  # If the branch is already checked out in another worktree, fail immediately
+  # (git worktree add would reject with "already checked out at <path>", but
+  # pre-check here so the caller gets a clearer reason).
   local already_checked_out
   already_checked_out=$(git worktree list --porcelain 2>/dev/null | awk -v b="refs/heads/$branch" '
     /^branch / && $2==b { print "yes"; exit }
   ')
   if [ "$already_checked_out" = "yes" ]; then
-    echo "ERROR: '$branch'는 이미 다른 worktree에 체크아웃되어 있습니다. 기존 worktree를 사용하거나 제거 후 다시 시도하세요." >&2
+    echo "ERROR: '$branch' is already checked out in another worktree. Use the existing worktree or remove it and try again." >&2
     return 1
   fi
 
@@ -226,14 +227,14 @@ astra_create_worktree_existing() {
     fi
     slug="${base_slug}-${n}"
     n=$((n + 1))
-    [ "$n" -gt 50 ] && { echo "ERROR: 슬러그 충돌이 너무 많습니다 ($base_slug)" >&2; return 1; }
+    [ "$n" -gt 50 ] && { echo "ERROR: Too many slug collisions ($base_slug)" >&2; return 1; }
   done
   local wt_path
   wt_path=$(astra_worktree_path "$slug") || return 1
 
   mkdir -p "$(dirname "$wt_path")"
   if ! git worktree add "$wt_path" "$branch" >&2; then
-    echo "ERROR: worktree attach 실패: $branch" >&2
+    echo "ERROR: worktree attach failed: $branch" >&2
     return 1
   fi
   printf '%s\t%s' "$branch" "$wt_path"
@@ -254,7 +255,7 @@ astra_remove_worktree() {
 
   if [ -d "$wt_path" ]; then
     git worktree remove "$wt_path" 2>/dev/null || git worktree remove --force "$wt_path" 2>/dev/null || {
-      echo "WARN: worktree 제거 실패: $wt_path (수동 정리 필요)" >&2
+      echo "WARN: worktree removal failed: $wt_path (manual cleanup required)" >&2
       return 1
     }
   fi
@@ -264,10 +265,10 @@ astra_remove_worktree() {
 
 # --- sprint-level worktree -------------------------------------------------
 #
-# v5.0+ 정책: /sprint-init이 sprint당 단일 worktree를 만들고, 모든 feature
-# 작업·테스트가 그 안에서 진행된다. 머지는 /pr-merge가 dev로 반영한 뒤
-# worktree를 제거한다. 슬러그 규칙은 `sprint-<N>-<name>`이며 브랜치명은
-# `feat/sprint-<N>-<name>`로 통일한다.
+# v5.0+ policy: /sprint-init creates a single worktree per sprint, and all
+# feature work and tests happen inside it. /pr-merge then merges to dev and
+# removes the worktree. The slug rule is `sprint-<N>-<name>` and the branch
+# name is unified as `feat/sprint-<N>-<name>`.
 
 # Echo `<branch>\t<worktree-path>` after creating a sprint-level worktree.
 # Arguments: <sprint-number> <sprint-name> [base-ref]
@@ -282,7 +283,7 @@ astra_create_sprint_worktree() {
     return 2
   fi
 
-  # base-ref가 비어 있으면 dev→main 순으로 폴백
+  # If base-ref is empty, fall back to dev then main.
   if [ -z "$base_ref" ]; then
     if git ls-remote --heads origin dev 2>/dev/null | grep -q dev; then
       base_ref="origin/dev"
@@ -310,9 +311,9 @@ astra_remove_sprint_worktree() {
 
 # --- port allocation -------------------------------------------------------
 #
-# 메인 worktree(dev)는 기본 포트를, sprint worktree는 base + 100*N을 쓴다.
-# 동일 sprint 번호의 worktree가 이미 살아 있을 때(재개·리브랜드 시나리오)는
-# `lsof`로 사용 중인 포트를 감지해 +100씩 시프트한다.
+# The main worktree (dev) uses the base port; sprint worktrees use base + 100*N.
+# When a worktree for the same sprint number is already alive (resume/rebrand
+# scenarios), `lsof` detects ports in use and shifts by +100.
 
 # Echo a free port starting from `<base> + 100*<sprint-number>`. If that port
 # is in use, shift by +100 until a free port is found (max 10 shifts).
@@ -335,13 +336,13 @@ astra_compute_port_base() {
     candidate=$((candidate + 100))
     tries=$((tries + 1))
   done
-  echo "ERROR: 포트 후보를 10회 시프트했으나 모두 사용 중입니다 (base=$base, N=$n)" >&2
+  echo "ERROR: Port candidates shifted 10 times but all are in use (base=$base, N=$n)" >&2
   return 1
 }
 
 # Return 0 if <port> is currently bound by any process.
-# `lsof`가 없는 환경에서는 `ss`/`netstat` 폴백을 시도하고, 모두 실패하면
-# "사용 중이 아님"으로 판정한다 (false negative — 호출자가 직접 확인해야 함).
+# When `lsof` is unavailable, fall back to `ss` / `netstat`. If all fail,
+# report "not in use" (false negative — caller must verify directly).
 astra_port_in_use() {
   local port="$1"
   if command -v lsof >/dev/null 2>&1; then

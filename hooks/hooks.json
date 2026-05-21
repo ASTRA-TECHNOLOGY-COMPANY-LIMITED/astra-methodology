@@ -6,11 +6,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '🌟 ASTRA 방법론이 활성화되어 있습니다. /astra-guide 로 빠른 참조를 확인하세요.'"
+            "command": "echo '🌟 ASTRA methodology is active. Run /astra-guide for a quick reference.'"
           },
           {
             "type": "command",
-            "command": "if [ -n \"$SLACK_BOT_TOKEN\" ]; then echo '[ASTRA] Slack 연동이 활성화되어 있습니다. (fect-slack MCP 서버)'; else echo '[ASTRA] SLACK_BOT_TOKEN이 설정되지 않았습니다. Slack 연동을 사용하려면 환경변수를 설정하세요.'; fi"
+            "command": "if [ -n \"$GOOGLE_API_KEY\" ]; then echo '[ASTRA] fect-image (Gemini) MCP enabled.'; else echo '[ASTRA] GOOGLE_API_KEY is not set. Set this environment variable to use the fect-image (Gemini) MCP.'; fi"
+          },
+          {
+            "type": "command",
+            "command": "if [ -n \"$OPENAI_API_KEY\" ]; then echo '[ASTRA] fect-gpt-image (OpenAI) MCP enabled.'; else echo '[ASTRA] OPENAI_API_KEY is not set. Set this environment variable to use the fect-gpt-image MCP.'; fi"
+          },
+          {
+            "type": "command",
+            "command": "if [ -z \"$SLACK_BOT_TOKEN\" ]; then echo '[ASTRA] (Optional) SLACK_BOT_TOKEN is not set. To use /slack-import and /extract-backlog, register the fect-slack MCP separately in your environment and set the token.'; fi"
           }
         ]
       }
@@ -23,25 +31,31 @@
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/notify-design-doc-edit.sh\"",
             "timeout": 5,
-            "statusMessage": "설계 문서 수정 감지 중..."
+            "statusMessage": "Detecting design document edits..."
           },
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/check-forbidden-words.sh\"",
             "timeout": 30,
-            "statusMessage": "금칙어 검사 중..."
+            "statusMessage": "Checking forbidden words..."
           },
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/validate-naming.sh\"",
             "timeout": 30,
-            "statusMessage": "네이밍 규칙 검사 중..."
+            "statusMessage": "Checking naming conventions..."
           },
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/track-sprint-progress.sh\"",
             "timeout": 15,
-            "statusMessage": "스프린트 진행 추적 중..."
+            "statusMessage": "Tracking sprint progress..."
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/notify-design-md.sh\"",
+            "timeout": 5,
+            "statusMessage": "Checking design system SSoT advisory..."
           }
         ]
       }
@@ -54,7 +68,7 @@
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/inject-feature-dev-cwd.sh\"",
             "timeout": 5,
-            "statusMessage": "sprint worktree 컨텍스트 주입 중..."
+            "statusMessage": "Injecting sprint worktree context..."
           }
         ]
       }
