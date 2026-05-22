@@ -289,3 +289,175 @@ Each section's `content` includes the first 200 characters of the section body (
   </dl>
 </section>
 ```
+
+## 6. Help Center Index Template (DESIGN_TONE = "Help Center")
+
+A search-driven landing variant of the index page that replaces Section 2's plain cover + TOC grid. Use this layout when `DESIGN_TONE = Help Center` is chosen in Step 0.E. Composition:
+
+1. **Sticky dark header** — brand mark + product link + language switch
+2. **Hero with large search input** — gradient-tinted background, centered title, prominent search box
+3. **FAQ grid (2-column)** — top frequently-asked questions extracted from `usecase` exception flows
+4. **Category cards (3-column)** — one card per top-level feature group, linking to the feature's first chapter
+5. **Banner CTAs (2-row, gradient + soft)** — optional links to video guides / academy / changelog
+6. **Contact CTA** — fallback callout when the user cannot find an answer
+7. **Multi-column footer**
+
+Brand colors and gradient come from `assets/tokens.css` via `var(--primary-blue)`, `var(--primary-purple)`, `var(--brand-gradient)`. Do **not** hardcode `#155EEF` / `#7F56D9` — these are the reference document's brand values and must not leak into other projects.
+
+```html
+<!DOCTYPE html>
+<html lang="{lang}" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{PROJECT_NAME}} — Help Center</title>
+  <link rel="stylesheet" href="assets/tokens.css">
+  <link rel="stylesheet" href="assets/manual-base.css">
+  <link rel="stylesheet" href="assets/manual-components.css">
+  <link rel="stylesheet" href="assets/manual-helpcenter.css">
+  <link rel="stylesheet" href="assets/manual-print.css" media="print">
+</head>
+<body class="hc-body">
+  <header class="hc-header">
+    <div class="hc-wrap nav">
+      <a class="brand" href="index.html">
+        <span class="brand-mark">{{PROJECT_NAME}}</span>
+        <span class="sep"></span>
+        <span class="tag">Help Center</span>
+      </a>
+      <nav class="nav-right">
+        <a class="nav-link" href="index.html">Home</a>
+        <a class="nav-link" href="{{SERVICE_URL}}" target="_blank" rel="noopener">Go to {{PROJECT_NAME}} →</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hc-wrap">
+      <h1 class="hero-title">How can we <span class="grad">help you?</span></h1>
+      <p class="hero-sub">{{TAGLINE}}</p>
+      <div class="search" role="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="hcSearch" type="search" placeholder="Search guides..." aria-label="Search guides">
+      </div>
+    </div>
+  </section>
+
+  <main class="hc-wrap">
+    <!-- FAQ grid (extracted from usecase exception flows) -->
+    <section class="hc-section">
+      <div class="section-label">— FREQUENTLY ASKED —</div>
+      <h2 class="sec-title">Top questions</h2>
+      <div class="faq-grid" id="faqGrid">
+        <!-- repeated per FAQ -->
+        <a class="faq-card" href="chapters/{{NN}}-{{name}}.html#{{anchor}}">
+          <span class="faq-badge">NEW</span>
+          <span class="faq-q">{{question}}</span>
+          <span class="faq-arrow">→</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- Category cards (one per top-level feature group) -->
+    <section class="hc-section">
+      <div class="section-label purple">— BROWSE GUIDES —</div>
+      <div class="sec-head">
+        <h2 class="sec-title">Browse guides</h2>
+        <span class="sec-sub">Organized by category</span>
+      </div>
+      <div class="col-grid" id="colGrid">
+        <!-- repeated per category -->
+        <a class="cat-card" href="chapters/{{first-chapter-of-category}}.html">
+          <div class="cat-ic">
+            <svg viewBox="0 0 24 24" aria-hidden="true">{{INLINE_SVG_ICON}}</svg>
+          </div>
+          <span class="cat-tag">{{CATEGORY_TAG}}</span>
+          <h3 class="cat-title">{{category title}}</h3>
+          <p class="cat-meta">{{N}} articles</p>
+        </a>
+      </div>
+      <p class="no-result" id="noResult" hidden>No results found.</p>
+    </section>
+
+    <!-- Optional banner CTAs (omit if unused) -->
+    <section class="band">
+      <div class="banner grad">
+        <div class="bl">
+          <div class="blabel">— VIDEO GUIDE —</div>
+          <h3>{{VIDEO_TITLE}}</h3>
+          <p>{{VIDEO_DESC}}</p>
+        </div>
+        <a class="btn" href="{{VIDEO_URL}}">Watch video guides →</a>
+      </div>
+      <div class="banner soft">
+        <div class="bl">
+          <div class="blabel">— CHANGELOG —</div>
+          <h3>{{CHANGELOG_TITLE}}</h3>
+          <p>{{CHANGELOG_DESC}}</p>
+        </div>
+        <a class="btn" href="{{CHANGELOG_URL}}">See updates →</a>
+      </div>
+    </section>
+
+    <!-- Contact CTA -->
+    <section class="hc-section">
+      <div class="cta">
+        <h3>Didn't find what you need?</h3>
+        <p>{{SUPPORT_CTA_DESC}}</p>
+        <a class="btn-primary" href="{{SUPPORT_URL}}">Contact us</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="hc-footer">
+    <div class="hc-wrap">
+      <p class="copy">© {{YEAR}} {{PROJECT_NAME}}. Generated by ASTRA methodology.</p>
+    </div>
+  </footer>
+
+  <!-- Search overlay (shared with chapter pages) -->
+  <div class="search-overlay" id="searchOverlay" hidden>
+    <div class="search-modal">
+      <input type="search" class="search-input" placeholder="Search the manual..." autofocus>
+      <div class="search-results"></div>
+      <div class="search-footer">ESC to close · Enter to go</div>
+    </div>
+  </div>
+
+  <script src="shared/nav.js"></script>
+  <script src="shared/search.js"></script>
+  <script src="shared/theme.js"></script>
+</body>
+</html>
+```
+
+### Placeholder reference
+
+| Placeholder | Source |
+|-------------|--------|
+| `{{PROJECT_NAME}}` | `CLAUDE.md` project name (Step 0.B) |
+| `{{TAGLINE}}` | one-line service description, extracted from blueprint overview or planner market-analysis |
+| `{{SERVICE_URL}}` | the URL collected in Step 0.A |
+| `{{NN}}-{{name}}` / `{{anchor}}` | chapter file name + heading anchor for the FAQ source section |
+| `{{CATEGORY_TAG}}` | one of `SETUP / FEATURES / PARTNERS / NOTICE / USE CASES` (uppercase, kebab-case allowed) — derive from chapter grouping |
+| `{{INLINE_SVG_ICON}}` | inline SVG path data. The reference set in `manual-helpcenter.css` includes `rocket / gear / handshake / bell / bulb / book`. Choose one per category. |
+| `{{VIDEO_URL}}` / `{{CHANGELOG_URL}}` / `{{SUPPORT_URL}}` | optional — when not provided, omit the entire `.band` and `.cta` blocks |
+| `{{YEAR}}` | current year |
+
+### Category ↔ chapter grouping rule
+
+When generating the Help Center index, group chapters into 3–5 categories. Typical mapping:
+
+| Category | Chapters | Suggested icon |
+|----------|----------|----------------|
+| Setup | 01-getting-started, sign-up, environment-setup | rocket |
+| Features | core feature chapters | gear |
+| Partners (optional) | admin / partner-API / integration | handshake |
+| Notice | release-notes / changelog | bell |
+| Use cases | tutorials / advanced flows | bulb |
+
+Each `cat-card` links to the *first chapter* of its category. The category subtree is then navigated via the chapter sidebar TOC.
+
+### FAQ source
+
+Reuse the FAQ list authored in **Chapter NN-1: FAQ / Troubleshooting** (Section 4 template). Pick the top 4–6 entries by frequency or by `<details open>` marker. Each card's `href` points to the corresponding `#anchor` inside the FAQ chapter.
