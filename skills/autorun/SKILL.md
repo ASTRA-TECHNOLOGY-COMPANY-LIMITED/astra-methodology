@@ -514,17 +514,21 @@ Enter this stage only when tests passed (early exit). Unresolved failures (`MAX_
 Skill('pr-merge', '--auto')
 ```
 
-`/pr-merge --auto` auto-handles the following:
+`/pr-merge --auto` runs the two-phase workflow (v5.9+) end-to-end in a single invocation:
 
-| Stage | Handling |
-|---|---|
-| Commit uncommitted changes | auto (bypasses confirmation prompt) |
-| Branch sync (`staging→dev` only — `main→staging` excluded; promotion modes skip cascade entirely) | auto, halts on conflict (HITL) |
-| Create PR | auto (ASTRA template) |
-| Code review (feature-dev:code-reviewer agent) | auto |
-| Fix Critical/High issues (up to 3 iterations) | auto (Surgical Changes principle) |
-| Merge (final confirmation prompt) | auto-approve |
-| **Remove sprint worktree** | auto (return to main worktree (dev)) |
+| Phase | Step | Handling |
+|---|---|---|
+| Sprint Phase (sprint worktree) | Commit uncommitted changes | auto (bypasses confirmation prompt) |
+| Sprint Phase | Branch sync (`staging→dev` only — `main→staging` excluded; promotion modes skip cascade entirely) | auto, halts on conflict (HITL) |
+| Sprint Phase | Create PR | auto (ASTRA template) |
+| Sprint Phase | Code review (feature-dev:code-reviewer agent) | auto |
+| Sprint Phase | Fix Critical/High issues (up to 3 iterations) | auto (Surgical Changes principle) |
+| Sprint→Main handoff | `cd` to main worktree (Step 8.5 under `--auto`) | auto (skill performs the transition) |
+| Main Phase (main worktree) | Final merge confirmation prompt | auto-approve |
+| Main Phase | `gh pr merge` against dev | auto |
+| Main Phase | **Remove sprint worktree** | auto (cwd ends in main worktree (dev)) |
+
+> **Why two phases**: under `--auto` autorun never notices the boundary, but under normal `/pr-merge` (no `--auto`) Sprint Phase stops after the review loop and instructs the user to `cd` to the main worktree and re-invoke. This keeps the destructive merge action observable from the main worktree even outside autorun.
 
 ### 8.2 HITL trigger conditions (true blockers)
 
@@ -535,6 +539,8 @@ In the following situations, `/pr-merge --auto` halts and requests user interven
 - **Rebase conflict** (target branch → work branch): same
 - **Critical review issues ≥ 1 remain after MAX iterations**: merge blocked (`gh pr merge` not called)
 - **MAX iterations reached + only High issues remain**: `/pr-merge`'s own `AskUserQuestion` fires (a/b/c choice). autorun surfaces that prompt to the user as-is — does not bypass it.
+- **Multiple pending sprint PRs on Main Phase entry** (rare): when `/pr-merge --auto` `cd`'s to the main worktree and the auto-detection in Step 3.5 finds more than one open `feat/sprint-*` PR against `dev`, `/pr-merge` asks the user to pick which one to merge (HITL preserved even under `--auto`, because picking the wrong one is destructive). Normally autorun only produces a single sprint PR, so this trigger rarely fires.
+- **Main worktree on a non-shared branch**: the `--auto` handoff (Step 8.5) verifies the main worktree is on `main`/`master`/`staging`/`dev`. If it is on a custom branch, the skill aborts rather than risk a merge into the wrong base.
 
 ### 8.3 Capture results
 Extract the following from the `/pr-merge --auto` output and save in the `MERGE_RESULT` variable:
@@ -551,7 +557,7 @@ Extract the following from the `/pr-merge --auto` output and save in the `MERGE_
 
 ### 9.0 Ensure working-directory consistency
 
-When Stage 8's `/pr-merge --auto` succeeds and removes the worktree, it `cd`s into the main worktree. However, it is not guaranteed that the Skill tool propagates a sub-skill's cwd change to the parent context. Before authoring the Stage 9.1 report, explicitly `cd` into the main worktree:
+Under the v5.9+ two-phase policy, Stage 8's `/pr-merge --auto` performs the Sprint→Main handoff itself (Step 8.5 `--auto` `cd`s to the main worktree) and then removes the sprint worktree at the end of Step 9. After the sub-skill returns, the parent autorun context is *expected* to already be in the main worktree — but it is not guaranteed that the Skill tool propagates a sub-skill's cwd change to the parent context. Before authoring the Stage 9.1 report, explicitly `cd` into the main worktree:
 
 ```bash
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
@@ -677,8 +683,11 @@ Write the following to `$REPORT_DIR/pipeline-report.md`:
 
 {On unresolved failure}:
   ❗ /pr-merge could not auto-execute.
-  Cause: {Critical issues remain / merge conflict / environment error / test failure}
-  After resolving, manually run /pr-merge inside the sprint worktree.
+  Cause: {Critical issues remain / merge conflict / environment error / test failure / non-shared main branch}
+  After resolving:
+    1. cd into the sprint worktree and run /pr-merge (Sprint Phase: PR refresh + review fixes).
+    2. cd into the main worktree and re-run /pr-merge to finalize the merge.
+  Or run /pr-merge --auto from the sprint worktree to chain both phases again.
 ═══════════════════════════════════════════════════════
 ```
 
@@ -781,7 +790,7 @@ Report this behavior to the user:
 | `/test-scenario` | Invoked in Stage 5 (*before* implementation, TDD flow) |
 | `/test-run` | Invoked in Stage 7 (re-invoked each iteration, up to MAX_ITER times) |
 | `tester-persona` | Invoked only at Stage 7.5's *AMBIGUOUS* branch (failure classification) |
-| `/pr-merge` | **Auto-invoked in Stage 8 as `/pr-merge --auto`** (only when tests pass). Not invoked on unresolved failure. Worktree removal is handled by /pr-merge. |
+| `/pr-merge` | **Auto-invoked in Stage 8 as `/pr-merge --auto`** (only when tests pass). Not invoked on unresolved failure. Under v5.9+ two-phase policy, `--auto` runs Sprint Phase (PR + review + fix) → auto-cd to main worktree → Main Phase (merge) → worktree removal, end-to-end in one invocation. Without `--auto`, Sprint Phase stops after the review loop and the user manually finalizes from the main worktree. |
 | `/check-naming`, `/check-convention` | Replaced by auto-applied skills + validation agents |
 
 ## ASTRA 4-principle application
