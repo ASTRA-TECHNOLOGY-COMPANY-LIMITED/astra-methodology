@@ -36,7 +36,7 @@ Q2. Documentation target (required) — feature scope
 3. Validate URL form (starts with `http://` or `https://`) — on malformed input, re-prompt
 4. Invoke `Skill manual-generator` with both values:
    ```
-   Skill({ skill: "manual-generator", args: "{SERVICE_URL} {TARGET_FEATURE}" })
+   Skill('manual-generator', '{SERVICE_URL} {TARGET_FEATURE}')
    ```
 
 The skill itself handles:

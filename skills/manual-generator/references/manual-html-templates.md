@@ -310,7 +310,10 @@ Brand colors and gradient come from `assets/tokens.css` via `var(--primary-blue)
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{PROJECT_NAME}} — Help Center</title>
+  <title>{PROJECT_NAME} — Help Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/tokens.css">
   <link rel="stylesheet" href="assets/manual-base.css">
   <link rel="stylesheet" href="assets/manual-components.css">
@@ -321,13 +324,13 @@ Brand colors and gradient come from `assets/tokens.css` via `var(--primary-blue)
   <header class="hc-header">
     <div class="hc-wrap nav">
       <a class="brand" href="index.html">
-        <span class="brand-mark">{{PROJECT_NAME}}</span>
+        <span class="brand-mark">{PROJECT_NAME}</span>
         <span class="sep"></span>
         <span class="tag">Help Center</span>
       </a>
       <nav class="nav-right">
         <a class="nav-link" href="index.html">Home</a>
-        <a class="nav-link" href="{{SERVICE_URL}}" target="_blank" rel="noopener">Go to {{PROJECT_NAME}} →</a>
+        <a class="nav-link" href="{SERVICE_URL}" target="_blank" rel="noopener">Go to {PROJECT_NAME} →</a>
       </nav>
     </div>
   </header>
@@ -335,7 +338,7 @@ Brand colors and gradient come from `assets/tokens.css` via `var(--primary-blue)
   <section class="hero">
     <div class="hc-wrap">
       <h1 class="hero-title">How can we <span class="grad">help you?</span></h1>
-      <p class="hero-sub">{{TAGLINE}}</p>
+      <p class="hero-sub">{TAGLINE}</p>
       <div class="search" role="search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input id="hcSearch" type="search" placeholder="Search guides..." aria-label="Search guides">
@@ -350,9 +353,9 @@ Brand colors and gradient come from `assets/tokens.css` via `var(--primary-blue)
       <h2 class="sec-title">Top questions</h2>
       <div class="faq-grid" id="faqGrid">
         <!-- repeated per FAQ -->
-        <a class="faq-card" href="chapters/{{NN}}-{{name}}.html#{{anchor}}">
+        <a class="faq-card" href="chapters/{NN}-{name}.html#{anchor}">
           <span class="faq-badge">NEW</span>
-          <span class="faq-q">{{question}}</span>
+          <span class="faq-q">{question}</span>
           <span class="faq-arrow">→</span>
         </a>
       </div>
@@ -367,13 +370,13 @@ Brand colors and gradient come from `assets/tokens.css` via `var(--primary-blue)
       </div>
       <div class="col-grid" id="colGrid">
         <!-- repeated per category -->
-        <a class="cat-card" href="chapters/{{first-chapter-of-category}}.html">
+        <a class="cat-card" href="chapters/{first-chapter-of-category}.html">
           <div class="cat-ic">
-            <svg viewBox="0 0 24 24" aria-hidden="true">{{INLINE_SVG_ICON}}</svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true">{INLINE_SVG_ICON}</svg>
           </div>
-          <span class="cat-tag">{{CATEGORY_TAG}}</span>
-          <h3 class="cat-title">{{category title}}</h3>
-          <p class="cat-meta">{{N}} articles</p>
+          <span class="cat-tag">{CATEGORY_TAG}</span>
+          <h3 class="cat-title">{category title}</h3>
+          <p class="cat-meta">{N} articles</p>
         </a>
       </div>
       <p class="no-result" id="noResult" hidden>No results found.</p>
@@ -384,18 +387,18 @@ Brand colors and gradient come from `assets/tokens.css` via `var(--primary-blue)
       <div class="banner grad">
         <div class="bl">
           <div class="blabel">— VIDEO GUIDE —</div>
-          <h3>{{VIDEO_TITLE}}</h3>
-          <p>{{VIDEO_DESC}}</p>
+          <h3>{VIDEO_TITLE}</h3>
+          <p>{VIDEO_DESC}</p>
         </div>
-        <a class="btn" href="{{VIDEO_URL}}">Watch video guides →</a>
+        <a class="btn" href="{VIDEO_URL}">Watch video guides →</a>
       </div>
       <div class="banner soft">
         <div class="bl">
           <div class="blabel">— CHANGELOG —</div>
-          <h3>{{CHANGELOG_TITLE}}</h3>
-          <p>{{CHANGELOG_DESC}}</p>
+          <h3>{CHANGELOG_TITLE}</h3>
+          <p>{CHANGELOG_DESC}</p>
         </div>
-        <a class="btn" href="{{CHANGELOG_URL}}">See updates →</a>
+        <a class="btn" href="{CHANGELOG_URL}">See updates →</a>
       </div>
     </section>
 
@@ -403,15 +406,15 @@ Brand colors and gradient come from `assets/tokens.css` via `var(--primary-blue)
     <section class="hc-section">
       <div class="cta">
         <h3>Didn't find what you need?</h3>
-        <p>{{SUPPORT_CTA_DESC}}</p>
-        <a class="btn-primary" href="{{SUPPORT_URL}}">Contact us</a>
+        <p>{SUPPORT_CTA_DESC}</p>
+        <a class="btn-primary" href="{SUPPORT_URL}">Contact us</a>
       </div>
     </section>
   </main>
 
   <footer class="hc-footer">
     <div class="hc-wrap">
-      <p class="copy">© {{YEAR}} {{PROJECT_NAME}}. Generated by ASTRA methodology.</p>
+      <p class="copy">© {YEAR} {PROJECT_NAME}. Generated by ASTRA methodology.</p>
     </div>
   </footer>
 
@@ -435,14 +438,14 @@ Brand colors and gradient come from `assets/tokens.css` via `var(--primary-blue)
 
 | Placeholder | Source |
 |-------------|--------|
-| `{{PROJECT_NAME}}` | `CLAUDE.md` project name (Step 0.B) |
-| `{{TAGLINE}}` | one-line service description, extracted from blueprint overview or planner market-analysis |
-| `{{SERVICE_URL}}` | the URL collected in Step 0.A |
-| `{{NN}}-{{name}}` / `{{anchor}}` | chapter file name + heading anchor for the FAQ source section |
-| `{{CATEGORY_TAG}}` | one of `SETUP / FEATURES / PARTNERS / NOTICE / USE CASES` (uppercase, kebab-case allowed) — derive from chapter grouping |
-| `{{INLINE_SVG_ICON}}` | inline SVG path data. The reference set in `manual-helpcenter.css` includes `rocket / gear / handshake / bell / bulb / book`. Choose one per category. |
-| `{{VIDEO_URL}}` / `{{CHANGELOG_URL}}` / `{{SUPPORT_URL}}` | optional — when not provided, omit the entire `.band` and `.cta` blocks |
-| `{{YEAR}}` | current year |
+| `{PROJECT_NAME}` | `CLAUDE.md` project name (Step 0.B) |
+| `{TAGLINE}` | one-line service description, extracted from blueprint overview or planner market-analysis |
+| `{SERVICE_URL}` | the URL collected in Step 0.A |
+| `{NN}-{name}` / `{anchor}` | chapter file name + heading anchor for the FAQ source section |
+| `{CATEGORY_TAG}` | one of `SETUP / FEATURES / PARTNERS / NOTICE / USE CASES` (uppercase, kebab-case allowed) — derive from chapter grouping |
+| `{INLINE_SVG_ICON}` | inline SVG path data. The reference set in `manual-helpcenter.css` includes `rocket / gear / handshake / bell / bulb / book`. Choose one per category. |
+| `{VIDEO_URL}` / `{CHANGELOG_URL}` / `{SUPPORT_URL}` | optional — when not provided, omit the entire `.band` and `.cta` blocks |
+| `{YEAR}` | current year |
 
 ### Category ↔ chapter grouping rule
 
