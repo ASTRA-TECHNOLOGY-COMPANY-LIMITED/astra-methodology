@@ -212,10 +212,14 @@ Specifically do NOT ask the user about: variable/function names, code formatting
 > Boots the server using the sprint-specific ports in `.astra-worktree.env` and runs tests.
 > When the tests finish, the server processes on those ports are also cleaned up automatically.
 
-### Z.2 Merge to dev
+### Z.2 Merge to dev (two-phase, v5.9+)
 /pr-merge
 
-> Merges the sprint branch into dev and removes the worktree. The user is automatically returned to the main worktree (dev).
+> Sprint Phase: runs commit → push → PR → code review → fix loop inside this worktree, then stops.
+>
+> Once Sprint Phase completes, follow the printed `cd` command to move to the main worktree and re-invoke `/pr-merge` — it will auto-detect the pending sprint PR (base=dev) and finalize the merge, then remove this sprint worktree.
+>
+> Tip: `/pr-merge --auto` chains both phases end-to-end in one invocation (sprint-init's auto pipeline and /autorun do this automatically).
 ```
 
 ### Step 2.5: Create Sprint Progress Tracker
@@ -623,15 +627,22 @@ Persist the state one more time just before the merge. `/pr-merge --auto` itself
 
 Invoke `Skill('pr-merge', '--auto')`.
 
-`/pr-merge --auto` handles automatically:
+`/pr-merge --auto` handles the two-phase workflow (v5.9+) end-to-end:
+
+Sprint Phase (inside the sprint worktree):
 - Commit the changes (confirmation prompts auto-approved)
 - Create the PR
 - Code review → issue fixes → re-review cycle (up to 3 times)
 - Halt on remaining Critical issues (true HITL)
-- Merge (final confirmation prompt auto-approved)
-- **Auto-remove the worktree** + return to the main worktree (dev)
 
-> Since sprint-init is running inside the sprint worktree, after the merge completes, /pr-merge removes the very worktree it is in. The user is automatically returned to the main worktree (dev) upon merge completion.
+Sprint→Main handoff (Step 8.5 under `--auto`):
+- `/pr-merge` itself `cd`'s to the main worktree (the skill performs the transition under `--auto`).
+
+Main Phase (in the main worktree):
+- Merge (final confirmation prompt auto-approved)
+- **Auto-remove the worktree** + the cwd ends in the main worktree (dev)
+
+> Since sprint-init is running inside the sprint worktree, after the merge completes, /pr-merge removes the very worktree it is in. The user is automatically returned to the main worktree (dev) upon merge completion. Without `--auto`, Sprint Phase would stop after the review loop and the user would `cd` to the main worktree to re-invoke `/pr-merge` — but `--auto` (the default for sprint-init's pipeline) chains both phases automatically.
 
 ##### 5.6.C Record merge result in `auto-state.yaml`
 
@@ -678,7 +689,7 @@ After the report is printed, preserve `auto-state.yaml` (for debug/reproduction)
 
 - Existing sprint files are not overwritten.
 - The prompt map is filled in collaboratively by VA and PE during the Planning meeting.
-- Once work, tests, and merge inside the sprint worktree complete, `/pr-merge` auto-removes the worktree. If the worktree remains due to a conflict or interruption, the user resolves it and re-invokes `/pr-merge` to continue.
+- Once work, tests, and merge inside the sprint worktree complete, `/pr-merge` auto-removes the worktree. **v5.9+**: the actual `gh pr merge` runs from the main worktree — manual `/pr-merge` invocations stop after Sprint Phase (review loop) and instruct the user to `cd` to the main worktree to finalize. `--auto` invocations (sprint-init's pipeline, autorun) chain both phases automatically. If the worktree remains due to a conflict or interruption, the user resolves it and re-invokes `/pr-merge` to continue.
 - The user must not edit `.astra-worktree.env` — `/test-run` sources it automatically.
 - **Caveats when using `--auto` mode**:
   - The blueprint must be prepared in advance (sprint-init does not create blueprints).

@@ -1,20 +1,28 @@
 ---
 name: pr-merge
-description: "Runs an automated iterative cycle from PR creation through code review, issue fixes, and merge. Handles the commit → push → PR-create → code-review → fix → re-review → merge → worktree-removal workflow in a single command. With the --auto flag, when invoked in unattended mode (autorun, etc.), every confirmation prompt is auto-approved except for safe HITL points (gh authentication, merge conflicts, Critical issues)."
+description: "Runs an automated iterative cycle from PR creation through code review, issue fixes, and merge. In a sprint worktree (non-main), this command handles only the commit → push → PR-create → code-review → fix → re-review phase and then stops; the actual merge must be executed from the main worktree by re-invoking `/pr-merge` (the command auto-detects pending sprint PRs whose base is dev). With the --auto flag (e.g., from autorun), Sprint Phase completes and the command then auto-cd's into the main worktree to continue with Main Phase (merge + worktree removal) in a single invocation. Every confirmation prompt is auto-approved except for safe HITL points (gh authentication, merge conflicts, Critical issues)."
 argument-hint: "[max-iterations] [--no-review] [--draft] [--auto] [--patch|--minor|--major] [--staging] [--main]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 ---
 
-# ASTRA PR Review & Merge Workflow (v5.0+)
+# ASTRA PR Review & Merge Workflow (v5.9+)
 
 Automates the entire cycle from commit through code review, issue fixes, merge, and worktree removal.
 The review → fix → re-review loop runs automatically up to the max iteration count.
 
 **Branch strategy**: `feature → dev → staging → main`
 
-**Worktree isolation policy (v5.0+)**: sprint-unit work happens inside the `.astra-worktrees/sprint-<N>-<name>/` worktree created by `/sprint-init`. `/pr-merge` must be invoked from inside that worktree; immediately after merging into a shared branch (dev), it automatically removes the worktree and returns to the main worktree (dev). The main worktree always stays on a shared branch (main/staging/dev/master), so other Claude Code sessions are not affected by branch switches. Source the helpers from `$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh`.
+**Two-phase policy (v5.9+)**: To keep the merge action observable from the main worktree (where the cascade, dev branch, and version bumps live), `/pr-merge` splits into two phases keyed off the current worktree location:
 
-> **v5.0+ change**: `--start` mode is removed. All worktree creation is handled by `/sprint-init`. For users who worked one-off in the main worktree without `/sprint-init` and then invoked `/pr-merge`, Step 4.1 handles the fallback automatically.
+- **Sprint Phase** — invoked from inside a sprint worktree (`.astra-worktrees/sprint-<N>-<name>/`). Runs commit → push → PR creation → code review → automatic Critical/High fixes (the iteration loop). **Stops immediately after the review loop converges.** The actual `gh pr merge` and worktree removal are NOT performed here. The user is instructed to `cd` to the main worktree and re-invoke `/pr-merge` to finalize the merge.
+- **Main Phase** — invoked from the main worktree (on a shared branch: main/master/staging/dev). Auto-detects open PRs whose base is `dev` and head is a sprint branch (`feat/sprint-*`). If exactly one such PR exists, merges it; if multiple exist, asks the user to pick; if none exists, falls back to the legacy one-shot path (Step 4.1 temporary worktree).
+- **`--auto` flag** — when Sprint Phase completes successfully and the user passed `--auto`, the skill itself `cd`'s into the main worktree and continues directly into Main Phase (merge + cleanup), so `/autorun` and `/sprint-init --auto` still end in a single invocation as before.
+
+**Worktree isolation policy (v5.0+)**: sprint-unit work happens inside the `.astra-worktrees/sprint-<N>-<name>/` worktree created by `/sprint-init`. Immediately after Main Phase merges into a shared branch (dev), it automatically removes the worktree. The main worktree always stays on a shared branch (main/staging/dev/master), so other Claude Code sessions are not affected by branch switches. Source the helpers from `$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh`.
+
+> **v5.0+ change**: `--start` mode is removed. All worktree creation is handled by `/sprint-init`. For users who worked one-off in the main worktree without `/sprint-init` and then invoked `/pr-merge`, Step 4.1 handles the fallback automatically (one-shot: PR creation + merge in a single invocation).
+>
+> **v5.9+ change**: the merge step (`gh pr merge`) only runs from the main worktree. Inside a sprint worktree, `/pr-merge` finishes after the review loop and asks the user to re-invoke it from the main worktree (unless `--auto` is set, in which case the skill performs the cross-worktree continuation itself).
 
 ## Execution Procedure
 
@@ -31,22 +39,27 @@ Parse `$ARGUMENTS` to determine options:
 - **--main**: promotion mode — merge `staging` → `main`
 
 **Mode decision**:
-- `--staging` or `--main` → promotion mode
-- Otherwise → default mode (sprint worktree → dev merge)
+- `--staging` or `--main` → promotion mode (main-worktree only)
+- Otherwise → default mode. Phase is decided by current location:
+  - Inside a sprint worktree (`astra_is_isolated_worktree` is true) → **Sprint Phase**
+  - In the main worktree on a shared branch (main/master/staging/dev) → **Main Phase** (auto-detect pending sprint PR; if none, Step 4.1 one-shot fallback)
+  - In the main worktree on a work branch (compatibility) → one-shot fallback handled as before
 
 **`--auto` flag policy**:
 
 | Point | `--auto` behavior | Notes |
 |-------|-------------------|-------|
-| Step 6 commit confirmation (line 233) | auto-approve → commit immediately | change summary is still printed |
-| Step 8.3 final-merge confirmation (line 339) | auto-approve → merge immediately | PR metadata is still printed |
+| Step 6 commit confirmation (Sprint Phase) | auto-approve → commit immediately | change summary is still printed |
+| Step 8.5 Sprint Phase → Main Phase handoff | `cd` to main worktree + continue automatically | normal mode prints guidance and exits |
+| Step 8.3 final-merge confirmation (Main Phase) | auto-approve → merge immediately | PR metadata is still printed |
 | Step 8.1 MAX reached + 0 Critical | **HITL preserved** (the existing AskUserQuestion as-is) | remaining High requires user judgment |
 | Step 8.1 MAX reached + ≥ 1 Critical | **always halt** | unconditional, auto or manual |
 | gh CLI not authenticated | **halt** + guidance | true blocker (auth cannot be automated) |
 | Cascade / rebase merge conflict | **halt** + show conflicting files | true blocker (merge requires judgment) |
-| dev branch absent on remote (line 91) | auto-create and proceed | safe default |
+| dev branch absent on remote | auto-create and proceed | safe default |
+| Multiple pending sprint PRs in Main Phase | `AskUserQuestion` (HITL preserved) | even `--auto` cannot pick blindly — picking the wrong PR is destructive |
 
-> `--auto` does not bypass *safety gates* — on true blockers (auth, conflict, Critical), it halts just like normal mode.
+> `--auto` does not bypass *safety gates* — on true blockers (auth, conflict, Critical, ambiguous PR), it halts just like normal mode.
 
 Validate the following preconditions:
 
@@ -69,7 +82,9 @@ Validate the following preconditions:
      ```bash
      astra_ensure_main_worktree || exit 1
      ```
-   - **Default mode**: invocation from inside a sprint worktree is the normal flow. If invoked from the main worktree, Step 4.1 auto-creates a temporary isolated worktree as a fallback. If invoked from inside a sprint worktree, Step 4 recognizes the current branch as the sprint branch and goes straight to Step 5.
+   - **Default mode**: phase is decided by location.
+     - **Inside a sprint worktree** → Sprint Phase (Step 4 → Step 5 → … → Step 8.2 → Step 8.5 handoff). The merge itself is deferred to Main Phase.
+     - **In the main worktree** → Main Phase. Step 3.5 first checks whether an open PR with base `dev` and a `feat/sprint-*` head exists. If yes, jump to Main Phase merge (Step M1). If no, fall through to Step 4 / Step 4.1 (one-shot fallback for users who edited the main worktree directly).
 
 ### Step 1.1: Auto-select target branch (default mode only)
 
@@ -135,11 +150,40 @@ When the cascade should run (default mode only):
 ### Step 3: Per-mode branching
 
 - **Promotion mode** (`--staging` / `--main`): proceed to **Step 10**
-- **Default mode**: proceed to **Step 4**
+- **Default mode**: proceed to **Step 3.5** (Main-Phase pending-PR detection) when in the main worktree, otherwise proceed to **Step 4** (Sprint Phase).
+
+### Step 3.5: Main-Phase entry — detect pending sprint PR
+
+Skip this step when invoked from inside a sprint worktree (`astra_is_isolated_worktree` returns true) — Sprint Phase always proceeds to Step 4.
+
+In the main worktree on a shared branch (main/master/staging/dev), search for an open sprint PR awaiting merge:
+
+```bash
+PENDING_PRS=$(gh pr list --base dev --state open --json number,headRefName,title,url \
+  --jq '[.[] | select(.headRefName | test("^feat/sprint-"))]')
+PENDING_COUNT=$(echo "$PENDING_PRS" | jq 'length')
+```
+
+Branch on count:
+
+- **`PENDING_COUNT == 0`** (no pending sprint PR): the user is in the main worktree without a sprint PR awaiting merge. This is the legacy one-shot path — fall through to **Step 4** (which routes to Step 4.1 fallback when the current branch is a shared branch). No `gh pr merge` is invoked unless a PR is created later in Step 7.
+- **`PENDING_COUNT == 1`** (exactly one pending sprint PR): auto-select that PR. Save:
+  ```bash
+  PR_NUMBER=$(echo "$PENDING_PRS" | jq -r '.[0].number')
+  PR_URL=$(echo "$PENDING_PRS" | jq -r '.[0].url')
+  BRANCH_NAME=$(echo "$PENDING_PRS" | jq -r '.[0].headRefName')
+  STARTED_FROM_ISOLATED=1     # so Step 9 removes the sprint worktree
+  STARTED_FROM_SPRINT=0       # we are merging from the main worktree, not from inside the sprint worktree
+  MAIN_PHASE_ENTRY=1          # Step 8.3 will jump straight to Step 8.4 (no Sprint Phase steps re-run)
+  ```
+  Print the PR summary (title, head, URL, change file count via `gh pr diff $PR_NUMBER --name-only | wc -l`) and proceed to **Step M1** (Main-Phase merge).
+- **`PENDING_COUNT >= 2`** (multiple pending sprint PRs): the choice is destructive — print the list and ask via **AskUserQuestion** (HITL preserved even in `--auto`). Save the selected PR's metadata as above (with the same flags) and proceed to **Step M1**.
+
+> **Why HITL on multi-PR even with `--auto`**: merging the wrong PR cascades to dev, triggers worktree removal of the wrong sprint, and is hard to undo. The cost of one prompt is far lower than the cost of a wrong merge.
 
 ---
 
-## Default mode (feature → {target-branch})
+## Sprint Phase (feature → PR creation + review loop)
 
 ### Step 4: Verify the work branch
 
@@ -156,6 +200,7 @@ Three branching cases:
   WT_PATH="$(pwd)"
   BRANCH_NAME="$CURRENT_BRANCH"
   STARTED_FROM_ISOLATED=1
+  STARTED_FROM_SPRINT=1   # ← real sprint worktree; Step 8.3 will hand off to Main Phase (or auto-cd under --auto)
   ```
   > **Note**: the sprint worktree's branch name is typically `feat/sprint-<N>-<name>`, but isolated worktrees starting with other prefixes (`fix/`, `docs/`, etc.) are handled the same way.
 - **Main worktree + shared branch (main/master/staging/dev)**: fallback case — direct dev changes without `/sprint-init`. Auto-create a temporary isolated worktree → proceed to **Step 4.1**.
@@ -164,6 +209,7 @@ Three branching cases:
   WT_PATH="$(pwd)"
   BRANCH_NAME="$CURRENT_BRANCH"
   STARTED_FROM_ISOLATED=0
+  STARTED_FROM_SPRINT=0   # ← compat case: in-place merge in Step 8.3
   ```
 
 ### Step 4.1: Fallback — auto-create a temporary isolated worktree
@@ -212,7 +258,7 @@ Three branching cases:
    ```
 5. From here on, all git operations (commit, push, post-merge cleanup) happen inside `$WT_PATH`. In subsequent steps of this SKILL.md, "current branch" means `$BRANCH_NAME` checked out in the isolated worktree.
 6. `{branch-name}` refers to `$BRANCH_NAME` (the actual name decided by the helper); `{work-tree-path}` refers to `$WT_PATH`. A numeric suffix may have been appended, so subsequent steps use *the helper return value, not the intended name*.
-7. Set the `STARTED_FROM_ISOLATED=1` flag (used in Step 9 to decide worktree removal and local-branch deletion).
+7. Set the `STARTED_FROM_ISOLATED=1` flag (used in Step 9 to decide worktree removal and local-branch deletion). Also set `STARTED_FROM_SPRINT=0` — this is a fallback temp worktree (not a real sprint worktree), so Step 8.3 must route to in-place merge, not to the Sprint→Main handoff.
 
 ### Step 5: Sync the target branch
 
@@ -273,6 +319,13 @@ EOF
 - If `--draft` is specified, add the `--draft` flag
 - The PR title must be ≤ 70 chars
 - Print the PR URL
+
+After the PR exists (whether re-used or just created), capture its metadata so later steps (especially Step 8.5's handoff message and Step M1) can refer to it directly:
+
+```bash
+PR_URL=$(gh pr view "$BRANCH_NAME" --json url --jq '.url')
+PR_NUMBER=$(gh pr view "$BRANCH_NAME" --json number --jq '.number')
+```
 
 **Proceed to Step 8.**
 
@@ -339,16 +392,34 @@ Based on the review results, decide the next action:
 
 > **Loop integrity**: this 5-attempt auto-debug loop is based on the principle that "an LLM can loop autonomously when there is a strong success criterion." With a weak criterion ("just make it work") the loop diverges — so every iteration has a clear verification gate of *review pass* or *test pass*.
 
-### Step 8.3: PR-merge confirmation
+### Step 8.3: Phase decision point
+
+The review loop has converged (Critical + High = 0, or the user accepted the remaining issues in Step 8.1). Decide how to proceed based on the start-state flags set in Step 4 / Step 4.1 / Step 3.5:
+
+- **Promotion mode (`--staging` / `--main`)**: proceed to **Step 8.4** (in-place merge — promotion always runs from the main worktree).
+- **`STARTED_FROM_SPRINT=1`** (came from a real sprint worktree created by `/sprint-init`): proceed to **Step 8.5** (Sprint Phase ends; merge is deferred to Main Phase). This is the case the new two-phase policy is designed for.
+- **`STARTED_FROM_SPRINT=0`** (Step 4.1 temp worktree, Step 4 main-worktree compat, or Step 3.5 Main-Phase entry): proceed to **Step 8.4** (in-place merge — we are operating relative to the main worktree).
+
+```bash
+case "$MODE" in
+  --staging|--main) NEXT_STEP=8.4 ;;
+  *)
+    if [ "${STARTED_FROM_SPRINT:-0}" = "1" ]; then
+      NEXT_STEP=8.5
+    else
+      NEXT_STEP=8.4
+    fi ;;
+esac
+```
+
+### Step 8.4: PR merge (Main Phase / promotion mode)
 
 Print the PR URL, the review-result summary (pass/fail, iteration count), and the changed-file count.
 
 - **Normal mode**: ask for final merge confirmation via **AskUserQuestion**. On decline, abort the workflow.
-- **`--auto` mode**: skip the confirmation prompt and proceed to Step 8.4.
+- **`--auto` mode**: skip the confirmation prompt and proceed directly to the merge.
 
-### Step 8.4: PR merge
-
-After user confirmation, merge the PR:
+After user confirmation (or under `--auto`), merge the PR:
 
 1. If the PR is a Draft, first change to Ready via `gh pr ready`
 2. Run the merge via `gh pr merge --merge`
@@ -358,15 +429,78 @@ After user confirmation, merge the PR:
 
 **Mode check**: if `--staging` or `--main` is specified, proceed to **Step 11**; otherwise proceed to **Step 9**.
 
+### Step 8.5: Sprint Phase → Main Phase handoff
+
+The review loop has converged inside a sprint worktree. The merge itself runs from the main worktree (so the cascade, dev sync, and worktree removal happen in a stable location). Branch on the flag:
+
+- **Normal mode**: print the handoff message and exit cleanly. The sprint worktree is preserved (the user's commits and PR are intact; only the merge is pending). Resolve `MAIN_ROOT` first so the printed `cd` path is concrete and copy-pastable:
+  ```bash
+  MAIN_ROOT=$(astra_main_worktree_root)
+  ```
+  ```
+  ═══════════════════════════════════════════════════════
+  ✅ Sprint Phase complete — review loop converged
+
+  📦 Branch:     {BRANCH_NAME}
+  🔗 PR:         {PR URL}
+  🔁 Review iterations: {N}
+  🛠  Fixed issues: Critical 0 / High 0 (remaining as accepted)
+
+  ▶︎  Next step (merge runs in the main worktree):
+
+      cd "{MAIN_ROOT}"
+      /pr-merge
+
+      The re-invoked /pr-merge will auto-detect this PR (#{PR_NUMBER}),
+      ask for final merge confirmation, perform the merge, and remove
+      the sprint worktree.
+  ═══════════════════════════════════════════════════════
+  ```
+  After printing, **exit the workflow** (do NOT call `gh pr merge`, do NOT remove the worktree).
+
+- **`--auto` mode**: continue automatically. The skill itself performs the cross-worktree transition so that `/autorun` and `/sprint-init --auto` still complete end-to-end in one invocation:
+  ```bash
+  MAIN_ROOT=$(astra_main_worktree_root)
+  if [ -z "$MAIN_ROOT" ] || [ ! -d "$MAIN_ROOT" ]; then
+    echo "ERROR: cannot determine the main worktree path" >&2
+    exit 1
+  fi
+  cd "$MAIN_ROOT"
+  # Ensure the main worktree is on a shared branch (it should be — the user
+  # never branched off main/dev/staging/master from the main worktree under
+  # the v5.0+ policy). If somehow detached, abort with a clear message.
+  CURRENT_MAIN_BRANCH=$(git branch --show-current)
+  case "$CURRENT_MAIN_BRANCH" in
+    main|master|staging|dev) : ;;
+    *)
+      echo "ERROR: main worktree is on '$CURRENT_MAIN_BRANCH' (expected main/master/staging/dev). Aborting --auto handoff." >&2
+      exit 1
+      ;;
+  esac
+  ```
+  Then proceed to **Step M1** (Main-Phase merge of the sprint PR just produced). `BRANCH_NAME`, `PR_URL`, `PR_NUMBER`, and `STARTED_FROM_ISOLATED=1` are already set from Sprint Phase.
+
+### Step M1: Main-Phase merge (entry from Step 3.5 or Step 8.5)
+
+This step exists for two callers:
+- **Step 3.5 → M1**: the user re-invoked `/pr-merge` from the main worktree, and exactly one (or a user-picked) pending sprint PR was found.
+- **Step 8.5 → M1**: `--auto` transitioned from Sprint Phase directly to here.
+
+Both callers have `PR_NUMBER`, `PR_URL`, `BRANCH_NAME`, and `STARTED_FROM_ISOLATED=1` set, and the current working directory is the main worktree.
+
+> **No re-review by default**: Sprint Phase already ran the review loop. If the user pushed additional commits between Sprint Phase and Main Phase, the existing PR review on GitHub remains the source of truth — we do not re-spawn the `feature-dev:code-reviewer` agent here. Users who want a fresh review can re-run Sprint Phase by `cd`'ing back into the sprint worktree and invoking `/pr-merge` there.
+
+Proceed to **Step 8.4** (in-place merge using the variables set above).
+
 ---
 
-## Default mode: cleanup
+## Cleanup (Main Phase only)
 
 ### Step 9: Cleanup and version update
 
-After the merge, clean up the isolated worktree and the local environment. **First move into the main worktree** before cleaning up (an isolated worktree cannot remove itself):
+After the merge, clean up the isolated worktree and the local environment. Step 8.4 always runs from the main worktree under the new two-phase policy (Step 3.5 / Step 4.1 enter the main worktree; Step 8.5 `--auto` `cd`'s here before Step M1). Re-anchor to the main worktree defensively in case any tool boundary lost the cwd:
 
-1. **Move into the main worktree**:
+1. **Re-anchor in the main worktree**:
    ```bash
    MAIN_ROOT=$(astra_main_worktree_root)
    cd "$MAIN_ROOT"
@@ -499,23 +633,35 @@ EOF
 ## Quick Run Examples
 
 ```
-# Default — feature → selected branch merge, default dev (up to 3 review iterations)
+# Two-phase (v5.9+) — inside a sprint worktree
+#   Sprint Phase: commit → push → PR → review → fix loop, then exits.
+#   The merge runs from the main worktree.
+cd .astra-worktrees/sprint-3-user-auth
 /pr-merge
 
-# Up to 5 review iterations
+# After Sprint Phase, finalize the merge from the main worktree
+cd "$(git rev-parse --git-common-dir)/.."
+/pr-merge      # auto-detects the pending sprint PR (base=dev, head=feat/sprint-*)
+               # exactly one match → in-place merge confirmation
+               # multiple matches → AskUserQuestion picks which PR
+
+# Up to 5 review iterations (Sprint Phase only — Main Phase doesn't re-review)
 /pr-merge 5
 
-# Quick merge without code review
+# Quick merge without code review (Sprint Phase: skip review and stop; Main Phase: merge directly)
 /pr-merge --no-review
 
-# Create as Draft PR then review
+# Create as Draft PR then review (Sprint Phase)
 /pr-merge --draft
 
-# Run with minor version bump
+# Run with minor version bump (only matters on --main promotion)
 /pr-merge --minor
 
 # Option combinations
 /pr-merge 5 --minor --draft
+
+# Unattended end-to-end (Sprint Phase → auto-cd to main worktree → Main Phase → merge → worktree removal)
+/pr-merge --auto
 
 # Promotion: dev → staging
 /pr-merge --staging
@@ -533,8 +679,9 @@ EOF
 ## Notes
 
 - **Branch strategy**: promote code in the order `feature → dev → staging → main`.
-- **Worktree policy (v5.0+)**: sprint worktrees are created by `/sprint-init` (`.astra-worktrees/sprint-<N>-<name>/`). `/pr-merge` is invoked inside one, and right after merging into dev it auto-removes the worktree and returns to the main worktree (dev). Cross-shared-branch (main/staging/dev/master) cascade merges and promotions run directly in the main worktree. If the workflow halts due to a conflict, the worktree remains — after resolving, re-run `/pr-merge` to continue.
-- **Fallback flow**: when a user without `/sprint-init` invokes `/pr-merge` after making changes directly in the main worktree (dev), Step 4.1 auto-creates a temporary isolated worktree. Use this for one-off work; starting with `/sprint-init` is Recommended in general.
+- **Two-phase policy (v5.9+)**: `gh pr merge` only runs from the main worktree. Inside a sprint worktree, `/pr-merge` runs Sprint Phase (commit · push · PR · review · fix loop) and stops. The user then `cd`s into the main worktree and re-invokes `/pr-merge` — Step 3.5 auto-detects the pending sprint PR (`base=dev`, `head=feat/sprint-*`) and merges it. With `--auto`, the skill performs the cross-worktree transition itself so unattended pipelines still complete in one invocation.
+- **Worktree policy (v5.0+)**: sprint worktrees are created by `/sprint-init` (`.astra-worktrees/sprint-<N>-<name>/`). Right after Main Phase merges into dev, the sprint worktree is auto-removed (Step 9). Cross-shared-branch (main/staging/dev/master) cascade merges and promotions run directly in the main worktree. If the workflow halts due to a conflict, the worktree remains — after resolving, re-run `/pr-merge` to continue.
+- **Fallback flow (one-shot)**: when a user without `/sprint-init` invokes `/pr-merge` after making changes directly in the main worktree (dev), Step 3.5 finds no pending sprint PR, falls through to Step 4.1 which auto-creates a temporary isolated worktree, then runs Sprint Phase + Main Phase together in the same invocation (Step 8.3 routes to Step 8.4 in-place because we are conceptually in the main worktree's perspective). Use this for one-off work; starting with `/sprint-init` is Recommended in general.
 - **Common preprocessing**: in every mode, pull `main` / `staging` / `dev` before execution. The cascade merge itself is restricted to `staging → dev` and runs only in default mode — promotion modes (`--staging`, `--main`) skip the cascade entirely. `main → staging` is never auto-cascaded; operate on `main` only via the explicit `--main` promotion.
 - **Default mode**: the merge target branch is automatically set to `dev` (no user prompt). When running from `main`/`master`/`staging`/`dev`, a work branch is auto-created. The branch name is also auto-decided by analyzing the changes. If `{target-branch}` is missing on the remote, it is auto-created from the default branch.
 - **Promotion mode (`--staging`)**: promote `dev` → `staging`. Skips the work-branch creation/commit steps and focuses on PR-based merging.

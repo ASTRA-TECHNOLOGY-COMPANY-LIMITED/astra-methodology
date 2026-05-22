@@ -1,7 +1,7 @@
 ---
 name: manual-generator
-description: "Automatically generates a professional online service manual from a running service URL and project documents. Captures per-screen screenshots via Chrome MCP, extracts feature descriptions from blueprints / planner documents, and publishes step-by-step guides as an HTML package. Use when generating a manual, writing a user guide, or producing help documentation."
-argument-hint: "[target URL or feature name]"
+description: "Automatically generates a professional online service manual or help center from a running service URL and project documents. Captures per-screen screenshots via Chrome MCP, extracts feature descriptions from blueprints / planner documents, and publishes step-by-step guides as a self-contained HTML package under docs/manual/{feature-name}/. Use when generating a manual, writing a user guide, producing help documentation, or building a help center landing page."
+argument-hint: "<service-url> <feature-name|all>"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent, Skill, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__new_page, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__emulate, mcp__chrome-devtools__hover, mcp__chrome-devtools__fill_form, mcp__chrome-devtools__press_key
 ---
 
@@ -42,32 +42,25 @@ Analyzes a running service URL and project documents (blueprints, planner) and g
 
 #### A. Parse arguments
 
-Inspect `$ARGUMENTS`:
+Inspect `$ARGUMENTS`. The skill requires **both** a service URL and a target feature.
 
 | Argument form | Behavior |
 |---------------|----------|
-| URL (starts with `http://` or `https://`) | Use the URL as the target service |
-| Feature-name string (e.g., `auth`, `payment`) | Search for documents and URLs related to the feature |
-| URL + feature name (e.g., `http://localhost:3000 auth`) | Use both the URL and the feature scope |
-| _(none)_ | Ask for the target via `AskUserQuestion` |
+| `<url> <feature-name\|all>` (two positional tokens — order-insensitive: a token starting with `http(s)://` is the URL, the other is the feature) | Use both directly |
+| Only one token (URL only OR feature only) | Ask for the missing token via `AskUserQuestion` |
+| _(none)_ | Ask for both via `AskUserQuestion` |
 
-If no arguments are provided, ask:
+When asking, use two separate questions (do not bundle into one free-text prompt):
 
 ```
-## Generate service manual
+Q1. Service URL (required) — URL of the running service for screenshot capture
+    Example: http://localhost:3000
 
-Please provide the target service information.
-
-1. **Service URL** (optional): URL of the running service (e.g., http://localhost:3000)
-   → If a URL is provided, real screen screenshots will be captured.
-   → If no URL is provided, the manual will be generated from documents only.
-
-2. **Documentation target**: the feature to document (e.g., "auth feature", "payment system", "all")
-
-Input:
+Q2. Documentation target (required) — feature scope
+    Options: <feature-name listed from docs/blueprints> | "all"
 ```
 
-Extract `{SERVICE_URL}` and `{TARGET_FEATURE}` from the user's input.
+Extract `{SERVICE_URL}` and `{TARGET_FEATURE}` from the input. Both are mandatory at the **input-collection** layer — Step 0.C still allows a runtime fallback to document-only mode if the URL is unreachable (network-level recovery, not user choice).
 
 #### B. Load project context
 
@@ -83,12 +76,13 @@ Extract `{SERVICE_URL}` and `{TARGET_FEATURE}` from the user's input.
 
 #### C. Verify URL accessibility
 
-When `{SERVICE_URL}` is provided:
+URL is **required** at the input layer (Step 0.A), but a runtime accessibility failure (network down, service not started) is allowed to fall back to document-only mode — this is a recovery path, not a user choice:
 
 1. Navigate to the URL via `mcp__chrome-devtools__navigate_page`
 2. Wait for the page to load via `mcp__chrome-devtools__wait_for` (up to 15s)
-3. On failure, notify the user and switch to document-based mode:
-   "Cannot access the service. Please verify the service is running. Generate the manual from documents only?"
+3. On failure, notify the user and ask whether to:
+   - **Retry** (user starts the service, then `/manual-generator` re-runs), or
+   - **Proceed as document-only** (manual is generated from blueprints / planner / ux prototypes; Step 3 screenshot capture is skipped)
 
 #### D. Analyze document sources
 
@@ -135,7 +129,8 @@ Select (all: all, partial: 1,3):
 | 1 | Professional Enterprise | stable, trustworthy enterprise docs |
 | 2 | Refined Minimal | clean, refined minimal docs |
 | 3 | Soft & Warm | soft, friendly help-doc style |
-| 4 | Auto | choose automatically based on project traits |
+| 4 | Help Center | search-driven landing — hero search + FAQ grid + category cards + banner CTA (see references/manual-html-templates.md §6 and references/manual-css-template.md §5) |
+| 5 | Auto | choose automatically based on project traits |
 
 ### 4. Responsive screenshots
 | # | Option |
@@ -304,6 +299,11 @@ Generate the following files based on the `/frontend-design` output. Detailed co
    - Hide sidebar / header / nav
    - Avoid page-breaks in screenshots
    - Print link URLs as text
+
+4. **`assets/manual-helpcenter.css`** — *only when `DESIGN_TONE = Help Center`*:
+   - Generate from `references/manual-css-template.md` §5 (hero/search, FAQ grid, category cards, banner CTA, contact CTA, footer + dark-mode overrides)
+   - Inline SVG icon set (rocket / gear / handshake / bell / bulb / book) is also in §5
+   - Chapter pages still use `manual-base.css` + `manual-components.css`; this file extends only `index.html`
 
 > **Note**: search-overlay styles are included in `manual-components.css` (no separate file needed).
 
@@ -491,9 +491,12 @@ Key structural elements:
 
 #### A. Generate index.html
 
-Refer to the **index (cover) HTML template** in `references/manual-html-templates.md` to generate it.
+Pick the template by `DESIGN_TONE`:
 
-Key structural elements:
+- `Professional Enterprise` / `Refined Minimal` / `Soft & Warm` / `Auto` → **§2 Index (Cover) HTML Template** in `references/manual-html-templates.md` (cover + quick-start callout + search + toc-grid)
+- `Help Center` → **§6 Help Center Index Template** in `references/manual-html-templates.md` (sticky header + hero with search + FAQ grid + category cards + banner CTAs + contact CTA + footer). Pull the placeholder values from the project context (Step 0.B): `{PROJECT_NAME}` from `CLAUDE.md`, `{TAGLINE}` from blueprint overview, `{SERVICE_URL}` from Step 0.A. Group chapters into 3–5 categories (Setup / Features / Partners / Notice / Use cases) — the rule table is in the §6 reference. Pick the top 4–6 FAQ entries from Chapter NN-1 (FAQ / Troubleshooting). When `{VIDEO_URL}` / `{CHANGELOG_URL}` / `{SUPPORT_URL}` are not available, omit the corresponding `.banner` / `.cta` blocks rather than leaving empty placeholders.
+
+Key structural elements (cover variant):
 - `cover` — project name, manual title, meta info (version / generation date)
 - `quick-start-callout` — "First time here?" CTA → link to 01-getting-started.html
 - `index-search` — large search input
