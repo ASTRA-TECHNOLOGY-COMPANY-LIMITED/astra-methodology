@@ -1,6 +1,6 @@
 ---
 name: autorun
-description: "ASTRA full autonomous execution — runs the entire pipeline from planning through PR merge and worktree removal without user input, auto-iterating up to N times until tests pass. Sequentially executes /service-planner (with HTML mockup screens) → /blueprint (which in v5.8+ also auto-creates the sprint worktree via Step 6.5) → /sprint-init (idempotent re-entry — usually skipped) → /test-scenario → implementation (/generate-entity + blueprint-based) → /test-run → /pr-merge --auto → automatic worktree removal; on test failure it classifies the cause and re-enters from the appropriate stage (self-improvement loop). Every user-choice step is auto-decided via smart defaults; only the max-iteration count is asked once at start. HITL fires only on true blockers — missing gh authentication, merge conflicts, or Critical review issues. Use when you want a single command to unattended-run a week's worth of work."
+description: "ASTRA full autonomous execution — runs the entire pipeline from planning through PR merge and worktree removal without user input, auto-iterating up to N times until tests pass. Sequentially executes /service-planner (with HTML mockup screens) → /blueprint (which in v5.10+ runs in a worktree-first order: creates the sprint worktree via /sprint-init --scaffold-only, then authors + reviews + commits the blueprint inside the sprint worktree) → /sprint-init (idempotent re-entry — usually a no-op in the standard path) → /test-scenario → implementation (/generate-entity + blueprint-based) → /test-run → /pr-merge --auto → automatic worktree removal; on test failure it classifies the cause and re-enters from the appropriate stage (self-improvement loop). Every user-choice step is auto-decided via smart defaults; only the max-iteration count is asked once at start. HITL fires only on true blockers — missing gh authentication, merge conflicts, or Critical review issues. Use when you want a single command to unattended-run a week's worth of work."
 argument-hint: "[feature description] [--max-iter=N] (default 3 if N omitted; 1 means single pass)"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, TodoWrite, Skill, AskUserQuestion
 ---
@@ -185,19 +185,27 @@ P0_ISSUES=$(grep -c "P0" "docs/blueprints/{NNN}-{feature-slug}/review.md" 2>/dev
 echo "blueprint-reviewer P0 issues: $P0_ISSUES"
 ```
 
-### 3.5 Blueprint auto-commit + auto-worktree (guarantee worktree visibility)
+### 3.5 Blueprint auto-worktree (verify the worktree-first creation)
 
-`/blueprint --auto` performs **two** actions internally (v5.8+):
-1. **Step 6**: auto-commits the blueprint to the current branch (dev) of the main worktree.
-2. **Step 6.5**: auto-creates the sprint worktree by delegating to `/sprint-init`. **Important — `/blueprint` does NOT cd into the worktree** (v5.8+ explicit design). The parent cwd remains the main worktree after `/blueprint` returns. autorun must explicitly cd to enable the unattended downstream stages.
+`/blueprint --auto` performs the following internally (v5.10+ worktree-first order):
+1. **Step 1.5**: branch / location guards (non-standard branch aborts; secondary blueprint reuses worktree).
+2. **Step 1.6**: delegates to `/sprint-init --scaffold-only` to create the sprint worktree.
+3. **Step 1.7**: cd's into the worktree *within the skill execution*.
+4. **Steps 2–5**: authors + reviews the blueprint *inside the worktree*.
+5. **Step 6**: commits the blueprint to the **sprint branch** (`feat/sprint-N-slug`), NOT to dev. The blueprint reaches dev only via `/pr-merge` at sprint end.
+
+The parent cwd of autorun remains the main worktree after `/blueprint` returns (skill-to-skill cd does not propagate). autorun must explicitly cd to enable the unattended downstream stages.
 
 ```bash
-# Since autorun is in the main worktree (dev) at Stage 3 entry, the blueprint is committed to dev.
-git log -1 --oneline -- "docs/blueprints/{NNN}-{feature-slug}/" || {
-  echo "WARN: blueprint commit not detected. The blueprint may not be visible in the sprint worktree."
-}
+# v5.10+ — blueprint is on the sprint branch, not dev. Searching `git log` on the current
+# branch (main worktree HEAD) will return empty; that is expected, not a problem. Verify the
+# commit's existence across all refs instead.
+if ! git log --all -1 --oneline -- "docs/blueprints/{NNN}-{feature-slug}/" >/dev/null 2>&1 || \
+   [ -z "$(git log --all -1 --oneline -- "docs/blueprints/{NNN}-{feature-slug}/" 2>/dev/null)" ]; then
+  echo "WARN: blueprint commit not detected on any branch — /blueprint may have failed."
+fi
 
-# Discover the worktree path /blueprint Step 6.5 created (autorun is still in main worktree).
+# Discover the worktree path /blueprint Step 1.6 created (autorun is still in main worktree — v5.10+ worktree-first order).
 # Anchored prefix match — matches both bare ("feat/sprint-N-slug") and collision-suffixed
 # ("feat/sprint-N-slug-2") branches, but not unrelated slugs like "slug-ui".
 WT_PATH=$(git worktree list --porcelain 2>/dev/null | awk -v slug="${feature_slug}" '
@@ -214,10 +222,10 @@ if [ -z "$WT_PATH" ]; then
 fi
 
 if [ -n "$WT_PATH" ] && [ -d "$WT_PATH" ]; then
-  echo "✅ Sprint worktree created by /blueprint Step 6.5: $WT_PATH"
+  echo "✅ Sprint worktree created by /blueprint Step 1.6 (worktree-first, v5.10+): $WT_PATH"
   WORKTREE_READY=1
 else
-  echo "⚠️  /blueprint Step 6.5 did not create a worktree — Stage 4 fallback will create it."
+  echo "⚠️  /blueprint did not create a worktree — Stage 4 fallback will create it."
   WORKTREE_READY=0
 fi
 ```
@@ -235,16 +243,19 @@ fi
 
 ### 4.2 Execute (idempotent — skip worktree creation if already done)
 
-> **v5.8+ change**: `/blueprint` Step 6.5 already creates the sprint worktree but does NOT cd into it. This stage is now an **idempotent re-entry** — it (a) invokes `/sprint-init` only when the worktree was NOT created by `/blueprint` (e.g., non-standard branch case), and (b) **always performs the explicit cd** into the worktree.
+> **v5.10+ change**: `/blueprint` Step 1.6 already creates the sprint worktree (worktree-first order) by delegating to `/sprint-init --scaffold-only`. This stage is now an **idempotent re-entry** — it (a) invokes `/sprint-init` only when the worktree was NOT created by `/blueprint` (which now is rare — only happens if `/blueprint` aborted *after* worktree resolution failed; the non-standard-branch case aborts /blueprint earlier and never reaches Stage 4), and (b) **always performs the explicit cd** into the worktree.
 
 ```bash
 if [ "$WORKTREE_READY" = "1" ]; then
-  echo "ℹ️  Worktree already created by /blueprint Step 6.5 — using $WT_PATH"
+  echo "ℹ️  Worktree already created by /blueprint Step 1.6 — using $WT_PATH"
   # Sprint files (prompt-map.md, progress.md, retrospective.md, .astra-worktree.env)
-  # were created inside /blueprint Step 6.5's delegated /sprint-init call.
+  # were created inside /blueprint Step 1.6's delegated /sprint-init --scaffold-only call.
+  # The prompt-map uses Variant B (1.1=DB Design, 1.2=Test Cases, 1.3=Implementation).
 else
   echo "🌿 Stage 4 fallback — invoking /sprint-init explicitly (worktree was not auto-created)"
-  Skill('sprint-init', '{feature-slug}')
+  # Use --scaffold-only since the blueprint already exists from Stage 3.
+  # This keeps the prompt-map's Variant B (no Feature 1.1) consistent with the standard path.
+  Skill('sprint-init', '{feature-slug} --scaffold-only')
   # Re-discover the path (do not trust cwd propagation from the Skill call)
   WT_PATH=$(git worktree list --porcelain 2>/dev/null | awk -v slug="${feature_slug}" '
     /^worktree / { p=$2 }
@@ -268,7 +279,7 @@ cd "$WT_PATH" || {
 echo "📂 autorun is now inside the sprint worktree: $(pwd)"
 ```
 
-> **v5.0+ important**: All Stage 5+ work must happen inside the worktree. Whether the worktree was created by `/blueprint` Step 6.5 or this Stage 4 fallback, the autorun cwd must be `.astra-worktrees/sprint-<N>-<feature-slug>/` by the end of 4.2 (the explicit cd above guarantees this).
+> **v5.0+ important**: All Stage 5+ work must happen inside the worktree. Whether the worktree was created by `/blueprint` Step 1.6 (v5.10+ standard path) or this Stage 4 fallback, the autorun cwd must be `.astra-worktrees/sprint-<N>-<feature-slug>/` by the end of 4.2 (the explicit cd above guarantees this).
 
 ### 4.3 Success criteria + verify worktree state
 ```
@@ -363,7 +374,7 @@ Call `Skill('test-run', '{feature-slug}')`.
 
 ### 7.5.1 End-of-iteration handling (always run at the end of every iteration)
 
-**Changed-file tracking mechanism**: do not rely on git diff (autorun does not commit mid-pipeline — **single exception**: in v5.1+ Stage 3.5, `/blueprint --auto` makes a single blueprint commit to dev. That is for worktree visibility and happens *before* the iteration loop starts, so it does not affect the baseline snapshot). Instead, **snapshot the baseline file list at iteration start** and diff at end.
+**Changed-file tracking mechanism**: do not rely on git diff (autorun does not commit mid-pipeline — **single exception**: in v5.10+ Stage 3, `/blueprint --auto` makes a single blueprint commit to the sprint branch inside the sprint worktree (previously v5.1–5.9: to dev for visibility). That happens *before* the iteration loop starts, so it does not affect the baseline snapshot). Instead, **snapshot the baseline file list at iteration start** and diff at end.
 
 1. **At iteration start (once)**: create `{ITER_DIR}/iter-{CURRENT_ITER}-baseline.txt`:
    ```bash
