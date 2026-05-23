@@ -1,7 +1,7 @@
 ---
 name: sprint-init
 description: "Initializes a new ASTRA sprint. Creates an isolated sprint worktree (with port-isolated dev server settings), generates sprint prompt maps, progress trackers, and retrospective templates inside that worktree, and prints the cd path so all subsequent development and testing happens in the worktree. With --auto flag, also auto-executes the post-scaffolding pipeline: /test-scenario → implementation → /test-run → /pr-merge --auto (worktree auto-removed). Between each major stage (5.2/5.3/5.4/5.5 iteration/5.6), the skill performs a silent save (auto-state.yaml + commit) and applies a 'reference-avoidance' rule (don't re-read large prior artifacts; rely on yaml SSoT) so the system's built-in auto-compression keeps context manageable, then continues directly to the next stage without user intervention. --resume flag is reserved for true recovery (context crash, forced interrupt) — it reads auto-state.yaml and jumps to next_stage. Only halts on true blockers (gh auth, merge conflicts, Critical review issues)."
-argument-hint: "[sprint-number] [sprint-name] [--auto] [--max-iter=N] [--resume] [--from-blueprint]"
+argument-hint: "[sprint-number] [sprint-name] [--auto] [--max-iter=N] [--resume] [--from-blueprint] [--scaffold-only]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Agent, TodoWrite
 ---
 
@@ -79,7 +79,11 @@ Parse from `$ARGUMENTS`:
 - **Sprint name** (optional): The primary blueprint/feature name for this sprint.
 - **`--auto`** (optional flag): If present, set `AUTO_MODE=1` and proceed to Step 5 (Auto Continue) after scaffolding. Without this flag, the skill stops at Step 4 (Output Sprint Planning Guide) as before.
 - **`--max-iter=N`** (optional, only meaningful with `--auto`): max self-improving iteration count for the test loop (1 ≤ N ≤ 10). If `--auto` is set but `--max-iter` is missing, ask the user **once** via `AskUserQuestion` (default 3).
-- **`--from-blueprint`** (optional flag, v5.8+): Indicates this invocation was delegated from `/blueprint` Step 6.5 (auto-worktree creation). Set `FROM_BLUEPRINT=1` when present. **Read site**: Step 4 below — when `FROM_BLUEPRINT=1`, suppress the full Sprint Planning Guide body so `/blueprint` Step 7 can render a single consolidated Next-Steps block. No other behavior changes.
+- **`--from-blueprint`** (optional flag, v5.8/5.9 legacy): Indicates this invocation was delegated from the *old* `/blueprint` Step 6.5 (blueprint-then-worktree flow). Set `FROM_BLUEPRINT=1` when present. **Read site**: Step 4 below — when `FROM_BLUEPRINT=1`, suppress the full Sprint Planning Guide body so `/blueprint` Step 7 can render a single consolidated Next-Steps block. v5.10+ /blueprint uses `--scaffold-only` instead, but `--from-blueprint` is preserved for backward compatibility (treats it as equivalent to `--scaffold-only`).
+- **`--scaffold-only`** (optional flag, v5.10+): Indicates this invocation is from the *new* worktree-first `/blueprint` flow where the blueprint **has not been authored yet** — `/sprint-init` only creates the worktree + writes port env file + scaffolds prompt-map / progress / retrospective, and then exits. Set `SCAFFOLD_ONLY=1` when present. **Read sites**:
+  - Step 2 below — when `SCAFFOLD_ONLY=1`, the prompt-map omits the Feature 1.1 (`/blueprint ...`) line entirely and renumbers the remaining steps (1.1=DB Design, 1.2=Test Cases, 1.3=Implementation). The blueprint is being authored *by the calling context* and will exist by the time the user runs Feature 1.1.
+  - Step 4 — same suppression as `--from-blueprint` (parent renders consolidated output).
+  - Step 5 — `--scaffold-only` is **incompatible** with `--auto`. If both are present, abort with `"❌ --scaffold-only and --auto cannot be combined (no blueprint exists yet to drive the auto pipeline)"`.
 
 **Directory name format**: `sprint-{N}-{sprint-name}/` (e.g., `sprint-1-auth/`, `sprint-2-payment/`, `sprint-3-dashboard/`)
 
@@ -151,6 +155,12 @@ Create the file `$WT_PATH/docs/sprints/sprint-{N}-{sprint-name}/prompt-map.md`.
 
 Scan `docs/blueprints/` for numbered directories matching the sprint name (or use the blueprint names provided by the user). Each blueprint becomes a feature in the prompt map. Do NOT analyze or carry over items from previous sprints.
 
+> **Variant by `SCAFFOLD_ONLY` / `FROM_BLUEPRINT` flag** (treated as equivalent — `FROM_BLUEPRINT=1` is the legacy alias for `SCAFFOLD_ONLY=1`):
+> - **Neither flag set (direct user invocation without `--scaffold-only` or `--from-blueprint`)**: Variant A — full 4-step prompt map below (1.1 = blueprint authoring, 1.2 = DB design, 1.3 = test cases, 1.4 = implementation).
+> - **`SCAFFOLD_ONLY=1` OR `FROM_BLUEPRINT=1` (called by `/blueprint`)**: Variant B — the blueprint is authored by the *calling context* immediately after this skill returns, so the prompt map's Feature 1.1 (blueprint authoring) is **removed entirely** and the remaining steps are **renumbered**: 1.1 = DB Design, 1.2 = Test Cases, 1.3 = Implementation. The header above Feature 1 includes a note "(blueprint is authored by /blueprint — when this prompt-map is opened, the blueprint already exists)".
+
+#### Variant A — neither flag set (legacy direct invocation)
+
 ```markdown
 # Sprint {N} Prompt Map
 
@@ -201,6 +211,54 @@ Specifically do NOT ask the user about: variable/function names, code formatting
 
 ## Feature 2: {feature-name}
 {Repeat with the same structure as above}
+```
+
+#### Variant B — `SCAFFOLD_ONLY=1` OR `FROM_BLUEPRINT=1` (v5.10+ worktree-first, or legacy v5.8/5.9 delegation)
+
+The blueprint authoring step is omitted because `/blueprint` already wrote (or is about to write) the blueprint immediately after this skill returns. The user will start from "1.1 DB Design Reflection".
+
+```markdown
+# Sprint {N} Prompt Map
+
+## Sprint Goal
+[Describe the business value to achieve in this sprint]
+
+> **Worktree note**: Every task in this sprint runs inside `.astra-worktrees/sprint-{N}-{sprint-name}/`.
+> New Claude Code sessions must be started from that path.
+>
+> **Blueprint authoring note (v5.10+)**: The blueprint(s) for this sprint are authored by the `/blueprint` skill that created this worktree. When this prompt-map is opened by the user, the blueprint already exists under `docs/blueprints/{NNN}-{feature-name}/blueprint.md` on the sprint branch. Start from 1.1 below.
+
+## Feature 1: {feature-name}
+
+### 1.1 DB Design Reflection Prompt
+/feature-dev "Refer to docs/blueprints/{NNN}-{feature-name}/blueprint.md Section 3 (Data Model) and reflect those tables/columns/indexes/FK relationships into docs/database/database-design.md, including the ERD and FK relationship summary.
+
+The blueprint is the single source of truth — do not change schema decisions, do not add columns not in the blueprint, do not rename. If you find a real inconsistency, stop and report instead of guessing.
+
+HITL Guard: Before asking the user any question, first check Section 10 (HITL Triggers) of the blueprint. Only ask the user when the decision matches T1-T4 triggers (business decisions without a clear answer in the blueprint, security/permission choices, external dependency choices, destructive changes). For everything else, follow the blueprint and proceed automatically.
+
+Do not modify any application code yet."
+
+### 1.2 Test Case Prompt
+/feature-dev "Based on docs/blueprints/{NNN}-{feature-name}/blueprint.md Section 9 (Test Strategy) and Section 9.1 (Required Test Cases), write test cases to docs/tests/test-cases/sprint-{N}/{feature-name}-test-cases.md.
+
+Use Given-When-Then format. Cover: (a) Section 5.1 happy path, (b) Section 5.2 exception paths, (c) Section 2.3 business rules, (d) Section 7 error policy items. Include unit, integration, and edge cases.
+
+HITL Guard: Section 10 (HITL Triggers) of the blueprint defines when to ask the user. Outside those triggers, derive test cases directly from the blueprint without asking. If a test case requires a decision not in the blueprint and not in Section 10, default to the most conservative coverage and note it as TODO instead of pausing.
+
+Do not modify any application code yet."
+
+### 1.3 Implementation Prompt
+/feature-dev "Strictly follow docs/blueprints/{NNN}-{feature-name}/blueprint.md and docs/database/database-design.md to implement the feature. Write code that matches: Section 3 (DDL → ORM entities), Section 4 (API contract → controllers/DTOs), Section 5 (sequence diagrams → service orchestration), Section 6 (pseudocode → real implementation), Section 7 (error policy → exception handlers), Section 8 (non-functional → middleware/security config).
+
+Write tests referencing docs/tests/test-cases/sprint-{N}/{feature-name}-test-cases.md. Once implementation is complete, run all tests and report results to docs/tests/test-reports/.
+
+HITL Guard (important): The blueprint's Section 10 (HITL Triggers) tells you exactly when to ask the user during implementation. The four triggers are T1 (business decisions without a clear blueprint answer), T2 (security/permission policy choices), T3 (external dependency/3rd-party introduction), T4 (destructive changes like DROP/RENAME or public API signature change). Outside those triggers, do not ask — apply the blueprint as written and follow coding conventions.
+
+Specifically do NOT ask the user about: variable/function names, code formatting, log levels, file layout, import order, DTO/Entity split, fine-grained HTTP status codes — those follow project conventions automatically. Waking the user too often defeats the automation."
+
+## Feature 2: {feature-name}
+{Repeat with 1.1/1.2/1.3 structure — additional blueprints are added via secondary /blueprint invocations inside this worktree.}
 
 ---
 
@@ -315,7 +373,7 @@ Do not push to remote — the push is bundled with the first feature commit or w
 
 ### Step 4: Output Sprint Planning Guide
 
-> **`--from-blueprint` mode**: When invoked by `/blueprint` Step 6.5, the parent `/blueprint` skill prints its own consolidated output (Step 7 Case A) right after this skill returns. To avoid duplicate output, prefix this section with `(invoked from /blueprint — see consolidated output below)` and keep the body minimal: just the worktree path, branch, and port base. `/blueprint` Step 7 owns the user-facing "Next steps" section.
+> **Delegated-from-/blueprint mode (`FROM_BLUEPRINT=1` or `SCAFFOLD_ONLY=1`)**: When invoked by `/blueprint` (legacy Step 6.5 = `--from-blueprint`, or v5.10+ Step 1.6 = `--scaffold-only`), the parent `/blueprint` skill prints its own consolidated output (Step 7 Case A) right after this skill returns. To avoid duplicate output, prefix this section with `(invoked from /blueprint — see consolidated output below)` and keep the body minimal: just the worktree path, branch, and port base. `/blueprint` Step 7 owns the user-facing "Next steps" section.
 
 ```
 ## Sprint {N} Initialization Complete
@@ -349,6 +407,32 @@ Do not push to remote — the push is bundled with the first feature commit or w
 > **Branch**: Without the `--auto` flag, stop here. With `--auto`, continue to **Step 5**.
 
 ---
+
+### Step 4.5: `--scaffold-only` early exit
+
+If `SCAFFOLD_ONLY=1`, the calling context (typically `/blueprint`) is responsible for the remaining flow (blueprint authoring + commit + final output). Do **not** enter Step 5 even if `--auto` was somehow also passed — instead:
+
+1. **Reject the incompatible flag combo**: if both `SCAFFOLD_ONLY=1` and `AUTO_MODE=1`, abort with `"❌ --scaffold-only and --auto cannot be combined (no blueprint exists yet to drive the auto pipeline)"`.
+2. **Suppress duplicate output**: Step 4 already emitted the minimal worktree info block (`--from-blueprint` mode wording also covers `--scaffold-only`). Nothing more to print.
+3. **Return cleanly** so the caller can continue.
+
+```bash
+if [ "$SCAFFOLD_ONLY" = "1" ] || [ "$FROM_BLUEPRINT" = "1" ]; then
+  if [ "$SCAFFOLD_ONLY" = "1" ] && [ "$AUTO_MODE" = "1" ]; then
+    echo "❌ --scaffold-only and --auto cannot be combined (no blueprint exists yet to drive the auto pipeline)" >&2
+    exit 1
+  fi
+  # Legacy --from-blueprint case: the calling /blueprint already authored the blueprint *before*
+  # invoking us, so under --auto we could theoretically continue into Step 5. In practice the
+  # legacy flow never combined --from-blueprint with --auto either (the legacy Step 6.5 invocation
+  # was a synchronous scaffolding call). Treat both flags identically here for simplicity.
+  exit 0
+fi
+```
+
+> **Why this guard lives between Steps 4 and 5 rather than at Step 0/1**: Steps 1.5–3.5 (sync dev, create worktree, write env file, scaffold docs, commit) are the *exact* responsibilities a `--scaffold-only` invocation wants. Only the auto pipeline (Step 5+) is out of scope. Aborting earlier would lose the very work the caller asked for.
+
+> **Why `FROM_BLUEPRINT` also exits here**: In Step 1 we documented `--from-blueprint` as an alias for `--scaffold-only`. To stay consistent (and prevent a legacy `--from-blueprint` invocation from accidentally entering the Step 5 auto pipeline if someone added `--auto`), both flags trip the same exit. The legacy flow never combined them either, so this is purely a safety belt.
 
 ### Step 5: Auto Continue (only if `--auto` flag is set)
 
