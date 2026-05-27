@@ -91,14 +91,73 @@ If the sprint name is not provided in `$ARGUMENTS`, ask the user for the primary
 
 When scanning existing directories, extract the sprint number from directory names matching pattern `sprint-{N}-{name}` (e.g., `sprint-1-auth` → number `1`).
 
-### Step 1.5: Sync `dev` Branch
+### Step 1.5: Choose Source Branch and Sync
 
-The sprint worktree branches from `origin/dev` (or `origin/main` when missing) as base. Aligning the main worktree to `dev` first keeps the base always up to date.
+The sprint worktree branches from a user-chosen base (default `origin/dev`). v5.11+ exposes this choice so a sprint can be branched from `staging` (matches an integration branch that's based on staging — cleanest sprint→integration→staging promotion) or from `main`/`master` (urgent hotfix path) when needed.
+
+#### Step 1.5.1: Discover available source branches
+
+```bash
+git fetch origin --quiet
+AVAILABLE=()
+for b in dev staging main master; do
+  git ls-remote --exit-code --heads origin "$b" >/dev/null 2>&1 && AVAILABLE+=("$b")
+done
+if [ ${#AVAILABLE[@]} -eq 0 ]; then
+  echo "ERROR: none of dev/staging/main/master found on origin" >&2
+  exit 1
+fi
+```
+
+#### Step 1.5.2: Pick the source branch
+
+**`--auto` mode** — safe default: pick `dev` if present, else `main`/`master`/`staging` in that order. No prompt.
+
+**`--scaffold-only` / `--from-blueprint` mode** (called by `/blueprint`) — `/blueprint` Step 1.5 has already validated the user is on a standard branch (dev/main/master) in the main worktree and **has not changed cwd**, so reading the current branch directly is correct:
+```bash
+SOURCE_BRANCH=$(git branch --show-current)
+case "$SOURCE_BRANCH" in
+  dev|main|master|staging) : ;;  # acceptable — /blueprint's guard passed
+  "")
+    # detached HEAD — shouldn't happen since /blueprint Step 1.5 guards against it,
+    # but defensive fallback: pick dev if present, else main, else master
+    for fallback in dev main master; do
+      git ls-remote --exit-code --heads origin "$fallback" >/dev/null 2>&1 && { SOURCE_BRANCH="$fallback"; break; }
+    done
+    ;;
+  *)
+    # /blueprint should have aborted, but be defensive
+    echo "ERROR: --scaffold-only invoked from non-standard branch '$SOURCE_BRANCH'; expected dev/main/master/staging" >&2
+    exit 1
+    ;;
+esac
+```
+No prompt is issued — `/blueprint` already curated the entry conditions.
+
+**Normal mode** — **AskUserQuestion** within the 4-option cap (`Other` is auto-appended by the harness outside the cap and lets the user type any custom ref like `release/2026Q2`). List only branches present in `AVAILABLE`:
+- `dev` (Recommended — standard sprint base)
+- `staging` (when present — for sprints that target the fast staging-direct promotion path)
+- `main` (when present — for urgent hotfix sprints branching from production state)
+- `master` (only when `main` doesn't exist — otherwise drop this slot to keep within 4)
+
+Save the chosen branch as `SOURCE_BRANCH`. Validate:
+```bash
+git ls-remote --exit-code --heads origin "$SOURCE_BRANCH" >/dev/null 2>&1 || {
+  echo "ERROR: source branch '$SOURCE_BRANCH' not found on origin" >&2
+  exit 1
+}
+```
+
+#### Step 1.5.3: Align the main worktree to the source branch
+
+Aligning the main worktree to `SOURCE_BRANCH` first keeps the base always up to date.
 
 1. **Check current branch**: `git branch --show-current`
 2. **Preserve uncommitted changes**: If `git status --porcelain` shows changes, stash with `git stash --include-untracked -m "astra-sprint-init"`
-3. **Switch and pull**: `git fetch origin dev && git checkout dev && git pull origin dev` (if `dev` is absent, fall back to `main`/`master`; if neither exists, stay on the current branch)
+3. **Switch and pull**: `git fetch origin "$SOURCE_BRANCH" && git checkout "$SOURCE_BRANCH" && git pull origin "$SOURCE_BRANCH"`
 4. **Restore stash**: If stashed in step 2, `git stash pop`. On conflict, report to the user and abort.
+
+> **Main worktree post-state**: the main worktree stays on `$SOURCE_BRANCH` after this step (e.g., if the user picked `staging` for an urgent hotfix sprint, the main worktree is now on `staging`). The sprint worktree itself is independent — feature work happens inside the worktree on the sprint branch — but other concurrent sessions or skills that assume the main worktree is on `dev` should `git checkout dev` themselves. `/pr-merge` Step 9 explicitly returns the main worktree to `dev` after merge, which restores the typical post-merge state.
 
 ### Step 1.6: Create Sprint Worktree
 
@@ -108,7 +167,9 @@ Create a new isolated worktree on the `feat/sprint-{N}-{sprint-name}` branch. Al
 SPRINT_N="{confirmed sprint number}"
 SPRINT_NAME="{confirmed sprint name}"
 
-if ! out=$(astra_create_sprint_worktree "$SPRINT_N" "$SPRINT_NAME"); then
+# Pass the user-chosen SOURCE_BRANCH from Step 1.5.2 as the base-ref (3rd arg).
+# astra_create_sprint_worktree prepends "origin/" automatically when missing.
+if ! out=$(astra_create_sprint_worktree "$SPRINT_N" "$SPRINT_NAME" "origin/${SOURCE_BRANCH}"); then
   echo "ERROR: sprint worktree creation failed" >&2
   exit 1
 fi
@@ -117,6 +178,7 @@ if [ -z "$WT_PATH" ] || [ ! -d "$WT_PATH" ]; then
   echo "ERROR: could not determine sprint worktree path. helper output: '$out'" >&2
   exit 1
 fi
+echo "Sprint worktree created from origin/${SOURCE_BRANCH}: $WT_PATH (branch: $SPRINT_BRANCH)"
 ```
 
 `astra_create_sprint_worktree` absorbs branch/slug/port conflicts, so use the returned `$SPRINT_BRANCH`·`$WT_PATH` *as-is* (it may differ from the desired name).
