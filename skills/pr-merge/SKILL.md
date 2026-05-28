@@ -1,6 +1,6 @@
 ---
 name: pr-merge
-description: "Runs an automated iterative cycle from PR creation through code review, issue fixes, and merge. v5.11+ uses an integration-branch model: sprint PRs (head=feat/sprint-*) target a feature- or fix-level integration branch (feat/<name> or fix/<name>) chosen interactively (pick from existing OR create new with user-chosen base). After the sprint PR merges into the integration branch, the user picks a promotion path — staging (fast/hotfix) or dev (standard) or skip — and a promotion PR is created and merged without a second review. In a sprint worktree, this command handles commit → push → PR-create → code-review → fix → re-review and then stops; the merge runs from the main worktree. With --auto, the command transitions phases by itself and uses safe defaults (reuse existing integration branch if name matches, else create new from dev; promotion = dev). Confirmation prompts auto-approve except for safe HITL points (gh authentication, merge conflicts, Critical issues, ambiguous multi-PR detection)."
+description: "Runs an automated iterative cycle from PR creation through code review, issue fixes, and merge. v5.11+ uses an integration-branch model: sprint PRs (head=feat/sprint-*) target a feature- or fix-level integration branch (feat/<name> or fix/<name>) chosen interactively (pick from existing OR create new with user-chosen base). After the sprint PR merges into the integration branch, the user always picks a promotion path — staging (fast/hotfix) or dev (standard) or skip — and a promotion PR is created and merged without a second review. In a sprint worktree, this command handles commit → push → PR-create → code-review → fix → re-review and then stops; the merge runs from the main worktree. With --auto, the command transitions phases by itself and uses safe defaults (reuse existing integration branch if name matches, else create new from dev), but the final promotion-target branch is always HITL even under --auto. Confirmation prompts auto-approve except for safe HITL points (gh authentication, merge conflicts, Critical issues, ambiguous multi-PR detection, promotion target)."
 argument-hint: "[max-iterations] [--no-review] [--draft] [--auto] [--patch|--minor|--major] [--staging] [--main]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
 ---
@@ -18,7 +18,7 @@ The integration branch is the unit of promotion: pick any sprint's integration b
 
 - **Sprint Phase** — invoked from inside a sprint worktree (`.astra-worktrees/sprint-<N>-<name>/`). Runs target-branch determination (Step 4.5: pick existing integration branch or create new with user-chosen base) → commit → push → PR creation against the integration branch → code review → automatic Critical/High fixes (the iteration loop). **Stops immediately after the review loop converges.** The actual `gh pr merge` and the promotion-path decision are NOT performed here. The user is instructed to `cd` to the main worktree and re-invoke `/pr-merge` to finalize.
 - **Main Phase** — invoked from the main worktree (on a shared branch: main/master/staging/dev). Auto-detects open PRs whose `head` is a sprint branch (`feat/sprint-*`) and `base` is an integration branch (`feat/*` or `fix/*`). If exactly one such PR exists, merges it; if multiple exist, asks the user to pick; if none exists, falls back to the legacy one-shot path (Step 4.1 temporary worktree, target=dev). After the sprint PR merges into the integration branch, **Step 8.4.5** asks the user where to promote the integration branch (staging / dev / skip) and creates the promotion PR.
-- **`--auto` flag** — when Sprint Phase completes successfully and the user passed `--auto`, the skill itself `cd`'s into the main worktree and continues directly into Main Phase (merge + promotion + cleanup), so `/autorun` and `/sprint-init --auto` still end in a single invocation as before. Under `--auto`, integration-branch selection reuses an existing branch with the inferred name or creates a new one from `dev`; promotion defaults to `dev` (safe standard path).
+- **`--auto` flag** — when Sprint Phase completes successfully and the user passed `--auto`, the skill itself `cd`'s into the main worktree and continues directly into Main Phase (merge + promotion + cleanup), so `/autorun` and `/sprint-init --auto` still end in a single invocation as before. Under `--auto`, integration-branch selection reuses an existing branch with the inferred name or creates a new one from `dev`. **The Step 8.4.5 promotion-target prompt (dev / staging / skip) is always HITL — even `--auto` surfaces this prompt to the user**, because the promotion target materially changes the deployment surface and `--auto`'s "safe default" cannot cover that decision.
 
 **Worktree isolation policy (v5.0+)**: sprint-unit work happens inside the `.astra-worktrees/sprint-<N>-<name>/` worktree created by `/sprint-init`. Immediately after Main Phase merges into a shared branch (dev), it automatically removes the worktree. The main worktree always stays on a shared branch (main/staging/dev/master), so other Claude Code sessions are not affected by branch switches. Source the helpers from `$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh`.
 
@@ -56,7 +56,7 @@ Parse `$ARGUMENTS` to determine options:
 | Step 6 commit confirmation (Sprint Phase) | auto-approve → commit immediately | change summary is still printed |
 | Step 8.5 Sprint Phase → Main Phase handoff | `cd` to main worktree + continue automatically | normal mode prints guidance and exits |
 | Step 8.3 final-merge confirmation (Main Phase) | auto-approve → merge immediately | PR metadata is still printed |
-| Step 8.4.5 promotion path (after integration merge) | auto-select `dev` (standard) → create + merge promotion PR | `staging` direct path requires explicit user choice |
+| Step 8.4.5 promotion path (after integration merge) | **HITL preserved** — `AskUserQuestion` (dev / staging / skip) is fired even under `--auto` | promotion target materially changes the deployment surface; no safe default exists |
 | Step 10.0 promotion source (`--staging` / `--main`) | auto-select legacy bulk source: `dev` for `--staging`, `staging` for `--main` | feature-level integration-branch promotion requires explicit user choice |
 | Step 8.1 MAX reached + 0 Critical | **HITL preserved** (the existing AskUserQuestion as-is) | remaining High requires user judgment |
 | Step 8.1 MAX reached + ≥ 1 Critical | **always halt** | unconditional, auto or manual |
@@ -65,7 +65,7 @@ Parse `$ARGUMENTS` to determine options:
 | dev branch absent on remote | auto-create and proceed | safe default |
 | Multiple pending sprint PRs in Main Phase | `AskUserQuestion` (HITL preserved) | even `--auto` cannot pick blindly — picking the wrong PR is destructive |
 
-> `--auto` does not bypass *safety gates* — on true blockers (auth, conflict, Critical, ambiguous PR), it halts just like normal mode.
+> `--auto` does not bypass *safety gates* — on true blockers (auth, conflict, Critical, ambiguous PR) and on the promotion-target decision, it halts/prompts just like normal mode.
 
 Validate the following preconditions:
 
@@ -604,14 +604,18 @@ git fetch origin "$TARGET_BRANCH" --quiet
 
 #### Step 8.4.5.1: Ask the promotion path
 
-**`--auto` mode** — safe default: `PROMOTION_TARGET="dev"` (standard path), no prompt. The user picked the integration model knowingly; defaulting to `staging` would be too aggressive for unattended runs.
+**Always HITL** — **AskUserQuestion** is fired for every invocation, including `--auto`. The merge-target branch (where the integration branch finally lands) is a destructive decision that materially changes the deployment surface (e.g., dev queue vs. staging deployment), so unattended pipelines must surface this choice to the user. `--auto` only suppresses *low-risk* confirmations like commit and final-merge approval (where the action and target are unambiguous); the promotion target is not one of those.
 
-**Normal mode** — **AskUserQuestion** with 3 options:
-- `Promote to dev (standard path)` — queue for the next staging promotion. **Recommended** for most features.
+> **Why HITL even under `--auto`**: picking `staging` accidentally pushes integration code onto the staging branch and can trigger an unintended staging deployment. Picking `dev` when the user actually wanted a fast hotfix path delays delivery. The cost of one prompt is far lower than the cost of either misstep. This is the same rationale that already keeps multi-PR selection (Step 3.5) under HITL even with `--auto`.
+
+The 3 options are presented in every mode:
+- `Promote to dev (standard path)` — queue for the next staging promotion. **Recommended (first option)** for most features.
 - `Promote to staging (fast path)` — bypass dev, go directly to staging. Use for urgent hotfixes or features that must land on production quickly.
-- `Skip (keep integration branch as-is)` — don't promote now. The integration branch persists; the user can run `/pr-merge --staging-from=<integration>` later (or accumulate more sprints into it first).
+- `Skip (keep integration branch as-is)` — don't promote now. The integration branch persists; the user can run `/pr-merge --staging` later and pick this integration branch as the source (or accumulate more sprints into it first).
 
 If `Skip`, jump to **Step 9** (cleanup) — no second PR is created.
+
+> **Note on `main`**: direct integration → `main` is intentionally *not* offered here. Production releases must go through the explicit `/pr-merge --main` promotion (which carries the version bump and release checks). If you need a production-direct hotfix, choose `staging` here, then run `/pr-merge --main` and pick the same integration branch as the source in Step 10.0.
 
 #### Step 8.4.5.2: Create the promotion PR
 
@@ -1001,8 +1005,9 @@ cd "$(git rev-parse --git-common-dir)/.."
 # Option combinations
 /pr-merge 5 --minor --draft
 
-# Unattended end-to-end (Sprint Phase → integration branch auto-pick → auto-cd to
-# main worktree → Main Phase → merge → promotion to dev (default) → worktree removal)
+# Mostly-unattended end-to-end (Sprint Phase → integration branch auto-pick → auto-cd to
+# main worktree → Main Phase → merge → **promotion target HITL (dev/staging/skip)** →
+# worktree removal). The promotion-target prompt always fires, even under --auto.
 /pr-merge --auto
 
 # Promotion (default bulk path): dev → staging
@@ -1027,7 +1032,7 @@ cd "$(git rev-parse --git-common-dir)/.."
 ## Notes
 
 - **Branch strategy (v5.11+)**: `feat/sprint-<N>-<name>  →  feat/<name> | fix/<name>  (integration)  →  dev | staging  →  main`. The integration branch is persistent and may receive multiple sprint PRs before promotion.
-- **Two-phase policy (v5.9+, retained)**: `gh pr merge` only runs from the main worktree. Inside a sprint worktree, `/pr-merge` runs Sprint Phase (Step 4.5 integration-branch pick · commit · push · PR · review · fix loop) and stops. The user then `cd`s into the main worktree and re-invokes `/pr-merge` — Step 3.5 auto-detects the pending sprint PR (`head=feat/sprint-*`, `base=feat/*|fix/*`) and merges it, then Step 8.4.5 asks the promotion path. With `--auto`, the skill performs the cross-worktree transition itself.
+- **Two-phase policy (v5.9+, retained)**: `gh pr merge` only runs from the main worktree. Inside a sprint worktree, `/pr-merge` runs Sprint Phase (Step 4.5 integration-branch pick · commit · push · PR · review · fix loop) and stops. The user then `cd`s into the main worktree and re-invokes `/pr-merge` — Step 3.5 auto-detects the pending sprint PR (`head=feat/sprint-*`, `base=feat/*|fix/*`) and merges it, then Step 8.4.5 always asks the promotion path (HITL even under `--auto`). With `--auto`, the skill performs the cross-worktree transition itself.
 - **Worktree policy (v5.0+)**: sprint worktrees are created by `/sprint-init` (`.astra-worktrees/sprint-<N>-<name>/`). Right after Main Phase merges into the integration branch (+ optional promotion to staging/dev), the sprint worktree is auto-removed (Step 9). Cross-shared-branch (main/staging/dev/master) cascade merges and promotions run directly in the main worktree. If the workflow halts due to a conflict, the worktree remains — after resolving, re-run `/pr-merge` to continue.
 - **Fallback flow (one-shot, target=dev)**: when a user without `/sprint-init` invokes `/pr-merge` after making changes directly in the main worktree (dev), Step 3.5 finds no pending sprint PR, falls through to Step 4.1 which auto-creates a temporary isolated worktree. **The fallback keeps `TARGET_BRANCH=dev`** (legacy one-shot behavior — no integration branch, no promotion step). Users who need feature-level promotion should start with `/sprint-init` instead.
 - **Common preprocessing**: in every mode, pull `main` / `staging` / `dev` before execution. The cascade merge itself is restricted to `staging → dev` and runs only in default mode — promotion modes (`--staging`, `--main`) skip the cascade entirely. `main → staging` is never auto-cascaded; operate on `main` only via the explicit `--main` promotion.

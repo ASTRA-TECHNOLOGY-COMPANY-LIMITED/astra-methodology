@@ -1,19 +1,19 @@
 ---
 name: autorun
-description: "ASTRA full autonomous execution — runs the entire pipeline from planning through PR merge and worktree removal without user input, auto-iterating up to N times until tests pass. Sequentially executes /service-planner (with HTML mockup screens) → /blueprint (which in v5.10+ runs in a worktree-first order: creates the sprint worktree via /sprint-init --scaffold-only, then authors + reviews + commits the blueprint inside the sprint worktree) → /sprint-init (idempotent re-entry — usually a no-op in the standard path) → /test-scenario → implementation (/generate-entity + blueprint-based) → /test-run → /pr-merge --auto → automatic worktree removal; on test failure it classifies the cause and re-enters from the appropriate stage (self-improvement loop). Every user-choice step is auto-decided via smart defaults; only the max-iteration count is asked once at start. HITL fires only on true blockers — missing gh authentication, merge conflicts, or Critical review issues. Use when you want a single command to unattended-run a week's worth of work."
+description: "ASTRA mostly-autonomous execution — runs the entire pipeline from planning through PR merge and worktree removal with minimal user input, auto-iterating up to N times until tests pass. Sequentially executes /service-planner (with HTML mockup screens) → /blueprint (which in v5.10+ runs in a worktree-first order: creates the sprint worktree via /sprint-init --scaffold-only, then authors + reviews + commits the blueprint inside the sprint worktree) → /sprint-init (idempotent re-entry — usually a no-op in the standard path) → /test-scenario → implementation (/generate-entity + blueprint-based) → /test-run → /pr-merge --auto → automatic worktree removal; on test failure it classifies the cause and re-enters from the appropriate stage (self-improvement loop). Every user-choice step is auto-decided via smart defaults except for two HITL points: max-iteration count (asked once at start) and the post-merge promotion target (dev/staging/skip — asked at the end of Stage 8 before final cleanup, because the deployment surface choice has no safe default). Other HITL fires only on true blockers — missing gh authentication, merge conflicts, or Critical review issues. Use when you want a single command to drive a week's worth of work with one pause for the promotion-target decision."
 argument-hint: "[feature description] [--max-iter=N] (default 3 if N omitted; 1 means single pass)"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, TodoWrite, Skill, AskUserQuestion
 ---
 
-# ASTRA Full Autonomous Execution (`/autorun`)
+# ASTRA Mostly-Autonomous Execution (`/autorun`)
 
-**Auto-executes** planning → design → blueprint → sprint plan → implementation → tests without user input, then runs `/pr-merge --auto` until the moment it would block.
+**Auto-executes** planning → design → blueprint → sprint plan → implementation → tests without user input, then runs `/pr-merge --auto` until the moment it would block. The pipeline has one routine HITL pause near the end (Stage 8.2 — promotion-target prompt: dev / staging / skip); beyond that, only true blockers stop execution.
 
 > **🌐 LANGUAGE RULE**: Before executing this skill, read the project's `CLAUDE.md` and check the `## Language` section. If the project language is NOT Korean (`ko`), translate ALL user-facing output and propagate the language preference to all sub-skills invoked.
 
 ## Core principles
 
-1. **Unattended execution (Zero-Interaction during pipeline)**: do not call `AskUserQuestion` while the pipeline is running. **Single exception**: at the start, if the `--max-iter` argument is absent, ask once for the *max iteration count*. After that, every decision is an automatic default.
+1. **Mostly-unattended execution (minimal interaction during pipeline)**: do not call `AskUserQuestion` while the pipeline is running, except at two well-defined points. **Exception 1**: at the start, if the `--max-iter` argument is absent, ask once for the *max iteration count*. **Exception 2**: at Stage 8.2, `/pr-merge --auto` always prompts for the *promotion target* (dev / staging / skip) — the deployment surface choice has no safe unattended default, so this HITL fires even under `--auto`. After the user answers, the pipeline continues automatically through cleanup. Every other decision is an automatic default.
 2. **Sequential**: each stage must succeed before the next starts. Do not parallelize (because of document dependencies).
 3. **Self-improving loop**: on Stage 7 (test) failure, do not stop immediately — classify the failure cause and *re-enter from the appropriate stage*. Repeat up to N times; on all-pass, exit immediately (early exit). After 5 debug attempts on the last iteration without success, stop.
 4. **Context efficiency**: hand off between iterations using only `iter-{i}-summary.md` (≤ 200 lines). Do not reload the entire blueprint / planning documents each iteration.
@@ -536,21 +536,27 @@ Skill('pr-merge', '--auto')
 | Sprint Phase | Fix Critical/High issues (up to 3 iterations) | auto (Surgical Changes principle) |
 | Sprint→Main handoff | `cd` to main worktree (Step 8.5 under `--auto`) | auto (skill performs the transition) |
 | Main Phase (main worktree) | Final merge confirmation prompt | auto-approve |
-| Main Phase | `gh pr merge` against dev | auto |
+| Main Phase | `gh pr merge` (sprint PR → integration branch) | auto |
+| Main Phase | **Step 8.4.5 promotion target (dev / staging / skip)** | **HITL — `AskUserQuestion` always fires, even under `--auto`** |
+| Main Phase | Promotion PR (only if user picked dev or staging) | auto (no fresh review — source sprint PR already passed) |
 | Main Phase | **Remove sprint worktree** | auto (cwd ends in main worktree (dev)) |
 
 > **Why two phases**: under `--auto` autorun never notices the boundary, but under normal `/pr-merge` (no `--auto`) Sprint Phase stops after the review loop and instructs the user to `cd` to the main worktree and re-invoke. This keeps the destructive merge action observable from the main worktree even outside autorun.
 
-### 8.2 HITL trigger conditions (true blockers)
+### 8.2 HITL trigger conditions
 
-In the following situations, `/pr-merge --auto` halts and requests user intervention — autorun receives these directly:
+In the following situations, `/pr-merge --auto` either halts (true blockers) or surfaces an `AskUserQuestion` prompt — autorun receives both directly and forwards them to the user as-is.
 
+**Always-on HITL (not a blocker — a routine decision point under `--auto`)**:
+- **Step 8.4.5 promotion target after sprint→integration merge**: `/pr-merge` asks the user to pick `dev` (standard) / `staging` (fast hotfix) / `skip` (defer). Even with `--auto`, this prompt is always shown — the deployment surface choice has no safe unattended default. autorun pauses here for the user's answer, then continues automatically through promotion-PR creation, merge, and worktree removal. This is the only routine HITL point in autorun once the pipeline is running.
+
+**True blockers (halt + show guidance)**:
 - **gh CLI not authenticated**: shows `gh auth login` guidance and exits
 - **Cascade merge conflict**: prints the conflicting files and exits (manual resolution required)
 - **Rebase conflict** (target branch → work branch): same
 - **Critical review issues ≥ 1 remain after MAX iterations**: merge blocked (`gh pr merge` not called)
 - **MAX iterations reached + only High issues remain**: `/pr-merge`'s own `AskUserQuestion` fires (a/b/c choice). autorun surfaces that prompt to the user as-is — does not bypass it.
-- **Multiple pending sprint PRs on Main Phase entry** (rare): when `/pr-merge --auto` `cd`'s to the main worktree and the auto-detection in Step 3.5 finds more than one open `feat/sprint-*` PR against `dev`, `/pr-merge` asks the user to pick which one to merge (HITL preserved even under `--auto`, because picking the wrong one is destructive). Normally autorun only produces a single sprint PR, so this trigger rarely fires.
+- **Multiple pending sprint PRs on Main Phase entry** (rare): when `/pr-merge --auto` `cd`'s to the main worktree and the auto-detection in Step 3.5 finds more than one open `feat/sprint-*` PR against the integration namespace, `/pr-merge` asks the user to pick which one to merge (HITL preserved even under `--auto`, because picking the wrong one is destructive). Normally autorun only produces a single sprint PR, so this trigger rarely fires.
 - **Main worktree on a non-shared branch**: the `--auto` handoff (Step 8.5) verifies the main worktree is on `main`/`master`/`staging`/`dev`. If it is on a custom branch, the skill aborts rather than risk a merge into the wrong base.
 
 ### 8.3 Capture results
