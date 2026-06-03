@@ -14,7 +14,7 @@ description: >
   "uat parallel", or runs /uat-parallel. Distinct from /user-test
   (sequential Chrome MCP, supports interactive mode), /test-run
   (developer integration tests), /test-scenario (scenario authoring).
-argument-hint: "[--workers N] [--from glob] [--priority critical|high|medium|low] [--feature name] [--timeout 30s] [--headed] [--browser chromium|firefox|webkit]"
+argument-hint: "[--workers N] [--from glob] [--priority critical|high|medium|low] [--feature name] [--timeout 30s] [--headed] [--browser chromium|firefox|webkit] [--lang vi|en|ko]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 ---
 
@@ -38,6 +38,7 @@ This skill is the **parallel sibling** of `/user-test`. Use `/user-test` for int
 Detailed references (load on demand):
 - `references/parallel-guide.md` — worker count tuning, isolation guarantees, debugging flaky cases.
 - `../user-test/references/assertion-guide.md` — assertion grammar and severity rules (reused as-is).
+- `../user-test/references/i18n-strings.md` — vi/en/ko translation table (shared SSoT; the merge script reads `UAT_LANG` and renders accordingly).
 
 ## 1. Bootstrap (run once per project)
 
@@ -77,8 +78,34 @@ Once installed, skip bootstrap on subsequent runs.
 | `--timeout 30s` | `30s` per step, `300s` per case | Hard timeouts |
 | `--headed` | false (headless) | Show browser windows |
 | `--browser X` | `chromium` | `chromium` \| `firefox` \| `webkit` |
+| `--lang X` | resolved at Step 0 | Report-output language (`vi` \| `en` \| `ko`) |
 
 ## 3. Pipeline
+
+### Step 0 — Language Selection (report output language)
+
+Determine `LANG_CODE` ∈ {`vi`, `en`, `ko`} — used for `index.html` (`<html lang>` + visible labels), `issues.md` headings, and console log messages. UAT case file contents are not translated.
+
+Resolution order:
+
+1. **`--lang` flag** in `$ARGUMENTS` → normalize case-insensitive (`vi|vie|vietnamese` → `vi`; `en|eng|english` → `en`; `ko|kor|korean` → `ko`). If recognized, skip to Step 1.
+2. **Persisted `CLAUDE.md ## Language`** → if it resolves to `ko`, `vi`, or `en`, use it silently.
+3. **Otherwise** → ask via `AskUserQuestion` with the trilingual prompt below; default selection Vietnamese.
+
+```
+Chọn ngôn ngữ cho báo cáo UAT.
+Select the language for the UAT report.
+UAT 보고서 언어를 선택하세요.
+```
+
+Options (single-select, header `Lang`):
+- `Tiếng Việt` — Vietnamese (Recommended)
+- `English` — English
+- `한국어` — Korean
+
+Map: `Tiếng Việt` → `vi`, `English` → `en`, `한국어` → `ko`.
+
+The merge script (`uat-parallel-report.sh`) consumes `LANG_CODE` via the `UAT_LANG` environment variable in Step 5.
 
 ### Step 1 — Validate and select cases
 
@@ -137,9 +164,11 @@ Do not abort on non-zero exit — Playwright returns non-zero whenever any case 
 
 ### Step 5 — Merge results
 
-Invoke the merge helper:
+Invoke the merge helper. Pass `UAT_LANG` (the `LANG_CODE` from Step 0) and `UAT_WORKERS` (worker count) as environment variables so the script can localize HTML + issues.md:
 
 ```bash
+UAT_LANG="{LANG_CODE}" \
+UAT_WORKERS="{N}" \
 bash $CLAUDE_PLUGIN_ROOT/skills/uat-parallel/scripts/uat-parallel-report.sh \
   "{SESSION_DIR}" \
   "$CLAUDE_PLUGIN_ROOT/skills/user-test/assets/report-template.html"
@@ -166,7 +195,7 @@ The script:
 
 ### Step 6 — Summarize
 
-Print:
+Print using the `L_DONE_PARALLEL` string for the resolved `LANG_CODE`. Example for `vi`:
 ```
 ▶ Hoàn thành (parallel, {W} workers).
    📊 {PASS} PASS / {FAIL} FAIL  ·  {DURATION}
@@ -175,7 +204,7 @@ Print:
    🎞️  Trace replay: npx playwright show-trace {SESSION_DIR}/traces/{first-failed}.zip
 ```
 
-Skip the `issues.md` and trace lines when no FAIL.
+For `en` use `▶ Done (parallel, {W} workers)` + `issues.md has {M} issues`; for `ko` use `▶ 완료 (병렬, {W} workers)` + `issues.md에 {M}건의 이슈`. Skip the `issues.md` and trace lines when no FAIL.
 
 ## 4. UAT case file format
 
@@ -228,11 +257,15 @@ docs/tests/uat-reports/2026-05-29-1830/
 
 # Cross-browser regression
 /uat-parallel --browser firefox --workers 3
+
+# Generate report in English / Korean
+/uat-parallel --lang en
+/uat-parallel --workers 6 --priority critical --lang ko
 ```
 
 ## 7. Standing instructions
 
-1. **User-facing output language**: follow `/select-language`. Default Vietnamese (logs, `issues.md`, prompts, report content). File slugs use ASCII.
+1. **User-facing output language**: resolved at Step 0 (`--lang` flag → `CLAUDE.md` ## Language → AskUserQuestion → default `vi`). Passed to the merge script via `UAT_LANG`. The script reads `references/i18n-strings.md` (under `skills/user-test/`) and substitutes every visible string in `index.html` + `issues.md` accordingly. File slugs always use ASCII.
 2. **Reuse `/user-test` assets**: do NOT duplicate the HTML template or assertion grammar — load from `skills/user-test/` paths. Future updates to `/user-test`'s template propagate automatically.
 3. **Hard assertions only**: same rule as `/user-test`. URL / Network / DOM / Console only.
 4. **Severity rules are shared**: identical to `references/assertion-guide.md` §3. The runner emits the raw failure; the merge script applies the severity rules.
