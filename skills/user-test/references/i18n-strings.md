@@ -41,6 +41,7 @@ When rendering `issues.md`, use the same strings dictionary (markdown headings +
 | Key | vi | en | ko |
 |---|---|---|---|
 | `M_ISSUES_REPORT_TITLE` | # Báo cáo UAT Issues | # UAT Issues Report | # UAT 이슈 리포트 |
+| `M_ISSUES_REPORT_TITLE_PARALLEL` | # Báo cáo UAT Issues (parallel) | # UAT Issues Report (parallel) | # UAT 이슈 리포트 (병렬) |
 | `M_SESSION` | Session | Session | 세션 |
 | `M_CASES_RUN` | Test Cases chạy | Test cases run | 실행된 테스트 케이스 |
 | `M_TOTAL_ISSUES` | Tổng số lỗi | Total issues | 전체 이슈 수 |
@@ -54,6 +55,10 @@ When rendering `issues.md`, use the same strings dictionary (markdown headings +
 | `M_DEV_HINT` | Gợi ý cho dev | Hint for developers | 개발자 가이드 |
 | `M_TRACE` | Trace (Playwright) | Trace (Playwright) | Trace (Playwright) |
 
+> **Scope note for `M_DEV_HINT`**: applies to `/user-test` interactive mode only — Claude writes the "Hint for developers" section based on its own understanding of the failure. `/uat-parallel`'s Playwright runner has no LLM in the loop, so its `issues.md` omits this section by design.
+>
+> **`M_ISSUES_REPORT_TITLE` vs. `M_ISSUES_REPORT_TITLE_PARALLEL`**: `/user-test` uses the base key; `/uat-parallel` uses the `_PARALLEL` variant so a single glance at the report header tells the reader whether the run was sequential (Chrome MCP) or parallel (Playwright workers).
+
 ### Console log strings
 
 | Key | vi | en | ko |
@@ -64,7 +69,9 @@ When rendering `issues.md`, use the same strings dictionary (markdown headings +
 | `L_DONE_PARALLEL` | ▶ Hoàn thành (parallel, {W} workers) | ▶ Done (parallel, {W} workers) | ▶ 완료 (병렬, {W} workers) |
 | `L_NONE_FOUND` | Không tìm thấy UAT case phù hợp. | No matching UAT cases found. | 일치하는 UAT 케이스를 찾을 수 없습니다. |
 | `L_SAVE_PROMPT` | Lưu các bước đã chạy thành test case để chạy `--auto` lần sau không? | Save the executed steps as a test case for next `--auto` run? | 실행한 단계를 다음 `--auto` 실행을 위해 테스트 케이스로 저장하시겠습니까? |
-| `L_LANG_PROMPT` | Chọn ngôn ngữ cho báo cáo UAT / Select report language / 보고서 언어 선택 | Chọn ngôn ngữ cho báo cáo UAT / Select report language / 보고서 언어 선택 | Chọn ngôn ngữ cho báo cáo UAT / Select report language / 보고서 언어 선택 |
+| `L_LANG_PROMPT` | (intentionally trilingual — shown before LANG_CODE is resolved) Chọn ngôn ngữ cho báo cáo UAT / Select report language / 보고서 언어 선택 | (same) | (same) |
+
+> **Why `L_LANG_PROMPT` is identical across columns**: this prompt is shown by Step 0 *before* a language has been chosen, so it must read naturally to a user of any of the three languages. Other `L_*` keys must be properly localized per-column because they are shown *after* `LANG_CODE` is set.
 
 ## Notes
 

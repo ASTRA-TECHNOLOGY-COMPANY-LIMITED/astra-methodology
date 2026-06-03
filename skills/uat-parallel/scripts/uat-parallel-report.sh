@@ -23,8 +23,14 @@ const path = require('path');
 
 const [SESSION_DIR, TEMPLATE, RESULTS_DIR] = process.argv.slice(2);
 
-// i18n dictionary — mirror of skills/user-test/references/i18n-strings.md.
-// Keep these two in sync when adding/changing strings.
+// i18n dictionary — embedded mirror of skills/user-test/references/i18n-strings.md.
+// The SSoT file is documentation; the runtime values live here.
+// Keep the two in sync when adding/changing strings.
+// /uat-parallel uses M_ISSUES_REPORT_TITLE_PARALLEL (with "(parallel)" / "(병렬)"
+// qualifier) instead of M_ISSUES_REPORT_TITLE, so a single glance at the header
+// tells the reader whether the run was sequential (Chrome MCP) or parallel.
+// M_DEV_HINT is intentionally absent here — the Playwright runner has no LLM
+// in the loop to author per-failure hints.
 const LANG = (() => {
   const raw = String(process.env.UAT_LANG || 'vi').toLowerCase();
   if (['vi', 'vie', 'vietnamese'].includes(raw)) return 'vi';
@@ -53,7 +59,7 @@ const I18N = {
     T_STATUS_PASS: 'PASS',
     T_STATUS_FAIL: 'FAIL',
     T_STATUS_SKIPPED: 'SKIPPED',
-    M_ISSUES_REPORT_TITLE: '# Báo cáo UAT Issues (parallel)',
+    M_ISSUES_REPORT_TITLE_PARALLEL: '# Báo cáo UAT Issues (parallel)',
     M_SESSION: 'Session',
     M_CASES_RUN: 'Test Cases chạy',
     M_TOTAL_ISSUES: 'Tổng số lỗi',
@@ -85,7 +91,7 @@ const I18N = {
     T_STATUS_PASS: 'PASS',
     T_STATUS_FAIL: 'FAIL',
     T_STATUS_SKIPPED: 'SKIPPED',
-    M_ISSUES_REPORT_TITLE: '# UAT Issues Report (parallel)',
+    M_ISSUES_REPORT_TITLE_PARALLEL: '# UAT Issues Report (parallel)',
     M_SESSION: 'Session',
     M_CASES_RUN: 'Test cases run',
     M_TOTAL_ISSUES: 'Total issues',
@@ -117,7 +123,7 @@ const I18N = {
     T_STATUS_PASS: '통과',
     T_STATUS_FAIL: '실패',
     T_STATUS_SKIPPED: '건너뜀',
-    M_ISSUES_REPORT_TITLE: '# UAT 이슈 리포트 (병렬)',
+    M_ISSUES_REPORT_TITLE_PARALLEL: '# UAT 이슈 리포트 (병렬)',
     M_SESSION: '세션',
     M_CASES_RUN: '실행된 테스트 케이스',
     M_TOTAL_ISSUES: '전체 이슈 수',
@@ -203,8 +209,16 @@ function renderCase(c) {
       </div>`;
     })
     .join('');
-  const statusClass = c.status === 'pass' ? 'pass' : 'fail';
-  const statusLabel = c.status === 'pass' ? T.T_STATUS_PASS : T.T_STATUS_FAIL;
+  const statusClass = c.status === 'pass'
+    ? 'pass'
+    : c.status === 'skipped'
+      ? 'skipped'
+      : 'fail';
+  const statusLabel = c.status === 'pass'
+    ? T.T_STATUS_PASS
+    : c.status === 'skipped'
+      ? T.T_STATUS_SKIPPED
+      : T.T_STATUS_FAIL;
   return `
   <div class="tc">
     <div class="tc-head">
@@ -248,7 +262,7 @@ fs.writeFileSync(path.join(SESSION_DIR, 'index.html'), html);
 // 5. Render issues.md
 if (failCount > 0) {
   const lines = [
-    T.M_ISSUES_REPORT_TITLE,
+    T.M_ISSUES_REPORT_TITLE_PARALLEL,
     `**${T.M_SESSION}**: ${sessionId}`,
     `**${T.M_CASES_RUN}**: ${cases.length}`,
     `**${T.M_TOTAL_ISSUES}**: ${failCount} (${sevCount.critical} CRITICAL, ${sevCount.high} HIGH, ${sevCount.medium} MEDIUM, ${sevCount.low} LOW)`,

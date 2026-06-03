@@ -265,7 +265,7 @@ docs/tests/uat-reports/2026-05-29-1830/
 
 ## 7. Standing instructions
 
-1. **User-facing output language**: resolved at Step 0 (`--lang` flag → `CLAUDE.md` ## Language → AskUserQuestion → default `vi`). Passed to the merge script via `UAT_LANG`. The script reads `references/i18n-strings.md` (under `skills/user-test/`) and substitutes every visible string in `index.html` + `issues.md` accordingly. File slugs always use ASCII.
+1. **User-facing output language**: resolved at Step 0 (`--lang` flag → `CLAUDE.md` ## Language → AskUserQuestion → default `vi`). Passed to the merge script via `UAT_LANG`. The script embeds an inline mirror of the `skills/user-test/references/i18n-strings.md` dictionary (the SSoT file is documentation; the runtime values live inside the Node heredoc) and substitutes every visible string in `index.html` + `issues.md` accordingly. When adding or changing strings, update both the SSoT and the script. `/uat-parallel` does not render `M_DEV_HINT` (the Playwright runner has no LLM to author per-failure hints) and uses `M_ISSUES_REPORT_TITLE_PARALLEL` instead of the base title key. File slugs always use ASCII.
 2. **Reuse `/user-test` assets**: do NOT duplicate the HTML template or assertion grammar — load from `skills/user-test/` paths. Future updates to `/user-test`'s template propagate automatically.
 3. **Hard assertions only**: same rule as `/user-test`. URL / Network / DOM / Console only.
 4. **Severity rules are shared**: identical to `references/assertion-guide.md` §3. The runner emits the raw failure; the merge script applies the severity rules.
