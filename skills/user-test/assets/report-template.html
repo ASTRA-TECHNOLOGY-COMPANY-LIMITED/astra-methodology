@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="{{LANG}}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UAT Report — {{SESSION_ID}}</title>
+<title>{{T_REPORT_TITLE}} — {{SESSION_ID}}</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -180,54 +180,59 @@
 <body>
 <div class="container">
   <header>
-    <h1>📋 UAT Report</h1>
-    <p style="font-size: 14px; opacity: 0.95;">Báo cáo kiểm thử người dùng cuối — Session {{SESSION_ID}}</p>
+    <h1>{{T_REPORT_TITLE}}</h1>
+    <p style="font-size: 14px; opacity: 0.95;">{{T_REPORT_SUBTITLE}} {{SESSION_ID}}</p>
     <div class="meta">
-      <span>🕒 Bắt đầu: {{STARTED_AT}}</span>
-      <span>🏁 Kết thúc: {{FINISHED_AT}}</span>
-      <span>⚙️ Mode: {{MODE}}</span>
+      <span>{{T_STARTED}}: {{STARTED_AT}}</span>
+      <span>{{T_FINISHED}}: {{FINISHED_AT}}</span>
+      <span>{{T_MODE}}: {{MODE}}</span>
     </div>
   </header>
 
   <div class="summary">
     <div class="stat total">
       <div class="num">{{TOTAL_CASES}}</div>
-      <div class="label">Test Cases</div>
+      <div class="label">{{T_LABEL_TEST_CASES}}</div>
     </div>
     <div class="stat pass">
       <div class="num">{{PASS_COUNT}}</div>
-      <div class="label">PASS</div>
+      <div class="label">{{T_LABEL_PASS}}</div>
     </div>
     <div class="stat fail">
       <div class="num">{{FAIL_COUNT}}</div>
-      <div class="label">FAIL</div>
+      <div class="label">{{T_LABEL_FAIL}}</div>
     </div>
     <div class="stat time">
       <div class="num">{{DURATION}}</div>
-      <div class="label">Thời gian</div>
+      <div class="label">{{T_LABEL_DURATION}}</div>
     </div>
   </div>
 
   <main>
     <section>
-      <h2>Chi tiết test cases</h2>
+      <h2>{{T_HEADING_DETAILS}}</h2>
       {{TEST_CASES_HTML}}
     </section>
 
     <section>
-      <h2>Issues</h2>
+      <h2>{{T_HEADING_ISSUES}}</h2>
       {{ISSUES_HTML}}
     </section>
   </main>
 
   <footer>
-    Sinh bởi ASTRA <a href="https://github.com/ASTRA-TECHNOLOGY-COMPANY-LIMITED/astra-methodology">/user-test</a>
-    · Session {{SESSION_ID}}
+    {{T_FOOTER_GENERATED}} <a href="https://github.com/ASTRA-TECHNOLOGY-COMPANY-LIMITED/astra-methodology">/user-test</a>
+    · {{SESSION_ID}}
   </footer>
 </div>
 
 <!--
   RENDERING GUIDE for Claude:
+
+  Placeholders prefixed with T_ are i18n strings substituted from
+  references/i18n-strings.md based on the chosen language (vi/en/ko).
+  Status badge text inside <span class="tc-status ..."> also follows i18n
+  (T_STATUS_PASS / T_STATUS_FAIL / T_STATUS_SKIPPED).
 
   {{TEST_CASES_HTML}}: for each test case render:
 
@@ -237,7 +242,7 @@
         <span class="id">{ID}</span>
         <span class="name">{NAME}</span>
       </div>
-      <span class="tc-status {pass|fail|skipped}">{PASS|FAIL|SKIPPED}</span>
+      <span class="tc-status {pass|fail|skipped}">{T_STATUS_PASS|T_STATUS_FAIL|T_STATUS_SKIPPED}</span>
     </div>
     <div class="steps">
       [FOR EACH STEP]
@@ -265,9 +270,9 @@
   </div>
 
   {{ISSUES_HTML}}: if no FAIL render:
-    <div class="empty"><div class="icon">🎉</div>Không có lỗi nào trong session này.</div>
+    <div class="empty"><div class="icon">🎉</div>{T_EMPTY_NO_ISSUES}</div>
   Else:
-    <p>Xem chi tiết tại <a href="./issues.md">issues.md</a> ({M} lỗi: {breakdown})</p>
+    <p>{T_SEE_DETAILS_AT} <a href="./issues.md">issues.md</a> ({M} {T_ISSUES_WORD}: {breakdown})</p>
 -->
 </body>
 </html>
