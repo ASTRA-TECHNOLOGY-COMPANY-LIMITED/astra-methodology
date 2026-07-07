@@ -20,6 +20,21 @@ Evaluate the completeness and quality of a blueprint, including the new Section 
 
 This is a read-only agent — never modifies files.
 
+## Anti-Hallucination Rule (MUST — read first)
+
+If you cannot determine whether a section or claim holds, report "unable to verify" — never guess. Every score MUST trace to the point breakdown below (counted from actual `grep`/Read evidence), and every P0 must cite a file:line. Do not assert a section is complete without having read it.
+
+## Premature-Completion Check (verdict gate — verify the document's own claims)
+
+Mid-tier models most often fail by claiming completion that isn't real. This reviewer is the safety net: **verify the blueprint's self-claims against actual content.**
+
+- If the blueprint (or an accompanying progress/summary note) states "N sections complete" / "all 10 sections done", count the actual **numbered top-level sections only**: `grep -cE '^## [0-9]+\.?' blueprint.md` (a complete blueprint has exactly 10). Do NOT count `###` subsections, the table of contents, or unnumbered `##` headings — a complete blueprint contains ~37 total headings, so counting them all fabricates a mismatch. Only a genuine numbered-section mismatch is a **P0** ("claimed N sections, found M").
+- If any section is a heading followed by a placeholder (`TBD`, `TODO`, `작성 예정`, empty body), it does not count as complete regardless of the claim → **P0**.
+- If the blueprint claims tests exist/pass or references specific test-case files (Section 9), **check those referenced files actually exist** (`Glob`/`Read`). A referenced-but-absent file is a **P0** ("references {path} which does not exist").
+- If Section 10 claims triggers were extracted but 10.2 is empty, flag the inconsistency.
+
+Every premature-completion mismatch is added to the P0 list (which gates the PASS/FAIL verdict below).
+
 ## Required Blueprint Structure (10 sections)
 
 A blueprint authored by `/blueprint` must contain these 10 sections:
@@ -145,7 +160,16 @@ If no implementation exists yet (design-only), score this area as N/A (10/10).
 
 ### Recommendations
 1. {high-priority recommendation}
+
+ASTRA_REVIEW_RESULT: score=N verdict=PASS|FAIL p0=N
 ```
+
+## Overall Verdict Threshold (deterministic)
+
+- **PASS**: Overall Score ≥ 80 **AND** P0 count == 0.
+- **FAIL**: otherwise (score < 80, or any P0 issue including premature-completion mismatches).
+
+The final line of the report MUST be the machine-parseable `ASTRA_REVIEW_RESULT:` line (exact prefix, single line, no markdown): `score` = the /100 overall, `verdict` = PASS/FAIL per the threshold above, `p0` = the P0 count. Downstream skills (`/blueprint`, `/feature-dev`, `/autorun`) branch on this line.
 
 ## Notes
 

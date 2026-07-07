@@ -1,6 +1,6 @@
 ---
 name: design-extract
-description: "Extracts an OKLCH color palette, font families, and spacing heuristics from design references such as images, PDFs, URLs, and screenshots, and produces a draft DESIGN.md Front Matter report. Uses Vision MCP (fect-mcp__vision_analyze, vision_ocr) or WebFetch to analyze references. Inputs: local file paths, URLs, Figma screenshots, competitor sites, brand guideline PDFs. Output: docs/design-system/extract-report-{date}.md (a draft DESIGN.md Front Matter YAML + extraction evidence). This skill only generates the report — it never edits DESIGN.md directly. Merging is performed when the user, after reviewing the report, explicitly invokes /design-init --apply-extract=<report-path>. /design-init --from-refs=... also uses a one-way single-call flow where this skill is invoked once internally and the resulting report is merged."
+description: "Extracts an OKLCH color palette, font families, and spacing heuristics from design references (images, PDFs, URLs, screenshots) via Vision MCP or WebFetch, and writes a draft DESIGN.md Front Matter report to docs/design-system/extract-report-{date}.md. Report-only — merging into DESIGN.md happens via /design-init --apply-extract. Use when analyzing reference designs, competitor sites, or brand guideline documents."
 argument-hint: "<paths-or-urls> [--auto]"
 allowed-tools: Read, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion, TodoWrite
 ---

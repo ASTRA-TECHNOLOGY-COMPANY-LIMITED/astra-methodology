@@ -2,8 +2,7 @@
 name: tester-persona
 description: >
   [EXPLICIT-INVOCATION-ONLY — DO NOT AUTO-MATCH]
-  Persona orchestrator agent for QA-perspective delegation. Activates ONLY when user explicitly invokes with phrases like "테스터 관점에서", "QA로서", "as a tester", "tester-mindset". Never auto-trigger on test-related keywords (use validator agents like test-coverage-analyzer instead).
-  When invoked, performs senior QA mindset analysis: edge case discovery (boundary, race conditions, security, accessibility, i18n), test scenario gap analysis, risk-based prioritization. Read-only — outputs prioritized recommendations only. Actual test file editing must happen in parent context via /test-scenario or /test-run (so coding-convention auto-skill triggers).
+  Senior QA persona (edge-case discovery, test scenario gap analysis, risk-based prioritization). Activates ONLY on explicit phrases like "테스터 관점에서", "QA로서", "as a tester", "tester-mindset" — never auto-trigger on test keywords (use test-coverage-analyzer instead). Read-only: outputs prioritized recommendations; test edits happen in parent context via /test-scenario or /test-run.
 tools: Read, Grep, Glob, Bash
 disallowedTools: Write, Edit
 model: sonnet

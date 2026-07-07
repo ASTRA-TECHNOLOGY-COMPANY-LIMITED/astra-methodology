@@ -164,59 +164,14 @@ Before creating deliverable files, switch to the `dev` branch and synchronize to
 
 ### Step 2: Design the Screen ID issuance scheme
 
-#### A. Screen ID format (PDF §6.1)
+Every screen gets a unique ID in the `{DOMAIN}-{PAGE}-{SECTION}-UC{NN}` format (e.g., `ACAD-EXPERT-DETAIL-UC03`). `DOMAIN` is from Step 1-B; `PAGE` is the route unit; `SECTION` is the screen type (LIST/DETAIL/FORM/MODAL...); `UC{NN}` is the state/case discriminator. State suffixes `-LOADING`/`-EMPTY`/`-ERROR` may replace `UC`.
 
-```
-{DOMAIN}-{PAGE}-{SECTION}-UC{NN}
-────   ─────   ───────   ────
-domain page    section   use-case number (2 digits)
+Three tasks in this step:
+1. Issue IDs for all screens per the format above.
+2. Convert any legacy `SCR-NNN` IDs from `ia-screen-design.md` and log the old/new mapping in `11-decision-log.md`.
+3. Ensure the required-screen set (all states, all modals, edge cases, hidden URL-param screens) is covered — warn and add placeholders for any missing.
 
-Example: ACAD-EXPERT-DETAIL-UC03
-         ACAD-EXPERT-LIST
-         ACAD-EXPERT-LIST-EMPTY
-         ACAD-EXPERT-MODAL01
-```
-
-Detailed rules:
-- `DOMAIN`: product abbreviation (decided in Step 1-B)
-- `PAGE`: menu/route unit (uppercase Latin letters; hyphens allowed when necessary)
-- `SECTION`: screen type — LIST / DETAIL / FORM / MODAL / DASHBOARD / SETTINGS, etc. Omit if not needed.
-- `UC{NN}`: **state/case discriminator** on the same page (e.g., UC01=default, UC02=before adoption, UC03=adopted)
-- State suffix: `-LOADING`, `-EMPTY`, `-ERROR` may be appended directly instead of UC
-
-#### B. Conversion rules for legacy SCR-NNN
-
-If `docs/planner/.../ia-screen-design.md` contains `SCR-001`-style IDs, convert with these rules:
-
-1. Read the screen's `Related UC`, `Type`, and `Screen Name` columns
-2. PAGE = route or main feature keyword (e.g., `Expert Q&A list` → `EXPERT-LIST`)
-3. SECTION = type mapping (list→LIST, detail→DETAIL, form→WRITE, modal→MODAL)
-4. UC{NN} = the `Related UC` number, 2-digit zero-padded (UC-1 → UC01)
-5. **Record the old/new mapping table as the first entry in `11-decision-log.md`** after conversion.
-
-Example: `SCR-005` (question detail, adopted, UC-3) → `ACAD-EXPERT-DETAIL-UC03`
-
-#### C. Required screens (PDF §9.2)
-
-Minimum screens that must be included in the Registry:
-
-- Default screen (DEFAULT)
-- All states (LOADING / EMPTY / DEFAULT / ERROR) — State Matrix expansion
-- All modals (Confirm / Form / Error included)
-- Edge-case screens
-- Hidden screens reachable only via URL parameters
-
-If the planning document's screen list does not cover the above, warn the user:
-
-```
-⚠️ The following screens are missing from the planning document:
-- {SCREEN-ID}-LOADING (loading state)
-- {SCREEN-ID}-EMPTY (empty state)
-- {SCREEN-ID}-ERROR (error state)
-
-They will be added to the Registry as placeholders with "🔄 not started" status.
-Proceed? (yes/no)
-```
+Detailed format rules, the SCR-NNN conversion algorithm, and the required-screen checklist with the missing-screen warning: see [references/screen-id-scheme.md](references/screen-id-scheme.md). Read it before issuing IDs.
 
 ---
 
@@ -239,98 +194,21 @@ Also create an empty `screenshots/` directory (`walkthrough.loom.md` is already 
 
 ---
 
-### Step 4: Auto-fill 1-screen-registry.md
+### Steps 4–12: Auto-fill each handoff document
 
-If planning deliverables loaded in Step 1-C exist, convert the screen list from `ia-screen-design.md` into the Screen Registry table format.
+Fill the 14 files in order, sourcing from the deliverables loaded in Step 1-C. Each step below is one document group; the exact table columns, tree formats, and PDF-section templates for each live in [references/document-autofill-specs.md](references/document-autofill-specs.md) — **read it before writing each document.**
 
-| Planner column | Registry column |
-|----------------|------------------|
-| Screen ID (SCR-NNN) | ID (converted 4-segment) |
-| Screen name | Screen name |
-| Type | State/Case (default / before adoption / no answers, etc.) |
-| Description | Trigger (cause / entry path) |
-| — | Design status (initial: 🔄 not started) |
-
-If there is no planning document, leave only the 4 placeholder rows from the PDF §9.1 example (LIST, LIST-EMPTY, LIST-LOADING, DETAIL-UC01).
-
----
-
-### Step 5: Auto-fill 2-flows.md
-
-If a journey map / Mermaid diagram exists in `usecase-definition.md`, convert it to the PDF §10 example tree format:
-
-```
-[{scenario name} Flow]
-
-{SCREEN-ID}
-    └ Click "{action}"
-        ├ ({condition}) → {SCREEN-ID}
-        └ ({condition}) → {SCREEN-ID}
-            └ Click "{action}"
-                ├ (success)         → {SCREEN-ID}
-                ├ (insufficient tokens) → {SCREEN-ID}
-                └ (network error)   → {SCREEN-ID}
-```
-
-Map the **success/failure/exception branches** of every button-click/submit to IDs. If missing branches are found, record them in `11-decision-log.md` and add placeholder IDs to the Registry.
-
----
-
-### Step 6: Auto-fill 3-state-matrix.md, 4-edge-cases.md
-
-**3-state-matrix.md**: keep the state definitions (LOADING/EMPTY/DEFAULT/ERROR/PARTIAL) as-is from the template. If `feature-definition.md` contains a `permissions per actor` table, auto-convert it for the permission matrix section; otherwise, leave only the 6-column table header (Not logged in / Regular user / Question owner / Answerer / Admin + Action column).
-
-**4-edge-cases.md**: insert the 8 base items from PDF §13 as checkboxes. If `feature-definition.md` has a risk section, extend with additional items.
-
----
-
-### Step 7: Auto-fill 5-responsive-guide.md
-
-Use PDF §12 as-is. Keep only the Desktop (≥1024) / Tablet (768~1023) / Mobile (<768) breakpoints + the ID-notation convention (`-T`, `-M` suffixes). If `docs/design-system/DESIGN.md` Front Matter `tokens.breakpoints` exists in the project, use those values as the top priority (legacy fallback: the breakpoint variables in `src/styles/design-tokens.css`).
-
----
-
-### Step 8: Auto-fill 6-component-specs.md
-
-**Design system SSoT reference (v5.2.0+ priority)**:
-- 1st priority: `docs/design-system/DESIGN.md` Body §4 (Component Guidelines) — global components are referenced via reference links in this file. Front Matter `tokens.color.semantic.*`, `tokens.typography.*` token names are used as-is in the props tables of `6-component-specs.md`.
-- 2nd priority (legacy fallback): projects without DESIGN.md reference `docs/design-system/components.md`, and a `/design-init` Recommended note is added at the top of this file.
-
-For feature-specific components, read the UI elements section from `feature-definition.md` and auto-generate in the PDF §14.1 format (props / variants / usage). At minimum, include scaffolds for the 4 card types (CourseCard, QuestionCard, InsightCard, NoticeCard) + Modal (Confirm/Form/Error).
-
----
-
-### Step 9: Auto-fill 7-business-rules.md
-
-For each Registry ID, create an empty block in the PDF §15.1 format (exposure policy / components used / per-permission branching / handling when no data / data source + caching). If the `blueprint.md` contains API endpoints, auto-fill the `data source` row.
-
----
-
-### Step 10: Auto-fill 8-content-guide.md
-
-Reflect the entire PDF §16–17 content in the template as-is:
-- Brand voice (tone / form of address / forbidden expressions)
-- Microcopy rules (buttons / errors / Empty / modals)
-- Data display rules (images / dates / numbers / text truncation)
-- i18n 3-language policy (ko/en/vi, Vietnamese 1.4× length assumption)
-
-If the project specifies different languages, substitute via `{{LANGUAGE_POLICY}}` from Step 3.
-
----
-
-### Step 11: Auto-fill 9-ia-sitemap.md, 10-personas.md, 11-decision-log.md
-
-- **9-ia-sitemap.md**: if `ia-screen-design.md` has a menu tree, reconstruct it as an ASCII tree in the PDF §3 format. The URL conventions and depth policy (max 3 depth Recommended) stay as in the template.
-- **10-personas.md**: organize the Top 3–5 personas from `interview-report.md` in the PDF §4 format (goal / pain points / usage context / device). Also extract the Top 5–10 key scenarios.
-- **11-decision-log.md**: record the Step 2-B SCR-NNN → 4-segment ID conversion log as the first entry. Subsequent changes are added by UX directly.
-
----
-
-### Step 12: Verify 0-README.md variable substitution
-
-- **0-README.md**: keep template as-is (PDF §7 Quick Start + 5-min guide per role). Only verify that `{{FEATURE_NAME}}`/`{{DOMAIN_CODE}}` from Step 3 were substituted correctly.
-- **walkthrough.loom.md**: already copied as a template in Step 3, so no separate creation needed. UX adds the Loom URL manually after recording.
-- **DoD-CHECKLIST.md**: already copied as a template in Step 3; keep the per-role (UX/UI/Dev/QA) checklist format as-is.
+| Step | Document(s) | Fill from | Fallback when no planner doc |
+|------|-------------|-----------|------------------------------|
+| 4 | `1-screen-registry.md` | `ia-screen-design.md` screen list → 4-segment Registry rows | 4 placeholder rows (PDF §9.1) |
+| 5 | `2-flows.md` | `usecase-definition.md` journey map → tree with success/failure/exception branches | — |
+| 6 | `3-state-matrix.md`, `4-edge-cases.md` | `feature-definition.md` permission table + risk section | template state defs + 8 base edge cases |
+| 7 | `5-responsive-guide.md` | DESIGN.md `tokens.breakpoints` (fallback: design-tokens.css) | PDF §12 breakpoints as-is |
+| 8 | `6-component-specs.md` | DESIGN.md Body §4 (1st) / `components.md` (fallback) + `feature-definition.md` UI elements | 4 card scaffolds + Modal |
+| 9 | `7-business-rules.md` | `blueprint.md` API endpoints → data-source rows | empty PDF §15.1 blocks per ID |
+| 10 | `8-content-guide.md` | PDF §16–17 as-is; `{{LANGUAGE_POLICY}}` substitution | — |
+| 11 | `9-ia-sitemap.md`, `10-personas.md`, `11-decision-log.md` | `ia-screen-design.md` menu tree, `interview-report.md` personas, Step 2 conversion log | template as-is |
+| 12 | `0-README.md`, `walkthrough.loom.md`, `DoD-CHECKLIST.md` | verify `{{FEATURE_NAME}}`/`{{DOMAIN_CODE}}` substitution only | template as-is |
 
 ---
 
@@ -381,18 +259,7 @@ DoD checks are in PDF §19. A `/check-dod` command is planned.
 
 ## Anti-patterns (PDF §23)
 
-The 10 problems this skill aims to prevent:
-
-1. Missing modal/error screens → register modal IDs in the Registry
-2. Per-state UI undefined → mandate the State Matrix
-3. Missing Mobile design → mandate the Responsive Guide
-4. Per-permission UI differences not reflected → mandate the permission matrix
-5. Figma/code IDs created separately → SSoT (Registry) + UX-only issuance authority
-6. Changes reflected on only one side → Decision Log + change-management process
-7. Inconsistent card data items → mandate 6-component-specs.md
-8. Arbitrary exposure conditions → mandate 7-business-rules.md
-9. Vietnamese length truncation → assume 1.4× length
-10. Accessibility non-compliance → Accessibility guide + DoD
+The 10 problems this skill prevents (missing modals, undefined per-state UI, missing mobile, split Figma/code IDs, one-sided changes, etc.) are catalogued in the Appendix of [references/document-autofill-specs.md](references/document-autofill-specs.md). Consult it if unsure why a document is mandated.
 
 ---
 

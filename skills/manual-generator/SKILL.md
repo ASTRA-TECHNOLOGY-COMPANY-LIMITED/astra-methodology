@@ -33,6 +33,7 @@ Analyzes a running service URL and project documents (blueprints, planner) and g
 - **Writing principles / style rules**: see [references/manual-writing-guide.md](references/manual-writing-guide.md)
 - **CSS component templates**: see [references/manual-css-template.md](references/manual-css-template.md)
 - **HTML structure templates**: see [references/manual-html-templates.md](references/manual-html-templates.md) (chapter, index, FAQ, glossary)
+- **JS specs + screenshot annotation injection**: see [references/manual-shared-resources.md](references/manual-shared-resources.md)
 
 ---
 
@@ -236,21 +237,7 @@ Before creating deliverables, switch to `dev` and sync. Do not create a work bra
 
 #### A. Create directory structure
 
-Create the `docs/manual/{feature-name}/` directory. `{feature-name}` is:
-- Single feature: the feature name (e.g., `auth`, `payment`)
-- All: the project name or `service-guide`
-
-```
-docs/manual/{feature-name}/
-├── index.html
-├── chapters/
-├── assets/
-├── screenshots/
-│   ├── desktop/
-│   ├── tablet/    (when RESPONSIVE_MODE >= 3)
-│   └── mobile/    (when RESPONSIVE_MODE >= 2)
-└── shared/
-```
+Read `references/manual-structures.md` (section "Output directory structure") and create the `docs/manual/{feature-name}/` directory tree.
 
 #### B. Copy design tokens
 
@@ -274,57 +261,16 @@ Responsive: mobile / tablet / desktop
 
 #### D. Generate CSS files
 
-Generate the following files based on the `/frontend-design` output. Detailed component specs for each CSS file are in `references/manual-css-template.md`:
+Generate these files from the `/frontend-design` output. **Full per-file component specs (and the Help Center §5 assets) live in `references/manual-css-template.md`** — read it when writing each file:
 
-1. **`assets/manual-base.css`** — read-optimized layout:
-   - `max-width: 800px` content area (optimal readability)
-   - Left sidebar TOC (240px, collapsible, sticky)
-   - 64px top header bar
-   - Typography: document-optimized (line-height 1.7, generous paragraph spacing)
-   - Responsive: sidebar collapses on tablet, becomes overlay on mobile
-   - Dark mode: `[data-theme="dark"]` selector
-
-2. **`assets/manual-components.css`** — manual-specific components:
-   - `.step-card` — numbered step card (number circle + content + screenshot)
-   - `.callout-tip`, `.callout-warning`, `.callout-note`, `.callout-danger` — info boxes
-   - `.screenshot-frame` — mock browser-chrome frame + screenshot image
-   - `.screenshot-annotation` — positioned numbered circles (overlay on screenshot)
-   - `.breadcrumb` — chapter breadcrumb
-   - `.chapter-nav` — previous/next chapter navigation
-   - `.responsive-tabs` — desktop/tablet/mobile screenshot tab switching
-   - `.toc-sidebar` — sidebar table of contents
-   - `.search-overlay` — search modal
-
-3. **`assets/manual-print.css`** — print:
-   - Hide sidebar / header / nav
-   - Avoid page-breaks in screenshots
-   - Print link URLs as text
-
-4. **`assets/manual-helpcenter.css`** — *only when `DESIGN_TONE = Help Center`*:
-   - Generate from `references/manual-css-template.md` §5 (hero/search, FAQ grid, category cards, banner CTA, contact CTA, footer + dark-mode overrides)
-   - Inline SVG icon set (rocket / gear / handshake / bell / bulb / book) is also in §5
-   - Chapter pages still use `manual-base.css` + `manual-components.css`; this file extends only `index.html`
-
-> **Note**: search-overlay styles are included in `manual-components.css` (no separate file needed).
+1. **`assets/manual-base.css`** — read-optimized layout (800px content area, 240px sticky collapsible sidebar TOC, 64px header, line-height 1.7, responsive sidebar collapse, `[data-theme="dark"]`)
+2. **`assets/manual-components.css`** — manual components: `.step-card`, `.callout-tip/warning/note/danger`, `.screenshot-frame`, `.screenshot-annotation`, `.breadcrumb`, `.chapter-nav`, `.responsive-tabs`, `.toc-sidebar`, `.search-overlay` (search-overlay lives here — no separate file needed)
+3. **`assets/manual-print.css`** — print: hide sidebar/header/nav, avoid screenshot page-breaks, print link URLs as text
+4. **`assets/manual-helpcenter.css`** — *only when `DESIGN_TONE = Help Center`*: generate from `references/manual-css-template.md` §5 (hero/search, FAQ grid, category cards, banner + contact CTA, footer, dark-mode overrides, inline SVG icon set rocket/gear/handshake/bell/bulb/book). Chapter pages still use base + components; this file extends only `index.html`.
 
 #### E. Generate JavaScript files
 
-1. **`shared/nav.js`**:
-   - Sidebar TOC toggle (mobile: hamburger menu)
-   - Chapter prev/next navigation
-   - Scrollspy: highlight the section currently being read in the TOC
-   - Keyboard navigation: `←` / `→` to move between chapters
-
-2. **`shared/search.js`**:
-   - Load `search-index.json`
-   - Real-time results when typing a query
-   - Click a result to jump to the chapter + section
-   - Keyboard: `Ctrl+K` / `Cmd+K` to open search
-
-3. **`shared/theme.js`**:
-   - Dark-mode toggle (persisted in `localStorage`)
-   - Font-size A+/A- adjustment (3 levels)
-   - System theme detection (`prefers-color-scheme`)
+Generate `shared/nav.js`, `shared/search.js`, `shared/theme.js`. **Full per-file behavior specs are in `references/manual-shared-resources.md` (§ JavaScript files)** — read it when authoring these. Summary: nav.js = sidebar toggle + chapter prev/next + scrollspy + `←`/`→` nav; search.js = load `search-index.json` + live results + `Ctrl/Cmd+K`; theme.js = dark-mode toggle (localStorage) + font-size A+/A- + `prefers-color-scheme`.
 
 #### F. Progress report
 
@@ -357,18 +303,11 @@ For each screen:
    mcp__chrome-devtools__wait_for({ selector: "{main-content-selector}", timeout: 10000 })
    ```
 
-3. **Inject highlight CSS** — use `evaluate_script` to add the `.manual-highlight` class to the target element:
-   - Style: `outline: 3px solid #2563EB`, `outline-offset: 2px`, `box-shadow: 0 0 0 6px rgba(37,99,235,0.15)`
-   - (Intentional exception: the target service's DOM doesn't have the manual's design tokens, so hardcoding is used. If it clashes with the service's colors, substitute a contrasting color like `#FF3B30`)
-   - Inject `<style id="manual-highlight-style">` into head, then `querySelector('{target-selector}').classList.add('manual-highlight')`
+3. **Inject highlight + step-number overlay** via `evaluate_script` — add a `.manual-highlight` outline to the target element and a numbered badge at its top-right. **Exact CSS/JS injection snippets and the hardcoding-exception note are in `references/manual-shared-resources.md` (§ Screenshot annotation injection)** — read it before this step.
 
-4. **Inject step-number overlay** — use `evaluate_script` to add a circular badge at the top-right of the target element:
-   - 28x28px blue circle, white text, `z-index: 10001`
-   - Compute position via `getBoundingClientRect()`, `position: fixed`
+4. **Capture screenshot** — `take_screenshot()` → `screenshots/desktop/{chapter}-step-{N}.png`
 
-5. **Capture screenshot** — `take_screenshot()` → `screenshots/desktop/{chapter}-step-{N}.png`
-
-6. **Remove injected elements** — use `evaluate_script` to remove the `.manual-highlight` class, the `.manual-step-badge` element, and the style tag
+5. **Remove injected elements** — per `references/manual-shared-resources.md` §3c (remove the class, the `.manual-step-badge`, and the style tag)
 
 #### B. Responsive screenshots (when RESPONSIVE_MODE >= 2)
 
@@ -504,23 +443,7 @@ Key structural elements (cover variant):
 
 #### B. Generate search-index.json
 
-Scan every chapter to build the search index:
-
-```json
-[
-  {
-    "chapter": "01",
-    "title": "Getting Started",
-    "url": "chapters/01-getting-started.html",
-    "sections": [
-      { "heading": "Service introduction", "anchor": "#intro", "content": "..." },
-      { "heading": "How to access", "anchor": "#access", "content": "..." }
-    ]
-  }
-]
-```
-
-The `content` of each section includes the first 200 characters of the body text (for search matching).
+Scan every chapter to build the search index. Read `references/manual-structures.md` (section "Search index schema") and instantiate `search-index.json` per that schema.
 
 ---
 

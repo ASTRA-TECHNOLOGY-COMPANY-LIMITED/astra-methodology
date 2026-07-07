@@ -228,7 +228,19 @@ All agents are read-only via `disallowedTools: Write, Edit` — they analyze and
 
 ---
 
-## 13. ASTRA New/Modified SKILL.md Checklist
+## 13. Harness Robustness Conventions (v5.12+)
+
+Conventions that make skills reliable on mid-tier models (Sonnet/Opus), established by the 2026-07 harness hardening. Apply to every new/modified skill:
+
+1. **Machine-parseable contract lines** — a skill/agent whose result gates another skill's branch MUST emit a single-line, greppable verdict as the FINAL line, and the consumer MUST parse only that line (never prose). Existing contracts: `ASTRA_TEST_RESULT: PASS|FAIL passed=N failed=N total=N` (test-run), `ASTRA_REVIEW_RESULT: score=N verdict=PASS|FAIL p0=N` (blueprint/planner-reviewer), `ASTRA_GATE_RESULT: verdict=... critical=N warning=N info=N` (quality-gate-runner), `SEVERITY_COUNTS: critical=N high=N medium=N low=N` (pr-merge Step 8 reviewer contract). **Line absent = FAIL/unverified, never 0 issues.**
+2. **Cross-invocation state protocol** — shell variables do NOT survive between Bash tool calls. Persist workflow state via `astra_state_set KEY "$VALUE" [scope]` / `astra_state_load [scope]` (worktree-helpers.sh; scoped per work branch). Every bash fence that consumes persisted variables carries the literal PREAMBLE as its first lines (resolve `PLUGIN_ROOT` → `source worktree-helpers.sh` → `astra_state_load`). Invisible prose rules are not enough for literal-minded models — the code in the fence is the only reliable enforcement.
+3. **Verify-before-claim** — never print a success banner or set a success flag without a captured verification in the same session: `gh pr view --json state` == MERGED after merges, test-runner exit codes after fixes, `[ -f ]` after file generation. Guard every destructive command with `[ -n "$VAR" ]` and re-derive empty values from git/gh; never run destructive commands with empty variables.
+4. **zsh-safety (the Bash tool runs zsh on macOS)** — no `mapfile`/`readarray` (use newline-joined strings or `while IFS= read`), no `local status` (read-only special var in zsh — assignment kills the shell), no reliance on word-splitting unquoted variables (`for x in $LIST` and `cmd $FLAGS` do NOT split in zsh — use `while read` loops and arrays `"${ARR[@]}"`), no `ls glob 2>/dev/null` for may-not-match patterns (zsh NOMATCH errors before redirection — use `find`), no PCRE lookahead in `grep -E`.
+5. **Regexes live in code fences, not markdown tables** — table-cell `\|` escaping silently destroys alternation when copied into grep.
+6. **"Unable to verify" beats guessing** — validators/reviewers must have an explicit unable-to-verify/unable-to-score reporting path (including a template variant), mandatory lookup commands for dictionary/data checks, and score formulas with defined numerator/denominator + minimum-sample rules.
+7. **Extraction boundary** — when splitting content to `references/`, move ONLY template/reference material. Executable guards, `source` lines, decision rules, success criteria, and HITL logic stay inline in SKILL.md.
+
+## 14. ASTRA New/Modified SKILL.md Checklist
 
 - [ ] description in third person + What + When + trigger keywords
 - [ ] Auto-trigger skill → English `description: >` block / interactive skill → Korean `description: "..."` single line

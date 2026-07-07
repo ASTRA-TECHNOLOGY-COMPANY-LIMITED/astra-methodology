@@ -6,12 +6,9 @@ description: >
   "tool description", "function calling", "MCP tool", "Pydantic schema", "Zod
   schema", "@tool decorator", "input_schema", "tool spec", "툴 정의", "함수 호출
   스키마", or when editing files that define LLM tool surfaces. Enforces the six
-  required attributes (one-line summary, anti-pattern, synonyms, parameter
-  examples, enum constraints, return shape) and blocks the seven known failure
-  modes — wrong-tool selection, skipped tool, malformed arguments, retry loops,
-  user-intent bypass, wrong side-effect, and un-auditable traces. For authoring
-  ASTRA SKILL.md files use /skill-author instead — this skill is for *runtime*
-  LLM tool surfaces, not for skill files themselves.
+  required attributes and blocks the seven known tool-failure modes (see
+  references/). For authoring ASTRA SKILL.md files use /skill-author instead —
+  this skill is for *runtime* LLM tool surfaces, not for skill files.
 paths:
   - "tools/**/*.py"
   - "tools/**/*.ts"

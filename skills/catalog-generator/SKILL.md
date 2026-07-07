@@ -44,40 +44,7 @@ Analyze `$ARGUMENTS` to determine the product data source:
 
 #### B. Product Data Normalization
 
-Normalize collected data into the internal standard structure:
-
-```json
-{
-  "catalog": {
-    "name": "{catalog-name}",
-    "brand": "{brand-name}",
-    "tagline": "{brand-slogan}",
-    "contact": { "phone": "", "email": "", "website": "", "address": "" }
-  },
-  "categories": [
-    {
-      "id": "cat-01",
-      "name": "{category-name}",
-      "description": "{category-description}",
-      "products": [
-        {
-          "id": "prod-001",
-          "name": "{product-name}",
-          "price": 0,
-          "originalPrice": null,
-          "description": "{product-description}",
-          "features": ["{feature-1}", "{feature-2}"],
-          "specs": { "{spec-key}": "{value}" },
-          "images": ["{image-path}"],
-          "badges": [],
-          "crossSell": ["{related-product-id}"],
-          "tier": "standard|premium|budget"
-        }
-      ]
-    }
-  ]
-}
-```
+Normalize collected data into the internal standard structure defined in `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-structures.md` (section "Product data normalization schema"). Read that file and map the collected data onto the schema.
 
 **Data Enrichment Rules**:
 - If price is missing, replace pricing area with `Contact Us` label
@@ -195,36 +162,7 @@ Before generating output files, switch to the `dev` branch and sync with the lat
 
 #### A. Create Directory Structure
 
-```
-catalog/{catalog-name}/
-├── index.html              # Cover + TOC + navigation hub
-├── pages/                  # Individual page HTML files
-│   ├── 01-cover.html       # Cover (standalone view)
-│   ├── 02-brand-story.html # Brand story (optional)
-│   ├── 03-{category}.html  # Category product pages
-│   ├── {NN}-showcase.html  # Screenshot showcase — "See it in action" (when SERVICE_URL)
-│   └── XX-contact.html     # Order/contact info
-├── assets/
-│   ├── tokens.css          # Design tokens (colors, typography, spacing)
-│   ├── catalog-base.css    # Layout & typography
-│   ├── catalog-components.css  # Product cards, badges, CTAs, screenshots, illustrations
-│   ├── catalog-print.css   # Print-optimized styles
-│   └── catalog-interactions.css # Hover, transitions, animations
-├── images/                 # Product images + AI-generated visuals
-│   ├── hero/               # Hero banner images
-│   ├── products/           # Product images
-│   ├── lifestyle/          # Lifestyle shots (AI-generated)
-│   ├── illustrations/      # Editorial illustrations (AI-generated, mood/atmosphere)
-│   ├── categories/         # Category visuals (AI-generated)
-│   └── screenshots/        # Chrome MCP captured screenshots
-│       ├── desktop/        # Desktop viewport (1280×800)
-│       ├── tablet/         # Tablet viewport (768×1024)
-│       └── mobile/         # Mobile viewport (375×812)
-└── shared/
-    ├── nav.js              # Navigation (page transitions, TOC)
-    ├── interactions.js     # Interactions (filter, search, gallery, screenshot tabs)
-    └── theme.js            # Dark mode, font size adjustment
-```
+Read `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-structures.md` (section "Output directory structure") and create the directory tree under `catalog/{catalog-name}/`.
 
 #### B. Generate Design Tokens
 
@@ -344,84 +282,18 @@ For each entry in `{SCREENSHOT_PLAN}`:
 
 #### B. Hero Banner Generation (fect-image)
 
-Use `mcp__fect-image__image_text2img` to generate the cover hero image.
-
-Prompt composition — use rich, art-directed prompts for premium quality:
-```
-Cinematic product catalog hero banner, {product-category} theme,
-{DESIGN_TONE} aesthetic, premium commercial photography,
-dramatic lighting, shallow depth of field, editorial magazine quality,
-{brand-color} color accent, ultra-wide 21:9 composition,
-negative space for text overlay on the left third
-```
-
-Save generated image to `images/hero/`.
+Use `mcp__fect-image__image_text2img` to generate the cover hero image. Read `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-image-prompts.md` (section "Hero banner") for the prompt and save the result to `images/hero/`.
 
 #### C. Category Visual Generation (fect-image)
 
-If there are 2+ categories, generate a divider image for each category.
+If there are 2+ categories, generate a divider image for each category. Use the "Category visual" prompt in `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-image-prompts.md` and save the results to `images/categories/`.
 
-Prompt composition:
-```
-{category-name} product category editorial visual, {DESIGN_TONE} style,
-abstract artistic background, luxury commercial catalog quality,
-soft gradient lighting, cinematic color grading, 3:2 aspect ratio
-```
-
-Save generated images to `images/categories/`.
-
-#### D. Editorial Illustration Generation (fect-image) — NEW
+#### D. Editorial Illustration Generation (fect-image)
 
 Generate mood/atmosphere illustrations placed between categories and in feature sections. These elevate the catalog from a simple product list to an editorial experience.
 
-| Illustration Type | Placement | Prompt Strategy |
-|------------------|-----------|----------------|
-| **Mood separator** | Between categories | Abstract, atmospheric, brand-color gradients |
-| **Lifestyle scene** | Near hero/premium products | Product in aspirational real-life context |
-| **Detail texture** | Background for spec sections | Macro texture, material close-up |
-| **Infographic base** | Feature comparison sections | Clean geometric, data-visualization style |
-| **Brand atmosphere** | Brand story page | Emotional, storytelling visual |
+Read `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-image-prompts.md` (section "Editorial illustrations") for the 5 illustration types, their placements, and per-type prompts BEFORE generating. Apply the following generation-count rules to decide how many of each to produce, then save the results to `images/illustrations/`:
 
-Prompt composition per type:
-
-**Mood separator**:
-```
-Abstract artistic illustration, {DESIGN_TONE} aesthetic,
-flowing {brand-color} gradients, organic shapes, editorial magazine divider,
-minimalist composition, ultra-clean, no text, 4:1 wide panoramic
-```
-
-**Lifestyle scene**:
-```
-{product-name} in {aspirational-context}, editorial lifestyle photography,
-{target-audience-lifestyle} setting, warm natural lighting,
-magazine-quality composition, {DESIGN_TONE} color palette, 16:9
-```
-
-**Detail texture**:
-```
-Macro close-up of {product-material/texture}, abstract product detail,
-{DESIGN_TONE} color grading, shallow depth of field,
-premium material texture, subtle bokeh, 3:2 aspect ratio
-```
-
-**Infographic base**:
-```
-Clean geometric abstract background, {DESIGN_TONE} color scheme,
-subtle grid pattern, modern data visualization aesthetic,
-plenty of negative space for overlay content, 16:9
-```
-
-**Brand atmosphere**:
-```
-{brand-story-theme} conceptual illustration, {DESIGN_TONE} editorial style,
-cinematic dramatic lighting, emotional storytelling mood,
-abstract artistic interpretation, premium quality, 2:1 wide
-```
-
-Save generated images to `images/illustrations/`.
-
-**Generation rules**:
 - Mood separators: 1 per category transition (min 1, max 4)
 - Lifestyle scenes: 1 per hero/premium product without existing images
 - Detail textures: 1–2 for spec-heavy categories
@@ -430,16 +302,7 @@ Save generated images to `images/illustrations/`.
 
 #### E. Lifestyle Shot Generation (fect-image)
 
-For products with no provided images and no Chrome MCP screenshots, generate lifestyle images:
-
-```
-{product-name} in real-life premium setting, editorial product photography,
-{usage-scene-description}, dramatic studio lighting with natural fill,
-{DESIGN_TONE} mood, luxury commercial catalog quality,
-styled with complementary props, shallow depth of field, 4:5 portrait
-```
-
-Save generated images to `images/lifestyle/`.
+For products with no provided images and no Chrome MCP screenshots, generate lifestyle images using the "Lifestyle shot" prompt in `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-image-prompts.md`. Save the results to `images/lifestyle/`.
 
 > **Rule**: Generate only the minimum required images — prioritize Chrome MCP screenshots over AI generation. For products with both a service URL and AI images, use screenshots for "in action" views and AI images for aspirational lifestyle shots. Skip AI image generation for any product that already has user-provided images.
 
@@ -528,74 +391,7 @@ Apply expert know-how for product placement:
 - **Product Screenshot Gallery**: For hero/premium products with Chrome MCP screenshots, add a responsive screenshot tab component (desktop/tablet/mobile views) inside the product card
 - **Detail Texture Backgrounds**: Apply detail texture illustrations as subtle background images for spec/comparison sections
 
-Product card HTML structure (enhanced with screenshot gallery and illustrations):
-
-```html
-<article class="product-card product-card--{tier}" data-product-id="{id}">
-  <div class="product-card__badges">
-    <span class="badge badge--{type}">{badge-text}</span>
-  </div>
-  <div class="product-card__image">
-    <img src="../images/products/{image}" alt="{product-name}" loading="lazy">
-  </div>
-  <!-- Screenshot Gallery (hero/premium products with SERVICE_URL only) -->
-  <div class="product-card__screenshot-gallery">
-    <div class="screenshot-tabs">
-      <button class="screenshot-tab screenshot-tab--active" data-viewport="desktop">Desktop</button>
-      <button class="screenshot-tab" data-viewport="tablet">Tablet</button>
-      <button class="screenshot-tab" data-viewport="mobile">Mobile</button>
-    </div>
-    <div class="screenshot-panels">
-      <div class="screenshot-panel screenshot-panel--active" data-viewport="desktop">
-        <div class="screenshot-frame screenshot-frame--browser">
-          <div class="screenshot-frame__chrome">
-            <span class="screenshot-frame__dot"></span>
-            <span class="screenshot-frame__dot"></span>
-            <span class="screenshot-frame__dot"></span>
-            <span class="screenshot-frame__url">{SERVICE_URL}/{product-route}</span>
-          </div>
-          <img src="../images/screenshots/desktop/{screenshot}" alt="{product-name} desktop view" loading="lazy">
-        </div>
-      </div>
-      <div class="screenshot-panel" data-viewport="tablet">
-        <div class="screenshot-frame screenshot-frame--tablet">
-          <img src="../images/screenshots/tablet/{screenshot}" alt="{product-name} tablet view" loading="lazy">
-        </div>
-      </div>
-      <div class="screenshot-panel" data-viewport="mobile">
-        <div class="screenshot-frame screenshot-frame--mobile">
-          <img src="../images/screenshots/mobile/{screenshot}" alt="{product-name} mobile view" loading="lazy">
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="product-card__content">
-    <h3 class="product-card__name">{headline}</h3>
-    <p class="product-card__subtitle">{subhead}</p>
-    <p class="product-card__description">{body}</p>
-    <ul class="product-card__features">
-      <li>{feature-1}</li>
-      <li>{feature-2}</li>
-    </ul>
-    <div class="product-card__pricing">
-      <span class="price price--original">{original-price}</span>
-      <span class="price price--current">{current-price}</span>
-    </div>
-    <a href="#contact" class="cta-button">{cta-text}</a>
-  </div>
-  <div class="product-card__cross-sell">
-    <p>You may also like</p>
-    <div class="cross-sell-items">
-      <!-- Related product thumbnails -->
-    </div>
-  </div>
-</article>
-
-<!-- Editorial Illustration Break (between product groups) -->
-<div class="illustration-break">
-  <img src="../images/illustrations/{mood-separator}" alt="" role="presentation" loading="lazy">
-</div>
-```
+Read `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-inline-html-blocks.md` (section "Product card HTML") and instantiate the product-card skeleton per product.
 
 > **Note**: The `.product-card__screenshot-gallery` block is only included for hero/premium tier products that have Chrome MCP screenshots. Omit entirely for products without screenshots. The `.illustration-break` is inserted between logical product groups (e.g., after every 3–4 products or between tier boundaries).
 
@@ -606,29 +402,7 @@ A dedicated "See it in action" page that showcases the product/service through c
 Structure:
 1. **Hero section** — Full-width desktop screenshot in browser-chrome frame with headline "See It In Action"
 2. **Device showcase** — 3-device mockup display (desktop + tablet + mobile) with perspective tilt
-3. **Feature walkthrough** — Sequential screenshot cards showing key user flows:
-   ```html
-   <div class="showcase-flow">
-     <div class="showcase-step">
-       <div class="showcase-step__number">1</div>
-       <div class="showcase-step__screenshot">
-         <div class="screenshot-frame screenshot-frame--browser">
-           <div class="screenshot-frame__chrome">
-             <span class="screenshot-frame__dot"></span>
-             <span class="screenshot-frame__dot"></span>
-             <span class="screenshot-frame__dot"></span>
-             <span class="screenshot-frame__url">{url}</span>
-           </div>
-           <img src="../images/screenshots/desktop/{screenshot}" alt="{step-description}" loading="lazy">
-         </div>
-       </div>
-       <div class="showcase-step__content">
-         <h3>{step-title}</h3>
-         <p>{step-description}</p>
-       </div>
-     </div>
-   </div>
-   ```
+3. **Feature walkthrough** — Sequential screenshot cards showing key user flows. Read `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-inline-html-blocks.md` (section "Showcase feature-walkthrough step") and instantiate one step per key flow.
 4. **Responsive comparison** — Side-by-side responsive views with tab switching
 5. **CTA section** — "Ready to experience it yourself?" with primary action button
 
