@@ -1,6 +1,6 @@
 ---
 name: design-init
-description: "Creates/updates docs/design-system/DESIGN.md — the single source of truth (SSoT) for the project's design system — and auto-generates src/styles/design-tokens.css. Fills OKLCH color, typography, spacing, and motion tokens from brand keywords, persona, and reference inputs (images/URLs), and codifies the anti-AI aesthetic rules (Vibe Coding). Outputs a hybrid format (YAML Front Matter + Markdown Body) that combines the Google Stitch DESIGN.md spec with the ASTRA 3-tier token structure (Primitive→Semantic→Component). Modes: new generation (init), update on existing (update), regenerate CSS only (--regenerate-css), extract from references then merge (--from-refs=<path-or-url> — internally calls /design-extract once), and merge from a pre-existing extract report (--apply-extract=<report-path>). If docs/planner/*/interview-report.md is present the persona is auto-cited, and /service-planner, /handoff-publish, and design-token-validator all reference this file as the SSoT."
+description: "Creates or updates docs/design-system/DESIGN.md — the design-system SSoT (YAML Front Matter tokens + Markdown Body) — and regenerates src/styles/design-tokens.css from it. Modes: new/update, --regenerate-css, --from-refs=<paths-or-urls> (extract references then merge), --apply-extract=<report-path>. Use when defining brand or design tokens, bootstrapping a design system, or regenerating CSS after DESIGN.md changes."
 argument-hint: "[--regenerate-css] [--from-refs=<paths-or-urls>] [--apply-extract=<report-path>] [--auto]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, TodoWrite
 ---
@@ -160,54 +160,7 @@ Parse the Front Matter of `docs/design-system/DESIGN.md` and generate `src/style
 
 #### Step 6.1: Front Matter parsing + reference resolution
 
-The DESIGN.md Front Matter is standard YAML, but semantic tokens use the ASTRA-specific reference syntax `"{tokens.color.primitive.neutral.0}"` (instead of YAML anchors, for readability). Therefore handle in two stages:
-
-```bash
-python3 - <<'PY'
-import yaml, re, sys
-
-with open('docs/design-system/DESIGN.md') as f:
-    content = f.read()
-m = re.match(r'^---\n(.*?)\n---\n', content, re.DOTALL)
-if not m:
-    sys.exit("DESIGN.md Front Matter missing")
-data = yaml.safe_load(m.group(1))
-
-# Resolve reference syntax: "{tokens.color.primitive.neutral.0}" → CSS var()
-REF_RE = re.compile(r'^\{([^}]+)\}$')
-
-def resolve_ref(value):
-    """If value is a reference string, convert to CSS variable name (delegate actual value lookup to the CSS variable chain)."""
-    if not isinstance(value, str):
-        return value
-    m = REF_RE.match(value)
-    if not m:
-        return value
-    path = m.group(1).split('.')
-    # tokens.color.primitive.neutral.0 → --primitive-neutral-0
-    # tokens.color.semantic.surface.base → --surface-base
-    if path[:3] == ['tokens', 'color', 'primitive']:
-        return f"var(--primitive-{path[3]}-{path[4]})"
-    if path[:3] == ['tokens', 'color', 'semantic']:
-        # path[3]=group, path[4]=name
-        kebab = path[4].replace('_', '-')
-        return f"var(--{path[3]}-{kebab})"
-    # Others (typography·spacing·motion etc.) — extend as needed
-    return f"var(--{'-'.join(path[1:]).replace('_','-')})"
-
-def walk(node):
-    if isinstance(node, dict):
-        return {k: walk(v) for k, v in node.items()}
-    if isinstance(node, list):
-        return [walk(x) for x in node]
-    return resolve_ref(node)
-
-resolved = walk(data)
-# Then apply Step 6.2 transformation rules
-PY
-```
-
-**Important**: References are converted to CSS variable chains (not OKLCH value lookups). For example, the generated CSS contains `--surface-base: var(--primitive-neutral-0)`, and the browser chain-resolves at runtime. This is the key mechanism that cleanly supports dark mode token overrides.
+Parse the YAML Front Matter, then resolve the ASTRA reference syntax `"{tokens.color.primitive.neutral.0}"` into CSS variable **chains** (not OKLCH value lookups) — e.g. `--surface-base: var(--primitive-neutral-0)` — so the browser chain-resolves at runtime and dark-mode overrides work cleanly. The concrete Python parser + `resolve_ref` implementation: see [references/css-generation.md](references/css-generation.md). Read it before writing the parser.
 
 #### Step 6.2: Transformation rules
 
@@ -229,36 +182,9 @@ PY
 
 **Reference substitution**: `"{tokens.color.primitive.neutral.0}"` → `var(--primitive-neutral-0)`.
 
-#### Step 6.3: Write the CSS file
+#### Step 6.3–6.4: Write the CSS file + show diff
 
-Add an auto-generation warning at the top:
-
-```css
-/* ============================================================================
- * AUTO-GENERATED from docs/design-system/DESIGN.md — DO NOT EDIT BY HAND
- * Regenerate: /design-init --regenerate-css
- * Generated: {YYYY-MM-DDTHH:mm:ss}
- * Source version: {meta.version from DESIGN.md}
- * ============================================================================
- */
-:root {
-  /* Primitive */
-  --primitive-primary-50: oklch(...);
-  ...
-  /* Semantic */
-  --surface-base: var(--primitive-neutral-0);
-  ...
-}
-```
-
-#### Step 6.4: Show change diff
-
-```bash
-if [ -f "$EXISTING_CSS" ]; then
-  diff -u "${EXISTING_CSS}" "${EXISTING_CSS}.new" | head -40 || true
-fi
-mv "${EXISTING_CSS}.new" "$EXISTING_CSS"
-```
+Write `src/styles/design-tokens.css` with an `AUTO-GENERATED from DESIGN.md — DO NOT EDIT BY HAND` header (regenerate command, timestamp, source `meta.version`), a `:root` block ordered Primitive → Semantic, then diff against the existing file before overwriting. Exact header format + diff snippet: see [references/css-generation.md](references/css-generation.md).
 
 ### Step 7: Workflow termination
 

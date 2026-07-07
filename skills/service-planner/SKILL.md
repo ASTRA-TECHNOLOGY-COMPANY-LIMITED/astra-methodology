@@ -109,21 +109,7 @@ Choice:
 - On **new service planning**: proceed with the default workflow as-is
 - On **improve an existing service**: collect additional context:
 
-```
-## Improve an existing service — additional info
-
-Please share existing data about the current service.
-(If none, enter "none")
-
-You can provide:
-- user feedback / review data (file path or text)
-- usage analytics (DAU, churn rate, conversion, etc.)
-- top 10 CS inquiry types
-- existing service URL or screen-capture path
-- previous improvement history
-
-Input:
-```
+  See [references/improve-mode.md](references/improve-mode.md) — read it when the user picks improve mode; it holds the additional-info collection prompt and the per-step adaptations for `{EXISTING_SERVICE_DATA}`.
 
 Save the collected info as `{EXISTING_SERVICE_DATA}` and reflect it in persona interviews and market analysis in later steps.
 
@@ -208,79 +194,7 @@ Derive the project's Strengths, Weaknesses, Opportunities, and Threats.
 
 #### D. Author the market-analysis report
 
-Generate `{OUTPUT_DIR}/market-analysis.md`:
-
-```markdown
-# Market / competitor analysis — {feature name}
-
-## 1. Overview
-
-| Item | Content |
-|------|---------|
-| Feature | {FEATURE_DESCRIPTION} |
-| Analysis date | {today's date} |
-| Planning mode | {new service planning / improve existing service} |
-
-## 2. Market-environment analysis (PEST)
-
-| Factor | Analysis | Implications |
-|--------|----------|--------------|
-| Political/Legal (P) | {related regulations, policies, legal trends} | {impact on planning} |
-| Economic (E) | {market size, growth rate, economic trends} | {impact on planning} |
-| Social/Cultural (S) | {user-behavior shifts, demographic trends} | {impact on planning} |
-| Technological (T) | {tech evolution, platform shifts, AI / automation trends} | {impact on planning} |
-
-## 3. Competitor benchmarking
-
-### 3.1 Competitive landscape
-
-| # | Service | Type | Key features | Target | Pricing model |
-|---|---------|------|--------------|--------|---------------|
-| 1 | {service} | Direct competitor | {features} | {target} | {model} |
-| 2 | {service} | Indirect competitor | {features} | {target} | {model} |
-| 3 | {service} | Global reference | {features} | {target} | {model} |
-
-### 3.2 Feature comparison matrix
-
-| Feature | Our service | Competitor A | Competitor B | Competitor C |
-|---------|-------------|--------------|--------------|--------------|
-| {core feature 1} | {O/X/△} | {O/X/△} | {O/X/△} | {O/X/△} |
-| {core feature 2} | {O/X/△} | {O/X/△} | {O/X/△} | {O/X/△} |
-| {core feature 3} | {O/X/△} | {O/X/△} | {O/X/△} | {O/X/△} |
-
-### 3.3 Differentiators
-
-| # | Differentiator | Description | Competitive-advantage level |
-|---|----------------|-------------|------------------------------|
-| 1 | {element} | {description} | strong / medium / weak |
-
-## 4. SWOT analysis
-
-| | Positive | Negative |
-|---|----------|----------|
-| **Internal** | **Strengths (S)** | **Weaknesses (W)** |
-| | - {strength 1} | - {weakness 1} |
-| | - {strength 2} | - {weakness 2} |
-| **External** | **Opportunities (O)** | **Threats (T)** |
-| | - {opportunity 1} | - {threat 1} |
-| | - {opportunity 2} | - {threat 2} |
-
-### 4.1 SO/ST/WO/WT strategy derivation
-
-| Strategy | Description |
-|----------|-------------|
-| SO strategy (Strengths × Opportunities) | {strategy that uses strengths to capture opportunities} |
-| ST strategy (Strengths × Threats) | {strategy that uses strengths to counter threats} |
-| WO strategy (Weaknesses × Opportunities) | {strategy that compensates weaknesses to exploit opportunities} |
-| WT strategy (Weaknesses × Threats) | {strategy that minimizes weaknesses and threats} |
-
-## 5. Market implications and planning direction
-
-| # | Implication | Planning reflection | Priority |
-|---|-------------|---------------------|----------|
-| 1 | {implication} | {reflection direction} | high/med/low |
-| 2 | {implication} | {reflection direction} | high/med/low |
-```
+Read `references/templates-market-analysis.md` and instantiate the template with `{FEATURE_DESCRIPTION}` and the analysis results, writing the output to `{OUTPUT_DIR}/market-analysis.md`.
 
 > **Important**: after authoring the market-analysis report, confirm with the user: "The market-analysis report has been generated. Proceed to the next step (actor derivation)?"
 
@@ -352,27 +266,7 @@ Personas must reflect diverse backgrounds and perspectives (distribute age range
 
 Simulate a **deep interview** for each persona.
 
-Interview question categories (3–5 questions per category; 15–20 total):
-
-1. **Current experience (As-Is)**
-   - How do you currently perform tasks related to this feature?
-   - What tools / methods do you use?
-   - Which task takes the most time?
-
-2. **Pain points**
-   - What is the most painful?
-   - Where do mistakes happen most often?
-   - At what point do you give up?
-
-3. **Needs & expectations**
-   - What would the ideal experience look like?
-   - What would you like automated?
-   - What good experiences have you had in other services?
-
-4. **Value & priority**
-   - Which feature is most important?
-   - Among time-saving vs. cost-saving vs. convenience, what is the priority?
-   - Which feature would you pay for?
+Use the interview question bank in [references/persona-interview-guide.md](references/persona-interview-guide.md) — 4 categories (Current experience / Pain points / Needs & expectations / Value & priority), 3–5 questions each, 15–20 total.
 
 Each persona's responses must be **realistic answers reflecting that persona's traits**.
 
@@ -387,80 +281,7 @@ Analyze all interview results and produce:
 
 #### D. Author the interview report
 
-Generate `{OUTPUT_DIR}/interview-report.md`:
-
-```markdown
-# Interview report — {feature name}
-
-## 1. Overview
-
-| Item | Content |
-|------|---------|
-| Feature | {FEATURE_DESCRIPTION} |
-| Interview date | {today's date} |
-| Actors interviewed | {selected actor list} |
-| Number of personas | {actor count × 3} |
-
-## 2. Persona profiles
-
-### 2.1 {actor 1}
-
-#### Persona 1: {name} ({age}, {occupation})
-| Item | Content |
-|------|---------|
-| Tech literacy | {beginner / intermediate / advanced} |
-| Usage context | {mobile / desktop / hybrid} |
-| Core goal | {goal} |
-| Frustrations | {frustrations} |
-| Traits | {traits} |
-
-(repeat the same format for persona 2, 3)
-
-### 2.2 {actor 2}
-(same format)
-
-## 3. Interview details
-
-### 3.1 {actor 1}
-
-#### Persona 1: {name}
-
-| # | Question | Answer |
-|---|----------|--------|
-| 1 | {question} | {answer} |
-| 2 | {question} | {answer} |
-| ... | ... | ... |
-
-(repeat for every persona)
-
-## 4. Pain-point analysis
-
-### 4.1 Per-actor core pain points
-
-#### {actor 1}
-| # | Pain point | Severity (1-5) | Frequency (1-5) | Scope of impact |
-|---|------------|----------------|------------------|------------------|
-| 1 | {pain point} | {score} | {score} | {scope} |
-| ... | ... | ... | ... | ... |
-
-### 4.2 Per-actor interest keywords
-
-| Actor | Keyword 1 | Keyword 2 | Keyword 3 | Keyword 4 | Keyword 5 |
-|-------|-----------|-----------|-----------|-----------|-----------|
-
-### 4.3 Task analysis
-
-| # | Task | Importance | Time | Frequency | Core pain point |
-|---|------|------------|------|-----------|------------------|
-
-### 4.4 Top 10 overall integrated pain points
-
-| PP-ID | Rank | Pain point | Related actor | Severity | Resolution priority |
-|-------|------|------------|----------------|----------|---------------------|
-| PP-001 | 1 | {pain point} | {actor} | {score} | {high/med/low} |
-| PP-002 | 2 | {pain point} | {actor} | {score} | {high/med/low} |
-| ... | ... | ... | ... | ... | ... |
-```
+Read `references/templates-interview-report.md` and instantiate the template with the persona-interview and pain-point results, writing the output to `{OUTPUT_DIR}/interview-report.md`.
 
 > **Important**: after authoring the interview report, confirm with the user: "The interview report has been generated. Proceed to the next step (idea derivation)?"
 
@@ -506,89 +327,7 @@ Save the selected ideas as the `{SELECTED_IDEAS}` array.
 
 #### C. Author the requirements definition
 
-Based on the selected ideas, generate `{OUTPUT_DIR}/requirements-definition.md`:
-
-```markdown
-# Requirements definition — {feature name}
-
-## 1. Overview
-
-| Item | Content |
-|------|---------|
-| Feature | {FEATURE_DESCRIPTION} |
-| Authored | {today's date} |
-| Base documents | market-analysis.md, interview-report.md |
-| Selected ideas | {N} |
-
-## 2. Success metrics (KPI / OKR)
-
-### 2.1 Business objectives
-
-| # | Objective | Description | Related strategy |
-|---|-----------|-------------|------------------|
-| O1 | {objective} | {description} | {refer to SWOT strategy} |
-| O2 | {objective} | {description} | {refer to SWOT strategy} |
-
-### 2.2 Key results
-
-| # | Parent objective | Key result | Current | Target | Measurement |
-|---|------------------|------------|---------|--------|-------------|
-| KR1 | O1 | {measurable result} | {baseline or N/A} | {target} | {method} |
-| KR2 | O1 | {measurable result} | {baseline or N/A} | {target} | {method} |
-| KR3 | O2 | {measurable result} | {baseline or N/A} | {target} | {method} |
-
-### 2.3 KPI dashboard items
-
-| # | KPI | Description | Cadence | Target threshold | Related KR |
-|---|-----|-------------|---------|-------------------|------------|
-| 1 | {KPI} | {description} | daily/weekly/monthly | {threshold} | KR{N} |
-
-## 3. JTBD (Jobs-to-be-Done) summary
-
-| # | Job Statement | Related pain points | Current resolution | Expected resolution | Related ideas |
-|---|---------------|----------------------|---------------------|---------------------|----------------|
-| J1 | When {context}, I want to {motivation}, so I can {outcome} | PP-{N} | {1-5} | {1-5} | IDEA-{N} |
-| J2 | When {context}, I want to {motivation}, so I can {outcome} | PP-{N} | {1-5} | {1-5} | IDEA-{N} |
-
-## 4. Functional requirements
-
-### FR-001: {requirement title}
-
-| Item | Content |
-|------|---------|
-| ID | FR-001 |
-| Name | {title} |
-| Description | {detailed description} |
-| Related idea | IDEA-{N} |
-| Related pain point | PP-{N} |
-| Related JTBD | J{N} |
-| Related actors | {actor list} |
-| Priority | Must / Should / Could |
-| Acceptance criteria | {acceptance criteria list} |
-| Related KPI | {KPI} |
-
-(repeat for every requirement)
-
-## 5. Non-functional requirements
-
-### NFR-001: {requirement title}
-
-| Item | Content |
-|------|---------|
-| ID | NFR-001 |
-| Type | performance / security / usability / accessibility / compatibility |
-| Name | {title} |
-| Description | {detailed description} |
-| Measurement criterion | {measurable criterion} |
-| Priority | Must / Should / Could |
-
-## 6. Requirements traceability matrix
-
-| Req ID | Name | Pain point | JTBD | Idea | Actor | KPI | Priority |
-|--------|------|------------|------|------|-------|-----|----------|
-| FR-001 | {title} | PP-{N} | J{N} | IDEA-{N} | {actor} | {KPI} | {priority} |
-| ... | ... | ... | ... | ... | ... | ... | ... |
-```
+Read `references/templates-requirements-definition.md` and instantiate the template with the selected ideas and KPI/OKR/JTBD analysis, writing the output to `{OUTPUT_DIR}/requirements-definition.md`.
 
 > **Important**: after authoring the requirements definition, confirm with the user: "The requirements definition has been generated. Proceed to the next step (use-case definition)?"
 
@@ -619,137 +358,7 @@ Components:
 
 #### C. Author the use-case definition
 
-Generate `{OUTPUT_DIR}/usecase-definition.md`:
-
-~~~markdown
-# Use-case definition — {feature name}
-
-## 1. Overview
-
-| Item | Content |
-|------|---------|
-| Feature | {FEATURE_DESCRIPTION} |
-| Authored | {today's date} |
-| Base documents | interview-report.md, requirements-definition.md |
-| Actor count | {N} |
-| Use-case count | {N} |
-
-## 2. Actor definitions
-
-| # | Actor | Type | Description | Related use cases |
-|---|-------|------|-------------|--------------------|
-| 1 | {actor} | {direct / admin / indirect / system} | {description} | UC-001, UC-002, ... |
-
-## 3. Customer Journey Map
-
-### 3.1 {core use-case / scenario name} — {primary actor}
-
-```mermaid
-journey
-    title {scenario name}
-    section {phase 1: awareness / exploration}
-      {action 1}: {emotion score 1-5}: {actor}
-      {action 2}: {emotion score 1-5}: {actor}
-    section {phase 2: sign-up / setup}
-      {action 3}: {emotion score 1-5}: {actor}
-      {action 4}: {emotion score 1-5}: {actor}
-    section {phase 3: core use}
-      {action 5}: {emotion score 1-5}: {actor}
-    section {phase 4: result / re-visit}
-      {action 6}: {emotion score 1-5}: {actor}
-```
-
-**Journey details**:
-
-| Phase | Action | Touchpoint | Emotion | Pain point | Opportunity |
-|-------|--------|------------|---------|------------|-------------|
-| {phase 1} | {action} | {screen / channel} | {😊/😐/😤} | {inconvenience} | {improvement} |
-| {phase 2} | {action} | {screen / channel} | {😊/😐/😤} | {inconvenience} | {improvement} |
-
-(repeat for 3–5 core use cases)
-
-## 4. Use-case diagram (Mermaid)
-
-### 4.1 System-wide use-case diagram
-
-```mermaid
-graph LR
-    subgraph "{feature name} system"
-        UC1["UC-001: {use-case name}"]
-        UC2["UC-002: {use-case name}"]
-        UC3["UC-003: {use-case name}"]
-    end
-
-    Actor1["👤 {actor 1}"] --> UC1
-    Actor1 --> UC2
-    Actor2["👤 {actor 2}"] --> UC3
-    UC2 -.->|<<include>>| UC1
-```
-
-### 4.2 {actor 1} use-case diagram
-
-```mermaid
-graph LR
-    subgraph "{actor 1} use cases"
-        ...
-    end
-```
-
-(diagram per actor)
-
-## 5. Use-case details
-
-### UC-001: {use-case name}
-
-| Item | Content |
-|------|---------|
-| ID | UC-001 |
-| Name | {title} |
-| Primary actor | {actor} |
-| Secondary actor | {actor or none} |
-| Precondition | {precondition} |
-| Postcondition | {state on success} |
-| Related requirements | FR-001, FR-002 |
-| Related JTBD | J{N} |
-| Priority | high / medium / low |
-
-**Main flow:**
-
-| Step | Actor | System |
-|------|-------|--------|
-| 1 | {actor action} | |
-| 2 | | {system response} |
-| 3 | {actor action} | |
-| 4 | | {system response} |
-
-**Alternative flow:**
-
-| Branch point | Condition | Flow |
-|--------------|-----------|------|
-| Step 2 | {condition} | {alternative flow} |
-
-**Exception flow:**
-
-| Branch point | Exception | Handling |
-|--------------|-----------|----------|
-| Step 2 | {exception} | {handling} |
-
-(repeat for every use case)
-
-## 6. Use-case relationship matrix
-
-| Use case | Relationship | Target use case | Description |
-|----------|--------------|------------------|-------------|
-| UC-001 | <<include>> | UC-003 | {description} |
-| UC-002 | <<extend>> | UC-001 | {description} |
-
-## 7. Requirements ↔ use-case traceability matrix
-
-| Req ID | Use-case ID | Coverage |
-|--------|--------------|----------|
-| FR-001 | UC-001, UC-002 | full |
-| FR-002 | UC-003 | partial |
-~~~
+Read `references/templates-usecase-definition.md` and instantiate the template with the use-case and customer-journey-map results, writing the output to `{OUTPUT_DIR}/usecase-definition.md`.
 
 > **Important**: after authoring the use-case definition, confirm with the user: "The use-case definition has been generated. Proceed to the next step (IA structure and screen design)?"
 
@@ -785,162 +394,13 @@ Author ASCII-based wireframes for core screens (3–5):
 
 #### D. Author the IA structure and screen-design report
 
-Generate `{OUTPUT_DIR}/ia-screen-design.md`:
-
-~~~markdown
-# IA structure and screen design — {feature name}
-
-## 1. Overview
-
-| Item | Content |
-|------|---------|
-| Feature | {FEATURE_DESCRIPTION} |
-| Authored | {today's date} |
-| Base documents | requirements-definition.md, usecase-definition.md |
-| Total screens | {N} |
-
-## 2. IA (information architecture)
-
-### 2.1 Menu tree
-
-```mermaid
-graph TD
-    ROOT["{feature name}"]
-    ROOT --> M1["{depth 1: top menu 1}"]
-    ROOT --> M2["{depth 1: top menu 2}"]
-    ROOT --> M3["{depth 1: top menu 3}"]
-
-    M1 --> M1_1["{depth 2: mid menu 1-1}"]
-    M1 --> M1_2["{depth 2: mid menu 1-2}"]
-
-    M1_1 --> M1_1_1["{depth 3: leaf menu 1-1-1}"]
-    M1_1 --> M1_1_2["{depth 3: leaf menu 1-1-2}"]
-
-    M2 --> M2_1["{depth 2: mid menu 2-1}"]
-```
-
-### 2.2 IA details
-
-| Depth | Menu ID | Menu name | Screen ID | Description | Related UC | Related FR | Access |
-|-------|---------|-----------|-----------|-------------|-------------|-------------|--------|
-| 1 | M1 | {top menu 1} | — | {description} | — | — | {permission} |
-| 2 | M1-1 | {mid menu 1-1} | SCR-001 | {description} | UC-001 | FR-001 | {permission} |
-| 3 | M1-1-1 | {leaf menu 1-1-1} | SCR-002 | {description} | UC-001 | FR-001 | {permission} |
-
-## 3. Screen flow
-
-### 3.1 {scenario name} flow
-
-```mermaid
-flowchart LR
-    SCR001["SCR-001\n{screen name}"]
-    SCR002["SCR-002\n{screen name}"]
-    SCR003["SCR-003\n{screen name}"]
-    SCR004["SCR-004\n{screen name}"]
-
-    SCR001 -->|"{action}"| SCR002
-    SCR002 -->|"{success}"| SCR003
-    SCR002 -->|"{failure}"| SCR004
-    SCR003 -->|"{back}"| SCR001
-```
-
-(repeat for 2–3 major scenarios)
-
-## 4. Screen list
-
-| Screen ID | Screen name | Type | Related UC | Related FR | Description |
-|-----------|-------------|------|-------------|-------------|-------------|
-| SCR-001 | {screen name} | list / detail / form / modal / dashboard | UC-001 | FR-001 | {description} |
-| SCR-002 | {screen name} | {type} | UC-002 | FR-002 | {description} |
-
-## 5. Wireframes
-
-### SCR-001: {screen name}
-
-**Screen description**: {purpose and main functions of the screen}
-**Related UC**: UC-001 | **Related FR**: FR-001, FR-002
-
-```
-┌─────────────────────────────────────────────┐
-│  [Logo]          {service name}    [👤 Profile] │
-├─────────────────────────────────────────────┤
-│ ┌─────┐  ┌─────────────────────────────────┐│
-│ │     │  │  📋 {section title}              ││
-│ │ Menu│  │                                 ││
-│ │     │  │  ┌──────────────────────────┐    ││
-│ │ • A │  │  │ {data area}              │    ││
-│ │ • B │  │  │                          │    ││
-│ │ • C │  │  │  [item 1]  [item 2]       │    ││
-│ │     │  │  │  [item 3]  [item 4]       │    ││
-│ │     │  │  └──────────────────────────┘    ││
-│ │     │  │                                 ││
-│ │     │  │  [+ Add]          [Save] [Cancel]││
-│ └─────┘  └─────────────────────────────────┘│
-├─────────────────────────────────────────────┤
-│  © {service name}  |  Terms  |  Privacy      │
-└─────────────────────────────────────────────┘
-```
-
-**UI-element descriptions**:
-
-| # | Element | Type | Description | Behavior |
-|---|---------|------|-------------|----------|
-| 1 | {element} | button / input / table / ... | {description} | {behavior on click / input} |
-| 2 | {element} | {type} | {description} | {behavior} |
-
-(repeat for 3–5 core screens)
-
-## 6. Screen ↔ use-case ↔ requirement traceability
-
-| Screen ID | Screen name | Use case | Requirements | Actor |
-|-----------|-------------|----------|--------------|-------|
-| SCR-001 | {screen name} | UC-001 | FR-001, FR-002 | {actor} |
-~~~
+Read `references/templates-ia-screen-design.md` and instantiate the template (§1–§6) with the IA, screen-flow, and wireframe results, writing the output to `{OUTPUT_DIR}/ia-screen-design.md`. (§7 HTML mockup preview is appended later in Step 6.F.5.)
 
 #### E. Load the design system and auto-decide the design tone
 
 Decide the design tokens and design tone to use for HTML mockup generation.
 
-##### E.1 Load the design system SSoT
-
-Determine the design-system source in the following priority order (v5.2.0+ DESIGN.md prioritized):
-
-| Priority | Path | Use when | Extract |
-|----------|------|----------|---------|
-| 1 | `docs/design-system/DESIGN.md` | SSoT exists | Front Matter tokens + Body §1 philosophy + §2 persona + §5 aesthetic_rules |
-| 2 | `src/styles/design-tokens.css` | DESIGN.md absent + only CSS exists (legacy project) | CSS variable list |
-| 3 | `$CLAUDE_PLUGIN_ROOT/skills/project-init/templates/DESIGN.md` | the project has no design system at all (right after Sprint 0, etc.) | template defaults |
-
-**If DESIGN.md is loaded**: parse the Front Matter YAML to extract available tokens such as `tokens.color.semantic.*`, `tokens.typography.scale`, `tokens.spacing.scale`. Body §5 `aesthetic_rules.forbidden_generic_patterns` is used as an exclusion rule during HTML generation. Body §2 persona is used when deciding the tone of dummy data.
-
-**If only CSS is loaded** (legacy): token extraction is the same but aesthetic_rules / persona info is absent. Print a Recommended note about running `/design-init` for the user, and proceed.
-
-##### E.2 Load component / layout guides (optional)
-
-When DESIGN.md is loaded, Body §4 is the component-spec SSoT (no separate load needed).
-
-Only for legacy projects without DESIGN.md, load the following:
-
-- `docs/design-system/components.md` — specs for buttons / inputs / cards, etc.
-- `docs/design-system/layout-grid.md` — grid / breakpoint system
-
-##### E.3 Load the Vibe Coding guides (required)
-
-Load `$CLAUDE_PLUGIN_ROOT/docs/ux/vibe-coding-design-guide.md` (Anti-AI aesthetics, reference anchoring) and `$CLAUDE_PLUGIN_ROOT/docs/ux/vibe-coding-animation-guide.md` (spring easing, micro-interactions). On absence, print a warning and proceed without the guides.
-
-##### E.4 Auto-decide the design tone ({DESIGN_TONE})
-
-**If DESIGN.md exists**: `brand.personality` + `brand.target_persona` in the Front Matter already defines the tone, so skip the separate auto-decision. When generating HTML, apply the DESIGN.md tone as-is.
-
-**If DESIGN.md does not exist**: do not ask the user; synthesize the feature description + market analysis + persona info and auto-select one of the following (`AskUserQuestion` is forbidden). Note the rationale (one line) in an HTML file comment.
-
-| Design tone | Suitable domains |
-|-------------|------------------|
-| Refined Minimal | SaaS, productivity tools, admin dashboards |
-| Bold & Vibrant | consumer apps, marketing, campaign pages |
-| Soft & Warm | community, education, healthcare |
-| Editorial | content, media, commerce curation |
-| Professional Enterprise | B2B, finance, public / enterprise |
+The full loading procedure — SSoT priority order (DESIGN.md → design-tokens.css → template), component/layout guides, the required Vibe Coding guides, and the `{DESIGN_TONE}` auto-decision table — lives in [references/templates-html-mockup.md](references/templates-html-mockup.md) (§Design system loading & tone decision). Read it before generating styles.css.
 
 #### F. Generate HTML mockup screens (design-token-applied static mockups)
 
@@ -958,143 +418,27 @@ Load `$CLAUDE_PLUGIN_ROOT/docs/ux/vibe-coding-design-guide.md` (Anti-AI aestheti
 
 **All HTML/CSS files are created directly in the same directory as the markdown deliverables (`{OUTPUT_DIR}/`)**. Do not create a separate subfolder.
 
-```
-{OUTPUT_DIR}/
-├── market-analysis.md
-├── interview-report.md
-├── requirements-definition.md
-├── usecase-definition.md
-├── ia-screen-design.md
-├── feature-definition.md            # generated in Step 7
-├── styles.css                       # shared styles (design tokens + components + animation)
-├── index.html                       # screen index (navigation hub)
-├── SCR-001.html                     # per-screen static HTML mockup
-├── SCR-002.html
-└── ...
-```
+See the output-location tree in [references/templates-html-mockup.md](references/templates-html-mockup.md) (§Output location tree).
 
 ##### F.2 Generate shared styles (styles.css)
 
-Generate `{OUTPUT_DIR}/styles.css` with the following structure:
-
-1. **`:root` design tokens** — define the tokens loaded in Step E.1 as-is (fill missing items with fallback tokens)
-2. **Dark-mode token override** — `@media (prefers-color-scheme: dark) :root { ... }`
-3. **CSS Reset** — `box-sizing: border-box`, reset margin / padding
-4. **Base typography** — body font, heading scale, line-height
-5. **Layout utilities** — `.container` (responsive max-width), `.grid-N` (12-column), breakpoints (mobile-first)
-6. **Component styles** — styled to match `{DESIGN_TONE}`:
-   - `.btn` (primary/secondary/ghost) + hover/focus/active/disabled
-   - `.input` + floating label, focus ring
-   - `.card` (default/elevated/interactive) + hover lift
-   - `.gnb`, `.sidebar`, `.page-layout`
-   - `.table`, `.modal`, `.toast`, `.badge`, `.skeleton`
-7. **Animation** — spring-easing variables, fadeInUp/shimmer keyframes
-8. **Accessibility** — `:focus-visible` focus ring, `prefers-reduced-motion` handling
-9. **Print styles** (optional) — `@media print` defaults
+Generate `{OUTPUT_DIR}/styles.css` per the 9-section structure (tokens · dark-mode override · reset · typography · layout utilities · components · animation · accessibility · print) in [references/templates-html-mockup.md](references/templates-html-mockup.md) (§Shared styles `styles.css` structure).
 
 ##### F.3 Generate per-screen HTML (`SCR-NNN.html`)
 
 Based on Section 4 (screen list) + Section 5 (wireframes) of `ia-screen-design.md`, **generate a separate HTML file per SCR-NNN listed**.
 
-Structure of each `SCR-NNN.html`:
+Read `references/templates-html-mockup.md` (section "Per-screen `SCR-NNN.html` skeleton") and instantiate the skeleton for each SCR-NNN.
 
-```html
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SCR-NNN — {screen name} | {feature name}</title>
-  <!--
-    Screen ID: SCR-NNN
-    Related UC: UC-XXX
-    Related FR: FR-XXX
-    Design tone: {DESIGN_TONE}
-    Tone rationale: {one-line rationale}
-  -->
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <header class="gnb"> ... </header>          <!-- when needed -->
-  <aside class="sidebar"> ... </aside>         <!-- when needed -->
-  <main class="page-content">
-    <!-- implement the UI elements from the wireframe in semantic HTML -->
-  </main>
-  <footer> ... </footer>                       <!-- when needed -->
-  <a href="index.html" class="back-to-index">← All screens</a>
-</body>
-</html>
-```
-
-Generation rules:
-
-| Rule | Content |
-|------|---------|
-| Semantic HTML | use `header`, `nav`, `main`, `section`, `article`, `aside`, `footer` |
-| Design tokens | all colors/sizes/spacing are `var(--*)` only (no hardcoding) |
-| Responsive | support mobile (<768px) / tablet (768-1023px) / desktop (≥1024px) |
-| Dark mode | auto-supported via the token overrides in styles.css (no extra work) |
-| Accessibility | `aria-*` attributes, `alt` text, focus management, sufficient contrast, 44px touch targets |
-| Dummy data | natural content using persona names/traits from the interview report |
-| Disabled interactions | never write `onclick` on `<button>`/links (static mockup) — use `href="#"` or `disabled` |
-| Icons | inline SVG or CSS pseudo-elements. No external font / image dependencies |
-| Cross-page navigation | provide a "← All screens" link at top/bottom returning to `index.html` |
+Generation rules — semantic HTML, token-only values, responsive breakpoints, dark mode, accessibility, persona-based dummy data, disabled interactions, inline-SVG icons, cross-page navigation — are tabulated in [references/templates-html-mockup.md](references/templates-html-mockup.md) (§Per-screen generation rules).
 
 ##### F.4 Generate the screen index (`index.html`)
 
-Generate a navigation hub showing all SCR-NNN screens at a glance.
-
-```html
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{feature name} mockup index</title>
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <header class="page-header">
-    <h1>{feature name} mockups</h1>
-    <p class="meta">Design tone: {DESIGN_TONE} · Screens: {N} · Authored: {YYYY-MM-DD}</p>
-  </header>
-  <main class="screen-grid">
-    <!-- each screen as a card -->
-    <a href="SCR-001.html" class="screen-card">
-      <div class="screen-card__id">SCR-001</div>
-      <div class="screen-card__title">{screen name}</div>
-      <div class="screen-card__type">{type}</div>
-      <div class="screen-card__meta">UC-XXX · FR-XXX</div>
-    </a>
-    ...
-  </main>
-  <footer class="legend">
-    <p>Related docs: <a href="ia-screen-design.md">ia-screen-design.md</a> · <a href="feature-definition.md">feature-definition.md</a></p>
-  </footer>
-</body>
-</html>
-```
+Generate a navigation hub showing all SCR-NNN screens at a glance. Read `references/templates-html-mockup.md` (section "Screen index `index.html` skeleton") and instantiate it.
 
 ##### F.5 Augment the IA / screen-design report
 
-Add an HTML-preview guidance section to the body of `ia-screen-design.md` (at the end of Section 6 or as its own section):
-
-```markdown
-## 7. HTML mockup preview
-
-Open `index.html` in a browser to visually verify every screen.
-
-| Screen ID | HTML file | Screen name |
-|-----------|-----------|-------------|
-| SCR-001 | [SCR-001.html](SCR-001.html) | {screen name} |
-| SCR-002 | [SCR-002.html](SCR-002.html) | {screen name} |
-| ... | ... | ... |
-
-- Design tone: **{DESIGN_TONE}** ({one-line selection rationale})
-- Design-token source: `{token path}`
-- Responsive: mobile / tablet / desktop
-- Dark mode: auto-switch via `prefers-color-scheme`
-```
+Add an HTML-preview guidance section to the body of `ia-screen-design.md` (at the end of Section 6 or as its own section). Read `references/templates-html-mockup.md` (section "`ia-screen-design.md` §7 block") and instantiate it.
 
 > **Important**: after both the IA/screen-design report and the HTML mockups (`index.html`, `styles.css`, `SCR-NNN.html`) are generated, confirm with the user: "The IA/screen-design report and HTML mockups have been generated. You can open `{OUTPUT_DIR}/index.html` in the browser to check. Proceed to the next step (feature definition)?"
 
@@ -1123,158 +467,7 @@ Rearrange features as a User Story Map to visualize the MVP scope:
 
 #### C. Author the feature definition
 
-Generate `{OUTPUT_DIR}/feature-definition.md`:
-
-~~~markdown
-# Feature definition — {feature name}
-
-## 1. Overview
-
-| Item | Content |
-|------|---------|
-| Feature | {FEATURE_DESCRIPTION} |
-| Authored | {today's date} |
-| Base documents | market-analysis.md, interview-report.md, requirements-definition.md, usecase-definition.md, ia-screen-design.md |
-| Feature Groups | {N} |
-| Features | {N} |
-| Sub-features | {N} |
-
-## 2. Feature structure
-
-### 2.1 Feature tree
-
-```
-{feature name}
-├── FG-01: {Feature Group 1}
-│   ├── FT-01-01: {Feature 1}
-│   │   ├── SF-01-01-01: {Sub-feature 1}
-│   │   └── SF-01-01-02: {Sub-feature 2}
-│   └── FT-01-02: {Feature 2}
-│       ├── SF-01-02-01: {Sub-feature 1}
-│       └── SF-01-02-02: {Sub-feature 2}
-├── FG-02: {Feature Group 2}
-│   └── ...
-```
-
-## 3. User Story Map
-
-### 3.1 Story-map view
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│ User          │ {Activity 1}       │ {Activity 2}       │ ...      │
-│ Activities    │ (FG-01)            │ (FG-02)            │          │
-├───────────────┼────────────────────┼────────────────────┼──────────┤
-│ User          │ {Task 1-1}         │ {Task 2-1}         │          │
-│ Tasks         │ {Task 1-2}         │ {Task 2-2}         │          │
-├═══════════════╪════════════════════╪════════════════════╪══════════┤
-│ MVP           │ • {Story 1-1-1}    │ • {Story 2-1-1}    │          │
-│ (Release 1)   │ • {Story 1-2-1}    │                    │          │
-├───────────────┼────────────────────┼────────────────────┼──────────┤
-│ v1.1          │ • {Story 1-1-2}    │ • {Story 2-1-2}    │          │
-│ (Release 2)   │                    │ • {Story 2-2-1}    │          │
-├───────────────┼────────────────────┼────────────────────┼──────────┤
-│ v1.2          │ • {Story 1-2-2}    │ • {Story 2-2-2}    │          │
-│ (Release 3)   │                    │                    │          │
-└───────────────┴────────────────────┴────────────────────┴──────────┘
-```
-
-### 3.2 Release-scope definition
-
-| Release | Included features | Goal | Expected sub-feature count |
-|---------|--------------------|------|-----------------------------|
-| MVP (Release 1) | {core features list} | {minimum value delivery} | {N} |
-| v1.1 (Release 2) | {additional features list} | {usability improvements} | {N} |
-| v1.2 (Release 3) | {extended features list} | {sophistication} | {N} |
-
-## 4. Feature details
-
-### FG-01: {Feature Group name}
-
-#### FT-01-01: {Feature name}
-
-| Item | Content |
-|------|---------|
-| Feature ID | FT-01-01 |
-| Name | {Feature name} |
-| Description | {feature description} |
-| Related requirements | FR-001, FR-002 |
-| Related use cases | UC-001 |
-| Related screens | SCR-001, SCR-002 |
-| Related actors | {actor list} |
-| Related KPI | {KPI} |
-| Priority | Must / Should / Could |
-| Implementation difficulty | high / medium / low |
-| Release | MVP / v1.1 / v1.2 |
-
-**Sub-feature list:**
-
-| # | ID | Sub-feature | Description | Input | Output | Business rule / policy | Priority |
-|---|----|-------------|-------------|-------|--------|--------------------------|----------|
-| 1 | SF-01-01-01 | {sub-feature} | {description} | {input data} | {output data} | {business rule and service policy} | {priority} |
-| 2 | SF-01-01-02 | {sub-feature} | {description} | {input data} | {output data} | {business rule and service policy} | {priority} |
-
-(repeat for every Feature Group / Feature)
-
-## 5. Service policy
-
-### 5.1 Service-operation policy
-
-| # | Policy item | Policy content | Related features | Notes |
-|---|-------------|----------------|------------------|-------|
-| 1 | {policy item} | {concrete policy} | FT-{N} | {notes} |
-| 2 | {policy item} | {concrete policy} | FT-{N} | {notes} |
-
-### 5.2 Data-handling policy
-
-| # | Data item | Retention | Processing | Related features |
-|---|-----------|-----------|-------------|--------------------|
-| 1 | {data} | {duration} | {encryption / masking / deletion, etc.} | FT-{N} |
-
-### 5.3 Exception-handling policy
-
-| # | Exception | Handling | User-facing message | Related features |
-|---|-----------|----------|----------------------|--------------------|
-| 1 | {exception} | {handling} | {message} | FT-{N} |
-
-## 6. Feature priority matrix (MoSCoW)
-
-| Priority | Feature ID | Feature | Rationale |
-|----------|------------|---------|-----------|
-| **Must** | FT-01-01 | {Feature} | {rationale} |
-| **Should** | FT-01-02 | {Feature} | {rationale} |
-| **Could** | FT-02-01 | {Feature} | {rationale} |
-| **Won't** | - | - | {reason for exclusion from this scope} |
-
-## 7. Risk analysis
-
-### 7.1 Risk register
-
-| # | Risk ID | Risk | Type | Likelihood (1-5) | Impact (1-5) | Risk score | Response strategy |
-|---|---------|------|------|-------------------|---------------|------------|--------------------|
-| 1 | RSK-001 | {risk} | tech / schedule / resource / external | {score} | {score} | {likelihood × impact} | {avoid / transfer / mitigate / accept} |
-| 2 | RSK-002 | {risk} | {type} | {score} | {score} | {score} | {strategy} |
-
-### 7.2 Response plan
-
-| Risk ID | Response strategy | Concrete actions | Owner | Trigger condition |
-|---------|--------------------|-------------------|-------|--------------------|
-| RSK-001 | {strategy} | {concrete actions} | {owner} | {when to start the response} |
-
-### 7.3 Constraints
-
-| # | Constraint type | Content | Affected features | Alternatives |
-|---|-----------------|---------|---------------------|---------------|
-| 1 | Technical | {constraint} | FT-{N} | {alternative} |
-| 2 | Business | {constraint} | FT-{N} | {alternative} |
-
-## 8. Feature ↔ requirement ↔ use-case ↔ screen integrated traceability matrix
-
-| Feature ID | Feature | Requirement | JTBD | Use case | Screen | Actor | Pain point | KPI | Priority | Release |
-|------------|---------|--------------|------|----------|--------|-------|------------|-----|----------|---------|
-| FT-01-01 | {Feature} | FR-001 | J1 | UC-001 | SCR-001 | {actor} | PP-{N} | {KPI} | Must | MVP |
-| ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... |
-~~~
+Read `references/templates-feature-definition.md` and instantiate the template with the feature-structuring and story-map results, writing the output to `{OUTPUT_DIR}/feature-definition.md`.
 
 > **Important**: after authoring the feature definition, confirm with the user: "The feature definition has been generated. Print the final completion report?"
 
@@ -1284,43 +477,4 @@ Generate `{OUTPUT_DIR}/feature-definition.md`:
 
 When every deliverable is generated, report the result to the user:
 
-```
-## Planning deliverables generation complete
-
-📁 Deliverables location: {OUTPUT_DIR}
-
-| # | Deliverable | File | Status |
-|---|-------------|------|--------|
-| 1 | Market / competitor analysis | market-analysis.md | ✅ done |
-| 2 | Interview report | interview-report.md | ✅ done |
-| 3 | Requirements definition | requirements-definition.md | ✅ done |
-| 4 | Use-case definition | usecase-definition.md | ✅ done |
-| 5 | IA / screen-design report | ia-screen-design.md | ✅ done |
-| 6 | HTML mockup index | index.html | ✅ done |
-| 7 | Shared styles | styles.css | ✅ done |
-| 8 | Per-screen HTML mockups | SCR-001.html ~ SCR-{N}.html | ✅ done ({N}) |
-| 9 | Feature definition | feature-definition.md | ✅ done |
-
-▶︎ Open `{OUTPUT_DIR}/index.html` in your browser to view the HTML mockups.
-
-### Summary
-- Planning mode: {new service planning / improve existing service}
-- Analyzed actors: {N} types, {N × 3} personas
-- Market / competitor analysis: {N} competitors, {N} SWOT strategies
-- Derived pain points: {N}
-- Derived JTBDs: {N}
-- Adopted ideas: {N}
-- Defined KPIs: {N} (OKRs: {N})
-- Defined requirements: functional {N} + non-functional {N}
-- Defined use cases: {N}
-- Customer journey maps: {N}
-- IA menu items: {N}
-- Wireframes: {N} screens (markdown + HTML)
-- HTML mockups: {N} SCR-NNN.html (design tone {DESIGN_TONE} applied, responsive + dark mode)
-- Defined features: Feature Groups {N}, Features {N}, Sub-features {N}
-- User Story Map: MVP {N}, v1.1 {N}, v1.2 {N}
-- Risks: {N} identified
-- Service policies: {N} defined
-
-Next, run `/project-init` (initial project setup) or author a blueprint (`docs/blueprints/{NNN}-{feature}/blueprint.md`). For long-running features that need designer/QA collaboration, you can additionally generate a Screen-ID-based collaboration package via `/handoff-publish`.
-```
+Instantiate the report template in [references/completion-report.md](references/completion-report.md) — the deliverables table, the "open index.html" hint, the run Summary (actors/personas/pain points/JTBD/ideas/KPIs/requirements/use cases/journey maps/IA/wireframes/mockups/features/story map/risks/policies), and the closing next-steps line — filling every `{N}` / `{DESIGN_TONE}` / `{OUTPUT_DIR}` placeholder.

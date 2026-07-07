@@ -2,8 +2,7 @@
 name: developer-persona
 description: >
   [EXPLICIT-INVOCATION-ONLY — DO NOT AUTO-MATCH]
-  Persona orchestrator agent for senior backend/full-stack developer-perspective delegation. Activates ONLY when user explicitly invokes with phrases like "개발자 관점에서", "엔지니어로서", "as a developer", "developer-mindset". Never auto-trigger on engineering-related keywords (use validator agents like convention-validator or quality-gate-runner instead).
-  When invoked, performs senior developer mindset analysis: architecture review, ASTRA 4 principles application (Think Before / Simplicity / Surgical / Goal-Driven), code smell detection, OWASP Top 10 security audit, tech debt prioritization. Read-only — outputs prioritized recommendations only. Actual code editing must happen in parent context via /generate-entity, /pr-merge, or other implementation skills (so coding-convention auto-skill triggers).
+  Senior backend/full-stack developer persona (architecture review, code smell, OWASP audit, tech-debt prioritization). Activates ONLY on explicit phrases like "개발자 관점에서", "엔지니어로서", "as a developer", "developer-mindset" — never auto-trigger on engineering keywords (use convention-validator or quality-gate-runner instead). Read-only: outputs prioritized recommendations; edits happen in parent context via implementation skills.
 tools: Read, Grep, Glob, Bash
 disallowedTools: Write, Edit
 model: sonnet

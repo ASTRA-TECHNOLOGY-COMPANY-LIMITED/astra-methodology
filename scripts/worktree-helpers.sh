@@ -92,6 +92,174 @@ astra_ensure_main_worktree() {
   return 0
 }
 
+# --- cross-invocation state --------------------------------------------------
+#
+# Shell variables do NOT persist between separate Bash tool invocations.
+# Skills persist workflow state in a SCOPED file (shared across all linked
+# worktrees via the common git dir) and re-load it at the start of every
+# Bash block:   astra_state_load [scope]   →   ... use $VARS ...
+#               astra_state_set KEY "$VALUE" [scope]   whenever a var changes.
+#
+# Scoping isolates concurrent workflows in different worktrees of ONE repo
+# (e.g., two /pr-merge runs on different sprints). Default scope:
+#   - inside a work-branch worktree → slug of the current branch
+#   - on a shared branch / detached  → "main"
+# Known limitation: two concurrent Main-Phase workflows share the "main"
+# scope — acceptable, since the main worktree is a single shared resource.
+
+astra_state_scope() {
+  local br
+  br=$(git branch --show-current 2>/dev/null)
+  if [ -n "$br" ] && ! astra_is_shared_branch "$br"; then
+    astra_branch_to_slug "$br"
+  else
+    printf 'main'
+  fi
+}
+
+astra_state_file() {
+  local scope="${1:-}" common_dir
+  [ -n "$scope" ] || scope=$(astra_state_scope)
+  common_dir=$(git rev-parse --git-common-dir 2>/dev/null) || return 1
+  common_dir=$(cd "$common_dir" && pwd) || return 1
+  printf '%s/astra-state-%s.env' "$common_dir" "$scope"
+}
+
+# Upsert KEY=VALUE (value is shell-quoted so sourcing is safe).
+#   astra_state_set KEY VALUE [scope]
+astra_state_set() {
+  local key="$1" value="$2" scope="${3:-}" f tmp
+  [ -n "$key" ] || { echo "ERROR: astra_state_set requires KEY VALUE [scope]" >&2; return 2; }
+  f=$(astra_state_file "$scope") || return 1
+  tmp="${f}.tmp.$$"
+  {
+    # awk exact-match on the key (grep would treat regex metachars in KEY as wildcards)
+    [ -f "$f" ] && awk -F= -v k="$key" '$1 != k' "$f"
+    printf '%s=%q\n' "$key" "$value"
+  } > "$tmp" && mv "$tmp" "$f"
+}
+
+# Source the state file into the current shell. No-op when absent.
+#   astra_state_load [scope]
+astra_state_load() {
+  local f
+  f=$(astra_state_file "${1:-}") || return 0
+  # shellcheck disable=SC1090
+  [ -f "$f" ] && . "$f"
+  return 0
+}
+
+# Remove the state file. Call when a workflow completes or aborts for good.
+#   astra_state_clear [scope]
+astra_state_clear() {
+  local f
+  f=$(astra_state_file "${1:-}") || return 0
+  rm -f "$f"
+}
+
+# Adopt another scope's state into the CURRENT default scope. Used at the
+# Sprint→Main handoff where cwd moves from the sprint worktree to the main
+# worktree: the sprint scope's keys are merged into (and overwrite) the
+# current scope, then the source file is removed.
+#   astra_state_adopt <branch-or-scope>
+astra_state_adopt() {
+  local from="$1" from_file to_file tmp
+  [ -n "$from" ] || { echo "ERROR: astra_state_adopt requires <branch-or-scope>" >&2; return 2; }
+  from=$(astra_branch_to_slug "$from")
+  from_file=$(astra_state_file "$from") || return 1
+  to_file=$(astra_state_file) || return 1
+  [ -f "$from_file" ] || return 0          # nothing to adopt
+  [ "$from_file" = "$to_file" ] && return 0
+  tmp="${to_file}.tmp.$$"
+  # Duplicate keys: later lines win on sourcing, so adopted keys override.
+  { [ -f "$to_file" ] && cat "$to_file"; cat "$from_file"; } > "$tmp" && mv "$tmp" "$to_file"
+  rm -f "$from_file"
+}
+
+# --- shared-branch sync (conflict-safe, no checkout) -------------------------
+#
+# Update local main/master/staging/dev refs from origin WITHOUT checking them
+# out, so other sessions and linked worktrees are never disturbed by branch
+# switches. The currently checked-out branch (which `git fetch <b>:<b>`
+# refuses to update) is pulled with --rebase instead. Non-fast-forwardable
+# local refs are left alone with a warning — never forced.
+astra_sync_shared_branches() {
+  local current_branch b
+  git fetch origin --prune 2>/dev/null || { echo "WARN: git fetch failed (offline?)" >&2; return 1; }
+  current_branch=$(git branch --show-current)
+  for b in main master staging dev; do
+    git show-ref --verify --quiet "refs/remotes/origin/$b" || continue
+    if [ "$b" = "$current_branch" ]; then
+      git pull --rebase origin "$b" \
+        || echo "WARN: 'git pull --rebase origin $b' failed — resolve manually" >&2
+    elif git show-ref --verify --quiet "refs/heads/$b"; then
+      if git worktree list --porcelain 2>/dev/null | grep -qx "branch refs/heads/$b"; then
+        echo "WARN: '$b' is checked out in another worktree — skipped (use origin/$b for comparisons)" >&2
+      else
+        git fetch origin "$b:$b" 2>/dev/null \
+          || echo "WARN: local '$b' is not fast-forwardable from origin/$b — left as-is (use origin/$b for comparisons)" >&2
+      fi
+    else
+      git branch --track "$b" "origin/$b" 2>/dev/null || true
+    fi
+  done
+  return 0
+}
+
+# --- merge conflict pre-check (dry run) ---------------------------------------
+#
+# astra_merge_precheck <ours-ref> <theirs-ref>
+#   0 → merge would be conflict-free
+#   1 → conflicts predicted (conflicted paths printed to stderr)
+#   2 → check unavailable (git < 2.38 lacks `merge-tree --write-tree`) —
+#       caller must fall back to a real merge with traditional conflict handling.
+# Never touches the working tree — safe to call before any merge.
+astra_merge_precheck() {
+  # NOTE: do NOT name a local "status" — it is a READ-ONLY special variable in
+  # zsh and assigning it kills the whole (non-interactive) shell process.
+  local ours="$1" theirs="$2" out rc
+  [ -n "$ours" ] && [ -n "$theirs" ] || { echo "ERROR: astra_merge_precheck requires <ours> <theirs>" >&2; return 2; }
+  out=$(git merge-tree --write-tree --name-only "$ours" "$theirs" 2>/dev/null)
+  rc=$?
+  if [ "$rc" -eq 0 ]; then return 0; fi
+  if [ "$rc" -eq 1 ]; then
+    echo "Predicted merge conflicts ($ours <- $theirs):" >&2
+    # First output line is the tree OID; the remainder are conflicted paths.
+    printf '%s\n' "$out" | sed '1d' >&2
+    return 1
+  fi
+  return 2
+}
+
+# --- creation lock (multi-session safety) -------------------------------------
+#
+# Two sessions creating worktrees concurrently can race between "resolve a
+# free (branch, slug)" and "git worktree add". mkdir is atomic — use it as a
+# lock. A lock held > ~10s is assumed stale (crashed session) and broken.
+astra_worktree_lock() {
+  local root lock tries=0
+  root=$(astra_main_worktree_root) || return 1
+  lock="$root/.astra-worktrees/.lock"
+  mkdir -p "$root/.astra-worktrees"
+  while ! mkdir "$lock" 2>/dev/null; do
+    tries=$((tries + 1))
+    if [ "$tries" -ge 50 ]; then
+      echo "WARN: worktree lock held >10s — breaking stale lock: $lock" >&2
+      rm -rf "$lock"
+      tries=0   # reset so we never repeatedly break a lock another session just took
+      continue
+    fi
+    sleep 0.2
+  done
+  return 0
+}
+
+astra_worktree_unlock() {
+  local root
+  root=$(astra_main_worktree_root) || return 1
+  rmdir "$root/.astra-worktrees/.lock" 2>/dev/null || true
+}
+
 # --- worktree lifecycle ----------------------------------------------------
 
 # Remove stale worktree metadata for directories that no longer exist on disk.
@@ -175,18 +343,21 @@ astra_create_worktree_new() {
   fi
 
   astra_ensure_gitignore_entry || return 1
+  astra_worktree_lock || return 1
 
   local resolved branch slug wt_path
-  resolved=$(astra_resolve_branch_and_slug "$requested_branch") || return 1
+  resolved=$(astra_resolve_branch_and_slug "$requested_branch") || { astra_worktree_unlock; return 1; }
   branch="${resolved%%$'\t'*}"
   slug="${resolved##*$'\t'}"
-  wt_path=$(astra_worktree_path "$slug") || return 1
+  wt_path=$(astra_worktree_path "$slug") || { astra_worktree_unlock; return 1; }
 
   mkdir -p "$(dirname "$wt_path")"
   if ! git worktree add -b "$branch" "$wt_path" "$base_ref" >&2; then
+    astra_worktree_unlock
     echo "ERROR: worktree creation failed: $branch (base=$base_ref)" >&2
     return 1
   fi
+  astra_worktree_unlock
   printf '%s\t%s' "$branch" "$wt_path"
 }
 
@@ -202,10 +373,11 @@ astra_create_worktree_existing() {
 
   astra_ensure_gitignore_entry || return 1
   astra_prune_worktrees
+  astra_worktree_lock || return 1
 
   local base_slug="$(astra_branch_to_slug "$branch")"
   local root slug n=2
-  root=$(astra_main_worktree_root) || return 1
+  root=$(astra_main_worktree_root) || { astra_worktree_unlock; return 1; }
 
   # If the branch is already checked out in another worktree, fail immediately
   # (git worktree add would reject with "already checked out at <path>", but
@@ -215,6 +387,7 @@ astra_create_worktree_existing() {
     /^branch / && $2==b { print "yes"; exit }
   ')
   if [ "$already_checked_out" = "yes" ]; then
+    astra_worktree_unlock
     echo "ERROR: '$branch' is already checked out in another worktree. Use the existing worktree or remove it and try again." >&2
     return 1
   fi
@@ -227,16 +400,18 @@ astra_create_worktree_existing() {
     fi
     slug="${base_slug}-${n}"
     n=$((n + 1))
-    [ "$n" -gt 50 ] && { echo "ERROR: Too many slug collisions ($base_slug)" >&2; return 1; }
+    [ "$n" -gt 50 ] && { astra_worktree_unlock; echo "ERROR: Too many slug collisions ($base_slug)" >&2; return 1; }
   done
   local wt_path
-  wt_path=$(astra_worktree_path "$slug") || return 1
+  wt_path=$(astra_worktree_path "$slug") || { astra_worktree_unlock; return 1; }
 
   mkdir -p "$(dirname "$wt_path")"
   if ! git worktree add "$wt_path" "$branch" >&2; then
+    astra_worktree_unlock
     echo "ERROR: worktree attach failed: $branch" >&2
     return 1
   fi
+  astra_worktree_unlock
   printf '%s\t%s' "$branch" "$wt_path"
 }
 

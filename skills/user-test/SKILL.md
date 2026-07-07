@@ -2,16 +2,13 @@
 name: user-test
 description: >
   Performs end-user UAT (User Acceptance Testing) by driving a real browser
-  through Chrome MCP, self-verifying each step with hard assertions
-  (DOM / Network / URL / Console), auto-assigning severity on failure, and
-  emitting an HTML report plus issues.md into a timestamped session folder.
-  Supports two modes: interactive (URL + Vietnamese natural-language flow
-  description) and --auto (batch-run pre-authored test cases under
-  docs/tests/uat-cases/). Use when the user asks for "UAT", "user
-  acceptance test", "kiểm thử người dùng", "regression test", or runs
-  /user-test, /uat. Distinct from /test-run (developer-authored technical
-  integration testing) and /test-scenario (scenario authoring from
-  blueprints).
+  through Chrome MCP with hard assertions (DOM / Network / URL / Console),
+  auto-assigned failure severity, and an HTML report + issues.md per session.
+  Interactive mode (URL + natural-language flow) or --auto (batch-run
+  docs/tests/uat-cases/). Use when the user asks for "UAT", "user acceptance
+  test", "kiểm thử người dùng", "regression test", or runs /user-test or /uat.
+  Distinct from /test-run (developer integration testing) and /test-scenario
+  (scenario authoring).
 argument-hint: "[URL \"flow description\"] | --auto [--from file] [--priority critical|high|medium|low] [--feature name]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__fill_form, mcp__chrome-devtools__press_key, mcp__chrome-devtools__hover, mcp__chrome-devtools__list_console_messages, mcp__chrome-devtools__get_console_message, mcp__chrome-devtools__list_network_requests, mcp__chrome-devtools__get_network_request, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__emulate, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__new_page, mcp__chrome-devtools__handle_dialog
 ---

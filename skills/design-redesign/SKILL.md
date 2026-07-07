@@ -1,6 +1,6 @@
 ---
 name: design-redesign
-description: "Audits existing UI components/pages/CSS against docs/design-system/DESIGN.md and applies fixes to restore design consistency. Uses design-token-validator to detect hardcoded color/font/spacing violations, and invokes designer-persona to report a senior-perspective score (0-10) and anti-AI aesthetic violations (generic shadcn look, purple gradient cliché). Fixes are applied automatically (--apply) or proposed as a PR (--pr); after changes, design-token-validator is re-run and must PASS before completion. Input: target directory (e.g., src/components/Button), single file, or git diff. Output: audit report (docs/design-system/audit-{date}.md) + fix proposals + application results."
+description: "Audits UI components/pages/CSS against docs/design-system/DESIGN.md and fixes design-consistency violations (hardcoded colors/fonts/spacing, anti-AI aesthetic rules) via design-token-validator + designer-persona. Applies fixes with --apply or proposes a PR with --pr, then re-validates until PASS. Use when restoring design consistency or retrofitting the design system onto existing UI."
 argument-hint: "<target-path-or-glob> [--apply] [--pr] [--auto]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Task, TodoWrite
 ---

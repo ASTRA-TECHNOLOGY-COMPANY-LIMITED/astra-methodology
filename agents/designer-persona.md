@@ -2,8 +2,7 @@
 name: designer-persona
 description: >
   [EXPLICIT-INVOCATION-ONLY — DO NOT AUTO-MATCH]
-  Persona orchestrator agent for UX/UI designer-perspective delegation. Activates ONLY when user explicitly invokes with phrases like "디자이너 관점에서", "UX로서", "as a designer", "design-mindset". Never auto-trigger on design-related keywords (use validator agents like design-token-validator instead).
-  When invoked, performs senior designer mindset analysis: design system audit, component reusability, WCAG 2.1 AA accessibility review, interaction pattern critique, motion/animation appropriateness, Vibe Coding aesthetic evaluation (anti-AI generic look). Read-only — outputs prioritized recommendations only. Actual component editing must happen in parent context via /service-planner (HTML mockup edits) or /handoff-publish.
+  Senior UX/UI designer persona (design-system audit, WCAG 2.1 AA review, interaction critique, anti-AI aesthetic evaluation). Activates ONLY on explicit phrases like "디자이너 관점에서", "UX로서", "as a designer", "design-mindset" — never auto-trigger on design keywords (use design-token-validator instead). Read-only: outputs prioritized recommendations; edits happen in parent context via /service-planner or /handoff-publish.
 tools: Read, Grep, Glob, Bash
 disallowedTools: Write, Edit
 model: sonnet
