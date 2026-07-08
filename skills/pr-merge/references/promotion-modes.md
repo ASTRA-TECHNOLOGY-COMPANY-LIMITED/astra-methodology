@@ -5,7 +5,7 @@ This reference holds the promotion-PR mechanics shared by the default-mode post-
 Every Bash block below assumes the PREAMBLE (see SKILL.md Step 1 state protocol):
 
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
 ```
 
@@ -33,7 +33,7 @@ Reached from SKILL.md Step 8.4.5.1 after the user chose `dev` or `staging` (skip
 ### Step 8.4.5.2: Create the promotion PR
 
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
 # Guard: both refs must be known before creating a PR between them.
 [ -n "${TARGET_BRANCH:-}" ] && [ -n "${PROMOTION_TARGET:-}" ] || { echo "ERROR: TARGET_BRANCH/PROMOTION_TARGET empty — redo Step 8.4.5.1" >&2; exit 1; }
@@ -73,7 +73,7 @@ astra_state_set PROMO_URL "$PROMO_URL"
 The source sprint PR already passed code review. Merge directly:
 
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
 # Re-derive if state was lost — never merge an empty PR number.
 if [ -z "${PROMO_NUMBER:-}" ]; then
@@ -120,7 +120,7 @@ Promotion mode is the workflow that *promotes* code between branches.
 
 **`--auto` mode** — safe default: legacy bulk source.
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
 case "$MODE" in
   --staging) SOURCE_BRANCH="dev" ;;
@@ -135,7 +135,7 @@ echo "[--auto] Promotion source: $SOURCE_BRANCH (legacy bulk path)"
 **Normal mode** — HITL via **AskUserQuestion**. Build the source option list:
 
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
 # Default source per mode
 case "$MODE" in
@@ -196,7 +196,7 @@ This avoids `AskUserQuestion`'s `minItems: 2` constraint and gives the user a cl
 
 **Bulk source (`PROMOTION_SOURCE_IS_INTEGRATION=0`)** — `{source-branch}` is `dev` or `staging`:
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
 [ -n "${SOURCE_BRANCH:-}" ] || { echo "ERROR: SOURCE_BRANCH empty — redo Step 10.0" >&2; exit 1; }
 gh pr create --head "$SOURCE_BRANCH" --base {target-branch} --title "promote: $SOURCE_BRANCH → {target-branch}" --body "$(cat <<EOF
@@ -217,7 +217,7 @@ EOF
 **Integration source (`PROMOTION_SOURCE_IS_INTEGRATION=1`)** — `{source-branch}` is `feat/<name>` or `fix/<name>`. Compute the aggregated sprint-PR list *outside* the heredoc to avoid jq-vs-bash quoting collisions (the `\(.number)` syntax inside a non-quoted heredoc would let bash try to interpret backslash sequences):
 
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
 [ -n "${SOURCE_BRANCH:-}" ] || { echo "ERROR: SOURCE_BRANCH empty — redo Step 10.0" >&2; exit 1; }
 # In promotion mode the target is fixed by the flag — re-derive if state was lost:

@@ -15,7 +15,7 @@ This document is an integrated best-practice guide that combines the official gu
 
 | Principle | Meaning |
 |-----------|---------|
-| **Concise is key** | Once loaded, SKILL.md stays in the context for the entire session. Every line is a *repeated* token cost. Keep the body **under 500 lines** |
+| **Concise is key** | Once loaded, SKILL.md stays in the context for the entire session. Every line is a *repeated* token cost. Keep the body **under 500 lines**. One accepted exception: `pr-merge` (~535) — after all §13.7-safe extraction, what remains is executable guards and merge-safety decision rules that must stay inline; `scripts/lint-skills.sh` reports the overage as WARN, and any *new* skill exceeding 500 must extract, not cite this exception |
 | **Claude is already smart** | Omit general knowledge Claude already knows ("what is a PDF", "how to use a library"). Ask of every sentence: "Does this line justify its token cost?" |
 | **State, don't narrate** | Write only what to do, not lengthy explanations of how or why. Same principle as CLAUDE.md authoring |
 | **Standing instructions** | Write the skill body as *persistent instructions* that continue to apply after the first invocation. Listing one-off steps alone makes them un-referenced in later turns |
@@ -44,8 +44,8 @@ This document is an integrated best-practice guide that combines the official gu
 2. **Include both What + When**: what it does + when it should be invoked
 3. **State trigger keywords explicitly**: pattern of `Use when [situation 1], [situation 2], or when user mentions "[keyword]"`
 4. **Place the core use case in the first sentence**: it may get cut off at the 1,536-char cap
-5. **Auto-trigger skills → English description**: LLM matching accuracy is higher. Use the `description: >` block form
-6. **Explicit-invocation entry points → Korean description**: when a Korean user discovers it via `/help`, intent must be immediately understandable. Use the `description: "..."` single-line form
+5. **Auto-trigger skills → English `description: >` block form**: LLM matching accuracy is higher in English
+6. **Explicit-invocation entry points → English `description: "..."` single-line form**: all descriptions are English regardless of skill type (see §12.1) — the end user's runtime output language is governed by `/select-language`, never by the description
 7. **Forbid ambiguous wording**: "Helps with documents", "Does stuff with files" → reject. Specify concrete behavior and triggers
 
 **Good example (auto-trigger)**:
@@ -56,9 +56,9 @@ description: >
   after implementing features, or when the user asks to "check code quality".
 ```
 
-**Good example (explicit invocation)** — the Korean below is deliberate per the ASTRA bilingual policy (see §12.1); do not translate:
+**Good example (explicit invocation)** — single-line English form:
 ```yaml
-description: "기능에 대한 청사진(설계 문서)을 데이터 플로우·스키마·로직 설계 중심으로 작성합니다 (구현 코드 제외)"
+description: "Authors a Blueprint (design document) with data flow, schema, and logic design — implementation code excluded. Use when designing a feature before implementation."
 ```
 
 ---
@@ -183,19 +183,19 @@ The most effective way to author skills is to use Claude itself:
 
 ### 12.1 Description Language Policy
 
-ASTRA dual-tracks description language by skill type:
+**All skill `description` fields are written in English** — the only thing that varies by skill type is the *form*:
 
 | Type | Language | Form | Example skills |
 |------|----------|------|----------------|
 | Auto-trigger skill | English | `description: >` block | `coding-convention`, `data-standard`, `code-standard`, `sprint-progress` |
 | Validation/utility skill | English | `description: >` block | `project-checklist`, `astra-setup`, `sprint-init`, `astra-guide`, `test-run` |
-| Meta skill (exception) | English | `description: >` block + `paths` glob | `skill-author` — multi-step interactive, but English + path glob is the exception so that "edit/create SKILL.md" triggers via both natural language and paths |
-| Interactive domain skill | Korean | `description: "..."` single line | `service-planner`, `blueprint`, `handoff-publish`, `manual-generator`, `pr-merge`, `slack-import`, `autorun` |
+| Meta skill | English | `description: >` block + `paths` glob | `skill-author` — multi-step interactive, but "edit/create SKILL.md" must trigger via both natural language and paths |
+| Interactive domain skill | English | `description: "..."` single line | `service-planner`, `blueprint`, `handoff-publish`, `manual-generator`, `pr-merge`, `autorun` |
 
 **Rationale**:
-- English: the LLM matches English descriptions more accurately, which favors auto-trigger
-- Korean: when a Korean user discovers the skill via `/help`, the intent must be immediately understandable
-- **Meta-skill exception**: the *meta* category that authors/modifies skills themselves often uses English keywords ("new skill", "SKILL.md") together with the `skills/**/SKILL.md` path trigger. The English description + `paths` glob combination is allowed for this category — the body stays in Korean so user communication remains consistent
+- The LLM matches English descriptions more accurately (this favors both auto-trigger and intent routing), and the repo's authoring language is English
+- The end user's runtime output language (Korean / Vietnamese / English) is controlled by `/select-language` — description language does not affect deliverable language
+- The pre-v5.13 policy of Korean descriptions for interactive domain skills is **retired**; do not reintroduce Korean descriptions
 
 ### 12.2 Persona Agent Guard
 
@@ -232,7 +232,7 @@ All agents are read-only via `disallowedTools: Write, Edit` — they analyze and
 
 Conventions that make skills reliable on mid-tier models (Sonnet/Opus), established by the 2026-07 harness hardening. Apply to every new/modified skill:
 
-1. **Machine-parseable contract lines** — a skill/agent whose result gates another skill's branch MUST emit a single-line, greppable verdict as the FINAL line, and the consumer MUST parse only that line (never prose). Existing contracts: `ASTRA_TEST_RESULT: PASS|FAIL passed=N failed=N total=N` (test-run), `ASTRA_REVIEW_RESULT: score=N verdict=PASS|FAIL p0=N` (blueprint/planner-reviewer), `ASTRA_GATE_RESULT: verdict=... critical=N warning=N info=N` (quality-gate-runner), `SEVERITY_COUNTS: critical=N high=N medium=N low=N` (pr-merge Step 8 reviewer contract). **Line absent = FAIL/unverified, never 0 issues.**
+1. **Machine-parseable contract lines** — a skill/agent whose result gates another skill's branch MUST emit a single-line, greppable verdict as the FINAL line, and the consumer MUST parse only that line (never prose). Existing contracts: `ASTRA_TEST_RESULT: PASS|FAIL passed=N failed=N total=N skipped=N` (test-run), `ASTRA_REVIEW_RESULT: score=N verdict=PASS|FAIL p0=N` (blueprint/planner-reviewer), `ASTRA_GATE_RESULT: verdict=... critical=N warning=N info=N` (quality-gate-runner), `SEVERITY_COUNTS: critical=N high=N medium=N low=N` (pr-merge Step 8 reviewer contract), `ASTRA_LOOP_RESULT: score=N verdict=PASS|FAIL p0=N iter=I` (loop-verifier ← /loop, sprint pipeline Step 5.4.5, autorun Stage 7.6), `ASTRA_SCREEN_RESULT: score=N verdict=PASS|FAIL p0=N iter=I` (screen-verifier ← screen-quality-loop, /service-planner Step 6.F.6). **Line absent = FAIL/unverified, never 0 issues.** Producer and every consumer MUST state the identical field list — adding a field on the producer without updating this inventory and all consumers is a contract break.
 2. **Cross-invocation state protocol** — shell variables do NOT survive between Bash tool calls. Persist workflow state via `astra_state_set KEY "$VALUE" [scope]` / `astra_state_load [scope]` (worktree-helpers.sh; scoped per work branch). Every bash fence that consumes persisted variables carries the literal PREAMBLE as its first lines (resolve `PLUGIN_ROOT` → `source worktree-helpers.sh` → `astra_state_load`). Invisible prose rules are not enough for literal-minded models — the code in the fence is the only reliable enforcement.
 3. **Verify-before-claim** — never print a success banner or set a success flag without a captured verification in the same session: `gh pr view --json state` == MERGED after merges, test-runner exit codes after fixes, `[ -f ]` after file generation. Guard every destructive command with `[ -n "$VAR" ]` and re-derive empty values from git/gh; never run destructive commands with empty variables.
 4. **zsh-safety (the Bash tool runs zsh on macOS)** — no `mapfile`/`readarray` (use newline-joined strings or `while IFS= read`), no `local status` (read-only special var in zsh — assignment kills the shell), no reliance on word-splitting unquoted variables (`for x in $LIST` and `cmd $FLAGS` do NOT split in zsh — use `while read` loops and arrays `"${ARR[@]}"`), no `ls glob 2>/dev/null` for may-not-match patterns (zsh NOMATCH errors before redirection — use `find`), no PCRE lookahead in `grep -E`.

@@ -2,7 +2,7 @@
 name: design-redesign
 description: "Audits UI components/pages/CSS against docs/design-system/DESIGN.md and fixes design-consistency violations (hardcoded colors/fonts/spacing, anti-AI aesthetic rules) via design-token-validator + designer-persona. Applies fixes with --apply or proposes a PR with --pr, then re-validates until PASS. Use when restoring design consistency or retrofitting the design system onto existing UI."
 argument-hint: "<target-path-or-glob> [--apply] [--pr] [--auto]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Task, TodoWrite
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Task, Agent, TodoWrite
 ---
 
 # /design-redesign — Existing UI Redesign and Consistency Recovery Skill

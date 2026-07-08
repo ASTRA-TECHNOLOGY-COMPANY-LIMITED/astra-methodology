@@ -2,7 +2,7 @@
 name: catalog-generator
 description: "Automatically generates a professional product promotional catalog as a self-contained HTML package from product data. Executes the full catalog production pipeline — planning, data normalization, design, copywriting, and validation — in a single pass without user feedback."
 argument-hint: "[product data file path, URL, or product description]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Agent, Skill, mcp__fect-image__image_text2img, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__press_key, mcp__chrome-devtools__new_page, mcp__chrome-devtools__select_page, mcp__chrome-devtools__close_page
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, Agent, Skill, mcp__fect-image__image_text2img, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__press_key, mcp__chrome-devtools__new_page, mcp__chrome-devtools__select_page, mcp__chrome-devtools__close_page
 ---
 
 # Product Promotional Catalog Auto-Generator
@@ -140,7 +140,7 @@ Before generating output files, switch to the `dev` branch and sync with the lat
 
 0. **Main worktree guard**: Abort if invoked from inside an isolated worktree (`.astra-worktrees/<slug>/`). Dev-sync runs in the main worktree only:
    ```bash
-   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
    if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$PLUGIN_ROOT/scripts/worktree-helpers.sh" ]; then
      echo "ERROR: CLAUDE_PLUGIN_ROOT not found. Check the plugin cache path." >&2
      exit 1

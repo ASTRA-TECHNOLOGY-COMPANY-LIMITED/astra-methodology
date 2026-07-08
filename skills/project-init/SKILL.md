@@ -2,7 +2,7 @@
 name: project-init
 description: "ASTRA Sprint 0 project initial setup. Supports Web and Mobile (React Native, Flutter, KMP) platforms. Creates project directory structure, CLAUDE.md, design system templates, blueprint templates, and sprint templates."
 argument-hint: "[project-name] [platform: web|mobile] [tech-stack]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Agent
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Task, Agent
 ---
 
 # ASTRA Sprint 0: Project Initial Setup
@@ -181,7 +181,16 @@ Store the user's selection. If the user chose a design system (not "Implement la
 
 ### Step 3: Create Project Directory Structure
 
-Create the directory structure matching the platform (Step 0.5) and, for mobile, the framework (Step 1-B). Read `references/directory-structures.md` and create the corresponding tree (Web / React Native / Flutter / KMP) in the current working directory (CWD).
+Create the directory structure matching the platform (Step 0.5) and, for mobile, the framework (Step 1-B).
+
+**Quick-start baseline (Web)**: run `scripts/init-project.sh` to scaffold the Web-baseline `docs/` + `src/styles/` skeleton and register `.astra-worktrees/` in `.gitignore` in one idempotent pass:
+
+```bash
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
+bash "$PLUGIN_ROOT/scripts/init-project.sh" "."
+```
+
+`init-project.sh` is the mechanical **quick-start subset** — it owns the base directory scaffold and the `.gitignore` worktree registration. Then read `references/directory-structures.md` and extend the tree for the selected platform/framework (Web / React Native / Flutter / KMP) — `directory-structures.md` is the authoritative full tree (framework-specific `src/`, `lib/`, `shared/`, `composeApp/`, `delivery/{android,ios}/` branches the script does not create). For Mobile platforms, skip the script and create the framework tree directly from `directory-structures.md`.
 
 > **Note**: If the user selected "existing API integration" (backend strategy option 3), omit the `docs/database/` directory entirely. If the user selected BaaS, create `docs/database/` but adjust `database-design.md` to document Firestore collections or Supabase tables instead of traditional SQL schemas.
 

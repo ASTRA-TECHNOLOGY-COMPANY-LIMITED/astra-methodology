@@ -19,24 +19,18 @@ You perform read-only inspections to verify that a project correctly follows the
 
 ## Verification Areas
 
-### 1. Project Structure
+### 1. Project Structure (delegated to verify-setup.sh)
 
-Checks whether the following directories/files exist:
+The authoritative mechanical list of required directories/files lives in **`scripts/verify-setup.sh`** — it is the single source of truth, shared with the `/project-checklist` skill. Do NOT restate or re-hardcode the path list here; RUN the script via Bash and interpret its output.
 
+Resolve the plugin root and run it against the project root:
+
+```bash
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
+bash "$PLUGIN_ROOT/scripts/verify-setup.sh" "<project-root>"
 ```
-CLAUDE.md
-src/styles/design-tokens.css
-docs/design-system/components.md
-docs/design-system/layout-grid.md
-docs/blueprints/overview.md
-docs/database/database-design.md
-docs/database/naming-rules.md
-docs/database/migration/
-docs/tests/test-strategy.md
-docs/tests/test-cases/sprint-*/
-docs/tests/test-reports/
-docs/sprints/sprint-*/prompt-map.md
-```
+
+Read its stdout: `✅` = passed, `❌` = failed required item, `⚠️` = optional item not found. The `Results: {passed}/{total}` line and the exit code (0 = all required passed) are the mechanical verdict. Feed the failed items into the "Project Structure" score below. Everything from Section 2 onward is agent-level judgment the script does not attempt.
 
 ### 2. CLAUDE.md Quality
 

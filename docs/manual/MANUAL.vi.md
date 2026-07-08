@@ -1167,8 +1167,6 @@ Chưa sửa code."
 | Tạo cẩm nang dịch vụ tự động | `/manual-generator` | Cẩm nang HTML với ảnh chụp từ Chrome MCP |
 | Tạo catalog sản phẩm tự động | `/catalog-generator` | Catalog HTML đơn lẻ với hình ảnh AI |
 | Pipeline tự động hoàn toàn | `/autorun [mô tả tính năng]` | Lập kế hoạch → kiểm thử với vòng lặp tự cải thiện tối đa N lần |
-| Tạo Sprint từ Slack | `/slack-import` | Slack List → blueprint + prompt map sprint |
-| Trích xuất backlog từ Slack | `/extract-backlog [#kênh]` | Bảng backlog có cấu trúc từ tin nhắn Slack |
 | Chọn ngôn ngữ workflow | `/select-language` | Tiếng Hàn/Việt/Anh |
 | Bắt đầu thiết kế tính năng | `/feature-dev [mô tả]` | Workflow tự động 7 bước |
 | Kiểm tra thuật ngữ chuẩn | `/lookup-term [thuật ngữ tiếng Hàn]` | Viết tắt tiếng Anh/domain/type |

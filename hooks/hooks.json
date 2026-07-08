@@ -6,19 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '🌟 ASTRA methodology is active. Run /astra-guide for a quick reference.'"
-          },
-          {
-            "type": "command",
-            "command": "if [ -n \"$GOOGLE_API_KEY\" ]; then echo '[ASTRA] fect-image (Gemini) MCP enabled.'; else echo '[ASTRA] GOOGLE_API_KEY is not set. Set this environment variable to use the fect-image (Gemini) MCP.'; fi"
-          },
-          {
-            "type": "command",
-            "command": "if [ -n \"$OPENAI_API_KEY\" ]; then echo '[ASTRA] fect-gpt-image (OpenAI) MCP enabled.'; else echo '[ASTRA] OPENAI_API_KEY is not set. Set this environment variable to use the fect-gpt-image MCP.'; fi"
-          },
-          {
-            "type": "command",
-            "command": "if [ -z \"$SLACK_BOT_TOKEN\" ]; then echo '[ASTRA] (Optional) SLACK_BOT_TOKEN is not set. To use /slack-import and /extract-backlog, register the fect-slack MCP separately in your environment and set the token.'; fi"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/sessionstart-notice.sh\""
           }
         ]
       }
