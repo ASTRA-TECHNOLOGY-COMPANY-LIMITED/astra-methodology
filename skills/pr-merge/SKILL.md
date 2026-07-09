@@ -1,8 +1,8 @@
 ---
 name: pr-merge
-description: "Automated PR cycle — commit, push, PR creation, code review, fix loop, merge, and promotion. Sprint PRs target an integration branch (feat/<name> or fix/<name>) picked or created interactively; after merge the user picks a promotion path (dev / staging / skip — always HITL, even under --auto). Inside a sprint worktree it stops after the review loop; the merge finalizes from the main worktree (--auto chains both phases). Use when creating or merging a PR, promoting with --staging/--main, or finishing a sprint."
+description: "Automated PR cycle — commit, push, PR creation, code review, fix loop, merge, and promotion, completed in one session with no user cd (v5.16+). Sprint PRs target an integration branch (feat/<name> or fix/<name>) picked or created interactively; after merge the user picks a promotion path (dev / staging / skip — always HITL, even under --auto). In-place sprints (sprint branch on the main worktree) merge single-phase; worktree sprints get one 'finalize now?' HITL after the review loop, then the skill transitions to the main worktree itself. Use when creating or merging a PR, promoting with --staging/--main, or finishing a sprint."
 argument-hint: "[max-iterations] [--no-review] [--draft] [--auto] [--patch|--minor|--major] [--staging] [--main]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent, TodoWrite
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Task, Agent, TodoWrite
 ---
 
 # ASTRA PR Review & Merge Workflow (v5.11+)
@@ -13,11 +13,13 @@ Automates the entire cycle from commit through code review, issue fixes, integra
 
 The integration branch is the unit of promotion: pick any sprint's integration branch and push it to `staging` directly (fast hotfix path) or queue it via `dev` (standard path). Multiple sprints may target the same integration branch to accumulate a larger feature before promotion.
 
-**Two-phase policy (v5.9+, retained)** — keyed off the current worktree location so the merge stays observable from the main worktree (where the cascade, shared branches, and version bumps live):
+**Phase policy (v5.16+ — one session, no user `cd`, ever)** — keyed off where the sprint branch lives:
 
-- **Sprint Phase** — inside a sprint worktree (`.astra-worktrees/sprint-<N>-<name>/`). Runs target-branch determination (Step 4.5) → commit → push → PR against the integration branch → code review → automatic Critical/High fixes, then **stops after the review loop converges**. `gh pr merge` and the promotion decision are NOT performed here; the user `cd`s to the main worktree and re-invokes `/pr-merge`.
-- **Main Phase** — from the main worktree (shared branch). Auto-detects the open sprint PR (`head ~ feat/sprint-*`, `base ~ feat/*|fix/*`), merges it, then Step 8.4.5 asks where to promote the integration branch (staging / dev / skip).
-- **`--auto` flag** — when Sprint Phase completes under `--auto`, the skill `cd`s into the main worktree itself and continues into Main Phase, so `/autorun` and `/sprint-init --auto` finish in one invocation. **The Step 8.4.5 promotion-target prompt is always HITL — even `--auto` fires it** (the promotion target changes the deployment surface; no safe unattended default).
+- **In-place sprint** (v5.16+ default: `feat/sprint-*` checked out in the **main worktree**, `IN_PLACE_SPRINT=1`) — **single-phase**: Step 4.5 integration pick → commit → push → PR → review loop → HITL merge confirmation → merge (Step 8.4) → Step 8.4.5 promotion HITL → Step 9 cleanup (checkout dev, delete sprint branch). No handoff exists because there is nothing to hand off across.
+- **Sprint Phase / Main Phase** (worktree sprints, `.astra-worktrees/sprint-<N>-<name>/`) — the v5.9 two-phase split is retained *internally*, but the seam is no longer a stop: after the review loop converges, Step 8.5 asks **one HITL** ("finalize the merge from the main worktree now?") and on approval **the skill performs the cross-worktree transition itself** and continues into Main Phase. Declining preserves the pre-v5.16 behavior (worktree kept, PR pending; re-invoke `/pr-merge` later — same session preferred).
+- **`--auto` flag** — unattended variant: merge confirmation and the Step 8.5 transition are auto-approved. **The Step 8.4.5 promotion-target prompt is always HITL — even `--auto` fires it** (the promotion target changes the deployment surface; no safe unattended default).
+
+> **In-place cascade note**: under `IN_PLACE_SPRINT=1`, skip the Step 2 cascade — the main worktree is occupied by the sprint branch, and the cascade's dev checkout would displace it mid-flow. The cascade runs at the next main-worktree invocation or during promotion.
 
 **Worktree isolation policy (v5.0+)**: sprint-unit work happens inside the `/sprint-init`-created worktree; immediately after Main Phase merges into a shared branch, the worktree is auto-removed. The main worktree always stays on a shared branch. Source helpers from `$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh`.
 
@@ -39,11 +41,11 @@ Parse `$ARGUMENTS` to determine options:
 - **--staging**: promotion mode — merge `dev` → `staging`
 - **--main**: promotion mode — merge `staging` → `main`
 
-**Mode decision**:
-- `--staging` or `--main` → promotion mode (main-worktree only, see [references/promotion-modes.md](references/promotion-modes.md))
+**Mode decision** (this is the single mode/phase decision table — applied again as the location guard after the helpers load):
+- `--staging` or `--main` → promotion mode — must run in the main worktree (`astra_ensure_main_worktree || exit 1`), see [references/promotion-modes.md](references/promotion-modes.md)
 - Otherwise → default mode. Phase is decided by current location:
-  - Inside a sprint worktree (`astra_is_isolated_worktree` true) → **Sprint Phase**
-  - Main worktree on a shared branch → **Main Phase** (auto-detect pending sprint PR; if none, Step 4.1 one-shot fallback)
+  - Inside a sprint worktree (`astra_is_isolated_worktree` true) → **Sprint Phase** (Step 4 → … → 8.2 → 8.5 handoff; the merge is deferred to Main Phase)
+  - Main worktree on a shared branch → **Main Phase** — Step 3.5 checks for an open PR with `head ~ feat/sprint-*` and `base ~ ^(feat|fix)/`; if found jump to Step M1, if none fall through to Step 4 / Step 4.1 one-shot fallback
   - Main worktree on a work branch (compatibility) → one-shot fallback
 
 **`--auto` flag policy — HITL points that `--auto` NEVER suppresses** (everything else auto-approves with smart defaults):
@@ -60,7 +62,7 @@ Validate the following preconditions:
 2. **Clean-state check**: run `git status`. In promotion mode, if there are uncommitted changes, warn and abort (run only from a clean state).
 3. **Load worktree helpers** (source in every Bash step):
    ```bash
-   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
    if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$PLUGIN_ROOT/scripts/worktree-helpers.sh" ]; then
      echo "ERROR: CLAUDE_PLUGIN_ROOT not found. Check the plugin cache path." >&2
      exit 1
@@ -72,7 +74,7 @@ Validate the following preconditions:
    **Cross-invocation state protocol (MANDATORY)**: shell variables do NOT persist between separate Bash tool invocations, so this workflow's state lives in a **scoped** state file. The core rules:
    1. **PREAMBLE — literal first lines of EVERY Bash block you run in this skill** (add it yourself to any command you compose):
       ```bash
-      PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+      PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
       source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
       ```
    2. **Whenever you set or change a workflow variable** (`TARGET_BRANCH`, `BRANCH_NAME`, `PR_NUMBER`, `STARTED_FROM_SPRINT`, `PROMOTION_TARGET`, …), persist it immediately: `astra_state_set KEY "$VALUE"`.
@@ -80,11 +82,7 @@ Validate the following preconditions:
 
    Full rule set (variable list, scope handoff via `astra_state_adopt`, `astra_state_clear` at end/abort): **[references/fallbacks-and-recovery.md](references/fallbacks-and-recovery.md#cross-invocation-state-protocol-full-rules--skillmd-step-1)**.
 
-   **Per-mode worktree-location guard**:
-   - **Promotion mode (`--staging`, `--main`)**: must run in the main worktree — `astra_ensure_main_worktree || exit 1`. Then proceed per [references/promotion-modes.md](references/promotion-modes.md).
-   - **Default mode**: phase is decided by location.
-     - **Inside a sprint worktree** → Sprint Phase (Step 4 → 5 → … → 8.2 → 8.5 handoff). The merge is deferred to Main Phase.
-     - **In the main worktree** → Main Phase. Step 3.5 checks for an open PR with `head ~ feat/sprint-*` and `base ~ ^(feat|fix)/`. If yes, jump to Main Phase merge (Step M1). If no, fall through to Step 4 / Step 4.1.
+   **Per-mode worktree-location guard**: re-apply the **Mode decision** table above now that the helpers are loaded (promotion → `astra_ensure_main_worktree`; default → phase by location).
 
 ### Step 1.1: Defer target branch (default mode only)
 
@@ -102,7 +100,7 @@ Before all modes, pull `main`, `staging`, `dev` to latest. Cascade merge is rest
 #### Step 2.1: Remote fetch and shared-branch sync (no checkout)
 
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
 astra_sync_shared_branches
 ```
@@ -119,7 +117,7 @@ Sync upstream `staging` into downstream `dev`. Single hop only — `main → sta
 
 When the cascade runs (default mode, both branches exist on remote):
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
 # Dry-run conflict detection FIRST — never leave the shared main worktree
 # in a half-merged state (other sessions depend on it being clean).
@@ -193,7 +191,7 @@ CURRENT_BRANCH=$(git branch --show-current)
 
 - **Inside a sprint worktree + work branch** (`astra_is_isolated_worktree` true and current branch is not shared): the *normal flow* — invoked from the sprint worktree created by `/sprint-init`. Set variables and proceed to **Step 4.5**:
   ```bash
-  PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+  PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
   source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
   WT_PATH="$(pwd)"
   BRANCH_NAME="$CURRENT_BRANCH"
@@ -204,7 +202,20 @@ CURRENT_BRANCH=$(git branch --show-current)
   done
   ```
   > The sprint worktree's branch is typically `feat/sprint-<N>-<name>`, but isolated worktrees with other prefixes (`fix/`, `docs/`, …) are handled the same way.
-- **Main worktree + shared branch** or **main worktree + work branch (compat)**: fallback / compatibility cases — see [references/fallbacks-and-recovery.md](references/fallbacks-and-recovery.md#step-4-compat-cases-routing). The shared-branch case creates a temp worktree (**Step 4.1** in that reference); both set `TARGET_BRANCH="dev"` and skip Step 4.5.
+- **Main worktree + `feat/sprint-*` branch (v5.16+ in-place sprint)**: the *new normal flow* — the sprint ran in-place on the main worktree. Set variables and proceed to **Step 4.5** (full integration-branch semantics, single-phase merge):
+  ```bash
+  PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
+  source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
+  WT_PATH="$(pwd)"            # = main worktree root
+  BRANCH_NAME="$CURRENT_BRANCH"
+  STARTED_FROM_ISOLATED=0     # nothing to remove in Step 9
+  STARTED_FROM_SPRINT=1       # sprint semantics: Step 4.5 runs
+  IN_PLACE_SPRINT=1           # Step 8.3 merges in place (no Step 8.5 handoff); Step 2 cascade skipped
+  for kv in WT_PATH BRANCH_NAME STARTED_FROM_ISOLATED STARTED_FROM_SPRINT IN_PLACE_SPRINT; do
+    eval "astra_state_set $kv \"\$$kv\""
+  done
+  ```
+- **Main worktree + shared branch** or **main worktree + other work branch (compat)**: fallback / compatibility cases — see [references/fallbacks-and-recovery.md](references/fallbacks-and-recovery.md#step-4-compat-cases-routing). The shared-branch case creates a temp worktree (**Step 4.1** in that reference); both set `TARGET_BRANCH="dev"` and skip Step 4.5.
 
 ### Step 4.5: Determine integration target branch (Sprint Phase only)
 
@@ -224,7 +235,7 @@ Full heuristic and per-sub-step bash: **[references/integration-branch-inference
 Step 2 already ran the cascade; reflect the latest `{target-branch}` into the work branch. **Run inside the isolated worktree (`{work-tree-path}`)**:
 
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
 [ -n "${WT_PATH:-}" ] || WT_PATH=$(pwd)
 [ -n "${TARGET_BRANCH:-}" ] || { echo "ERROR: TARGET_BRANCH empty — re-run Step 4.5" >&2; exit 1; }
@@ -293,7 +304,7 @@ EOF
 
 After the PR exists (re-used or created), capture its metadata:
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
 [ -n "${BRANCH_NAME:-}" ] || BRANCH_NAME=$(git branch --show-current)
 PR_URL=$(gh pr view "$BRANCH_NAME" --json url --jq '.url')
@@ -332,14 +343,7 @@ Agent tool (subagent_type: "feature-dev:code-reviewer")
 1. Re-invoke the agent once, quoting the required format.
 2. If still missing, treat the review as **failed** (do NOT assume 0 issues) and halt with guidance to re-run `/pr-merge` — an unparseable review must never unlock a merge.
 
-Classify results into 4 severity levels and print:
-
-| Severity | Description | Examples |
-|----------|-------------|----------|
-| **Critical** | Must fix immediately; risk of production outage | SQL injection, null reference, data loss |
-| **High** | Recommended fix; important bug or security issue | Unhandled exception, possible auth bypass |
-| **Medium** | Code-quality improvement; no functional impact | Duplicate code, inefficient logic, unclear naming |
-| **Low** | Style/convention; optional improvement | Formatting, missing comments, unused imports |
+Classify results into the 4 severity levels (Critical / High / Medium / Low — rubric table: [references/review-severity-and-output.md](references/review-severity-and-output.md)) and print them.
 
 ### Step 8.1: Review-result decision
 
@@ -385,10 +389,11 @@ Classify results into 4 severity levels and print:
 The review loop converged. Decide how to proceed based on the start-state flags:
 
 - **Promotion mode (`--staging` / `--main`)**: → **Step 8.4** (in-place merge — promotion always runs from the main worktree).
-- **`STARTED_FROM_SPRINT=1`** (real sprint worktree): → **Step 8.5** (Sprint Phase ends; merge deferred to Main Phase).
+- **`IN_PLACE_SPRINT=1`** (v5.16+ in-place sprint — already in the main worktree): → **Step 8.4** directly (single-phase; the normal-mode HITL merge confirmation there is the observability gate).
+- **`STARTED_FROM_SPRINT=1`** and not in-place (real sprint worktree): → **Step 8.5** (one HITL, then the skill transitions to the main worktree itself).
 - **`STARTED_FROM_SPRINT=0`** (Step 4.1 temp worktree, Step 4 compat, or Step 3.5 Main-Phase entry): → **Step 8.4** (in-place merge).
 
-> **NO silent default**: if `STARTED_FROM_SPRINT` is unset after `astra_state_load`, re-derive it (`astra_is_isolated_worktree` → 1, else 0) and persist — never assume 0, which would in-place-merge from inside a sprint worktree.
+> **NO silent default**: if `STARTED_FROM_SPRINT` is unset after `astra_state_load`, re-derive it (`astra_is_isolated_worktree` → 1; else if the current branch matches `feat/sprint-*` in the main worktree → 1 with `IN_PLACE_SPRINT=1`; else 0) and persist — never assume 0, which would mis-route a sprint context.
 
 ### Step 8.4: PR merge (Main Phase / promotion mode)
 
@@ -400,7 +405,7 @@ Print the PR URL, review-result summary (pass/fail, iteration count), and change
 After confirmation (or under `--auto`), merge the PR:
 
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
 # Never merge blind: PR_NUMBER must be known (gh cannot infer the PR from a shared branch).
 if [ -z "${PR_NUMBER:-}" ]; then
@@ -429,7 +434,7 @@ The sprint PR has just merged into the integration branch (e.g., `feat/login`). 
 
 Refresh the integration branch locally so its `HEAD` reflects the freshly merged state:
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
 [ -n "${TARGET_BRANCH:-}" ] || { echo "ERROR: TARGET_BRANCH empty — cannot promote" >&2; exit 1; }
 git fetch origin "$TARGET_BRANCH" --quiet
@@ -452,34 +457,20 @@ Create the promotion PR (`$TARGET_BRANCH` → `$PROMOTION_TARGET`, body lists th
 
 ### Step 8.5: Sprint Phase → Main Phase handoff
 
-The review loop converged inside a sprint worktree. The merge runs from the main worktree (so the cascade, dev sync, and worktree removal happen in a stable location). Branch on the flag:
+The review loop converged inside a sprint worktree. The merge runs from the main worktree (so the cascade, dev sync, and worktree removal happen in a stable location). **v5.16+: in both modes the skill performs the transition itself — the user is never instructed to `cd` or re-invoke.** Branch on the flag:
 
-- **Normal mode**: print the handoff message and exit cleanly. The sprint worktree is preserved (commits and PR intact; only the merge is pending). Resolve `MAIN_ROOT` first so the printed `cd` path is concrete:
-  ```bash
-  MAIN_ROOT=$(astra_main_worktree_root)
+- **Normal mode**: print the Sprint Phase summary, then ask **one HITL** via `AskUserQuestion`:
+
   ```
-  ```
-  ═══════════════════════════════════════════════════════
   ✅ Sprint Phase complete — review loop converged
-
-  📦 Branch:     {BRANCH_NAME}
-  🔗 PR:         {PR URL}
-  🔁 Review iterations: {N}
-  🛠  Fixed issues: Critical 0 / High 0 (remaining as accepted)
-
-  ▶︎  Next step (merge runs in the main worktree):
-
-      cd "{MAIN_ROOT}"
-      /pr-merge
-
-      The re-invoked /pr-merge will auto-detect this PR (#{PR_NUMBER}),
-      ask for final merge confirmation, perform the merge, and remove
-      the sprint worktree.
-  ═══════════════════════════════════════════════════════
+  📦 Branch: {BRANCH_NAME} · 🔗 PR: {PR URL} · 🔁 Review iterations: {N}
   ```
-  After printing, **exit the workflow** (do NOT call `gh pr merge`, do NOT remove the worktree).
 
-- **`--auto` mode**: continue automatically — the skill `cd`s into the main worktree itself (validating it lands on a shared branch and adopting the sprint scope's state via `astra_state_adopt`), then proceeds to **Step M1** so `/autorun` and `/sprint-init --auto` complete end-to-end in one invocation. Transition bash: **[references/fallbacks-and-recovery.md](references/fallbacks-and-recovery.md#step-85---auto-cross-worktree-transition-bash)**. `BRANCH_NAME`, `PR_URL`, `PR_NUMBER`, `STARTED_FROM_ISOLATED=1` are already set from Sprint Phase.
+  **Question**: "Finalize the merge now? (the skill moves to the main worktree itself and continues)"
+  - **"지금 완료 (Recommended)"** → run the same cross-worktree transition as `--auto` (bash: [references/fallbacks-and-recovery.md](references/fallbacks-and-recovery.md#step-85---auto-cross-worktree-transition-bash)), then proceed to **Step M1**. The Step 8.4 merge confirmation is considered answered by this choice — do not ask twice; Step 8.4.5 promotion HITL still fires.
+  - **"나중에"** → exit cleanly, worktree preserved (commits and PR intact; only the merge is pending). Print: `Re-invoke /pr-merge in this session when ready — it auto-detects PR #{PR_NUMBER} from the main worktree (Step 3.5) or from this worktree (Step 8.5).` Do NOT call `gh pr merge`, do NOT remove the worktree.
+
+- **`--auto` mode**: continue automatically without the question — the skill `cd`s into the main worktree itself (validating it lands on a shared branch and adopting the sprint scope's state via `astra_state_adopt`), then proceeds to **Step M1** so `/autorun` and the sprint pipeline complete end-to-end in one invocation. Same transition bash reference. `BRANCH_NAME`, `PR_URL`, `PR_NUMBER`, `STARTED_FROM_ISOLATED=1` are already set from Sprint Phase.
 
 ### Step M1: Main-Phase merge (entry from Step 3.5 or Step 8.5)
 
@@ -499,7 +490,7 @@ After the merge, clean up the isolated worktree and local environment. Step 8.4 
 
 1. **Re-anchor in the main worktree**:
    ```bash
-   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
    source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
    MAIN_ROOT=$(astra_main_worktree_root)
    cd "$MAIN_ROOT"
@@ -508,29 +499,15 @@ After the merge, clean up the isolated worktree and local environment. Step 8.4 
 3. `git checkout dev` (even when `{target-branch}` is not dev, the final position unifies to dev).
 4. `git pull --rebase origin dev`.
 5. **Remove the isolated worktree** — only when `STARTED_FROM_ISOLATED=1`, via `astra_remove_worktree "$BRANCH_NAME"` (helper only warns and continues if the worktree is dirty). The `STARTED_FROM_ISOLATED=0` compat case skips removal (the main worktree must not be removed).
-6. **Delete the merged local sprint branch** — only when `STARTED_FROM_ISOLATED=1` AND the branch matches `^(feat|fix)/sprint-` (safe `git branch -d`, auto-skipped if unmerged). Integration branches (`feat/<name>`, `fix/<name>` without `sprint-`) are **persistent** and must not be deleted.
+6. **Delete the merged local sprint branch** — when (`STARTED_FROM_ISOLATED=1` OR `IN_PLACE_SPRINT=1`) AND the branch matches `^(feat|fix)/sprint-` (safe `git branch -d`, auto-skipped if unmerged). Integration branches (`feat/<name>`, `fix/<name>` without `sprint-`) are **persistent** and must not be deleted.
+6.2. **In-place sprint residue** — when `IN_PLACE_SPRINT=1`, also remove the root-level port env file: `rm -f "$MAIN_ROOT/.astra-worktree.env"` (it was written by `/sprint-init` Mode A and is gitignored, but a stale copy would leak the old port base into the next sprint).
 6.5. **Completion Gate — verify before reporting success**: print the final summary ONLY when all three gates pass — (1) PR state = MERGED, (2) sprint worktree gone (when `STARTED_FROM_ISOLATED=1`), (3) current branch = dev — otherwise report exactly which failed. Then `astra_state_clear`.
 
    Exact guard bash for steps 5 / 6 / 6.5 and the integration-branch retention note: **[references/fallbacks-and-recovery.md](references/fallbacks-and-recovery.md#step-9-cleanup-mechanics-bash)**.
 
-7. Print the final summary:
+7. Print the final summary using the completion output template in [references/review-severity-and-output.md](references/review-severity-and-output.md).
 
 > **Note**: in default mode, version bumping is not performed. Version bumps run only in `--main` promotion (Step 11).
-
-```
-## PR Review & Merge complete
-
-### Result summary
-- PR: {PR URL}
-- Merge: {branch-name} → {target-branch}
-- Review iterations: {N}
-- Fixed issues: Critical {n}, High {n}
-- Status: ✅ merged
-
-### Changes
-- {commit summary 1}
-- {commit summary 2}
-```
 
 ---
 
@@ -542,26 +519,11 @@ Promotes code between branches: `--staging` (source `dev` or an integration bran
 
 ## Quick Run Examples
 
-```
-cd .astra-worktrees/sprint-3-user-auth && /pr-merge   # Sprint Phase: pick/create integration branch → commit → push → PR → review loop, then exits
-cd "$(git rev-parse --git-common-dir)/.." && /pr-merge # Main Phase: auto-detect pending sprint PR → merge → promotion path prompt (staging/dev/skip)
-
-/pr-merge 5                 # up to 5 review iterations (Sprint Phase only)
-/pr-merge --no-review       # quick merge without code review
-/pr-merge --draft           # create as Draft PR then review
-/pr-merge --minor           # minor version bump (only matters on --main promotion)
-/pr-merge --auto            # unattended end-to-end (both phases + auto-cd); promotion target still HITL
-
-/pr-merge --staging         # promote dev → staging (Step 10.0 asks source: bulk dev or an integration branch)
-/pr-merge --main            # promote staging → main / release (Step 10.0 asks source; version bump here)
-/pr-merge --staging --no-review
-```
+See the invocation matrix in [references/review-severity-and-output.md](references/review-severity-and-output.md) (in-place / worktree / Main-Phase re-entry / iteration-count / `--no-review` / `--draft` / `--auto` / promotion variants).
 
 ## Notes
 
-- **Branch strategy (v5.11+)**: `feat/sprint-<N>-<name> → feat/<name> | fix/<name> (integration) → dev | staging → main`. The integration branch is persistent and may receive multiple sprint PRs before promotion.
-- **Two-phase policy (v5.9+)**: `gh pr merge` only runs from the main worktree. Inside a sprint worktree, `/pr-merge` runs Sprint Phase and stops; the user `cd`s to the main worktree and re-invokes it (Step 3.5 auto-detects the pending sprint PR, then Step 8.4.5 always asks the promotion path — HITL even under `--auto`). With `--auto`, the skill performs the cross-worktree transition itself.
-- **Worktree policy (v5.0+)**: sprint worktrees are created by `/sprint-init`. Right after Main Phase merges into the integration branch (+ optional promotion), the sprint worktree is auto-removed (Step 9). Cascade merges and promotions run in the main worktree. On conflict the worktree remains — after resolving, re-run `/pr-merge`.
+- **Branch strategy / phase policy / worktree policy**: defined once in the intro above (Branch strategy v5.11+, Phase policy v5.16+, Worktree isolation policy v5.0+) — not restated here. One addition: on a cascade/merge conflict the worktree remains — after resolving, re-run `/pr-merge` (Step 3.5 auto-detects the pending sprint PR).
 - **Default mode (v5.11+)**: the merge target is an integration branch chosen in Step 4.5 — pick existing or create from a user-chosen base (default `origin/dev`). Classification (feat vs fix) and slug are auto-inferred (see [references/integration-branch-inference.md](references/integration-branch-inference.md)). Under `--auto`, the inferred name is reused if it exists, else auto-created from `origin/dev`.
 - **Promotion / fallback details**: promotion modes (`--staging`/`--main`) → [references/promotion-modes.md](references/promotion-modes.md); one-shot temp-worktree fallback, pre-v5.11 PR detection, compat cases → [references/fallbacks-and-recovery.md](references/fallbacks-and-recovery.md).
 - Final checkout location after merge: default mode ends on `dev`; promotion mode returns to `dev`.

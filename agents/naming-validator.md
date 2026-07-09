@@ -31,7 +31,7 @@ If you cannot determine a value, you MUST report "unable to verify" — never gu
 The dictionaries are large JSON objects: the entries live under the `.data[]` array, and the field names are Korean, so jq **requires bracket notation** (`.["필드명"]`). Before suggesting any standard term you MUST run the relevant query below and cite its output. Resolve the data directory once (works whether or not `$CLAUDE_PLUGIN_ROOT` is exported):
 
 ```bash
-DATA="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}/data"
+DATA="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}/data"
 ```
 
 > **Data reality (verified against the shipped JSON — do NOT query the name fields):** in this dataset the `공통표준용어명` and `공통표준단어명` (Korean *name*) fields are **empty in every row**. The Korean meaning lives in `공통표준용어설명` (term description, 100% populated), `공통표준단어영문명` (word English name), and `이음동의어목록` (synonyms). The commands below therefore match on description/synonyms/abbreviation, never on the empty name fields.

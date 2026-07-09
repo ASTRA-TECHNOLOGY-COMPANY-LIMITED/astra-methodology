@@ -38,7 +38,7 @@ This skill is the **parallel sibling** of `/user-test`. Use `/user-test` for int
 Detailed references (load on demand):
 - `references/parallel-guide.md` — worker count tuning, isolation guarantees, debugging flaky cases.
 - `../user-test/references/assertion-guide.md` — assertion grammar and severity rules (reused as-is).
-- `../user-test/references/i18n-strings.md` — vi/en/ko translation table (shared SSoT; the merge script reads `UAT_LANG` and renders accordingly).
+- `../user-test/references/i18n-strings.json` — vi/en/ko translation table (shared SSoT; the merge script reads `UAT_LANG` and loads this JSON via `jq` at runtime). `../user-test/references/i18n-strings.md` is a human-readable pointer to it.
 
 ## 1. Bootstrap (run once per project)
 
@@ -84,28 +84,9 @@ Once installed, skip bootstrap on subsequent runs.
 
 ### Step 0 — Language Selection (report output language)
 
-Determine `LANG_CODE` ∈ {`vi`, `en`, `ko`} — used for `index.html` (`<html lang>` + visible labels), `issues.md` headings, and console log messages. UAT case file contents are not translated.
+Resolve `LANG_CODE` ∈ {`vi`, `en`, `ko`} exactly as specified in `../user-test/references/language-selection.md` (shared SSoT): `--lang` flag → persisted `CLAUDE.md ## Language` → trilingual `AskUserQuestion` prompt, with the unattended default of `vi` (this skill is auto-batch only, so the prompt fires only when neither the flag nor a persisted language is present).
 
-Resolution order:
-
-1. **`--lang` flag** in `$ARGUMENTS` → normalize case-insensitive (`vi|vie|vietnamese` → `vi`; `en|eng|english` → `en`; `ko|kor|korean` → `ko`). If recognized, skip to Step 1.
-2. **Persisted `CLAUDE.md ## Language`** → if it resolves to `ko`, `vi`, or `en`, use it silently.
-3. **Otherwise** → ask via `AskUserQuestion` with the trilingual prompt below; default selection Vietnamese.
-
-```
-Chọn ngôn ngữ cho báo cáo UAT.
-Select the language for the UAT report.
-UAT 보고서 언어를 선택하세요.
-```
-
-Options (single-select, header `Lang`):
-- `Tiếng Việt` — Vietnamese (Recommended)
-- `English` — English
-- `한국어` — Korean
-
-Map: `Tiếng Việt` → `vi`, `English` → `en`, `한국어` → `ko`.
-
-The merge script (`uat-parallel-report.sh`) consumes `LANG_CODE` via the `UAT_LANG` environment variable in Step 5.
+Consume-side (this skill): export `LANG_CODE` as the `UAT_LANG` environment variable so the merge script (`uat-parallel-report.sh`) reads it in Step 5.
 
 ### Step 1 — Validate and select cases
 
@@ -265,7 +246,7 @@ docs/tests/uat-reports/2026-05-29-1830/
 
 ## 7. Standing instructions
 
-1. **User-facing output language**: resolved at Step 0 (`--lang` flag → `CLAUDE.md` ## Language → AskUserQuestion → default `vi`). Passed to the merge script via `UAT_LANG`. The script embeds an inline mirror of the `skills/user-test/references/i18n-strings.md` dictionary (the SSoT file is documentation; the runtime values live inside the Node heredoc) and substitutes every visible string in `index.html` + `issues.md` accordingly. When adding or changing strings, update both the SSoT and the script. `/uat-parallel` does not render `M_DEV_HINT` (the Playwright runner has no LLM to author per-failure hints) and uses `M_ISSUES_REPORT_TITLE_PARALLEL` instead of the base title key. File slugs always use ASCII.
+1. **User-facing output language**: resolved at Step 0 (`--lang` flag → `CLAUDE.md` ## Language → AskUserQuestion → default `vi`). Passed to the merge script via `UAT_LANG`. The script loads the string table from the single source of truth `skills/user-test/references/i18n-strings.json` at runtime via `jq` (resolving the chosen language with per-key English fallback; a missing file or key emits one warning and never crashes) and substitutes every visible string in `index.html` + `issues.md` accordingly. When adding or changing strings, edit that JSON only — the script holds no embedded copy. `/uat-parallel` does not render `M_DEV_HINT` (the Playwright runner has no LLM to author per-failure hints) and uses `M_ISSUES_REPORT_TITLE_PARALLEL` instead of the base title key. File slugs always use ASCII.
 2. **Reuse `/user-test` assets**: do NOT duplicate the HTML template or assertion grammar — load from `skills/user-test/` paths. Future updates to `/user-test`'s template propagate automatically.
 3. **Hard assertions only**: same rule as `/user-test`. URL / Network / DOM / Console only.
 4. **Severity rules are shared**: identical to `references/assertion-guide.md` §3. The runner emits the raw failure; the merge script applies the severity rules.

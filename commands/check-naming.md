@@ -28,47 +28,27 @@ Detailed guide: `skills/data-standard/data-standard-terminology-guide.md`
 - SQL DDL (CREATE TABLE, ALTER TABLE)
 - DTO/VO class field names
 
-## Check Items
+## Check Items — Rule Source (single source of truth)
 
-### 1. Standard Term Compliance
-- Check whether column names match `공통표준용어영문약어명` in `data/standard_terms.json`
-- Suggest the most similar standard term when there is a mismatch
-- Check whether abbreviations are composed of `공통표준단어영문약어명` combinations from `data/standard_words.json`
+Do **not** rely on a rule list inlined here. The authoritative naming rules (standard-term compliance, suffix patterns, domain type/length, forbidden words, table-name prefixes, and abbreviation-formation rules) live in the `data-standard` skill and are backed by the reference JSON:
 
-### 2. Suffix Pattern Consistency
-- Whether date-related columns use `_YMD` or `_DT` suffix
-- Whether amount-related columns use `_AMT` or `_PRC` suffix
-- Whether name-related columns use `_NM` suffix
-- Whether code-related columns use `_CD` suffix
-- Whether boolean-related columns use `_YN` suffix
-- Whether number-related columns use `_NO` suffix
-- Whether content-related columns use `_CN` suffix
-- Whether count-related columns use `_CNT` suffix
-- Whether rate-related columns use `_RT` suffix
-- Whether sequence-related columns use `_SN` suffix
-- Whether address-related columns use `_ADDR` suffix
-- Check whether the meaning matches the suffix
+- Read `skills/data-standard/data-standard-terminology-guide.md` for the full rule set and apply every rule it defines.
+- Resolve each column/table against the dictionaries with targeted `jq` queries (the files are large — never load them whole):
 
-### 3. Domain Rule Compliance
-- Check whether data types and lengths match domain definitions by referencing `data/standard_domains.json`
-- Report length mismatch if VARCHAR(50) but domain is Name-V100
-- Check CHAR vs VARCHAR distinction
-- Check NUMERIC precision/scale
+Rows live under `.data[]`, and Korean field names require bracket notation in jq (`.["..."]`). Look a column/table up by its **English abbreviation** — the abbreviation fields are the populated, indexable ones:
 
-### 4. Forbidden Word Detection
-- Detect based on the `금칙어목록` field in `data/standard_words.json`
-- Suggest standard terms from `이음동의어목록` when forbidden words are found
+```bash
+# Is this column abbreviation a registered standard term? (returns domain + description)
+jq -r '.data[] | select(.["공통표준용어영문약어명"]=="RAFOS_NM") | {abbr:.["공통표준용어영문약어명"], domain:.["공통표준도메인명"], desc:.["공통표준용어설명"]}' data/standard_terms.json
 
-### 5. Table Name Rules
-- Check prefixes: TB_ (general) / TC_ (code) / TH_ (history) / TL_ (log) / TR_ (relation)
-- Report missing or misused prefixes
-- Report prefix-table type mismatches (e.g., using TB_ for a history table)
+# Standard word: abbreviation, forbidden words, synonyms (look up by the word's English abbreviation)
+jq -r '.data[] | select(.["공통표준단어영문약어명"]=="RAFOS") | {abbr:.["공통표준단어영문약어명"], forbidden:.["금칙어목록"], synonyms:.["이음동의어목록"]}' data/standard_words.json
 
-### 6. English Abbreviation Naming Rules
-- Check uppercase usage
-- Check underscore separator usage
-- Check whether classifier words are placed at the end
-- Check within 30 characters
+# Domain type/length definition (domains file keys the row on 도메인명, e.g. "명V100")
+jq -r '.data[] | select(.["도메인명"]=="명V100")' data/standard_domains.json
+```
+
+Table-prefix rules (`TB_`/`TC_`/`TH_`/`TL_`/`TR_`) and the standard suffixes (`_YMD`, `_DT`, `_AMT`, `_NM`, `_CD`, `_YN`, `_NO`, `_CN`, `_SN`, `_ADDR`, …) are defined in that guide — read it rather than restating them here, so this command stays a thin dispatcher over the one rule source. For a deeper, agent-driven pass over the same dictionaries, delegate to the `naming-validator` agent.
 
 ## Output Format
 

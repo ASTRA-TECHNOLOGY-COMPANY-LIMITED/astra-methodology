@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASTRA v5.18 — 원플로우 실행 가이드</title>
+<style>
+  :root {
+    --bg: #f7f8fa; --surface: #ffffff; --ink: #1a2233; --sub: #5a6478;
+    --line: #dfe3ea; --accent: #2f6fed; --accent-soft: #e8f0fe;
+    --gate: #b3541e; --gate-soft: #fdf0e7; --ok: #1e7f4f; --ok-soft: #e6f4ec;
+    --fail: #b3261e; --fail-soft: #fdecea; --hitl: #7c3aed; --hitl-soft: #f1eafe;
+    --code-bg: #101623; --code-ink: #d7e0f0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1420; --surface: #161d2d; --ink: #e6ebf5; --sub: #9aa5bd;
+      --line: #2a3550; --accent: #6f9bff; --accent-soft: #1b2a4a;
+      --gate: #e8925a; --gate-soft: #3a2415; --ok: #4cc38a; --ok-soft: #12301f;
+      --fail: #f28b82; --fail-soft: #3a1512; --hitl: #b794f6; --hitl-soft: #2a1c46;
+      --code-bg: #0b0f18; --code-ink: #cdd7ea;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+    line-height: 1.65; padding: 0 16px 80px;
+  }
+  main { max-width: 880px; margin: 0 auto; }
+  header.hero { padding: 56px 0 28px; border-bottom: 1px solid var(--line); margin-bottom: 36px; }
+  .hero .eyebrow { color: var(--accent); font-weight: 700; letter-spacing: .12em; font-size: .78rem; }
+  .hero h1 { font-size: 1.9rem; margin: 8px 0 10px; letter-spacing: -0.02em; }
+  .hero p { color: var(--sub); max-width: 62ch; }
+  h2 { font-size: 1.3rem; margin: 52px 0 6px; letter-spacing: -0.01em; }
+  h2 .no { color: var(--accent); font-variant-numeric: tabular-nums; margin-right: 8px; }
+  .lead { color: var(--sub); margin-bottom: 18px; font-size: .95rem; }
+  section > p { margin: 10px 0; }
+
+  /* code */
+  pre {
+    background: var(--code-bg); color: var(--code-ink); border-radius: 10px;
+    padding: 14px 18px; overflow-x: auto; font-size: .86rem; line-height: 1.7;
+    font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  code { font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; font-size: .88em; }
+  p code, li code, td code {
+    background: var(--accent-soft); color: var(--ink);
+    padding: 1px 6px; border-radius: 5px;
+  }
+  pre .c { color: #7e8aa6; }
+  pre .k { color: #8ab4ff; font-weight: 600; }
+
+  /* tables */
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; background: var(--surface); border-radius: 10px; overflow: hidden; }
+  th, td { border: 1px solid var(--line); padding: 9px 13px; text-align: left; vertical-align: top; }
+  th { background: var(--accent-soft); font-size: .84rem; }
+
+  /* ===== flowchart ===== */
+  .flow { display: flex; flex-direction: column; align-items: center; margin: 26px 0 8px; }
+  .node {
+    background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px;
+    padding: 12px 20px; min-width: 300px; max-width: 560px; text-align: center;
+    box-shadow: 0 1px 3px rgba(10,20,40,.06);
+  }
+  .node b { display: block; font-size: .97rem; }
+  .node small { color: var(--sub); font-size: .8rem; display: block; margin-top: 2px; }
+  .node.start { border-color: var(--accent); background: var(--accent-soft); }
+  .node.gate  { border-color: var(--gate); background: var(--gate-soft); }
+  .node.ok    { border-color: var(--ok); background: var(--ok-soft); }
+  .node.fail  { border-color: var(--fail); background: var(--fail-soft); }
+  .node.hitl  { border-color: var(--hitl); background: var(--hitl-soft); }
+  .arrow { color: var(--sub); font-size: 1.05rem; padding: 5px 0; text-align: center; }
+  .arrow em { font-style: normal; font-size: .78rem; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; margin-left: 8px; color: var(--sub); }
+  .badge { display: inline-block; font-size: .72rem; font-weight: 700; border-radius: 999px; padding: 2px 9px; margin-left: 6px; vertical-align: 1px; }
+  .badge.hitl { background: var(--hitl-soft); color: var(--hitl); border: 1px solid var(--hitl); }
+  .badge.auto { background: var(--ok-soft); color: var(--ok); border: 1px solid var(--ok); }
+  .badge.gatey { background: var(--gate-soft); color: var(--gate); border: 1px solid var(--gate); }
+
+  /* branches */
+  .branches { display: flex; gap: 14px; justify-content: center; align-items: stretch; flex-wrap: wrap; width: 100%; }
+  .branch { display: flex; flex-direction: column; align-items: center; flex: 1 1 240px; max-width: 320px; }
+  .branch .cond { font-size: .78rem; font-weight: 700; padding: 3px 12px; border-radius: 999px; margin-bottom: 6px; }
+  .cond.pass { background: var(--ok-soft); color: var(--ok); border: 1px solid var(--ok); }
+  .cond.retry { background: var(--gate-soft); color: var(--gate); border: 1px solid var(--gate); }
+  .cond.stop { background: var(--fail-soft); color: var(--fail); border: 1px solid var(--fail); }
+  .branch .node { min-width: 0; width: 100%; }
+  .loopback {
+    margin-top: 8px; font-size: .78rem; color: var(--gate);
+    border: 1.5px dashed var(--gate); border-radius: 10px; padding: 6px 12px; text-align: center;
+  }
+
+  /* decision picker cards */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+  .card .q { font-size: .8rem; color: var(--sub); }
+  .card .a { font-weight: 800; color: var(--accent); margin: 4px 0 6px; font-size: 1rem; }
+  .card p { font-size: .84rem; color: var(--sub); }
+
+  .note { border-left: 4px solid var(--accent); background: var(--surface); padding: 12px 16px; border-radius: 0 10px 10px 0; margin: 18px 0; font-size: .92rem; }
+  .note.warn { border-color: var(--gate); }
+  .legend { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0 2px; font-size: .78rem; color: var(--sub); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 12px; height: 12px; border-radius: 4px; display: inline-block; border: 1.5px solid; }
+  footer { margin-top: 64px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--sub); font-size: .8rem; }
+</style>
+</head>
+<body>
+<main>
+
+<header class="hero">
+  <div class="eyebrow">ASTRA METHODOLOGY · v5.18</div>
+  <h1>원플로우 실행 가이드 — 설계부터 Merge까지 한 세션</h1>
+  <p>v5.16+ 파이프라인은 블루프린트 작성 → 구현 → 테스트 → <b>적대적 검증</b> → PR 머지를 한 세션에서 연속 실행합니다.
+  중간에 <code>cd</code>도, 새 세션도 없습니다. 이 문서는 상황별 최적 진입 커맨드와 전체 흐름을 플로우차트로 정리합니다.</p>
+</header>
+
+<!-- ============ 0. 준비 ============ -->
+<section>
+  <h2><span class="no">0</span>최초 1회 준비</h2>
+  <p class="lead">머신/프로젝트당 한 번만 하면 됩니다.</p>
+<pre><span class="c"># ① Chrome MCP — v5.18부터 플러그인이 번들하지 않음 → 직접 등록 (멀티세션 공유 attach 패턴)</span>
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --remote-debugging-port=9222 --user-data-dir="&lt;프로파일 경로&gt;" &amp;
+<span class="c"># .mcp.json → chrome-devtools args:</span>
+<span class="c">#   ["-y","chrome-devtools-mcp@latest","--browser-url","http://127.0.0.1:9222","--experimentalPageIdRouting"]</span>
+
+<span class="c"># ② 이미지 생성용 환경변수 (선택): GOOGLE_API_KEY, OPENAI_API_KEY</span>
+
+<span class="c"># ③ 타깃 프로젝트 부트스트랩</span>
+<span class="k">/project-init</span>     <span class="c"># 디렉터리 + CLAUDE.md + DESIGN.md 시드</span>
+<span class="k">/design-init</span>      <span class="c"># 디자인 시스템 SSoT (톤·컬러·타이포·밀도 4개 질문)</span></pre>
+</section>
+
+<!-- ============ 1. 진입점 선택 ============ -->
+<section>
+  <h2><span class="no">1</span>어떤 커맨드로 시작할까? — 진입점 선택</h2>
+  <p class="lead">답은 대부분 <code>/blueprint &lt;slug&gt;</code>입니다. 상황이 특수할 때만 다른 진입점을 씁니다.</p>
+  <div class="cards">
+    <div class="card"><div class="q">일상적인 신규 기능</div><div class="a">/service-planner → /blueprint</div>
+      <p>기획 후 blueprint 하나로 merge까지. 설계 결정과 머지 확인만 답하면 됩니다. <b>기본 권장.</b></p></div>
+    <div class="card"><div class="q">아이디어 한 줄 → 완전 무인</div><div class="a">/autorun "..." --max-iter=3</div>
+      <p>기획부터 머지까지 무인. 승격 대상과 진짜 블로커에서만 멈춥니다. 민감 로직에는 비권장.</p></div>
+    <div class="card"><div class="q">설계를 사람이 검토한 뒤 진행</div><div class="a">/blueprint --design-only</div>
+      <p>설계 커밋 후 정지(재개 체크포인트 기록). 검토 후 <code>/sprint-init --resume</code>으로 이어갑니다.</p></div>
+    <div class="card"><div class="q">블루프린트가 이미 있음 / prompt-map 기반</div><div class="a">/sprint-init &lt;slug&gt;</div>
+      <p>스캐폴딩 후 같은 파이프라인으로 연속 진행. <code>--scaffold-stop</code>이면 스캐폴딩만.</p></div>
+    <div class="card"><div class="q">두 세션 병렬 스프린트</div><div class="a">자동 승격 (또는 --isolated)</div>
+      <p>메인 워크트리 점유가 감지되면 두 번째 스프린트는 자동으로 worktree 격리로 승격됩니다.</p></div>
+    <div class="card"><div class="q">파이프라인에 안 맞는 개방형 목표</div><div class="a">/loop "..." --max-iter=5</div>
+      <p>"경고 0개로" 같은 수렴형 목표. 루브릭 동결 → 적대적 채점. 머지는 별도 <code>/pr-merge</code>.</p></div>
+  </div>
+</section>
+
+<!-- ============ 2. 메인 플로우차트 ============ -->
+<section>
+  <h2><span class="no">2</span>메인 플로우 — <code>/blueprint &lt;slug&gt;</code> 원플로우 전체</h2>
+  <p class="lead"><code>/sprint-init &lt;slug&gt;</code>로 시작해도 ③부터 동일한 파이프라인입니다 (공유 SSoT: <code>auto-pipeline.md</code>).</p>
+
+  <div class="legend">
+    <span><span class="dot" style="border-color:var(--hitl);background:var(--hitl-soft)"></span> 사람이 답하는 지점 (HITL)</span>
+    <span><span class="dot" style="border-color:var(--gate);background:var(--gate-soft)"></span> 적대적 게이트</span>
+    <span><span class="dot" style="border-color:var(--ok);background:var(--ok-soft)"></span> 성공 경로</span>
+    <span><span class="dot" style="border-color:var(--fail);background:var(--fail-soft)"></span> 머지 없이 정지</span>
+  </div>
+
+  <div class="flow">
+    <div class="node start"><b>/blueprint student-attendance</b><small>메인 워크트리(dev)에서 실행</small></div>
+    <div class="arrow">▼</div>
+
+    <div class="node"><b>① 격리 모드 결정 <span class="badge auto">자동</span></b>
+      <small>기본 <b>in-place</b>: sprint 브랜치를 메인 워크트리에 직접 체크아웃 (cd 없음)<br>
+      메인 점유·dirty·<code>--isolated</code> → <b>worktree</b>로 자동 승격</small></div>
+    <div class="arrow">▼</div>
+
+    <div class="node"><b>② 스프린트 스캐폴딩</b><small>feat/sprint-N-slug 브랜치 · 포트 env · prompt-map · progress.md</small></div>
+    <div class="arrow">▼</div>
+
+    <div class="node hitl"><b>③ 블루프린트 작성 <span class="badge hitl">HITL 1~3개</span></b>
+      <small>10개 표준 섹션 (스키마·API·시퀀스·의사코드·HITL Triggers)<br>핵심 설계 결정만 질문 → blueprint-reviewer 리뷰 → sprint 브랜치에 커밋</small></div>
+    <div class="arrow">▼ <em>--design-only면 여기서 정지 (재개 가능)</em></div>
+
+    <div class="node"><b>④ /test-scenario</b><small>TDD — 구현 전에 시나리오 작성 (blueprint §3 엔드포인트 커버)</small></div>
+    <div class="arrow">▼</div>
+
+    <div class="node"><b>⑤ 구현</b><small>blueprint 기반 — coding-convention · data-standard 자동 적용</small></div>
+    <div class="arrow">▼</div>
+
+    <div class="node"><b>⑥ /test-run (단일 패스)</b>
+      <small>포트 격리 서버 기동 → 통합 테스트 → <code>ASTRA_TEST_RESULT: PASS|FAIL passed=N failed=N total=N skipped=N</code></small></div>
+    <div class="arrow">▼</div>
+
+    <div class="branches">
+      <div class="branch">
+        <div class="cond pass">테스트 PASS</div>
+        <div class="node gate"><b>⑦ 적대적 검증 게이트 <span class="badge gatey">Step 5.4.5</span></b>
+          <small><b>loop-verifier</b>가 신선한 컨텍스트에서 반박 우선 채점<br>
+          블루프린트 부합 40 · 테스트 무결성 30 · 컨벤션/품질 30<br>
+          <code>ASTRA_LOOP_RESULT: score=N verdict=… p0=N</code> 단일 라인만 파싱</small></div>
+      </div>
+      <div class="branch">
+        <div class="cond retry">테스트 FAIL · 반복 &lt; 5</div>
+        <div class="node"><b>실패 분류 → Direct Patch</b><small>CODE_BUG는 직접 수정 후 ⑥ 재진입<br>SPEC_GAP/ENV_ISSUE는 중단+안내</small></div>
+        <div class="loopback">↺ CURRENT_ITER += 1 · ⑥으로 재진입</div>
+      </div>
+    </div>
+    <div class="arrow">▼</div>
+
+    <div class="branches">
+      <div class="branch">
+        <div class="cond pass">테스트 PASS ∧ 점수 ≥ 90 ∧ P0 = 0</div>
+        <div class="node ok"><b>⑧ /pr-merge</b><small>integration 브랜치 선택 → PR → 코드리뷰 루프(Critical=0 필수)</small></div>
+      </div>
+      <div class="branch">
+        <div class="cond retry">verdict FAIL · 반복 &lt; 5</div>
+        <div class="node"><b>Fix Directives 적용</b><small>verifier 지시 순서대로 외과적 수정</small></div>
+        <div class="loopback">↺ 테스트 실패와 <b>같은 반복 예산</b> 공유 · ⑥ 재진입</div>
+      </div>
+      <div class="branch">
+        <div class="cond stop">반복 = 5 소진</div>
+        <div class="node fail"><b>머지 없이 정지</b><small>잔여 P0·마지막 점수 리포트<br><b>미검증 코드는 절대 merge되지 않음</b></small></div>
+      </div>
+    </div>
+    <div class="arrow">▼</div>
+
+    <div class="node hitl"><b>⑨ 머지 확인 + 승격 대상 <span class="badge hitl">HITL</span></b>
+      <small>merge 확인 (--auto면 자동 승인) · 승격 대상 <b>dev / staging / skip</b>은 --auto여도 항상 질문</small></div>
+    <div class="arrow">▼</div>
+
+    <div class="node ok"><b>⑩ 정리 → dev 복귀 ✅</b>
+      <small>in-place: sprint 브랜치+포트 env 삭제 (단일 페이즈) · worktree: "지금 완료?" 1회 확인 후 자체 전환·워크트리 제거</small></div>
+  </div>
+
+  <div class="note">
+    <b>왜 한 세션인가?</b> 파이프라인 비용의 대부분은 KV 캐시(프롬프트 캐시) 경제학이 결정합니다.
+    설계 문서가 가장 뜨거운 시점에 구현·검증까지 이어가면 따뜻한 prefix 하나로 끝까지 갑니다 —
+    세션을 끊으면 전체 컨텍스트를 정가로 다시 읽습니다.
+  </div>
+</section>
+
+<!-- ============ 3. 게이트 상세 ============ -->
+<section>
+  <h2><span class="no">3</span>적대적 게이트 — 왜 테스트 PASS만으로는 안 되나</h2>
+  <div class="tablewrap"><table>
+    <tr><th>장치</th><th>내용</th><th>막는 실패</th></tr>
+    <tr><td><b>삼중 게이트</b></td><td>테스트 PASS ∧ 점수 ≥ 90 ∧ P0 = 0 — 셋 모두 충족해야 merge 해금</td><td>LLM 판정 점수의 관대함 편향 (점수 단독 통과 금지)</td></tr>
+    <tr><td><b>반박 우선 채점</b></td><td>0점에서 시작, file:line 증거가 있어야만 가산. verifier는 작업자의 설명을 읽지 않음</td><td>"완료했다" 자기 주장만 있고 실체 없는 구현</td></tr>
+    <tr><td><b>고정 루브릭</b></td><td>SPRINT PRESET (부합 40 · 무결성 30 · 품질 30) — 반복 중 변경 불가</td><td>기준을 움직여서 통과하는 편법</td></tr>
+    <tr><td><b>하드 캡 5회</b></td><td>테스트 실패·verifier 실패가 <b>하나의 반복 예산</b>을 공유. 소진 시 merge 없이 리포트</td><td>무한 루프 · 토큰 폭주 · 억지 merge</td></tr>
+    <tr><td><b>기계 판독 계약</b></td><td><code>ASTRA_LOOP_RESULT:</code> 꼬리 라인만 파싱. <b>라인 부재 = FAIL</b>, 절대 PASS 아님</td><td>산문("잘 된 것 같다")에서 통과를 유추하는 오판</td></tr>
+  </table></div>
+</section>
+
+<!-- ============ 4. HITL 지점 ============ -->
+<section>
+  <h2><span class="no">4</span>사람이 개입하는 지점 (모드별)</h2>
+  <div class="tablewrap"><table>
+    <tr><th>모드</th><th>질문받는 것</th><th>자동 처리</th></tr>
+    <tr><td><b>기본 (attended)</b><br><code>/blueprint</code> · <code>/sprint-init</code></td>
+      <td>설계 결정 1~3개 · 최종 merge 확인 · 승격 대상(dev/staging/skip) · Critical 리뷰 이슈 잔존 시</td>
+      <td>격리 모드 · 테스트/검증 반복 · 수정 적용 · 커밋/푸시/PR</td></tr>
+    <tr><td><b>무인 (--auto)</b><br><code>/autorun</code> · <code>/sprint-init --auto</code></td>
+      <td>시작 시 최대 반복 수(autorun) · <b>승격 대상은 --auto여도 항상 질문</b> · 진짜 블로커(gh 인증·충돌·Critical)</td>
+      <td>merge 확인 포함 나머지 전부</td></tr>
+    <tr><td><b>정지 옵션</b></td>
+      <td colspan="2"><code>--design-only</code>(blueprint: 설계 커밋 후 정지) · <code>--scaffold-stop</code>(sprint-init: 스캐폴딩만) · <code>/sprint-init --resume</code>(크래시/정지 후 재개)</td></tr>
+  </table></div>
+</section>
+
+<!-- ============ 5. 시나리오 치트시트 ============ -->
+<section>
+  <h2><span class="no">5</span>시나리오별 치트시트</h2>
+<pre><span class="c"># 표준 신규 기능 (권장 — 커맨드 2개)</span>
+<span class="k">/service-planner</span> 학생 출결 관리
+<span class="k">/blueprint</span> student-attendance
+
+<span class="c"># 완전 무인</span>
+<span class="k">/autorun</span> 구독 결제 기능 --max-iter=3
+
+<span class="c"># 설계 검토 후 진행</span>
+<span class="k">/blueprint</span> payment-refund --design-only
+<span class="k">/sprint-init</span> --resume
+
+<span class="c"># 병렬 스프린트 (세션 B는 자동으로 worktree 승격 — 강제하려면 --isolated)</span>
+세션 A: <span class="k">/blueprint</span> feature-a
+세션 B: <span class="k">/blueprint</span> feature-b
+
+<span class="c"># 개방형 수렴 목표 (머지는 별도)</span>
+<span class="k">/loop</span> src/api ESLint 경고 0개로 만들어줘 --max-iter=5
+<span class="k">/pr-merge</span>
+
+<span class="c"># 품질·운영 루틴</span>
+<span class="k">/uat-parallel</span> --workers 4     <span class="c"># UAT 병렬 (사용자 등록 chrome-devtools 사용)</span>
+<span class="k">/design-audit</span>                 <span class="c"># PR 전 디자인 토큰 위반 경량 체크</span>
+<span class="k">/pr-merge</span> --staging           <span class="c"># 핫픽스: 통합 브랜치 → staging 직행</span>
+<span class="k">/pr-merge</span> --main              <span class="c"># 릴리스 (버전 범프 포함)</span></pre>
+
+  <div class="note warn">
+    <b>플러그인 저장소 자체를 수정할 때</b>는 push 전에 <code>./scripts/lint-skills.sh</code> —
+    <code>ASTRA_LINT_RESULT: PASS</code>가 게이트입니다 (frontmatter · 500줄 · 버전 동기화 · 계약 라인 등 10종 체크).
+  </div>
+</section>
+
+<footer>
+  ASTRA methodology plugin v5.18.0 · 이 문서의 권위 있는 원본은 CLAUDE.md의 "Sprint Isolation — Adaptive (v5.16+)" 섹션과
+  <code>skills/sprint-init/references/auto-pipeline.md</code>입니다. 동작이 바뀌면 이 가이드도 함께 갱신하세요.
+</footer>
+
+</main>
+</body>
+</html>

@@ -160,7 +160,7 @@ For each scenario, specify:
 Test scenario files are written directly to the current branch of the current worktree. The previous policy of forcing a switch to `dev` is no longer needed in the sprint worktree model.
 
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$PLUGIN_ROOT/scripts/worktree-helpers.sh" ]; then
   echo "ERROR: CLAUDE_PLUGIN_ROOT not found. Check the plugin cache path." >&2
   exit 1

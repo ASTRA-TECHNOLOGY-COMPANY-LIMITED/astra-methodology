@@ -1,7 +1,7 @@
 ---
 description: Looks up English abbreviation, domain, and data type for a Korean term from the standard term dictionary
-argument-hint: "<Korean term> (e.g., 고객명, 등록일시, 사업자등록번호)"
-allowed-tools: Read
+argument-hint: "<Korean term or English abbreviation> (e.g., 고객명, 등록일시, CSTMR_NM)"
+allowed-tools: Read, Bash
 ---
 
 # Standard Term Lookup
@@ -18,10 +18,18 @@ Look up the standard term corresponding to "$ARGUMENTS".
 
 ## Lookup Procedure
 
-1. Search the `공통표준용어명` field in `data/standard_terms.json`
-2. If an exact match is found, output the detailed information
-3. If no exact match, show up to 10 partial match results
-4. If no term is found, search individual words in `data/standard_words.json` and suggest combinations
+> **Dataset caveat**: in the bundled dataset the Korean name fields (`공통표준용어명`, `공통표준단어명`) are **empty in every row**. Korean input is therefore matched against `이음동의어목록` (synonyms — this is where the Korean names live) and `공통표준용어설명` (description); English/abbreviation input against `공통표준용어영문약어명`. Korean field names require jq bracket form (`.["필드명"]` — bare `.필드명` is a jq syntax error). Rows live under `.data[]`.
+
+1. Search `data/standard_terms.json` via targeted `jq` (13K rows — never read the whole file):
+   ```bash
+   # Korean input → synonym/description match (rows live under .data[])
+   jq -r --arg q "$ARGUMENTS" '.data[] | select((.["이음동의어목록"] // "" | contains($q)) or (.["공통표준용어설명"] // "" | contains($q)))' data/standard_terms.json | head -80
+   # English/abbreviation input → abbreviation match
+   jq -r --arg q "$ARGUMENTS" '.data[] | select(.["공통표준용어영문약어명"] // "" | ascii_upcase | contains($q | ascii_upcase))' data/standard_terms.json | head -80
+   ```
+2. If exactly one row matches, output the detailed information (use the first synonym as the display term name, since the Korean name field is empty)
+3. If several rows match, show up to 10 partial match results
+4. If no term is found, search individual words in `data/standard_words.json` the same way (`이음동의어목록` / `공통표준단어설명` / `공통표준단어영문약어명` under `.data[]`) and suggest combinations
 
 ## Output Format
 

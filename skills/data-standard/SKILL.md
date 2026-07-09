@@ -118,7 +118,7 @@ When found, replace them with the standard word from the `이음동의어목록`
 
 When DB-related naming is needed:
 
-1. Search by Korean `공통표준용어명` (common standard term name) in `data/standard_terms.json`
+1. Search `data/standard_terms.json` — the Korean name field (`공통표준용어명`) is **empty in the bundled dataset**, so match Korean input against `이음동의어목록` (synonyms) or `공통표준용어설명` (description), with rows under `.data[]` and Korean field names in jq bracket form (`.["이음동의어목록"]`)
 2. Use the `공통표준용어영문약어명` (common standard term English abbreviation) value as the column name
 3. Determine the data type and length from the `공통표준도메인명` (common standard domain name)
 4. If not found in the standard terms, combine individual word abbreviations from `공통표준단어영문약어명` in `data/standard_words.json`

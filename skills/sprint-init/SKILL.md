@@ -1,15 +1,15 @@
 ---
 name: sprint-init
-description: "Initializes a new ASTRA sprint: creates an isolated sprint worktree with port-isolated dev-server settings, scaffolds the prompt map / progress tracker / retrospective inside it, and prints the cd path. --scaffold-only creates the worktree without blueprint authoring (delegated by /blueprint); --auto continues into the /test-scenario → implementation → /test-run → /pr-merge --auto pipeline; --resume recovers a crashed --auto run. Use when starting a new sprint or scaffolding sprint infrastructure."
-argument-hint: "[sprint-number] [sprint-name] [--auto] [--max-iter=N] [--resume] [--from-blueprint] [--scaffold-only]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Agent, TodoWrite
+description: "Initializes a new ASTRA sprint and (v5.16+) runs it to completion in one session: adaptive isolation (in-place sprint branch on the main worktree by default; auto-escalates to an isolated worktree when the main tree is occupied/dirty or --isolated is passed), port-isolated dev-server settings, prompt map / progress tracker / retrospective scaffolding, then continues into the /test-scenario → implementation → /test-run → adversarial verification gate (score ≥ 90 ∧ P0 == 0, max 5 iterations) → /pr-merge pipeline without stopping. --scaffold-stop stops after scaffolding (pre-v5.16 behavior); --scaffold-only is the /blueprint delegation mode; --auto runs the same pipeline unattended; --resume recovers a crashed run. Use when starting a new sprint or scaffolding sprint infrastructure."
+argument-hint: "[sprint-number] [sprint-name] [--auto] [--max-iter=N] [--resume] [--from-blueprint] [--scaffold-only] [--scaffold-stop] [--isolated]"
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Task, Agent, TodoWrite
 ---
 
-# ASTRA Sprint Initialization (v5.0+)
+# ASTRA Sprint Initialization (v5.16+ — one-flow, adaptive isolation)
 
-Creates a sprint-level isolated worktree, writes port-isolated env settings, and generates prompt maps / progress trackers / retrospective templates **inside that worktree**.
+Creates the sprint working context (in-place branch or isolated worktree — decided automatically), writes port-isolated env settings, generates prompt maps / progress trackers / retrospective templates, and **continues in the same session through implementation, the adversarial test loop, and `/pr-merge`** — the pipeline is the default, not an opt-in.
 
-> **v5.0+ policy**: Every feature task and test for a sprint runs inside a single worktree (`.astra-worktrees/sprint-<N>-<name>/`). `/pr-merge` reflects the work into dev and auto-removes the worktree. Trade-off: one PR per sprint — no per-feature review granularity, but clean per-sprint merge/rollback.
+> **v5.16+ isolation policy (adaptive)**: the sprint runs **in-place** on a `feat/sprint-<N>-<name>` branch checked out in the main worktree whenever the main worktree is free (on a shared branch, clean tree). It escalates to an isolated worktree (`.astra-worktrees/sprint-<N>-<name>/`, pre-v5.16 behavior) only when the main worktree is occupied by another in-place sprint (its current branch IS the occupancy signal — no marker file, crash-safe), the tree is dirty, or `--isolated` is passed. Either way: one PR per sprint, one continuous session, no user `cd` at any point.
 
 ## Execution Procedure
 
@@ -35,7 +35,7 @@ If `RESUME_MODE=0`, proceed normally to Step 0.B.
 This command *creates* a sprint worktree, so it must run in the main worktree only. Reject if already inside an isolated worktree:
 
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$PLUGIN_ROOT/scripts/worktree-helpers.sh" ]; then
   echo "ERROR: CLAUDE_PLUGIN_ROOT not found. Verify the plugin cache path." >&2
   exit 1
@@ -49,10 +49,12 @@ astra_ensure_main_worktree || exit 1
 Parse from `$ARGUMENTS`:
 - **Sprint number** (optional): If not provided, scan existing directories in `docs/sprints/` matching the `sprint-{N}-{name}/` pattern (e.g., `sprint-1-auth/`, `sprint-2-workspace/`) to determine the next number.
 - **Sprint name** (optional): The primary blueprint/feature name for this sprint.
-- **`--auto`** (optional flag): If present, set `AUTO_MODE=1` and proceed to Step 5 (Auto Continue) after scaffolding. Without this flag, the skill stops at Step 4 (Output Sprint Planning Guide) as before.
-- **`--max-iter=N`** (optional, only meaningful with `--auto`): max self-improving iteration count for the test loop (1 ≤ N ≤ 10). If `--auto` is set but `--max-iter` is missing, ask the user **once** via `AskUserQuestion` (default 3).
+- **`--auto`** (optional flag): If present, set `AUTO_MODE=1` — the Step 5 pipeline runs **unattended** (`PIPELINE_MODE=auto`: merge confirmation auto-approved via `/pr-merge --auto`; promotion target stays HITL). **v5.16+ without this flag the pipeline still runs** — in `attended` mode (HITL at merge confirmation / promotion / Critical issues only).
+- **`--scaffold-stop`** (optional flag, v5.16+): stop after Step 4 (scaffolding + planning guide) without entering the pipeline — the pre-v5.16 default behavior, for teams that fill the prompt map collaboratively before implementation.
+- **`--isolated`** (optional flag, v5.16+): force `ISOLATION_MODE=worktree` even when the main worktree is free (e.g., you know a second session will need the main tree during this sprint).
+- **`--max-iter=N`** (optional): max self-improving iteration count for the test/verification loop (1 ≤ N ≤ 10). **Default 5 — never asked** (the Step 5.4.5 adversarial gate governs quality; the cap is a runaway bound).
 - **`--from-blueprint`** (optional flag, legacy): backward-compat alias for `--scaffold-only`. Set `FROM_BLUEPRINT=1`; treated identically to `SCAFFOLD_ONLY=1` at every read site.
-- **`--scaffold-only`** (optional flag, v5.10+): Indicates this invocation is from the *new* worktree-first `/blueprint` flow where the blueprint **has not been authored yet** — `/sprint-init` only creates the worktree + writes port env file + scaffolds prompt-map / progress / retrospective, and then exits. Set `SCAFFOLD_ONLY=1` when present. **Read sites**:
+- **`--scaffold-only`** (optional flag, v5.10+): Indicates this invocation is from the context-first `/blueprint` flow (v5.16+: adaptive isolation) where the blueprint **has not been authored yet** — `/sprint-init` only creates the sprint context (in-place branch or worktree) + writes the port env file + scaffolds prompt-map / progress / retrospective, and then exits. Set `SCAFFOLD_ONLY=1` when present. **Read sites**:
   - Step 2 below — when `SCAFFOLD_ONLY=1`, the prompt-map omits the Feature 1.1 (`/blueprint ...`) line entirely and renumbers the remaining steps (1.1=DB Design, 1.2=Test Cases, 1.3=Implementation). The blueprint is being authored *by the calling context* and will exist by the time the user runs Feature 1.1.
   - Step 4 — same suppression as `--from-blueprint` (parent renders consolidated output).
   - Step 5 — `--scaffold-only` is **incompatible** with `--auto`. If both are present, abort with `"❌ --scaffold-only and --auto cannot be combined (no blueprint exists yet to drive the auto pipeline)"`.
@@ -62,6 +64,32 @@ Parse from `$ARGUMENTS`:
 If the sprint name is not provided in `$ARGUMENTS`, ask the user for the primary feature/blueprint name. This name will be used as the directory suffix. Use kebab-case format (e.g., `auth`, `workspace`, `payment-dashboard`).
 
 When scanning existing directories, extract the sprint number from directory names matching pattern `sprint-{N}-{name}` (e.g., `sprint-1-auth` → number `1`).
+
+### Step 1.4: Decide Isolation Mode (v5.16+)
+
+Default is **in-place** (sprint branch in the main worktree — no worktree, no `cd`, single-phase merge). Escalate to **worktree** only when isolation is actually needed:
+
+```bash
+ISOLATION_MODE=inplace
+for arg in $ARGUMENTS; do [ "$arg" = "--isolated" ] && ISOLATION_MODE=worktree; done
+
+CUR_BRANCH=$(git branch --show-current)
+case "$CUR_BRANCH" in
+  dev|main|master|staging) : ;;                     # main tree free — in-place OK
+  feat/sprint-*)           ISOLATION_MODE=worktree  # another in-place sprint occupies the main tree
+                           echo "ℹ️  Main worktree is occupied by '$CUR_BRANCH' — escalating to worktree isolation." ;;
+  *)                       echo "❌ ERROR: main worktree is on non-standard branch '$CUR_BRANCH'. Checkout dev and re-run." >&2
+                           exit 1 ;;                # v5.10+ policy, unchanged
+esac
+
+if [ -n "$(git status --porcelain)" ] && [ "$ISOLATION_MODE" = "inplace" ]; then
+  ISOLATION_MODE=worktree
+  echo "ℹ️  Main worktree has uncommitted changes — escalating to worktree isolation to protect them."
+fi
+echo "Isolation mode: $ISOLATION_MODE"
+```
+
+> **Why the current branch is the occupancy signal**: an in-place sprint keeps the main worktree on its `feat/sprint-*` branch until `/pr-merge` Step 9 returns it to `dev`. A second concurrent sprint therefore *sees* the occupation directly from git state — no marker file, nothing to go stale after a crash. Crash recovery is likewise plain git: `git checkout dev` frees the tree (checkpoint commits from Step 5.1.5 preserve the work on the sprint branch).
 
 ### Step 1.5: Choose Source Branch and Sync
 
@@ -148,14 +176,36 @@ The worktree base is always `origin/${SOURCE_BRANCH}` regardless of the local-re
 
 > **Main worktree post-state**: this step leaves the main worktree **on whatever branch it was already on** (no checkout). The sprint worktree is independent — feature work happens inside it on the sprint branch. `/pr-merge` Step 9 returns the main worktree to `dev` after merge.
 
-### Step 1.6: Create Sprint Worktree
+### Step 1.6: Create Sprint Working Context (mode-branching)
 
-Create a new isolated worktree on the `feat/sprint-{N}-{sprint-name}` branch. All feature code and test deliverables are written inside it.
+Both modes converge on the same two variables — `SPRINT_BRANCH` and `WT_PATH` — so every downstream step (and the shared pipeline) is mode-agnostic.
+
+#### Mode A: `ISOLATION_MODE=inplace` (default)
+
+Check out the sprint branch directly in the main worktree:
 
 ```bash
 SPRINT_N="{confirmed sprint number}"
 SPRINT_NAME="{confirmed sprint name}"
+SPRINT_BRANCH="feat/sprint-${SPRINT_N}-${SPRINT_NAME}"
 
+# Branch-name collision: append -2, -3, ... (same policy as the worktree helper)
+suffix=1; candidate="$SPRINT_BRANCH"
+while git show-ref --verify --quiet "refs/heads/$candidate" || git ls-remote --exit-code --heads origin "$candidate" >/dev/null 2>&1; do
+  suffix=$((suffix + 1)); candidate="${SPRINT_BRANCH}-${suffix}"
+done
+SPRINT_BRANCH="$candidate"
+
+git checkout -b "$SPRINT_BRANCH" "origin/${SOURCE_BRANCH}" || { echo "ERROR: branch creation failed" >&2; exit 1; }
+WT_PATH=$(git rev-parse --show-toplevel)
+echo "In-place sprint branch created from origin/${SOURCE_BRANCH}: $SPRINT_BRANCH (tree: $WT_PATH)"
+```
+
+#### Mode B: `ISOLATION_MODE=worktree` (escalation / `--isolated`)
+
+Create a new isolated worktree on the `feat/sprint-{N}-{sprint-name}` branch:
+
+```bash
 # Pass the user-chosen SOURCE_BRANCH from Step 1.5.2 as the base-ref (3rd arg).
 # astra_create_sprint_worktree prepends "origin/" automatically when missing.
 if ! out=$(astra_create_sprint_worktree "$SPRINT_N" "$SPRINT_NAME" "origin/${SOURCE_BRANCH}"); then
@@ -186,19 +236,25 @@ fi
 
 astra_write_worktree_env "$WT_PATH" "$SPRINT_N" "$SPRINT_NAME" "$PORT_BASE" || exit 1
 echo "Sprint port base: $PORT_BASE (offset=$((PORT_BASE - PORT_BASE_DEFAULT)))"
+
+# In-place mode: the env file now lives at the repo root — keep it out of git and out of the PR.
+if [ "$ISOLATION_MODE" = "inplace" ] && ! grep -qx '.astra-worktree.env' .gitignore 2>/dev/null; then
+  echo '.astra-worktree.env' >> .gitignore
+  git add .gitignore && git commit -m "chore: ignore .astra-worktree.env (in-place sprint)" --quiet
+fi
 ```
 
 The generated file contains per-framework values such as `ASTRA_PORT_BASE`, `PORT`, `VITE_PORT`, `SERVER_PORT`, `DJANGO_PORT`, `FASTAPI_PORT`. `/test-run` picks the value matching the detected stack to start the server.
 
-### Step 1.8: Move into Sprint Worktree
+### Step 1.8: Anchor in the Sprint Working Context
 
-From here on, deliverable writing and progress tracking happen inside the worktree:
+From here on, deliverable writing and progress tracking happen on the sprint branch:
 
 ```bash
-cd "$WT_PATH"
+cd "$WT_PATH"   # no-op under inplace mode (WT_PATH = main root); real transition under worktree mode
 ```
 
-> From this point on, the "current working directory" is `$WT_PATH`, and every docs/sprints/* file is committed onto the sprint branch.
+> From this point on, the "current working directory" is `$WT_PATH`, and every docs/sprints/* file is committed onto the sprint branch. This is the **only** directory change in the entire sprint lifecycle, and the skill performs it itself — the user is never asked to `cd`.
 
 ### Step 2: Create Sprint Prompt Map
 
@@ -252,22 +308,19 @@ Do not push to remote — the push is bundled with the first feature commit or w
 - docs/sprints/sprint-{N}-{sprint-name}/progress.md (progress tracker)
 - docs/sprints/sprint-{N}-{sprint-name}/retrospective.md (retrospective template)
 
-### Next Steps
-1. cd {WT_PATH}
-2. Run Feature 1.1 ~ 1.4 of the prompt-map above in order (design → DB → tests → implementation)
-3. After every feature is done: /test-run → /pr-merge
+### Isolation
+- Mode: {ISOLATION_MODE} {inplace ? "(sprint branch on the main worktree — no cd needed)" : "(isolated worktree)"}
 
-> **Multi-session note**: New Claude Code sessions must be started from {WT_PATH}.
-> The main worktree (dev) may have other sprint work in progress.
-
-### Sprint Planning Procedure (1 hour, run inside worktree)
-1. (10 min) Review AI analysis report
-2. (20 min) Confirm business priorities with DE and agree on sprint goal
-3. (20 min) Discuss prompt design direction per item + DSA shares design direction
-4. (10 min) Finalize sprint backlog
+### Next
+▶︎ Continuing in this session: /test-scenario → implementation → /test-run
+   → adversarial verification (score ≥ 90 ∧ P0 == 0, max {MAX_ITER} iterations) → /pr-merge
+   (stop-after-scaffold was requested via --scaffold-stop? then: run the prompt-map features in
+    this same session when ready — no cd, no new session needed)
 ```
 
-> **Branch**: Without the `--auto` flag, stop here. With `--auto`, continue to **Step 5**.
+> **Only under `--scaffold-stop`**, additionally print the Sprint Planning Procedure (1 hour): ① 10 min AI analysis review → ② 20 min business priorities with DE + sprint goal → ③ 20 min prompt design direction per item + DSA design direction → ④ 10 min finalize sprint backlog. Then stop cleanly — and note that resuming later is just invoking the next skill *in the same session* (or `/sprint-init --resume` after a session loss).
+
+> **Branch (v5.16+)**: `--scaffold-stop` → stop here. `--scaffold-only` → Step 4.5 early exit (caller continues). **Otherwise — including the no-flag default — continue to Step 5** with `PIPELINE_MODE=attended` (or `auto` when `--auto` was passed).
 
 ---
 
@@ -292,27 +345,30 @@ fi
 
 > **Why the guard sits between Steps 4 and 5**: Steps 1.5–3.5 (worktree, env, scaffold, commit) are exactly what a `--scaffold-only` caller wants; only the auto pipeline (Step 5+) is out of scope.
 
-### Step 5: Auto Continue (only if `--auto` flag is set)
+### Step 5: Pipeline Continuation (v5.16+ default; `--auto` = unattended variant)
 
-Without `--auto`, the skill ends at Step 4. With `--auto`, run the following unattended pipeline sequentially:
+Run the shared pipeline sequentially in this session — `PIPELINE_MODE=attended` by default, `auto` when `--auto` was passed:
 
 ```
-/test-scenario all → implementation (blueprint-based) → /test-run → (self-improvement loop on failure) → /pr-merge --auto → worktree auto-removed
+/test-scenario all → implementation (blueprint-based) → /test-run
+  → Step 5.4.5 adversarial verification gate (loop-verifier; exit = tests PASS ∧ score ≥ 90 ∧ P0 == 0)
+  → (fix loop, hard cap MAX_ITER = 5 default) → /pr-merge → cleanup (back on dev)
 ```
 
-The full stage-by-stage procedure lives in [references/auto-pipeline.md](references/auto-pipeline.md) (§Step 5). **Read it whenever `--auto` (or `--resume`) is set.** It covers: pre-checks (5.0), progress init (5.1), the Silent Save Protocol (5.1.5: checkpoint yaml → commit → reference-avoidance rule → auto-advance), test-scenario (5.2), implementation (5.3), integration test with `ASTRA_TEST_RESULT` parsing (5.4), the failure-classification self-improvement loop (5.5), `/pr-merge --auto` (5.6), and the final report (5.7).
+The full stage-by-stage procedure lives in [references/auto-pipeline.md](references/auto-pipeline.md) (§Step 5). **Read it whenever the pipeline continues (i.e., on every run except `--scaffold-stop`/`--scaffold-only`, and on `--resume`).** It covers: pre-checks (5.0), progress init (5.1), the Silent Save Protocol (5.1.5: checkpoint yaml → commit → reference-avoidance rule → auto-advance), test-scenario (5.2), implementation (5.3), integration test with `ASTRA_TEST_RESULT` parsing (5.4), the adversarial verification gate (5.4.5), the self-improvement loop (5.5), mode-aware `/pr-merge` (5.6), and the final report (5.7).
 
-**Flag-handling summary** (mainline): `--auto` is incompatible with `--scaffold-only` (already rejected in Step 4.5). During the pipeline `AskUserQuestion` is not called except the one-time `--max-iter` prompt when the flag is absent; HITL otherwise fires only on true blockers (gh auth, merge conflict, Critical review issues).
+**Flag-handling summary** (mainline): `--auto` is incompatible with `--scaffold-only` (already rejected in Step 4.5). During the pipeline `AskUserQuestion` is never called between stages; `attended` mode surfaces HITL only inside `/pr-merge` (merge confirmation, promotion target, remaining Critical issues), `auto` mode only at the promotion target + true blockers (gh auth, merge conflict).
 
 ---
 
 ## Notes
 
 - Existing sprint files are not overwritten.
-- The prompt map is filled in collaboratively by VA and PE during the Planning meeting.
-- Once work, tests, and merge inside the sprint worktree complete, `/pr-merge` auto-removes the worktree. **v5.9+**: the actual `gh pr merge` runs from the main worktree — manual `/pr-merge` invocations stop after Sprint Phase (review loop) and instruct the user to `cd` to the main worktree to finalize. `--auto` invocations (sprint-init's pipeline, autorun) chain both phases automatically. If the worktree remains due to a conflict or interruption, the user resolves it and re-invokes `/pr-merge` to continue.
-- The user must not edit `.astra-worktree.env` — `/test-run` sources it automatically.
-- **Caveats when using `--auto` mode**:
-  - The blueprint must be prepared in advance (sprint-init does not create blueprints).
-  - When classified as `SPEC_GAP` / `DESIGN_MISALIGN`, abort without auto-merge — blueprint/UX fixes require user judgment.
+- The prompt map is filled in collaboratively by VA and PE during the Planning meeting (`--scaffold-stop` exists for exactly this ritual).
+- **v5.16+ merge flow**: in-place sprints merge single-phase (`/pr-merge` runs entirely in the main worktree — no handoff). Worktree sprints get one HITL ("finalize now?") after the review loop, then `/pr-merge` performs the cross-worktree transition itself and removes the worktree. In no case is the user instructed to `cd`. If a worktree remains due to a conflict or interruption, the user resolves it and re-invokes `/pr-merge` in the same session.
+- The user must not edit `.astra-worktree.env` — `/test-run` sources it automatically (in-place mode writes it at the repo root, gitignored).
+- **Pipeline caveats**:
+  - Blueprints must exist before Step 5 (author them via `/blueprint`, which runs this same pipeline afterwards).
+  - When a failure is classified `SPEC_GAP` / `DESIGN_MISALIGN`, abort without merging — blueprint/UX fixes require user judgment.
   - For full-stack auto-generation starting from planning, use `/autorun {feature description}` instead.
+  - The Step 5.4.5 adversarial gate never merges unverified work: if the hard cap (default 5) is reached with `score < 90` or `P0 > 0`, the pipeline stops at the report and leaves the branch/worktree intact for manual follow-up.

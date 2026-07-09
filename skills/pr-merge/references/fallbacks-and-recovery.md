@@ -29,7 +29,7 @@ SKILL.md Step 4 keeps the normal flow (inside a sprint worktree + work branch). 
 - **Main worktree + shared branch (main/master/staging/dev)**: fallback case — direct dev changes without `/sprint-init`. Auto-create a temporary isolated worktree → proceed to **Step 4.1** (below).
 - **Main worktree + work branch (feat/fix/docs/etc.)**: compatibility case for users who worked in the main worktree under pre-v4.1 policy. Do not force migration — set the flags and proceed to **Step 5**:
   ```bash
-  PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+  PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
   source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
   WT_PATH="$(pwd)"
   BRANCH_NAME="$CURRENT_BRANCH"
@@ -111,7 +111,7 @@ Shell variables do NOT persist between separate Bash tool invocations. This work
 
 1. **PREAMBLE — literal first lines of EVERY Bash block you run in this skill** (add it yourself to any command you compose):
    ```bash
-   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
    source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
    ```
 2. **Whenever you set or change a workflow variable** — `MODE`, `TARGET_BRANCH`, `BRANCH_NAME`, `WT_PATH`, `PR_NUMBER`, `PR_URL`, `PROMOTION_TARGET`, `PROMO_NUMBER`, `SOURCE_BRANCH`, `STARTED_FROM_SPRINT`, `STARTED_FROM_ISOLATED`, `MAIN_PHASE_ENTRY`, `CREATE_NEW`, `BASE_REF`, `INFERRED_NAME`, `PROMOTION_SOURCE_IS_INTEGRATION` — persist it immediately: `astra_state_set KEY "$VALUE"`.
@@ -151,7 +151,7 @@ SKILL.md Step 1 keeps a condensed list of the **preserved-HITL** points; the ful
 Normal mode (the recommended two-invocation flow) prints the handoff message and exits — that stays inline in SKILL.md Step 8.5. Only `--auto` continues automatically; its transition bash lives here. The skill `cd`s into the main worktree itself so `/autorun` and `/sprint-init --auto` complete end-to-end in one invocation:
 
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
 [ -n "${BRANCH_NAME:-}" ] || BRANCH_NAME=$(git branch --show-current)
 MAIN_ROOT=$(astra_main_worktree_root)
@@ -192,7 +192,7 @@ The `STARTED_FROM_ISOLATED=0` compat case skips both (the main worktree must not
 
 **Completion Gate — verify before reporting success.** Print the final summary ONLY when all three gates pass; otherwise report exactly which failed:
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
 [ "$(gh pr view "$PR_NUMBER" --json state --jq '.state')" = "MERGED" ] && echo "GATE1 PASS" || echo "GATE1 FAIL: PR #$PR_NUMBER not merged"
 if [ "${STARTED_FROM_ISOLATED:-0}" = "1" ]; then
