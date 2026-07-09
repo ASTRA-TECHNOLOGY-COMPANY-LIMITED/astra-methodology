@@ -301,17 +301,21 @@ astra_resolve_branch_and_slug() {
   local slug
   slug=$(astra_branch_to_slug "$branch")
   local n=2
+  # Declared outside the loop: under zsh a bare `local x` re-run on an existing
+  # variable prints `x=''` to stdout, which would corrupt this function's
+  # tab-separated return value.
+  local cand_path registered
   while true; do
-    local path="$root/.astra-worktrees/$slug"
-    local registered
-    registered=$(git worktree list --porcelain 2>/dev/null | awk -v p="$path" '
+    # NOTE: never name this `path` — under zsh `path` is tied to $PATH.
+    cand_path="$root/.astra-worktrees/$slug"
+    registered=$(git worktree list --porcelain 2>/dev/null | awk -v p="$cand_path" '
       /^worktree / { wt=$2 }
       $0=="" { if (wt==p) { print "yes"; exit } }
       END { if (wt==p) print "yes" }
     ')
     if ! git show-ref --verify --quiet "refs/heads/$branch" \
        && [ -z "$registered" ] \
-       && [ ! -e "$path" ]; then
+       && [ ! -e "$cand_path" ]; then
       printf '%s\t%s' "$branch" "$slug"
       return 0
     fi
@@ -394,8 +398,9 @@ astra_create_worktree_existing() {
 
   slug="$base_slug"
   while true; do
-    local path="$root/.astra-worktrees/$slug"
-    if [ ! -e "$path" ]; then
+    # NOTE: never name this `path` — under zsh `path` is tied to $PATH.
+    local cand_path="$root/.astra-worktrees/$slug"
+    if [ ! -e "$cand_path" ]; then
       break
     fi
     slug="${base_slug}-${n}"
