@@ -1161,8 +1161,6 @@ Don't modify any code yet."
 | Service manual generation | `/manual-generator` | Auto-generated HTML manual with Chrome MCP screenshots |
 | Product catalog generation | `/catalog-generator` | Self-contained HTML catalog with AI imagery |
 | Zero-interaction full pipeline | `/autorun [feature description]` | Planning → testing with up-to-N self-improvement loop |
-| Slack-based sprint generation | `/slack-import` | Slack List → blueprint + sprint prompt map |
-| Slack backlog extraction | `/extract-backlog [#channel]` | Structured backlog table from Slack messages |
 | Workflow language selection | `/select-language` | Korean/Vietnamese/English |
 | Start feature design | `/feature-dev [description]` | 7-step automated workflow |
 | Standard term lookup | `/lookup-term [Korean term]` | English abbreviation/domain/type |

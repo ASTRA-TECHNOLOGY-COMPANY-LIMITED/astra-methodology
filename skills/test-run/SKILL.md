@@ -24,7 +24,7 @@ skips the reference still gets: source helpers → set `TEST_PORT` → abort if 
 
 ```bash
 # Source helpers (REQUIRED — Step 10 cleanup re-sources the same line)
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
 CURRENT_BRANCH=$(git branch --show-current)
 
@@ -35,7 +35,7 @@ WT_ENV="$(astra_worktree_env_path "$(pwd)")"
 if [ -n "$PORT" ]; then
   TEST_PORT="$PORT"
 else
-  SPRINT_N=$(ls -d docs/sprints/sprint-*/ 2>/dev/null | sed -E 's#.*/sprint-([0-9]+).*#\1#' | sort -n | tail -1)
+  SPRINT_N=$(find docs/sprints -maxdepth 1 -type d -name 'sprint-*' 2>/dev/null | sed -E 's#.*/sprint-([0-9]+).*#\1#' | sort -n | tail -1)
   TEST_PORT=$(astra_compute_port_base 3000 "${SPRINT_N:-0}") || TEST_PORT=3000
 fi
 
@@ -333,7 +333,7 @@ works regardless of state-file presence.
 ```bash
 # Source helpers FIRST — this is a separate Bash call, so astra_port_in_use is
 # otherwise undefined (cleanup would crash and falsely report "port released").
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
 
 # Recover state; re-derive defensively from the live port (state file may be absent)

@@ -1,13 +1,13 @@
 ---
 name: autorun
-description: "Mostly-unattended ASTRA pipeline: /service-planner → /blueprint → /sprint-init → /test-scenario → implementation → /test-run → /pr-merge --auto → worktree removal, self-iterating up to N times until tests pass. HITL pauses only for the max-iteration count (start), the promotion target (dev/staging/skip), and true blockers (gh auth, merge conflicts, Critical review issues). Use when a single command should drive a feature end-to-end from planning to merged PR."
+description: "Mostly-unattended ASTRA pipeline: /service-planner → /blueprint → /sprint-init → /test-scenario → implementation → /test-run → adversarial verification gate (loop-verifier: tests PASS ∧ score ≥ 90 ∧ P0 == 0) → /pr-merge --auto → cleanup, self-iterating up to N times until the gate passes. HITL pauses only for the max-iteration count (start), the promotion target (dev/staging/skip), and true blockers (gh auth, merge conflicts, Critical review issues). Use when a single command should drive a feature end-to-end from planning to merged PR."
 argument-hint: "[feature description] [--max-iter=N] (default 3 if N omitted; 1 means single pass)"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, TodoWrite, Skill, AskUserQuestion
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, Agent, TodoWrite, Skill, AskUserQuestion
 ---
 
 # ASTRA Mostly-Autonomous Execution (`/autorun`)
 
-**Auto-executes** planning → design → blueprint → sprint plan → implementation → tests without user input, then runs `/pr-merge --auto` until the moment it would block. The pipeline has one routine HITL pause near the end (Stage 8.2 — promotion-target prompt: dev / staging / skip); beyond that, only true blockers stop execution.
+**Auto-executes** planning → design → blueprint → sprint plan → implementation → tests → adversarial verification without user input, then runs `/pr-merge --auto` until the moment it would block. One routine HITL pause near the end (Stage 8.2 promotion target: dev / staging / skip); beyond that, only true blockers stop execution.
 
 > **🌐 LANGUAGE RULE**: Before executing this skill, read the project's `CLAUDE.md` and check the `## Language` section. If the project language is NOT Korean (`ko`), translate ALL user-facing output and propagate the language preference to all sub-skills invoked.
 
@@ -15,7 +15,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, TodoWrite, Skill, AskU
 
 1. **Mostly-unattended execution (minimal interaction during pipeline)**: do not call `AskUserQuestion` while the pipeline is running, except at two well-defined points. **Exception 1**: at the start, if the `--max-iter` argument is absent, ask once for the *max iteration count*. **Exception 2**: at Stage 8.2, `/pr-merge --auto` always prompts for the *promotion target* (dev / staging / skip) — the deployment surface choice has no safe unattended default, so this HITL fires even under `--auto`. After the user answers, the pipeline continues automatically through cleanup. Every other decision is an automatic default.
 2. **Sequential**: each stage must succeed before the next starts. Do not parallelize (because of document dependencies).
-3. **Self-improving loop**: on Stage 7 (test) failure, do not stop immediately — classify the failure cause and *re-enter from the appropriate stage*. Repeat up to N times; on all-pass, exit immediately (early exit). After 5 debug attempts on the last iteration without success, stop.
+3. **Self-improving loop**: on Stage 7 (test) failure, do not stop immediately — classify the failure cause and *re-enter from the appropriate stage*. Repeat up to N times (`MAX_ITER` is the single iteration budget, shared by test failures and Stage 7.6 verifier failures); on a Stage 7.6 PASS, exit the loop immediately (early exit). At `MAX_ITER` without success, stop — no merge.
 4. **Context efficiency**: hand off between iterations using only `iter-{i}-summary.md` (≤ 200 lines). Do not reload the entire blueprint / planning documents each iteration.
 5. **Full auto merge**: when all tests pass, automatically invoke `/pr-merge --auto` to perform PR creation, code review, merge, and worktree removal end-to-end. **However, on true blockers** (missing gh authentication, merge conflicts, Critical review issues), `/pr-merge` stops via HITL just like in normal mode.
 6. **Idempotent**: on re-execution after a mid-failure, recognize all completed stages and iterations, and resume from the last incomplete point.
@@ -27,12 +27,9 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, TodoWrite, Skill, AskU
 /autorun {feature description} [--max-iter=N]
 ```
 
-**Examples**:
-- `/autorun build a user-auth feature` (interactively asks for N, default 3)
-- `/autorun payment subscription system --max-iter=5` (unattended, up to 5 iterations)
-- `/autorun student attendance feature --max-iter=1` (single pass, iteration disabled)
+**Examples**: `/autorun build a user-auth feature` (asks for N once, default 3) · `/autorun payment subscription system --max-iter=5` (unattended) · `--max-iter=1` = single pass.
 
-**Meaning of `--max-iter`**: the *maximum* number of plan→implement→test cycles. When tests pass it exits immediately (early exit), so it does not always fill N. Recommended value is 3 (1 = single-pass, 5+ cost explodes).
+**Meaning of `--max-iter`**: the *maximum* number of plan→implement→test cycles; a Stage 7.6 PASS exits early, so N is a cap, not a quota. Recommended 3 (5+ cost explodes).
 
 ## Stage 0: Argument parsing and feature name determination
 
@@ -51,20 +48,7 @@ Example: /autorun student attendance system
 - Save as `FEATURE_SLUG` and persist: `astra_state_set FEATURE_SLUG "$FEATURE_SLUG" "autorun-{FEATURE_SLUG}"` (explicit scope — see 0.5.2 protocol)
 
 ### 0.3 Initialize progress tracking
-Create the following todos via `TodoWrite`:
-1. Stage 0.5: decide the max iteration count
-2. Stage 1: planning + HTML mockup screens (/service-planner)
-3. Stage 1.5: planning validation (planner-reviewer)
-4. Stage 2.5: design token validation (design-token-validator) — target: mockup styles.css
-5. Stage 3: blueprint authoring (blueprint.md)
-6. Stage 3.5: blueprint validation (blueprint-reviewer)
-7. Stage 4: sprint plan (/sprint-init)
-8. Stage 5: test scenarios (/test-scenario) — TDD: before implementation
-9. Stage 6: implementation (/generate-entity + blueprint-based)
-10. Stage 7: test execution (/test-run)
-11. Stage 7.5: iteration loop (re-enter on failure, early exit on pass)
-12. Stage 8: /pr-merge --auto auto-invocation (PR creation, code review, merge, worktree removal)
-13. Stage 9: final report (includes merge result)
+Create one todo per stage via `TodoWrite`, mirroring the stage headings below (0.5 max-iter → 1 planning → 1.5 planner review → 2.5 token validation → 3 blueprint → 3.5 blueprint review → 4 sprint plan → 5 test scenarios → 6 implementation → 7 tests → 7.5 iteration loop → 7.6 verification gate → 8 pr-merge → 9 report).
 
 ## Stage 0.5: Decide the max iteration count (N)
 
@@ -82,7 +66,7 @@ Find the `--max-iter=N` pattern in `$ARGUMENTS` (regex: `--max-iter=([0-9]+)`).
 Shell variables do NOT persist between separate Bash tool invocations, and this pipeline spans dozens of them. All pipeline state lives in the shared state file managed by `worktree-helpers.sh`:
 
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
 astra_state_load "autorun-{FEATURE_SLUG}"    # start of EVERY Bash block in this skill
 ```
@@ -184,16 +168,7 @@ Save the blueprint path in the `BLUEPRINT_PATH` variable.
 
 ### 3.2 Blueprint standard sections (auto-authored by the `/blueprint` skill)
 
-1. **Overview** (purpose, background, scope, KPI)
-2. **Functional spec** (user scenarios, business rules)
-3. **Data model** (ER diagram, table DDL — complies with the Korean public data standard)
-4. **API spec** (endpoints, request/response JSON Schema, error codes)
-5. **Sequence diagrams** (Happy / Error path — Mermaid)
-6. **Business logic design** (pseudocode — not executable code)
-7. **Error handling policy**
-8. **Non-functional requirements** (performance, security, availability)
-9. **Test strategy overview**
-10. **HITL Triggers (for implementation phase)** — `/feature-dev` consults this in step 5 to ask the user only on *essential* decisions
+The 10 standard sections (Overview → HITL Triggers) are defined once in the `/blueprint` skill and its [blueprint-skeleton.md](../blueprint/references/blueprint-skeleton.md) — autorun does not restate them. Section 10 (HITL Triggers) is what `/feature-dev` consults during implementation to ask the user only on *essential* decisions.
 
 ### 3.3 Auto-applied skill triggers
 While the `/blueprint` skill authors DDL, the `data-standard` skill and PostToolUse hook auto-fire to validate TB_/TC_ prefixes, _YMD/_DT suffixes, and forbidden words (autorun does not invoke them separately).
@@ -212,19 +187,17 @@ P0_ISSUES=${P0_ISSUES:-unknown}
 echo "blueprint-reviewer P0 issues: $P0_ISSUES"   # 'unknown' if the tail line is missing — report as unverified, not 0
 ```
 
-### 3.5 Blueprint auto-worktree (verify the worktree-first creation)
+### 3.5 Blueprint sprint-context verification (adaptive isolation, v5.16+)
 
-`/blueprint --auto` performs the following internally (v5.10+ worktree-first order):
-1. **Step 1.5**: branch / location guards (non-standard branch aborts; secondary blueprint reuses worktree).
-2. **Step 1.6**: delegates to `/sprint-init --scaffold-only` to create the sprint worktree.
-3. **Step 1.7**: cd's into the worktree *within the skill execution*.
-4. **Steps 2–5**: authors + reviews the blueprint *inside the worktree*.
-5. **Step 6**: commits the blueprint to the **sprint branch** (`feat/sprint-N-slug`), NOT to dev. The blueprint reaches dev only via `/pr-merge` at sprint end.
+`/blueprint --auto` performs the following internally:
+1. **Step 1.5**: branch / location guards (non-standard branch aborts; secondary blueprint reuses the existing sprint context).
+2. **Steps 1.6–1.7**: delegates to `/sprint-init --scaffold-only`, which decides `ISOLATION_MODE` — **in-place by default** (sprint branch checked out in the main worktree, `WT_PATH` = main root, cd is a no-op) or **worktree** on escalation (main tree occupied/dirty, or `--isolated`) — then resolves `WT_PATH` for the chosen mode.
+3. **Steps 2–6**: authors + reviews the blueprint and commits it to the **sprint branch** (`feat/sprint-N-slug`), NOT to dev — the blueprint reaches dev only via `/pr-merge` at sprint end.
 
-The parent cwd of autorun remains the main worktree after `/blueprint` returns (skill-to-skill cd does not propagate). autorun must explicitly cd to enable the unattended downstream stages.
+The parent cwd of autorun is unchanged after `/blueprint` returns (skill-to-skill cd does not propagate). autorun must re-resolve `WT_PATH` itself — checking the in-place case first — to enable the unattended downstream stages.
 
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
 astra_state_load "autorun-{FEATURE_SLUG}"   # write the literal slug (0.5.2 protocol)
 [ -n "${FEATURE_SLUG:-}" ] || { echo "ERROR: FEATURE_SLUG unresolved — check the state scope slug" >&2; exit 1; }
@@ -233,25 +206,33 @@ if [ -z "$(git log --all -1 --oneline -- "docs/blueprints/{NNN}-{feature-slug}/"
   echo "WARN: blueprint commit not detected on any branch — /blueprint may have failed."
 fi
 
-# Discover the worktree /blueprint Step 1.6 created. Anchored match handles bare and collision-suffixed ("-2") branches, not unrelated slugs.
-WT_PATH=$(git worktree list --porcelain 2>/dev/null | awk -v slug="${FEATURE_SLUG}" '
-  /^worktree / { p=$2 }
-  /^branch refs\/heads\// {
-    b=$2; sub("refs/heads/", "", b)
-    if (b ~ "^feat/sprint-[0-9]+-" slug "(-[0-9]+)?$") { print p; exit }
-  }
-')
-
-if [ -z "$WT_PATH" ]; then
-  # Fallback: glob — include both bare and collision-suffixed dirs, pick most recent
-  WT_PATH=$(ls -td .astra-worktrees/sprint-*-${FEATURE_SLUG} .astra-worktrees/sprint-*-${FEATURE_SLUG}-* 2>/dev/null | head -1)
-fi
+# Discover the sprint context /blueprint Step 1.6 created — in-place case FIRST (v5.16+ default: the sprint branch is checked out right here).
+CUR_BRANCH=$(git branch --show-current)
+case "$CUR_BRANCH" in
+  feat/sprint-*-${FEATURE_SLUG}|feat/sprint-*-${FEATURE_SLUG}-[0-9]*)
+    WT_PATH=$(git rev-parse --show-toplevel)
+    ;;
+  *)
+    # Worktree (escalated) case. Anchored match handles bare and collision-suffixed ("-2") branches, not unrelated slugs.
+    WT_PATH=$(git worktree list --porcelain 2>/dev/null | awk -v slug="${FEATURE_SLUG}" '
+      /^worktree / { p=$2 }
+      /^branch refs\/heads\// {
+        b=$2; sub("refs/heads/", "", b)
+        if (b ~ "^feat/sprint-[0-9]+-" slug "(-[0-9]+)?$") { print p; exit }
+      }
+    ')
+    if [ -z "$WT_PATH" ]; then
+      # Fallback: dir scan (find, not `ls glob` — an unmatched glob in zsh errors before 2>/dev/null can suppress it)
+      WT_PATH=$(find .astra-worktrees -maxdepth 1 -type d \( -name "sprint-*-${FEATURE_SLUG}" -o -name "sprint-*-${FEATURE_SLUG}-[0-9]*" \) 2>/dev/null | sort | tail -1)
+    fi
+    ;;
+esac
 
 if [ -n "$WT_PATH" ] && [ -d "$WT_PATH" ]; then
-  echo "✅ Sprint worktree created by /blueprint Step 1.6 (worktree-first, v5.10+): $WT_PATH"
+  echo "✅ Sprint context created by /blueprint Step 1.6 (adaptive isolation, v5.16+): $WT_PATH"
   WORKTREE_READY=1
 else
-  echo "⚠️  /blueprint did not create a worktree — Stage 4 fallback will create it."
+  echo "⚠️  /blueprint did not create a sprint context — Stage 4 fallback will create it."
   WORKTREE_READY=0
 fi
 astra_state_set WT_PATH "$WT_PATH" "autorun-{FEATURE_SLUG}"
@@ -272,9 +253,11 @@ astra_state_set WORKTREE_READY "$WORKTREE_READY" "autorun-{FEATURE_SLUG}"
 ### 4.2 Execute (idempotent — skip worktree creation if already done)
 
 > **v5.10+ change**: `/blueprint` Step 1.6 already creates the sprint worktree, so this stage is an **idempotent re-entry** — it invokes `/sprint-init` only when the worktree was NOT created by `/blueprint` (rare; the non-standard-branch case aborts `/blueprint` earlier and never reaches Stage 4), and **always performs the explicit cd** into the worktree.
+>
+> **v5.16+ (adaptive isolation)**: `/blueprint`'s delegated `/sprint-init --scaffold-only` decides `ISOLATION_MODE` — under the default `inplace` mode there is no worktree at all: `WT_PATH` equals the main worktree root (the sprint branch is checked out there), the explicit cd is a no-op, and downstream stages run unchanged. The `WT_PATH` re-discovery below must therefore check the main worktree's current branch first (`feat/sprint-*-{slug}` → `WT_PATH=$(git rev-parse --show-toplevel)`) before falling back to `git worktree list`. `/pr-merge --auto` (Stage 8) auto-detects the in-place case (`IN_PLACE_SPRINT=1`) and merges single-phase; "worktree removal" wording in Stage 8–9 then reduces to sprint-branch + env-file cleanup.
 
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
 astra_state_load "autorun-{FEATURE_SLUG}"   # restores FEATURE_SLUG (persisted at 0.2) for the ${FEATURE_SLUG} expansions below
 [ -n "${FEATURE_SLUG:-}" ] || { echo "ERROR: FEATURE_SLUG unresolved — check the state scope slug" >&2; exit 1; }
@@ -282,17 +265,11 @@ if [ "$WORKTREE_READY" = "1" ]; then
   echo "ℹ️  Worktree already created by /blueprint Step 1.6 — using $WT_PATH"
   # Sprint files (prompt-map Variant B, progress.md, retrospective.md, .astra-worktree.env) already exist from the delegated --scaffold-only call.
 else
-  echo "🌿 Stage 4 fallback — invoking /sprint-init explicitly (worktree was not auto-created)"
+  echo "🌿 Stage 4 fallback — invoking /sprint-init explicitly (sprint context was not auto-created)"
   # --scaffold-only: blueprint already exists from Stage 3; keeps prompt-map Variant B consistent.
   Skill('sprint-init', '{feature-slug} --scaffold-only')
-  # Re-discover the path (do not trust cwd propagation from the Skill call)
-  WT_PATH=$(git worktree list --porcelain 2>/dev/null | awk -v slug="${FEATURE_SLUG}" '
-    /^worktree / { p=$2 }
-    /^branch refs\/heads\// {
-      b=$2; sub("refs/heads/", "", b)
-      if (b ~ "^feat/sprint-[0-9]+-" slug "(-[0-9]+)?$") { print p; exit }
-    }
-  ')
+  # Re-discover the path (do not trust cwd propagation from the Skill call):
+  # re-run the Stage 3.5 discovery snippet verbatim (in-place branch check first, then worktree list, then find fallback).
   WORKTREE_READY=1
 fi
 
@@ -371,6 +348,7 @@ Implement based on the blueprint's data model and API spec sections, **shaped to
 1. **Auto-generate entities**: extract table definitions from the blueprint → for each table call `Skill('generate-entity', '...')` or `/generate-entity`.
 2. **Author services/controllers**: author the service/controller/repository layers by referencing the blueprint's API spec + the Given-When-Then from the test scenarios together.
 3. **Auto-applied skill triggers**: on every Write/Edit, `coding-convention`, `data-standard`, and `code-standard` are auto-applied.
+4. **New-screen quality loop**: when this stage creates new UI screens (pages/routes/views/`*-screen.tsx`), run the `screen-quality-loop` skill over the batch after it compiles — adversarial `screen-verifier` scoring, exit at score ≥ 90 AND p0 == 0, hard cap 5 iterations, zero HITL (fits the unattended principle; its iterations are internal to Stage 6 and do not consume `MAX_ITER`). An unachieved outcome does not stop the pipeline — record the final score/P0s in the Stage 6 log and proceed to 6.3.
 
 ### 6.2 HITL guard (autorun unattended-execution principle)
 
@@ -398,7 +376,7 @@ On unresolvable failure, **STOP** + request user intervention.
 | Decision point | Auto default |
 |---|---|
 | Test environment | **cmux browser** (if available), fallback: **Chrome MCP** |
-| Auto-debug retry | **enabled** (up to 5 times) |
+| On failure | `/test-run` is single-pass (it reports and stops) — retries are driven by autorun's own Stage 7.5 iteration loop (`MAX_ITER` budget), not by an inner test-run loop |
 | Proceed confirmation | **always Y** |
 
 ### 7.2 Execute
@@ -406,12 +384,12 @@ Call `Skill('test-run', '{feature-slug}')`.
 
 ### 7.3 Success criteria (anchored on the machine-parseable result line)
 - A test report file exists: `docs/tests/test-reports/sprint-{N}-{feature-slug}/`
-- `/test-run` output contains the line `ASTRA_TEST_RESULT: PASS|FAIL passed=N failed=N total=N`. **Parse pass/fail from THAT line only** — never infer "all tests pass" from prose or from the report's narrative sections.
+- `/test-run` output contains the line `ASTRA_TEST_RESULT: PASS|FAIL passed=N failed=N total=N skipped=N`. **Parse pass/fail from THAT line only** — never infer "all tests pass" from prose or from the report's narrative sections.
 - If the `ASTRA_TEST_RESULT:` line is absent from the `/test-run` output, treat the run as **FAIL** (classification `ENV_ISSUE` candidate) — a missing result line means the tests were not verifiably executed.
 
 ### 7.4 Result branching
-- **`ASTRA_TEST_RESULT: PASS`** → enter Stage 7.5's *early-exit path* → go to Stage 8.
-- **`ASTRA_TEST_RESULT: FAIL` (or line absent) after 5 auto-debug attempts** → enter Stage 7.5's *iteration-decision path*.
+- **`ASTRA_TEST_RESULT: PASS`** → enter Stage 7.5's *early-exit path* → Stage 7.6 (adversarial verification gate).
+- **`ASTRA_TEST_RESULT: FAIL` (or line absent)** → enter Stage 7.5's *iteration-decision path*.
 
 ## Stage 7.5: Iteration loop (self-improvement)
 
@@ -423,26 +401,36 @@ Baseline-snapshot bash (BSD/GNU-portable), the diff command, and the full summar
 
 ### 7.5.2 Early-exit decision
 On **tests PASS**:
-- Print: `✅ Iteration {CURRENT_ITER}/{MAX_ITER} passed — early exit`
-- Go straight to Stage 8.
+- Print: `✅ Iteration {CURRENT_ITER}/{MAX_ITER} passed — entering adversarial verification (Stage 7.6)`
+- Go to **Stage 7.6** (adversarial verification gate). Stage 8 is reachable **only** through a Stage 7.6 PASS.
 
 ### 7.5.3 Reached max-iteration decision
 **FAIL** and `CURRENT_ITER == MAX_ITER`:
 - Print: `❌ Max iterations ({MAX_ITER}) exhausted; unresolved failure — stopping`
-- Proceed to Stage 8 (highlight the unresolved failure in the report).
+- **Skip Stage 8** (`/pr-merge --auto` must never run on a failing state) and go straight to the Stage 9 report, highlighting the unresolved failure.
 
 ### 7.5.4 Failure classification + Direct-Patch re-entry (FAIL, `CURRENT_ITER < MAX_ITER`)
 
-Only run when **FAIL** and `CURRENT_ITER < MAX_ITER`. Classify the failure (pattern-match table → tester-persona for AMBIGUOUS) into `CODE_BUG`/`SPEC_GAP`/`DESIGN_MISALIGN`/`ENV_ISSUE`, map to a re-entry stage (6/3/2/abort), then `CURRENT_ITER += 1` and **patch the target files in place** (no sub-skill re-invocation in iteration ≥ 2; `/test-run` is re-invoked idempotently). `ENV_ISSUE` → abort + Stage 8.
-
+Only run when **FAIL** and `CURRENT_ITER < MAX_ITER`. Classify the failure (pattern-match table → tester-persona for AMBIGUOUS) into `CODE_BUG`/`SPEC_GAP`/`DESIGN_MISALIGN`/`ENV_ISSUE`, map to a re-entry stage (6/3/2/abort), then `CURRENT_ITER += 1` and **patch the target files in place** (no sub-skill re-invocation in iteration ≥ 2; `/test-run` is re-invoked idempotently). `ENV_ISSUE` → abort → Stage 9 report (never Stage 8 — nothing unverified merges).
 The classification signal table, the tie/AMBIGUOUS rule, the tester-persona delegation prompt, the per-stage Direct-Patch procedure, and the `/test-scenario` re-invocation exception: see [references/failure-classification.md](references/failure-classification.md). Read it whenever an iteration FAILs and you must decide the re-entry stage.
 
-## Stage 8: `/pr-merge --auto` auto-invocation (only when tests pass)
+## Stage 7.6: Adversarial verification gate (same gate as the sprint pipeline)
 
-Enter this stage only when tests passed (early exit). Unresolved failures (`MAX_ITER` exhausted or `ENV_ISSUE` abort) skip this stage and go straight to Stage 9.
+Tests passing is necessary but not sufficient — autorun uses the **same triple exit gate** as the v5.16 sprint one-flow: `tests PASS ∧ verifier score ≥ 90 ∧ P0 == 0`. Reuse **Step 5.4.5 of [skills/sprint-init/references/auto-pipeline.md](../sprint-init/references/auto-pipeline.md)** for the `loop-verifier` Task prompt and the fixed SPRINT PRESET rubric (do not restate the rubric here — 5.4.5 is its SSoT), mapping the pipeline's `CURRENT_ITER`/`MAX_ITER` to autorun's own iteration variables and passing the parsed `ASTRA_TEST_RESULT` line as the objective-gate input. The branching (including the single `CURRENT_ITER` increment) is specified below — follow this list, not 5.4.5's branch text.
+
+Branch on the verifier's `ASTRA_LOOP_RESULT: score=N verdict=PASS|FAIL p0=N iter=I` tail line **only** (line absent = FAIL):
+
+- **PASS** (`score ≥ 90` AND `p0 == 0`) → Stage 8.
+- **FAIL** and `CURRENT_ITER < MAX_ITER` → treat the verifier's Fix Directives as the patch list, record the iteration as `VERIFIER_FAIL`, `CURRENT_ITER += 1` (this gate shares the same iteration budget as the test loop — it never doubles `MAX_ITER`), Direct-Patch the cited files (7.5.4 mechanics), and re-enter Stage 7.
+- **FAIL** and `CURRENT_ITER == MAX_ITER` → skip Stage 8, go to the Stage 9 report with the last verifier score and remaining P0s highlighted. **No merge.**
+- Either way, persist `VERIFIER_SCORE` / `VERIFIER_P0` (`astra_state_set`) — Stage 9's report includes them.
+
+## Stage 8: `/pr-merge --auto` auto-invocation (only on a Stage 7.6 PASS)
+
+Enter this stage only when Stage 7.6 returned PASS (tests PASS ∧ score ≥ 90 ∧ P0 == 0). Unresolved failures (`MAX_ITER` exhausted, verifier FAIL at max, or `ENV_ISSUE` abort) skip this stage and go straight to Stage 9.
 
 ### 8.0 Preconditions
-- `CURRENT_ITER`'s final state is PASS
+- `CURRENT_ITER`'s final state is PASS **and** Stage 7.6 verdict is PASS
 - The working directory is inside the sprint worktree (`$WT_PATH`) — must remain `cd`-ed from Stage 4.3.
 
 ### 8.1 Invoke `/pr-merge --auto`
@@ -451,7 +439,7 @@ Enter this stage only when tests passed (early exit). Unresolved failures (`MAX_
 Skill('pr-merge', '--auto')
 ```
 
-`/pr-merge --auto` runs the two-phase workflow (v5.9+) end-to-end in a single invocation: Sprint Phase (commit → branch sync → PR → code review → fix Critical/High) → auto `cd` to the main worktree → Main Phase (`gh pr merge` sprint→integration → promotion → worktree removal). All steps are automatic **except** the Step 8.4.5 promotion-target choice.
+`/pr-merge --auto` auto-detects the isolation mode (v5.16+). **In-place sprint (default)**: `IN_PLACE_SPRINT=1` — single-phase in the main worktree (commit → PR → code review → fix Critical/High → `gh pr merge` → promotion → sprint-branch + env-file cleanup); no `cd` ever happens. **Worktree sprint (escalated)**: the two-phase workflow (v5.9+) end-to-end in one invocation — Sprint Phase inside the worktree → auto `cd` to the main worktree → Main Phase (merge → promotion → worktree removal). Either way, all steps are automatic **except** the Step 8.4.5 promotion-target choice.
 
 ### 8.2 HITL trigger conditions
 
@@ -488,9 +476,9 @@ The 9.0 working-directory-reconciliation bash, the 9.1 `pipeline-report.md` mark
 - `/generate-entity` or an auto-applied skill returns an explicit error
 - The classification result is `ENV_ISSUE` (environment/infra issues cannot be resolved by iterating)
 
-### Iteration-loop entry condition (on Stage 7 failure)
-- `/test-run` still fails after 5 auto-debug attempts + `CURRENT_ITER < MAX_ITER`
-  → run the 7.5 classification and re-entry logic
+### Iteration-loop entry condition (on Stage 7 / 7.6 failure)
+- `/test-run` FAIL (or Stage 7.6 verifier FAIL) + `CURRENT_ITER < MAX_ITER`
+  → run the 7.5 classification and re-entry logic (verifier FAIL re-enters via the 7.6 branch with the Fix Directives)
 - On reaching `CURRENT_ITER == MAX_ITER`, stop at that point. **Skip** Stage 8 (`/pr-merge --auto`) and go straight to the Stage 9 report.
 
 ### Non-blocking conditions (Continue with Warning)

@@ -62,7 +62,7 @@ while IFS=$'\t' read -r standard_word forbidden_words; do
     fi
     # Search for forbidden word in file content (case-insensitive)
     if grep -qi "$forbidden" "$FILE_PATH" 2>/dev/null; then
-      WARNINGS="${WARNINGS}[Forbidden] '${forbidden}' found -> Use standard term '${standard_word}' instead\n"
+      WARNINGS="${WARNINGS}[Forbidden] '${forbidden}' found -> Use the standard word (abbreviation '${standard_word}') instead\n"
       WARNING_COUNT=$((WARNING_COUNT + 1))
       if [ $WARNING_COUNT -ge 20 ]; then
         WARNINGS="${WARNINGS}... (there may be additional forbidden words)\n"
@@ -70,7 +70,10 @@ while IFS=$'\t' read -r standard_word forbidden_words; do
       fi
     fi
   done
-done < <(jq -r '.[] | select(.금칙어목록 != null and .금칙어목록 != "") | [.공통표준단어명, .금칙어목록] | @tsv' "$WORDS_FILE" 2>/dev/null)
+# Rows live under .data[]; Korean field names need jq bracket form (bare .금칙어목록 is a
+# jq syntax error). The Korean word-name field is empty in the bundled dataset, so the
+# suggestion uses the English abbreviation (the physical column name).
+done < <(jq -r '.data[] | select(.["금칙어목록"] != null and .["금칙어목록"] != "") | [.["공통표준단어영문약어명"], .["금칙어목록"]] | @tsv' "$WORDS_FILE" 2>/dev/null)
 
 if [ -n "$WARNINGS" ]; then
   echo -e "[astra-methodology] Forbidden word check results (${FILE_PATH}):"

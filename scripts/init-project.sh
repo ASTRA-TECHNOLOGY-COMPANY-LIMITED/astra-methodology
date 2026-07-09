@@ -4,7 +4,11 @@
 #
 # Usage: ./init-project.sh <project-root-path>
 #
-# Can be invoked from the /astra-methodology skill or run independently.
+# Quick-start scaffold: creates the Web-baseline directory skeleton (a subset
+# of skills/project-init/references/directory-structures.md) plus .gitignore
+# worktree registration. Invoked from the /project-init skill (Step 3) or run
+# independently. The /project-init skill extends this baseline per the selected
+# platform/framework tree in directory-structures.md.
 # ==========================================================================
 
 set -euo pipefail
@@ -76,7 +80,7 @@ echo ""
 echo "ASTRA project structure generation complete!"
 echo ""
 echo "Next steps:"
-echo "  1. Generate template files with the /astra-methodology skill"
+echo "  1. Generate template files with the /project-init skill"
 echo "  2. Or manually create CLAUDE.md and design system files"
 echo "  3. Initialize the design system SSoT: /design-init --auto"
 echo "     (Creates docs/design-system/DESIGN.md and regenerates src/styles/design-tokens.css)"

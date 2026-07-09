@@ -62,7 +62,7 @@ Report this behavior to the user:
 | `/test-scenario` | Invoked in Stage 5 (*before* implementation, TDD flow) |
 | `/test-run` | Invoked in Stage 7 (re-invoked each iteration, up to MAX_ITER times) |
 | `tester-persona` | Invoked only at Stage 7.5's *AMBIGUOUS* branch (failure classification) |
-| `/pr-merge` | **Auto-invoked in Stage 8 as `/pr-merge --auto`** (only when tests pass). Not invoked on unresolved failure. Under v5.9+ two-phase policy, `--auto` runs Sprint Phase (PR + review + fix) → auto-cd to main worktree → Main Phase (merge) → worktree removal, end-to-end in one invocation. Without `--auto`, Sprint Phase stops after the review loop and the user manually finalizes from the main worktree. |
+| `/pr-merge` | **Auto-invoked in Stage 8 as `/pr-merge --auto`** (only when tests pass). Not invoked on unresolved failure. v5.16+ adaptive isolation: for an **in-place sprint (default, `IN_PLACE_SPRINT=1`)** the sprint branch lives in the main worktree, so `--auto` merges **single-phase in place** (commit → PR → review + fix → merge → promotion → sprint-branch cleanup) with no `cd` and no worktree. For an **escalated worktree sprint** it falls back to the v5.9+ two-phase flow — Sprint Phase (PR + review + fix) → auto-`cd` to the main worktree → Main Phase (merge) → worktree removal, end-to-end in one invocation. Without `--auto` in worktree mode, Sprint Phase stops after the review loop and the user finalizes from the main worktree. |
 | `/check-naming`, `/check-convention` | Replaced by auto-applied skills + validation agents |
 
 ## ASTRA 4-principle application

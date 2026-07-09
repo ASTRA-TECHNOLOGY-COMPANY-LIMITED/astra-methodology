@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "astra",
-  "description": "ASTRA (AI-augmented Sprint Through Rapid Assembly) methodology marketplace. Sprint 0 initialization, Design Thinking planning, blueprint authoring, sprint-isolated worktrees, integration testing, AI-assisted UAT, PR merge automation, the /autorun full pipeline, and the /loop convergence loop — with coding convention, Korean public data standard, and design-system SSoT enforcement for Korean enterprise software development.",
+  "description": "ASTRA (AI-augmented Sprint Through Rapid Assembly) methodology marketplace. Sprint 0 initialization, Design Thinking planning, blueprint authoring, sprint-isolated worktrees, integration testing, AI-assisted UAT, PR merge automation, the /autorun full pipeline, and the /loop and screen-quality convergence loops — with coding convention, Korean public data standard, and design-system SSoT enforcement for Korean enterprise software development.",
   "owner": {
     "name": "Zeans.L",
     "email": "zeans@astravision.co.kr"
@@ -12,8 +12,8 @@
   "plugins": [
     {
       "name": "astra-methodology",
-      "description": "ASTRA (AI-augmented Sprint Through Rapid Assembly) methodology plugin for Korean enterprise software development. Provides Sprint 0 project initialization, Design Thinking-based planning (/service-planner), blueprint authoring (/blueprint), sprint-level isolated worktrees (/sprint-init), integration testing (/test-run), AI-assisted UAT (/user-test, /uat-parallel with vi|en|ko report-language selection), PR merge automation with integration-branch model (/pr-merge), a mostly-unattended full pipeline (/autorun), and a Target-driven convergence loop with adversarial verification (/loop — mandatory max-iteration HITL, frozen rubric, exit at score ≥ 90 with zero P0s or at max iterations). Enforces coding conventions (Java/TypeScript/React Native/Python/CSS/SCSS), the Korean public data standard dictionary, international code standards (ISO 3166-1/2, ITU-T E.164), design system SSoT (DESIGN.md), and quality gates via read-only validator/reviewer/persona agents. Per-version change rationale: docs/development/changelog-v5.md.",
-      "version": "5.14.0",
+      "description": "ASTRA (AI-augmented Sprint Through Rapid Assembly) methodology plugin for Korean enterprise software development. Provides Sprint 0 project initialization, Design Thinking-based planning (/service-planner), blueprint authoring (/blueprint), sprint-level isolated worktrees (/sprint-init), integration testing (/test-run), AI-assisted UAT (/user-test, /uat-parallel with vi|en|ko report-language selection), PR merge automation with integration-branch model (/pr-merge), a mostly-unattended full pipeline (/autorun), a Target-driven convergence loop with adversarial verification (/loop — mandatory max-iteration HITL, frozen rubric, exit at score ≥ 90 with zero P0s or at max iterations), and a screen-quality convergence loop for newly authored screens (screen-quality-loop — adversarial screen-verifier scoring of design-system application, cross-screen layout consistency, and polish; zero HITL, exit at score ≥ 90 with zero P0s or 5 iterations). Enforces coding conventions (Java/TypeScript/React Native/Python/CSS/SCSS), the Korean public data standard dictionary, international code standards (ISO 3166-1/2, ITU-T E.164), design system SSoT (DESIGN.md), and quality gates via read-only validator/reviewer/persona agents. Per-version change rationale: docs/development/changelog-v5.md.",
+      "version": "5.18.0",
       "author": {
         "name": "Zeans.L",
         "email": "zeans@astravision.co.kr"

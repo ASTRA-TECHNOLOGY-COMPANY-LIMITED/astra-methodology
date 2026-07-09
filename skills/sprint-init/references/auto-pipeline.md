@@ -1,6 +1,16 @@
-# sprint-init `--auto` / `--resume` pipeline
+# Sprint execution pipeline (shared SSoT — default continuous mode, `--auto`, `--resume`)
 
-Non-mainline detail extracted from `SKILL.md`. Read this file when `--auto` or `--resume` is set. The mainline SKILL.md (Steps 0.B–4.5) covers worktree creation, port-isolated env, scaffolding, and flag handling; everything below is the unattended self-improvement pipeline and its recovery path.
+Non-mainline detail extracted from `SKILL.md`. **v5.16+: this file is the shared pipeline SSoT** — read it whenever a sprint continues past scaffolding, in any of these entry paths:
+
+| Caller | `PIPELINE_MODE` | Behavior |
+|--------|-----------------|----------|
+| `/sprint-init` (default, no flags) | `attended` | Continuous one-session run. HITL fires only at real judgment points: remaining Critical review issues, final merge confirmation, promotion target. No per-stage questions. |
+| `/blueprint` (default, after blueprint commit) | `attended` | Same as above — `/blueprint` drives Steps 5.0–5.7 itself after Step 6. |
+| `/sprint-init --auto`, `/autorun` | `auto` | Unattended. Merge confirmation auto-approved (`/pr-merge --auto`); promotion target stays HITL (v5.11.2+ policy). |
+
+Mode differences are confined to **Step 5.6** (pr-merge invocation) and abort wording — every other stage is identical. The mainline SKILL.md (Steps 0.B–4.6) covers isolation-mode decision, branch/worktree creation, port-isolated env, scaffolding, and flag handling; everything below is the self-improvement pipeline and its recovery path.
+
+> **Isolation modes (v5.16+)**: `ISOLATION_MODE=inplace` (default — sprint branch checked out in the main worktree, `WT_PATH` = main root) or `worktree` (isolated `.astra-worktrees/sprint-*` — auto-escalation or `--isolated`). The pipeline below is mode-agnostic: `WT_PATH` always points at the tree containing the sprint branch, and `cd "$WT_PATH"` is a no-op under `inplace`. Only Step 5.6/5.7 worktree-removal wording differs (nothing to remove under `inplace`; `/pr-merge` Step 9 does branch + env-file cleanup instead).
 
 ---
 
@@ -35,7 +45,8 @@ If `RESUME_MODE=1`:
    - `SPRINT_N`, `SPRINT_NAME`, `WT_PATH`, `MAX_ITER`, `CURRENT_ITER`
    - `progress.next_stage`, `progress.last_iteration_summary`, `files_to_patch_next`
    - Other per-stage deliverable paths
-4. **Skip all of Step 0~4 (worktree creation·scaffolding)** — they already exist.
+4. **Skip all of Step 0~4 (context creation·scaffolding)** — they already exist.
+4.5. **In-place branch guard (v5.16+)**: when `sprint.isolation_mode: inplace`, the main worktree must be ON `sprint.branch` before any stage runs. If it isn't (e.g., the user checked out dev in between), re-anchor: verify the tree is clean, then `git checkout "{sprint.branch}"` — abort with guidance if dirty or the checkout fails. Never run pipeline stages while on a shared branch.
 5. **Jump directly to `progress.next_stage`**. e.g., `next_stage: 5.4` → run Step 5.4 immediately.
 6. Startup notice:
    ```
@@ -51,18 +62,20 @@ If `RESUME_MODE=0`, proceed normally to Step 0.B.
 
 ---
 
-### Step 5: Auto Continue (only if `--auto` flag is set)
+### Step 5: Pipeline continuation (default; `--auto` = unattended variant)
 
-After scaffolding finishes, run the following pipeline sequentially in unattended mode:
+After scaffolding finishes, run the following pipeline sequentially **in the same session** (v5.16+ — the pipeline is the default continuation; `--scaffold-stop` is the only way to stop after scaffolding):
 
 ```
-/test-scenario all → implementation (blueprint-based) → /test-run → (self-improvement loop on failure) → /pr-merge --auto → worktree auto-removed
+/test-scenario all → implementation (blueprint-based) → /test-run → adversarial verification gate (Step 5.4.5)
+  → (fix loop until score ≥ 90 ∧ P0 == 0 ∧ tests PASS, or MAX_ITER exhausted) → /pr-merge → cleanup
 ```
 
-**Default principles** (same as autorun):
-- During the pipeline, do not call `AskUserQuestion` (the only exception is the one-time prompt in Step 1 when `--max-iter` is not provided).
-- Each stage's success criterion is judged solely from *verifiable file/test results*.
-- HITL fires only on true blockers (gh auth, merge conflict, Critical review issues).
+**Default principles**:
+- During the pipeline, do not call `AskUserQuestion` between stages. `attended` mode allows HITL **only** at the pr-merge judgment points (remaining Critical issues, final merge confirmation, promotion target); `auto` mode reduces those to the promotion target + true blockers.
+- Each stage's success criterion is judged solely from *verifiable file/test results and the adversarial verifier's machine-parseable tail line* — never from prose impressions.
+- HITL fires on true blockers in both modes (gh auth, merge conflict, Critical review issues).
+- **Cache-locality rule**: never instruct the user to `cd` or start a new session mid-pipeline — every stage runs in this session (the whole point of the continuous flow is one warm KV-cache prefix). Respond to HITL prompts promptly; a stall > 5 min costs one full-price cache re-write of the entire context.
 
 #### Step 5.0: Pre-checks
 
@@ -70,11 +83,11 @@ After scaffolding finishes, run the following pipeline sequentially in unattende
 2. **Verify blueprints exist**: For every feature extracted from prompt-map.md, `docs/blueprints/[0-9][0-9][0-9]-{feature-name}/blueprint.md` must exist inside the worktree (or in the merged base branch).
    - Abort message when missing:
      ```
-     ❌ --auto mode requires blueprints to be authored in advance.
+     ❌ The pipeline requires blueprints to be authored in advance.
         Missing blueprint: {feature-name}
-        Fix: author the blueprint with /service-planner {feature-name} or /feature-dev, then re-run.
+        Fix: author the blueprint with /blueprint {feature-name} (it continues into this pipeline itself), then re-run.
      ```
-3. **Determine MAX_ITER**: Use the `--max-iter=N` argument. If absent, ask once via `AskUserQuestion` (options 1/3/5, default 3).
+3. **Determine MAX_ITER**: Use the `--max-iter=N` argument (1 ≤ N ≤ 10). If absent, **default to 5 — do not ask** (v5.16+: the adversarial gate in Step 5.4.5 makes the iteration bound a quality mechanism, not a user preference; 5 matches the `screen-quality-loop` hard cap).
 
 #### Step 5.1: Initialize progress tracking
 
@@ -109,13 +122,20 @@ At the end of each stage, update `$WT_PATH/docs/sprints/sprint-{N}-{sprint-name}
 sprint:
   number: {N}
   name: {sprint-name}
-  worktree_path: {WT_PATH}
+  worktree_path: {WT_PATH}          # under inplace mode this is the MAIN worktree root
+  isolation_mode: inplace | worktree
+  pipeline_mode: attended | auto
   branch: feat/sprint-{N}-{sprint-name}
   port_base: {PORT_BASE}
 
 iteration:
   max_iter: {MAX_ITER}
   current_iter: {CURRENT_ITER}
+
+verifier:                            # filled by Step 5.4.5 (adversarial gate)
+  last_score: null | 0-100
+  last_p0: null | N
+  history: []                        # [{iter: 1, score: 72, p0: 2}, ...]
 
 progress:
   completed_stages: [5.0, 5.1, 5.2, ...]   # list of stage numbers completed so far
@@ -199,7 +219,7 @@ At every checkpoint, *fully overwrite* `auto-state.yaml`. Partial updates are fo
 
 Each checkpoint creates a new git commit (`chore: auto-state checkpoint after Stage X`). When the PR is merged, those commits are either squashed or merged as-is (depending on the user's git workflow).
 
-> **Note**: This protocol is `--auto` mode only. Running sprint-init without `--auto` is unaffected.
+> **Note**: This protocol applies to every pipeline run (`attended` and `auto`). Only `--scaffold-stop` / `--scaffold-only` invocations, which never enter Step 5, are unaffected.
 
 #### Step 5.2: Generate test scenarios (Iteration 1 only)
 
@@ -239,12 +259,12 @@ Invoke `Skill('test-run', '')`. Boots the server using the sprint-specific ports
 **Determine pass/fail from the machine-parseable result line only.** `/test-run` runs via the Skill tool, so its output is **conversation text in the skill's return, not a shell variable** — do not try to capture it with a Bash pipe. Instead, read the `/test-run` skill's final output text directly and find the single line of this exact form (illustrative — not an executable snippet):
 
 ```
-ASTRA_TEST_RESULT: PASS|FAIL passed=N failed=N total=N
+ASTRA_TEST_RESULT: PASS|FAIL passed=N failed=N total=N skipped=N
 ```
 
 Then, as an LLM-level judgement (no shell):
 
-1. Scan the `/test-run` skill output for a line matching `ASTRA_TEST_RESULT: (PASS|FAIL) passed=N failed=N total=N`.
+1. Scan the `/test-run` skill output for a line matching `ASTRA_TEST_RESULT: (PASS|FAIL) passed=N failed=N total=N skipped=N` (a skipped scenario forces FAIL on the producer side — `/test-run` Step 11).
 2. Take `TEST_VERDICT` (PASS or FAIL) and the `passed` / `failed` / `total` counts **from that line only** — never infer pass from prose ("tests look green", "seems to work").
 3. If no such line exists anywhere in the skill output, set `TEST_VERDICT=FAIL` (a missing result line means the run did not complete cleanly), record `passed=0 failed=unknown total=unknown`, and route to Step 5.5.
 
@@ -254,16 +274,46 @@ Use `TEST_VERDICT` (not free-form reading) for the 5.4.Z branch below.
 
 `/test-run` accumulates large artifacts in the context (browser snapshots, console logs, network request logs). **Always run the 5.1.5 Silent Save Protocol**:
 - Record `completed_stages: [..., 5.4]`, `last_test_result: { passed, total, failed_tests, log_excerpt }` (from the parsed `ASTRA_TEST_RESULT` fields) in `auto-state.yaml` + commit
-  - `TEST_VERDICT=PASS` → `next_stage: 5.6`
+  - `TEST_VERDICT=PASS` → `next_stage: 5.4.5` (adversarial verification gate — a green test suite alone never unlocks the merge)
   - `TEST_VERDICT=FAIL` + `CURRENT_ITER < MAX_ITER` → `next_stage: 5.5`
   - `TEST_VERDICT=FAIL` + `CURRENT_ITER == MAX_ITER` → `next_stage: 5.7` (jump directly to the report)
 - Abbreviate `log_excerpt` to the essence of the last failure log within 100 lines (do not embed the full log in the yaml)
 - Apply the 5.1.5.C reference-avoidance rule (browser snapshots, full console logs, network requests are no longer re-referenced — carry only the `log_excerpt` from the yaml into the next stage)
 - **Auto-jump to `next_stage` immediately** — no exit / no user input
 
-#### Step 5.5: Self-improvement loop (on test failure)
+#### Step 5.4.5: Adversarial verification gate (v5.16+ — runs only when `TEST_VERDICT=PASS`)
 
-`TEST_VERDICT=PASS` → proceed immediately to Step 5.6 (early exit).
+A passing test suite is the *objective* gate; this step is the *adversarial* gate. Delegate scoring to the `loop-verifier` agent (fresh context — the verifier never sees this session's accumulated rationale, which both prevents leniency bias and keeps the heavy artifact-reading out of the parent context):
+
+```
+Task(loop-verifier, prompt = the following, model default):
+  1. Target statement: "Sprint {N} ({sprint-name}): every feature in prompt-map.md is implemented
+     per its blueprint and verified by the sprint test suite."
+  2. Frozen rubric (SPRINT PRESET — immutable across iterations of this sprint):
+     | Criterion | Weight | Award rule | P0 |
+     |-----------|--------|-----------|----|
+     | Blueprint conformance | 40 | Every table in blueprint §2 and endpoint in §3 exists in code (file:line evidence); §6 logic branches implemented | ✅ |
+     | Test integrity | 30 | Objective-gate input line (item 4) reads PASS with skipped=0; scenario files cover every §3 endpoint; no stubbed/no-op assertions (verify by reading the scenario files — the browser suite itself is NOT re-runnable from the verifier) | ✅ |
+     | Convention & quality | 30 | No convention violations in changed files; no placeholder bodies (TODO/pass/not-implemented); no dead scaffolding | — |
+  3. Scope: implementation.{entities,services,controllers}_created + scenarios.files from auto-state.yaml,
+     plus the blueprint path(s) from features[].
+  4. Objective-gate result: the parsed ASTRA_TEST_RESULT line, verbatim.
+  5. Iteration number: CURRENT_ITER.
+```
+
+**Parse the verifier's tail line only** (same protocol as `/loop`): `ASTRA_LOOP_RESULT: score=N verdict=PASS|FAIL p0=N iter=I`. If the line is missing → treat as `verdict=FAIL p0=1` (an unparseable verification never unlocks a merge).
+
+Branch (the exit gate is the triple conjunction — **tests PASS ∧ score ≥ 90 ∧ p0 == 0**, encoded in the verifier's verdict):
+
+- **`verdict=PASS`** → record `verifier: { score, p0, iter }` in `auto-state.yaml`, `next_stage: 5.6` → proceed to merge.
+- **`verdict=FAIL` + `CURRENT_ITER < MAX_ITER`** → carry the verifier's **Fix Directives** (not the full report) into Step 5.5 as the patch work-list (`files_to_patch_next`), set `last_iteration_classification: VERIFIER_FAIL`, `CURRENT_ITER += 1`, run the 5.5.Z Silent Save, then Direct-Patch the directives and re-enter Step 5.4 (re-test). No user input.
+- **`verdict=FAIL` + `CURRENT_ITER == MAX_ITER`** → `next_stage: 5.7`; **do not merge**. The report lists the remaining P0s and directives.
+
+> **Stall guard**: if two consecutive iterations produce non-increasing scores, note it in the report but keep iterating until MAX_ITER — the hard cap (default 5) is the stop, matching the user-confirmed convergence policy (score ≥ 90 ∧ P0 == 0, else ≤ 5 loops).
+
+#### Step 5.5: Self-improvement loop (on test failure or verifier FAIL)
+
+Entry from Step 5.4 (`TEST_VERDICT=FAIL`) or Step 5.4.5 (`VERIFIER_FAIL` — in that case Step 5.4.5 has **already** incremented `CURRENT_ITER` and run its Silent Save: skip the classification (step 1) **and** the step-4 increment below, execute only the Direct-Patch (step 2, on the Fix Directives ordered by score impact) and the iteration summary (step 3). `CURRENT_ITER` increments exactly once per loop pass, whichever gate failed).
 
 `TEST_VERDICT=FAIL` + `CURRENT_ITER < MAX_ITER`:
 
@@ -316,7 +366,7 @@ Use `TEST_VERDICT` (not free-form reading) for the 5.4.Z branch below.
 - Print: `❌ Max iterations ({MAX_ITER}) exhausted with unresolved failures — stopping without /pr-merge`
 - Jump directly to Step 5.7 (report); **do not invoke `/pr-merge`**.
 
-#### Step 5.6: PR merge (only when tests pass)
+#### Step 5.6: PR merge (only when the Step 5.4.5 gate passed — tests PASS ∧ score ≥ 90 ∧ P0 == 0)
 
 ##### 5.6.A 💾 Pre-merge Silent Save (especially important)
 
@@ -338,26 +388,12 @@ Persist the state one more time just before the merge. `/pr-merge --auto` itself
    ```
 4. Apply the 5.1.5.C reference-avoidance rule — previous iteration logs, full blueprint, and test outputs are no longer re-referenced. pr-merge works from git diff and PR metadata.
 
-##### 5.6.B Invoke `/pr-merge --auto`
+##### 5.6.B Invoke `/pr-merge` (mode-aware)
 
-Invoke `Skill('pr-merge', '--auto')`.
+- **`PIPELINE_MODE=attended`** → `Skill('pr-merge', '')`. Normal-mode pr-merge: commit → PR → review loop → **HITL final merge confirmation** → merge → **HITL promotion target** → cleanup. v5.16+ pr-merge never instructs a mid-flow `cd`: under `ISOLATION_MODE=inplace` it is a single-phase in-place merge; under `worktree` it asks one HITL ("finalize the merge now?") and performs the cross-worktree transition itself (Step 8.5).
+- **`PIPELINE_MODE=auto`** → `Skill('pr-merge', '--auto')`. Same flow with the merge confirmation auto-approved; the promotion target stays HITL (v5.11.2+); halt on remaining Critical issues (true HITL).
 
-`/pr-merge --auto` handles the two-phase workflow (v5.9+) end-to-end:
-
-Sprint Phase (inside the sprint worktree):
-- Commit the changes (confirmation prompts auto-approved)
-- Create the PR
-- Code review → issue fixes → re-review cycle (up to 3 times)
-- Halt on remaining Critical issues (true HITL)
-
-Sprint→Main handoff (Step 8.5 under `--auto`):
-- `/pr-merge` itself `cd`'s to the main worktree (the skill performs the transition under `--auto`).
-
-Main Phase (in the main worktree):
-- Merge (final confirmation prompt auto-approved)
-- **Auto-remove the worktree** + the cwd ends in the main worktree (dev)
-
-> Since sprint-init is running inside the sprint worktree, after the merge completes, /pr-merge removes the very worktree it is in. The user is automatically returned to the main worktree (dev) upon merge completion. Without `--auto`, Sprint Phase would stop after the review loop and the user would `cd` to the main worktree to re-invoke `/pr-merge` — but `--auto` (the default for sprint-init's pipeline) chains both phases automatically.
+End state in both modes and both isolation modes: the PR is merged into its integration branch, the promotion decision is made, the sprint branch/worktree is cleaned up, and **the session continues in the main worktree on `dev`** — no user `cd` at any point.
 
 ##### 5.6.C Record merge result in `auto-state.yaml`
 
@@ -377,12 +413,13 @@ The Step 5.7 report is generally lightweight on context, so no separate silent s
 
 ```
 ═══════════════════════════════════════════════════════
-{✅ / ❌ / ⚠️} Sprint {N} --auto complete
+{✅ / ❌ / ⚠️} Sprint {N} pipeline complete ({pipeline_mode} / {isolation_mode})
 
 🔁 Iterations: {iteration.current_iter}/{iteration.max_iter}
 ✅ Tests: {last_test_result.passed}/{last_test_result.total}
+🎯 Verifier: {verifier.last_score}/100, P0 = {verifier.last_p0} (gate: ≥ 90 ∧ P0 == 0)
 📦 Sprint Branch: feat/sprint-{N}-{sprint-name}
-🌿 Worktree: {merge.worktree_removed ? "removed" : "preserved (kept due to failure)"}
+🌿 Isolation: {inplace ? "in-place (branch cleaned up, back on dev)" : (merge.worktree_removed ? "worktree removed" : "worktree preserved (kept due to failure)")}
 
 📁 Deliverables:
   - Blueprint: docs/blueprints/[NNN]-*/blueprint.md

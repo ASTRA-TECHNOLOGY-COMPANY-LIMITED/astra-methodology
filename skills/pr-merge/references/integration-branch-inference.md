@@ -11,7 +11,7 @@ Every Bash block assumes the PREAMBLE (SKILL.md Step 1 state protocol).
 Derive the integration-branch prefix from three signals, in priority order:
 
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
 [ -n "${BRANCH_NAME:-}" ] || BRANCH_NAME=$(git branch --show-current)   # re-derive if state was lost
 # 1) Count Conventional Commits on this sprint branch since branch-off from dev.
@@ -56,7 +56,7 @@ echo "Inferred integration branch: $INFERRED_NAME (commits: feat=$FEAT_COUNT fix
 ## Step 4.5.2: List existing integration branches
 
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
 git fetch origin --quiet
 # Sort by recent activity, exclude sprint-* branches, keep only feat/* and fix/*.
@@ -74,7 +74,7 @@ astra_state_set EXISTING_INTS "$EXISTING_INTS"
 
 **`--auto` mode** — safe default (no prompts):
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
 if printf '%s\n' "$EXISTING_INTS" | grep -qxF "$INFERRED_NAME"; then
   TARGET_BRANCH="$INFERRED_NAME"   # reuse existing
@@ -115,7 +115,7 @@ The harness auto-adds an `Other` option outside the 4-slot count, letting the us
 
 Validate the chosen ref exists, then persist it:
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
 git ls-remote --exit-code --heads origin "${BASE_REF#origin/}" >/dev/null 2>&1 || {
   echo "ERROR: base ref '$BASE_REF' not found on remote" >&2
@@ -131,7 +131,7 @@ Skip when `CREATE_NEW=0`.
 Guard against the race where the user typed (or selected "create with inferred name" for) a branch name that already exists on the remote — this happens when `INFERRED_NAME` collides with an existing entry of `EXISTING_INTS` and the user picked the "Create new" option anyway. Without the guard, `git push origin <base>:refs/heads/<existing>` would be rejected and the user would have to re-run.
 
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh" && astra_state_load
 # Guard: never push with empty refs (state loss would create a wrong branch)
 [ -n "${TARGET_BRANCH:-}" ] || { echo "ERROR: TARGET_BRANCH empty — re-run Step 4.5.3" >&2; exit 1; }

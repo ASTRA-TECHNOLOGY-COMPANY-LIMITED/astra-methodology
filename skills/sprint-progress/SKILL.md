@@ -5,7 +5,7 @@ description: >
   test case, implementation, or test report files are created or modified.
   Used when writing files under docs/blueprints/, docs/database/, docs/tests/,
   docs/sprints/, or src/ directories.
-allowed-tools: Read, Write, Edit, Glob, Grep, mcp__fect-slack__slack_list_items_update
+allowed-tools: Read, Write, Edit, Glob, Grep
 ---
 
 # Sprint Progress Auto-Tracking Skill
@@ -83,33 +83,9 @@ When a file under `docs/tests/test-reports/` is written:
 3. Set the **Test Report** column to `Done`
 4. Check if the feature is now fully complete (all columns are `Done` or `N/A`)
 5. If fully complete, set the **Status** column to `Completed`
-6. If the Status was changed to `Completed`, run **Procedure 6** to update the Slack List Item status to "Completed". If Procedure 6 fails or there is no mapping section, emit a warning only and proceed to the next step (non-blocking).
-7. Recalculate the Summary section
+6. Recalculate the Summary section
 
-### Procedure 6: Update Slack List Item Status (→ Completed)
-
-When a Test Report is created and a feature's Status changes to `Completed`, update the Slack List Item's **status select option** to **"Completed"**.
-
-> **Note**: Never touch the Slack List Item's checkbox (completion check). The checkbox is for the assignee to manually check after they have personally finished testing. This procedure only changes the **option value of the status (status) select column**.
-
-1. In `docs/sprints/sprint-{N}-{name}/progress.md`, look for the `<!-- SLACK_LIST_MAPPING_START -->` ~ `<!-- SLACK_LIST_MAPPING_END -->` section
-2. If the section is missing, skip this procedure (the sprint is not Slack-List-based)
-3. If the section exists, parse the following:
-   - **List ID**: Slack List file ID
-   - **List Name**: Slack List name
-   - **Status Column**: status column ID (select-type column)
-   - **Status Options**: ID for the `Completed` option
-   - **Feature ↔ Slack Item ID** mapping table
-4. Find the Slack Item IDs mapped to the completed feature
-5. Check each Slack Item's current status. Skip Items that are already in "Completed" status and leave a note "(already in Completed status)" in the Activity Log.
-6. For Items that are not "Completed", call `mcp__fect-slack__slack_list_items_update` **individually per Item** to update **only the status select column**:
-   - `list_id`: the parsed List ID
-   - `cells`: `[{ "column_id": "{status_column_id}", "row_id": "{Slack_Item_ID}", "select": ["{completed_option_ID}"] }]`
-   - When processing multiple Items, perform a separate API call per Item
-7. Record the update result in the Activity Log:
-   - `| {timestamp} | Slack Status Updated | {LIST_NAME} → {feature} | Completed |`
-
-> **Note**: If a single feature is mapped to multiple Slack Items (merged requirements), update all related Items. Item IDs may be comma-separated (e.g., `Rec001,Rec002`).
+> **Legacy note (pre-v5.18)**: sprints created by the removed `/slack-import` skill may carry a `<!-- SLACK_LIST_MAPPING_START -->` section in progress.md — ignore it (Slack List status sync was removed together with the fect-slack integration).
 
 ## Tracker File Auto-Creation
 
