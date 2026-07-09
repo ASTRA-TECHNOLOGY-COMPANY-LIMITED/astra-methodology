@@ -20,8 +20,7 @@ Selection rule: `SCAFFOLD_ONLY=1` OR `FROM_BLUEPRINT=1` → Variant B; otherwise
 ## Sprint Goal
 [Describe the business value to achieve in this sprint]
 
-> **Worktree note**: Every task in this sprint runs inside `.astra-worktrees/sprint-{N}-{sprint-name}/`.
-> New Claude Code sessions must be started from that path.
+> **Isolation note (v5.16+)**: In the default **in-place** mode this sprint's `feat/sprint-{N}-{sprint-name}` branch is checked out directly in the main worktree — run every task from there, in this session, no `cd`. If this sprint was **escalated to worktree isolation**, every task instead runs inside `.astra-worktrees/sprint-{N}-{sprint-name}/` and new Claude Code sessions must be started from that path.
 
 ## Feature 1: {feature-name}
 
@@ -68,7 +67,7 @@ Specifically do NOT ask the user about: variable/function names, code formatting
 
 ---
 
-## Variant B — `SCAFFOLD_ONLY=1` OR `FROM_BLUEPRINT=1` (v5.10+ worktree-first, or legacy v5.8/5.9 delegation)
+## Variant B — `SCAFFOLD_ONLY=1` OR `FROM_BLUEPRINT=1` (v5.16+ context-first flow, or legacy v5.8/5.9 delegation)
 
 The blueprint authoring step is omitted because `/blueprint` already wrote (or is about to write) the blueprint immediately after this skill returns. The user will start from "1.1 DB Design Reflection".
 
@@ -78,10 +77,9 @@ The blueprint authoring step is omitted because `/blueprint` already wrote (or i
 ## Sprint Goal
 [Describe the business value to achieve in this sprint]
 
-> **Worktree note**: Every task in this sprint runs inside `.astra-worktrees/sprint-{N}-{sprint-name}/`.
-> New Claude Code sessions must be started from that path.
+> **Isolation note (v5.16+)**: In the default **in-place** mode this sprint's `feat/sprint-{N}-{sprint-name}` branch is checked out directly in the main worktree — run every task from there, in this session, no `cd`. If this sprint was **escalated to worktree isolation**, every task instead runs inside `.astra-worktrees/sprint-{N}-{sprint-name}/` and new Claude Code sessions must be started from that path.
 >
-> **Blueprint authoring note (v5.10+)**: The blueprint(s) for this sprint are authored by the `/blueprint` skill that created this worktree. When this prompt-map is opened by the user, the blueprint already exists under `docs/blueprints/{NNN}-{feature-name}/blueprint.md` on the sprint branch. Start from 1.1 below.
+> **Blueprint authoring note (v5.10+)**: The blueprint(s) for this sprint are authored by the `/blueprint` skill that created this sprint context. When this prompt-map is opened by the user, the blueprint already exists under `docs/blueprints/{NNN}-{feature-name}/blueprint.md` on the sprint branch. Start from 1.1 below.
 
 ## Feature 1: {feature-name}
 
@@ -131,12 +129,12 @@ Specifically do NOT ask the user about: variable/function names, code formatting
 > Boots the server using the sprint-specific ports in `.astra-worktree.env` and runs tests.
 > When the tests finish, the server processes on those ports are also cleaned up automatically.
 
-### Z.2 Merge to dev (two-phase, v5.9+)
+### Z.2 Merge (v5.16+ adaptive isolation)
 /pr-merge
 
-> Sprint Phase: runs commit → push → PR → code review → fix loop inside this worktree, then stops.
+> **In-place sprint (`ISOLATION_MODE=inplace`, the default)**: the `feat/sprint-{N}-{sprint-name}` branch is checked out in the main worktree, so `/pr-merge` completes **single-phase in this same session** — commit → push → PR → code review → fix loop → merge → promotion → sprint-branch cleanup. There is **no `cd`** and no second invocation.
 >
-> Once Sprint Phase completes, follow the printed `cd` command to move to the main worktree and re-invoke `/pr-merge` — it auto-detects the pending sprint PR (head=feat/sprint-*, base=feat/*|fix/* integration branch, with a legacy base=dev fallback for pre-v5.11 PRs) and finalizes the merge, then removes this sprint worktree.
+> **Worktree sprint (`ISOLATION_MODE=worktree`, escalated isolation)**: two-phase (v5.9+). Sprint Phase runs commit → push → PR → code review → fix loop inside this worktree, then stops. Follow the printed `cd` command to move to the main worktree and re-invoke `/pr-merge` — it auto-detects the pending sprint PR (head=feat/sprint-*, base=feat/*|fix/* integration branch, with a legacy base=dev fallback for pre-v5.11 PRs), finalizes the merge, then removes this sprint worktree.
 >
-> Tip: `/pr-merge --auto` chains both phases end-to-end in one invocation (sprint-init's auto pipeline and /autorun do this automatically).
+> Tip: `/pr-merge --auto` runs both modes end-to-end in one invocation (sprint-init's auto pipeline and /autorun do this automatically).
 ```

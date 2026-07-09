@@ -2,7 +2,7 @@
 name: loop
 description: "Target-driven convergence loop (evaluator-optimizer pattern): iterates work until the adversarial loop-verifier scores ≥ 90/100 with zero P0 defects, or the HITL-confirmed max iteration count is reached (always asked; --max-iter=N only pre-selects). Rubric is frozen at start; each iteration runs work → objective test gate → fresh-context adversarial scoring. Use for open-ended convergence targets ('get Z to zero warnings', 'make X conform to Y') that don't fit the fixed /autorun pipeline."
 argument-hint: "[target description] [--max-iter=N] (N only pre-selects an option in the mandatory HITL prompt — the question always fires)"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, TodoWrite, Skill, AskUserQuestion
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, Agent, TodoWrite, Skill, AskUserQuestion
 ---
 
 # ASTRA Convergence Loop (`/loop`)
@@ -76,7 +76,7 @@ Create todos via `TodoWrite`: Stage 0.5 max-iteration HITL → Stage 1 iteration
 Shell variables do not persist between Bash invocations. All loop state lives in the shared state file from `worktree-helpers.sh`, with the explicit scope `loop-{LOOP_SLUG}`:
 
 ```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
 astra_state_load "loop-{LOOP_SLUG}"    # start of EVERY Bash block in this skill
 ```
@@ -156,7 +156,7 @@ Append `LOOP_SCORE` to `SCORE_HISTORY` and persist.
    ❌ Max iterations ({N}) exhausted — final score {score}, {p0} P0 defect(s) remaining — stopping
    ```
    → Stage 2 with outcome `max-iter`.
-3. **Stall detection**: `SCORE_HISTORY` has ≥ 3 entries AND the last score ≤ the second-to-last AND the second-to-last ≤ the third-to-last (2 consecutive iterations without improvement) → the loop is spending tokens without converging. `AskUserQuestion`:
+3. **Stall detection**: `SCORE_HISTORY` has ≥ 3 entries AND the **maximum** of the last two scores ≤ the third-to-last (2 consecutive iterations with no net improvement — this also catches oscillation like 67 → 50 → 67, not only monotone non-improvement) → the loop is spending tokens without converging. `AskUserQuestion`:
    - Question: "Score stalled ({third-to-last} → {second-to-last} → {last}) with {N − i} iteration(s) remaining. Continue?"
    - Options: `Stop and report (Recommended)` / `Continue remaining iterations`
    - Stop → Stage 2 with outcome `stalled`. Continue → fall through to 4 (stall check re-arms only after a strictly improving iteration).

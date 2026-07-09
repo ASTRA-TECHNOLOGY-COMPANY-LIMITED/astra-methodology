@@ -2,7 +2,7 @@
 name: manual-generator
 description: "Automatically generates a professional online service manual or help center from a running service URL and project documents. Captures per-screen screenshots via Chrome MCP, extracts feature descriptions from blueprints / planner documents, and publishes step-by-step guides as a self-contained HTML package under docs/manual/{feature-name}/. Use when generating a manual, writing a user guide, producing help documentation, or building a help center landing page."
 argument-hint: "<service-url> <feature-name|all>"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent, Skill, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__new_page, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__emulate, mcp__chrome-devtools__hover, mcp__chrome-devtools__fill_form, mcp__chrome-devtools__press_key
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Task, Agent, Skill, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__new_page, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__emulate, mcp__chrome-devtools__hover, mcp__chrome-devtools__fill_form, mcp__chrome-devtools__press_key
 ---
 
 # ASTRA Service Manual Auto-Generator
@@ -215,7 +215,7 @@ Before creating deliverables, switch to `dev` and sync. Do not create a work bra
 
 0. **Main-worktree guard**: if called from inside an isolated worktree (`.astra-worktrees/<slug>/`), abort. dev-sync runs only in the main worktree:
    ```bash
-   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
    if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$PLUGIN_ROOT/scripts/worktree-helpers.sh" ]; then
      echo "ERROR: CLAUDE_PLUGIN_ROOT not found. Check the plugin cache path." >&2
      exit 1

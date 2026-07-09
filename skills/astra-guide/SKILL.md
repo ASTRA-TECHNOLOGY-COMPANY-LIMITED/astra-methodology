@@ -74,46 +74,70 @@ Step R.3: Deployment & Handover
 ### commands - Command Quick Reference
 
 ```
-Feature Development:
-  /feature-dev [description]     7-step feature development workflow
-  /lookup-term [Korean term]     Standard term lookup
-  /generate-entity [definition]  DB entity generation
+Planning & design:
+  /service-planner [feature]   Design Thinking planning → 6 markdown deliverables + design-system HTML mockups
+  /blueprint [feature]         Blueprint (10 sections: data flow/schema/API/sequences/pseudocode/HITL Triggers).
+                               v5.16+ one-flow: authors on the sprint branch, then continues through
+                               implementation → test loop → /pr-merge in the same session (--design-only stops early).
+  /handoff-publish [feature]   UX/UI/Dev/QA handoff package — 14 Screen-ID files ({feature}-handoff/)
 
-Code Quality:
-  /check-convention [target]     Coding standard check
-  /check-naming [target]         DB naming check
-  /code-review                   5-agent parallel review
+Sprint & pipeline:
+  /project-init [info]         Sprint 0 project init (Web/Mobile; structure, CLAUDE.md, design + blueprint templates)
+  /astra-setup                 Global dev-environment setup
+  /sprint-init [slug]          Start a sprint (adaptive isolation; --scaffold-only / --auto / --resume)
+  /autorun [feature]           Mostly-unattended full pipeline: planning → blueprint → sprint → tests → /pr-merge
+  /loop [target]               Target-driven convergence loop (evaluator-optimizer) for open-ended goals
+  /pr-merge                    Commit → PR → code review → fix loop → merge → promotion (dev/staging/skip)
+  /project-checklist           Sprint 0 completion verification
 
-Git Workflow:
-  /commit                        Auto commit
-  /commit-push-pr                Commit+push+PR batch
-  /pr-merge               Commit→review→fix→merge full cycle
-  /clean_gone                    Branch cleanup
+Quality & testing:
+  /test-scenario [context]     Generate E2E test scenarios from blueprints/DB/routes/APIs
+  /test-run [URL/scenario]     Launch server + real-browser integration test (single-pass; pipeline drives retries)
+  /user-test                   UAT session (interactive or batch) → HTML report
+  /uat-parallel                Parallel UAT via Playwright workers (isolated BrowserContext per worker)
+  /check-convention [target]   Coding convention compliance check
+  /check-naming [target]       DB naming standard check
+  /skill-lint [path]           Validate a SKILL.md against the 13-item best-practices checklist
 
-Quality Rules:
-  /hookify [description]         Create behavior prevention rule
-  /hookify:list                  List current rules
+Design system (DESIGN.md SSoT):
+  /design-init                 Create/update DESIGN.md + regenerate design-tokens.css (--regenerate-css / --from-refs)
+  /design-extract [refs]       Extract OKLCH tokens/fonts/spacing from images/PDFs/URLs → extract report
+  /design-redesign [target]    Audit + fix UI against DESIGN.md (--apply / --pr)
+  /design-audit [target]       Lightweight token-violation report (no fixes; for CI/PR pre-checks)
 
-Sprint Progress:
-  (automatic)                    Sprint progress auto-tracking on file events
-  /sprint-init [number]           Sprint plan init (includes progress tracker)
+Data & code standards:
+  /lookup-term [Korean term]   Standard term → English abbreviation / domain / data type
+  /lookup-code [country|code]  ISO 3166-1/2 country/region + ITU-T E.164 calling-code lookup
+  /generate-entity [defn]      Standard-compliant DB entity code from Korean table/column definitions
+  (automatic)                  coding-convention / data-standard / code-standard auto-apply on write/edit
 
-Planning:
-  /service-planner [feature]     Design Thinking planning (6 deliverables: market analysis, interview, requirements+KPI, use cases+journey map, IA+wireframe, features+risk)
-  /blueprint [feature]           Blueprint authoring — 10 sections (data flow / schema DDL / API contract / sequence / pseudocode logic / HITL Triggers). No implementation code. Auto-loads /service-planner artifacts. /feature-dev reads Section 10 to gate HITL during implementation.
-  /handoff-publish [feature]     Generate UX/UI/Dev/QA handoff package ({feature}-handoff/ with 14 files)
+Docs & content:
+  /manual-generator [feature]  Service URL + docs → self-contained HTML manual (Chrome MCP screenshots)
+  /generate-manual <url> <f>   Command wrapper that drives /manual-generator
+  /catalog-generator           Product data → self-contained HTML catalog (AI imagery + sales strategy)
 
-Slack Integration:
-  /slack-import [channel]     Slack messages → blueprints + sprint plan
-  /extract-backlog [channel]       Extract backlog items from Slack channel
+Meta / authoring:
+  /skill-author                Author or refactor a SKILL.md (13-item best-practices checklist)
+  /tool-author                 Author/validate LLM tool descriptions & input schemas (Anthropic/MCP/LangChain/Pydantic/Zod)
+  /select-language [ko|vi|en]  Choose the working language for generated documents & user-facing messages
+  /astra-guide [section]       This quick-reference guide
+  (automatic)                  sprint-progress (file-event tracking) + screen-quality-loop (new-screen QA convergence)
 
-ASTRA Tools:
-  /project-init [project info]   Sprint 0 initial setup
-  /astra-setup                   Global dev environment setup
-  /sprint-init [number]           Sprint planning & initialization
-  /test-run [URL/scenario]         Server launch + Chrome MCP integration testing
-  /project-checklist             Sprint 0 completion verification
-  /astra-guide [section]         Quick reference guide
+External (bundled plugins, not ASTRA):
+  /feature-dev [description]   Guided feature development workflow
+  /code-review                 Multi-agent PR review
+  /commit · /commit-push-pr · /clean_gone   Git helpers
+```
+
+Sprint isolation (v5.16+ adaptive):
+```
+- Default is IN-PLACE: the feat/sprint-<N>-<slug> branch is checked out directly in the main
+  worktree — no separate worktree, no cd, and /pr-merge finalizes single-phase in the same session.
+- Escalates to a WORKTREE (.astra-worktrees/sprint-*) only when isolation is actually needed:
+  the main worktree is already occupied by another in-place sprint, the tree is dirty, or --isolated.
+  Worktree mode keeps the v5.9 two-phase merge (Sprint Phase → cd to main → Main Phase).
+- One-flow: /blueprint (or /sprint-init) runs design → implementation → test loop → /pr-merge in a
+  single session; HITL fires only at design decisions, remaining Critical issues, and merge/promotion.
 ```
 
 ### gates - Quality Gates

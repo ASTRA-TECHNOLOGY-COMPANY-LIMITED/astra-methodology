@@ -1164,8 +1164,6 @@ DE와 이해관계자가 스테이징 환경에서 직접 테스트합니다.
 | 서비스 매뉴얼 자동 생성 | `/manual-generator` | Chrome MCP 스크린샷 기반 HTML 매뉴얼 |
 | 제품 카탈로그 자동 생성 | `/catalog-generator` | AI 이미지 포함 단일 HTML 카탈로그 |
 | 무인 풀 파이프라인 | `/autorun [기능 설명]` | 기획→테스트, 최대 N회 자가 개선 루프 |
-| Slack 기반 스프린트 생성 | `/slack-import` | Slack List → 블루프린트 + 스프린트 프롬프트 맵 |
-| Slack 백로그 추출 | `/extract-backlog [#채널]` | Slack 메시지에서 구조화된 백로그 표 |
 | 워크플로우 언어 선택 | `/select-language` | 한국어/베트남어/영어 |
 | 기능 설계 시작 | `/feature-dev [설명]` | 7단계 자동 워크플로우 |
 | 표준 용어 확인 | `/lookup-term [한글 용어]` | 영문 약어/도메인/타입 |

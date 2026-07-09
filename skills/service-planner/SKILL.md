@@ -2,7 +2,7 @@
 name: service-planner
 description: "Auto-generates planning deliverables for a feature. Runs the full planning pipeline based on the Design Thinking methodology: market analysis → actor derivation → persona interviews → pain-point analysis → idea derivation (HMW/SCAMPER/JTBD) → requirements definition (KPI/OKR) → use-case definition (journey maps) → IA / screen design → design-system-applied HTML mockup screens → feature definition (story map / risks)."
 argument-hint: "[feature description or service keyword]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Agent
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Task, Agent
 ---
 
 # ASTRA Service Planning Auto-Generator
@@ -150,7 +150,7 @@ Before creating deliverable files, switch to `dev` and sync to latest. Do not cr
 
 0. **Main-worktree guard**: if called from inside an isolated worktree (`.astra-worktrees/<slug>/`), abort. dev-sync runs only in the main worktree:
    ```bash
-   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/astra-methodology/* 2>/dev/null | sort -V | tail -1)}"
+   PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
    if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$PLUGIN_ROOT/scripts/worktree-helpers.sh" ]; then
      echo "ERROR: CLAUDE_PLUGIN_ROOT not found. Check the plugin cache path." >&2
      exit 1
@@ -440,7 +440,11 @@ Generate a navigation hub showing all SCR-NNN screens at a glance. Read `referen
 
 Add an HTML-preview guidance section to the body of `ia-screen-design.md` (at the end of Section 6 or as its own section). Read `references/templates-html-mockup.md` (section "`ia-screen-design.md` §7 block") and instantiate it.
 
-> **Important**: after both the IA/screen-design report and the HTML mockups (`index.html`, `styles.css`, `SCR-NNN.html`) are generated, confirm with the user: "The IA/screen-design report and HTML mockups have been generated. You can open `{OUTPUT_DIR}/index.html` in the browser to check. Proceed to the next step (feature definition)?"
+##### F.6 Screen-quality convergence loop (adversarial, max 5 iterations)
+
+After F.2–F.5 complete, run the `screen-quality-loop` protocol (skills/screen-quality-loop/SKILL.md) over the **full mockup set as one batch** (MODE=mockup): delegate `{OUTPUT_DIR}`'s `SCR-NNN.html` + `index.html` + `styles.css` to the read-only `screen-verifier` agent (Agent tool) — sibling baseline is the other SCR screens plus `index.html`; SSoT paths are `docs/design-system/DESIGN.md` and `{OUTPUT_DIR}/styles.css`. Parse ONLY the final `ASTRA_SCREEN_RESULT:` tail line (absent line = FAIL, never PASS), apply the Fix Directives in this parent context, and repeat until **score ≥ 90 AND p0 == 0** or **5 iterations** (hard cap, no HITL). Write each report to `{OUTPUT_DIR}/screen-quality/verify-{i}.md`. If the cap is reached without passing, report the remaining P0s/directives honestly and continue — the loop never blocks Step 7.
+
+> **Important**: after the F.6 loop finishes, confirm with the user: "The IA/screen-design report and HTML mockups have been generated (screen-quality score {score}/100{, achieved | after 5 iterations — remaining issues listed above}). You can open `{OUTPUT_DIR}/index.html` in the browser to check. Proceed to the next step (feature definition)?"
 
 ---
 

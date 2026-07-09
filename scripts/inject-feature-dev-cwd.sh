@@ -17,6 +17,15 @@
 # Non-blocking — emits context only; exits 0 unconditionally.
 
 INPUT=$(cat)
+
+# Fast path: the overwhelming majority of prompts never mention /feature-dev.
+# Reject them on a raw-string scan before spending a jq subprocess. This keeps
+# the common non-matching path free of any child process.
+case "$INPUT" in
+  *"/feature-dev"*) : ;;   # possible match — fall through to precise parsing
+  *) exit 0 ;;
+esac
+
 PROMPT=$(echo "$INPUT" | jq -r '.prompt // ""' 2>/dev/null)
 
 # Detect /feature-dev invocation. Matches both plain and namespaced forms:

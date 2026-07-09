@@ -222,8 +222,6 @@ Blueprint authoring → DB design → Sprint authoring → Implementation → Te
 | Commit + push + PR in one | `/commit-push-pr` |
 | Automate PR → review → merge | `/pr-merge` |
 | Code review | `/code-review` |
-| Slack → blueprint + sprint | `/slack-import [channel]` |
-| Extract Slack backlog | `/extract-backlog [channel]` |
 | Generate hook rules | `/hookify [description]` |
 | Quick reference guide | `/astra-guide` |
 

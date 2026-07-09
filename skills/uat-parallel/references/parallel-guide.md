@@ -60,19 +60,9 @@ Use this when the static screenshot is not enough — the trace viewer steps thr
 
 ## 6. Severity reuse from `/user-test`
 
-The severity table at `skills/user-test/references/assertion-guide.md` §3 is the single source of truth. The runner's `assignSeverity()` function in `uat-runner.spec.ts` is a code mirror of that table:
+The severity rubric is defined once, in `../../user-test/references/assertion-guide.md` §3 (relative to this file) — that table is the single source of truth. Do not re-tabulate it here.
 
-| Trigger | Severity |
-|---|---|
-| Any network 5xx in the case window | CRITICAL |
-| `Uncaught` console error | CRITICAL |
-| 4xx on POST/PUT/DELETE/PATCH primary endpoint | HIGH |
-| Unexpected 401/403 | HIGH |
-| Missing CTA / form element / heading | MEDIUM |
-| Text mismatch / typo | MEDIUM |
-| Anything else | LOW |
-
-If you update `/user-test`'s severity table, also update `assignSeverity()` in `assets/uat-runner.spec.ts`.
+Parallel-specific delta: the runner's `assignSeverity()` function in `assets/uat-runner.spec.ts` is a code mirror of that same table. If you update the §3 rubric, also update `assignSeverity()` to keep the code mirror in sync.
 
 ## 7. Comparison: when to use which UAT tool
 

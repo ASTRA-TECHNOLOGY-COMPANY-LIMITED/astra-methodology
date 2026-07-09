@@ -30,82 +30,17 @@ Check coding convention compliance for $ARGUMENTS.
 
 Before checking, the corresponding language's reference document must be read to confirm detailed rules.
 
-## Check Items
+## Check Items — Rule Source (single source of truth)
 
-### Common
-- [ ] File encoding (UTF-8)
-- [ ] Line length limit compliance (Java: 100 chars, TypeScript: Prettier, Python: 79 chars, CSS/SCSS: 80 chars)
-- [ ] Indentation rules (Java: 2 spaces, Python: 4 spaces, CSS/SCSS: 2 spaces)
-- [ ] Import order and wildcard usage
-- [ ] Naming conventions (classes, methods, variables, constants)
+Do **not** rely on a rule list inlined here. For the file's detected language, load the matching per-language rule file and check the code against every rule it defines:
 
-### Java-specific (Google Java Style Guide)
-- [ ] K&R brace style (opening brace on same line)
-- [ ] Braces even for single-statement bodies
-- [ ] @Override annotation usage
-- [ ] Javadoc presence (public/protected members)
-- [ ] Static member access (via class name only)
-- [ ] Array declaration style (`String[] args`)
-- [ ] Uppercase L suffix for long literals
-- [ ] No ignored exceptions
+- Java → `skills/coding-convention/java-coding-convention.md`
+- TypeScript → `skills/coding-convention/typescript-coding-convention.md`
+- React Native → `skills/coding-convention/react-native-coding-convention.md` (complementary layer on top of the TypeScript rule file)
+- Python → `skills/coding-convention/python-coding-convention.md`
+- CSS/SCSS → `skills/coding-convention/css-scss-coding-convention.md`
 
-### TypeScript-specific (Google TypeScript Style Guide)
-- [ ] `export default` usage (prohibited)
-- [ ] `any` type usage (prohibited -> use `unknown`)
-- [ ] `var` usage (prohibited -> use `const`/`let`)
-- [ ] `.forEach()` usage (prohibited -> use `for...of`)
-- [ ] `const enum` usage (prohibited)
-- [ ] `===` / `!==` usage (`==`/`!=` prohibited, `== null` exception)
-- [ ] Missing semicolons
-- [ ] `namespace` usage (prohibited)
-- [ ] `import type` usage
-- [ ] Filename snake_case compliance
-
-### Python-specific (PEP 8)
-- [ ] PEP 8 naming (snake_case functions/variables, CapWords classes)
-- [ ] `is None` / `is not None` usage (`== None` prohibited)
-- [ ] `isinstance()` usage (`type()` comparison prohibited)
-- [ ] `with` statement usage (resource management)
-- [ ] Empty sequence check (`if not seq:` required, `if len(seq):` prohibited)
-- [ ] Bare `except:` usage (prohibited -> use specific exception types)
-- [ ] Lambda assignment (prohibited)
-- [ ] Docstring presence (triple double quotes)
-
-### React Native-specific (Airbnb React/JSX + Obytes RN Starter + React Native Official)
-- [ ] File naming `kebab-case` compliance (`login-screen.tsx`, `use-auth.ts`)
-- [ ] Screen files suffixed with `-screen.tsx`
-- [ ] Functional components only (class components prohibited)
-- [ ] `export default` usage (prohibited — use named exports)
-- [ ] Component naming `PascalCase` compliance
-- [ ] Props type definition present for all components
-- [ ] Inline styles in JSX (prohibited — use `StyleSheet.create()` or NativeWind)
-- [ ] Styles defined inside component body (prohibited — define outside)
-- [ ] Array index used as `key` in lists (prohibited)
-- [ ] Nested ternaries in JSX (prohibited)
-- [ ] Prop spreading `{...props}` usage (discouraged)
-- [ ] Hooks called at top level (not inside conditions/loops)
-- [ ] `useCallback` for FlatList `renderItem` and `keyExtractor`
-- [ ] Callbacks defined inside JSX (prohibited — extract and memoize)
-- [ ] Import order (React → third-party → internal → relative → type-only)
-- [ ] `accessibilityLabel` on interactive elements without visible text
-- [ ] Hardcoded user-facing strings (prohibited — use i18n keys)
-- [ ] `console.log` without `__DEV__` guard (prohibited in production)
-- [ ] `Dimensions.get()` in render (prohibited — use `useWindowDimensions()`)
-- [ ] Max function parameters (3) and lines (110) compliance
-
-### CSS/SCSS-specific (CSS Guidelines + Sass Guidelines)
-- [ ] BEM naming (`block__element--modifier`)
-- [ ] ID selector usage (prohibited)
-- [ ] Nesting depth (max 3 levels)
-- [ ] Property order (Positioning -> Box Model -> Typography -> Visual -> Animation)
-- [ ] Color notation (lowercase hex, keywords prohibited)
-- [ ] Unit rules (font: `rem`, no units on 0)
-- [ ] `!important` overuse (allowed only for utility classes)
-- [ ] Media query approach (mobile-first `min-width`)
-- [ ] `@extend` usage (minimize, only `%placeholder`)
-- [ ] `transition: all` usage (prohibited)
-- [ ] Type-qualified selectors (`div.class` prohibited)
-- [ ] SCSS variable naming (`$kebab-case`)
+Each rule file is the authoritative, up-to-date checklist (prohibited patterns, naming, formatting, line-length, import order, etc.). Read it in full and apply its rules verbatim — restating them here would create a drifting copy. For a deeper, agent-driven pass over the same rule files, delegate to the `convention-validator` agent.
 
 ## Output Format
 

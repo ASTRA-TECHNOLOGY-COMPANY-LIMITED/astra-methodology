@@ -58,7 +58,6 @@ claude plugin install astra-methodology@astra
 | `/manual-generator` | Service manual auto-generator with Chrome MCP screenshots — self-contained HTML |
 | `/catalog-generator` | Product promotional catalog auto-generator — self-contained HTML, AI imagery |
 | `/autorun` | Zero-interaction full pipeline (planning → testing) with up-to-N self-improvement loop |
-| `/slack-import` | Slack List → blueprint + sprint generation pipeline |
 | `/pr-merge` | Commit → review → fix → merge full PR cycle (feature → dev → staging → main) |
 | `/test-run` | Chrome MCP-based E2E integration test — server startup, scenario execution, report generation |
 | `/test-scenario` | E2E test scenario generation — analyzes blueprints, DB design, routes, and API endpoints |
@@ -83,7 +82,6 @@ claude plugin install astra-methodology@astra
 | `/check-naming` | DB naming standard compliance check | `/check-naming src/entity/Customer.java` |
 | `/check-convention` | Coding convention compliance check | `/check-convention src/` |
 | `/select-language` | Workflow language selection (ko/vi/en) — reusable across skills | `/select-language` |
-| `/extract-backlog` | Extract backlog items from a Slack channel as a structured table | `/extract-backlog #project-channel` |
 
 ### `/lookup-term` Example
 
@@ -285,7 +283,6 @@ astra-methodology/
 │   ├── manual-generator/          #   Service manual auto-generator (/manual-generator)
 │   ├── catalog-generator/         #   Product catalog auto-generator (/catalog-generator)
 │   ├── autorun/                   #   Zero-interaction full pipeline (/autorun)
-│   ├── slack-import/              #   Slack List → blueprint + sprint (/slack-import)
 │   ├── pr-merge/                  #   Commit → review → merge full cycle (/pr-merge)
 │   ├── test-run/                  #   Chrome MCP integration test (/test-run)
 │   ├── test-scenario/             #   E2E test scenario generation (/test-scenario)
@@ -312,7 +309,6 @@ astra-methodology/
 │   ├── lookup-term.md             #   /lookup-term
 │   ├── lookup-code.md             #   /lookup-code
 │   ├── select-language.md         #   /select-language
-│   └── extract-backlog.md         #   /extract-backlog
 ├── hooks/                         # PostToolUse hooks
 │   └── hooks.json
 ├── scripts/                       # Shell scripts

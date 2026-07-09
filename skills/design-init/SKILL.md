@@ -2,7 +2,7 @@
 name: design-init
 description: "Creates or updates docs/design-system/DESIGN.md — the design-system SSoT (YAML Front Matter tokens + Markdown Body) — and regenerates src/styles/design-tokens.css from it. Modes: new/update, --regenerate-css, --from-refs=<paths-or-urls> (extract references then merge), --apply-extract=<report-path>. Use when defining brand or design tokens, bootstrapping a design system, or regenerating CSS after DESIGN.md changes."
 argument-hint: "[--regenerate-css] [--from-refs=<paths-or-urls>] [--apply-extract=<report-path>] [--auto]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, TodoWrite
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, TodoWrite, Task, Agent
 ---
 
 # /design-init — Design System SSoT Initialization Skill
@@ -53,7 +53,7 @@ test -d docs || { echo "ERROR: Run from project root (docs/ missing)"; exit 1; }
 EXISTING_DESIGN_MD="docs/design-system/DESIGN.md"
 EXISTING_CSS="src/styles/design-tokens.css"
 EXISTING_COMPONENTS="docs/design-system/components.md"
-PLANNER_DIRS=$(ls -d docs/planner/[0-9][0-9][0-9]-* 2>/dev/null)
+PLANNER_DIRS=$(find docs/planner -maxdepth 1 -type d -name '[0-9][0-9][0-9]-*' 2>/dev/null | sort)
 ```
 
 | State | Behavior |
