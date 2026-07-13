@@ -142,7 +142,7 @@ Confirm `{HANDOFF_DIR}`.
 
 Before creating deliverable files, switch to the `dev` branch and synchronize to the latest. Do not create a work branch; work directly on `dev`. Work-branch creation is handled automatically when `/pr-merge` runs.
 
-0. **Main-worktree guard**: if called from inside an isolated worktree (`.astra-worktrees/<slug>/`), abort. dev-sync runs only in the main worktree:
+0. **Main-worktree guard**: if called from inside an isolated worktree (`.worktrees/<slug>/`), abort. dev-sync runs only in the main worktree:
    ```bash
    PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
    if [ -z "$PLUGIN_ROOT" ] || [ ! -f "$PLUGIN_ROOT/scripts/worktree-helpers.sh" ]; then

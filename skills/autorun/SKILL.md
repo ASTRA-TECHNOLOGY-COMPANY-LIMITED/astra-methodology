@@ -187,52 +187,44 @@ P0_ISSUES=${P0_ISSUES:-unknown}
 echo "blueprint-reviewer P0 issues: $P0_ISSUES"   # 'unknown' if the tail line is missing — report as unverified, not 0
 ```
 
-### 3.5 Blueprint sprint-context verification (adaptive isolation, v5.16+)
+### 3.5 Blueprint sprint-worktree verification (v5.19+)
 
 `/blueprint --auto` performs the following internally:
-1. **Step 1.5**: branch / location guards (non-standard branch aborts; secondary blueprint reuses the existing sprint context).
-2. **Steps 1.6–1.7**: delegates to `/sprint-init --scaffold-only`, which decides `ISOLATION_MODE` — **in-place by default** (sprint branch checked out in the main worktree, `WT_PATH` = main root, cd is a no-op) or **worktree** on escalation (main tree occupied/dirty, or `--isolated`) — then resolves `WT_PATH` for the chosen mode.
-3. **Steps 2–6**: authors + reviews the blueprint and commits it to the **sprint branch** (`feat/sprint-N-slug`), NOT to dev — the blueprint reaches dev only via `/pr-merge` at sprint end.
+1. **Step 1**: branch / location guards (non-standard branch aborts; secondary blueprint reuses the existing sprint worktree).
+2. **Steps 2–6**: authors + reviews the blueprint **on `dev` in the main worktree**, commits it to `dev`, and **pushes to origin** — the blueprint is on dev before any sprint context exists.
+3. **Step 6.5**: delegates to `/sprint-init --scaffold-only`, which creates the sprint worktree at `.worktrees/sprint-<N>-<slug>/` from `origin/dev` (the blueprint is in the worktree base by construction).
 
-The parent cwd of autorun is unchanged after `/blueprint` returns (skill-to-skill cd does not propagate). autorun must re-resolve `WT_PATH` itself — checking the in-place case first — to enable the unattended downstream stages.
+The parent cwd of autorun is unchanged after `/blueprint` returns (skill-to-skill cd does not propagate). autorun must re-resolve `WT_PATH` itself to enable the unattended downstream stages.
 
 ```bash
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
 source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
 astra_state_load "autorun-{FEATURE_SLUG}"   # write the literal slug (0.5.2 protocol)
 [ -n "${FEATURE_SLUG:-}" ] || { echo "ERROR: FEATURE_SLUG unresolved — check the state scope slug" >&2; exit 1; }
-# v5.10+ — blueprint is on the sprint branch, not dev, so verify the commit across all refs (current-branch git log is empty by design).
-if [ -z "$(git log --all -1 --oneline -- "docs/blueprints/{NNN}-{feature-slug}/" 2>/dev/null)" ]; then
-  echo "WARN: blueprint commit not detected on any branch — /blueprint may have failed."
+# v5.19+ — the blueprint is committed on dev (current branch of the main worktree), so a plain git log works.
+if [ -z "$(git log -1 --oneline -- "docs/blueprints/{NNN}-{feature-slug}/" 2>/dev/null)" ]; then
+  echo "WARN: blueprint commit not detected on dev — /blueprint may have failed."
 fi
 
-# Discover the sprint context /blueprint Step 1.6 created — in-place case FIRST (v5.16+ default: the sprint branch is checked out right here).
-CUR_BRANCH=$(git branch --show-current)
-case "$CUR_BRANCH" in
-  feat/sprint-*-${FEATURE_SLUG}|feat/sprint-*-${FEATURE_SLUG}-[0-9]*)
-    WT_PATH=$(git rev-parse --show-toplevel)
-    ;;
-  *)
-    # Worktree (escalated) case. Anchored match handles bare and collision-suffixed ("-2") branches, not unrelated slugs.
-    WT_PATH=$(git worktree list --porcelain 2>/dev/null | awk -v slug="${FEATURE_SLUG}" '
-      /^worktree / { p=$2 }
-      /^branch refs\/heads\// {
-        b=$2; sub("refs/heads/", "", b)
-        if (b ~ "^feat/sprint-[0-9]+-" slug "(-[0-9]+)?$") { print p; exit }
-      }
-    ')
-    if [ -z "$WT_PATH" ]; then
-      # Fallback: dir scan (find, not `ls glob` — an unmatched glob in zsh errors before 2>/dev/null can suppress it)
-      WT_PATH=$(find .astra-worktrees -maxdepth 1 -type d \( -name "sprint-*-${FEATURE_SLUG}" -o -name "sprint-*-${FEATURE_SLUG}-[0-9]*" \) 2>/dev/null | sort | tail -1)
-    fi
-    ;;
-esac
+# Discover the sprint worktree /blueprint Step 6.5 created.
+# Anchored match handles bare and collision-suffixed ("-2") branches, not unrelated slugs.
+WT_PATH=$(git worktree list --porcelain 2>/dev/null | awk -v slug="${FEATURE_SLUG}" '
+  /^worktree / { p=$2 }
+  /^branch refs\/heads\// {
+    b=$2; sub("refs/heads/", "", b)
+    if (b ~ "^feat/sprint-[0-9]+-" slug "(-[0-9]+)?$") { print p; exit }
+  }
+')
+if [ -z "$WT_PATH" ]; then
+  # Fallback: dir scan (find, not `ls glob` — an unmatched glob in zsh errors before 2>/dev/null can suppress it)
+  WT_PATH=$(find .worktrees -maxdepth 1 -type d \( -name "sprint-*-${FEATURE_SLUG}" -o -name "sprint-*-${FEATURE_SLUG}-[0-9]*" \) 2>/dev/null | sort | tail -1)
+fi
 
 if [ -n "$WT_PATH" ] && [ -d "$WT_PATH" ]; then
-  echo "✅ Sprint context created by /blueprint Step 1.6 (adaptive isolation, v5.16+): $WT_PATH"
+  echo "✅ Sprint worktree created by /blueprint Step 6.5: $WT_PATH"
   WORKTREE_READY=1
 else
-  echo "⚠️  /blueprint did not create a sprint context — Stage 4 fallback will create it."
+  echo "⚠️  /blueprint did not create a sprint worktree — Stage 4 fallback will create it."
   WORKTREE_READY=0
 fi
 astra_state_set WT_PATH "$WT_PATH" "autorun-{FEATURE_SLUG}"
@@ -252,9 +244,7 @@ astra_state_set WORKTREE_READY "$WORKTREE_READY" "autorun-{FEATURE_SLUG}"
 
 ### 4.2 Execute (idempotent — skip worktree creation if already done)
 
-> **v5.10+ change**: `/blueprint` Step 1.6 already creates the sprint worktree, so this stage is an **idempotent re-entry** — it invokes `/sprint-init` only when the worktree was NOT created by `/blueprint` (rare; the non-standard-branch case aborts `/blueprint` earlier and never reaches Stage 4), and **always performs the explicit cd** into the worktree.
->
-> **v5.16+ (adaptive isolation)**: `/blueprint`'s delegated `/sprint-init --scaffold-only` decides `ISOLATION_MODE` — under the default `inplace` mode there is no worktree at all: `WT_PATH` equals the main worktree root (the sprint branch is checked out there), the explicit cd is a no-op, and downstream stages run unchanged. The `WT_PATH` re-discovery below must therefore check the main worktree's current branch first (`feat/sprint-*-{slug}` → `WT_PATH=$(git rev-parse --show-toplevel)`) before falling back to `git worktree list`. `/pr-merge --auto` (Stage 8) auto-detects the in-place case (`IN_PLACE_SPRINT=1`) and merges single-phase; "worktree removal" wording in Stage 8–9 then reduces to sprint-branch + env-file cleanup.
+> **v5.19+**: `/blueprint` Step 6.5 already creates the sprint worktree (after pushing the blueprint to dev), so this stage is an **idempotent re-entry** — it invokes `/sprint-init` only when the worktree was NOT created by `/blueprint` (rare; the non-standard-branch case aborts `/blueprint` earlier and never reaches Stage 4), and **always performs the explicit cd** into the worktree. Every sprint is a worktree sprint — the in-place mode is removed.
 
 ```bash
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
@@ -262,14 +252,14 @@ source "$PLUGIN_ROOT/scripts/worktree-helpers.sh"
 astra_state_load "autorun-{FEATURE_SLUG}"   # restores FEATURE_SLUG (persisted at 0.2) for the ${FEATURE_SLUG} expansions below
 [ -n "${FEATURE_SLUG:-}" ] || { echo "ERROR: FEATURE_SLUG unresolved — check the state scope slug" >&2; exit 1; }
 if [ "$WORKTREE_READY" = "1" ]; then
-  echo "ℹ️  Worktree already created by /blueprint Step 1.6 — using $WT_PATH"
+  echo "ℹ️  Worktree already created by /blueprint Step 6.5 — using $WT_PATH"
   # Sprint files (prompt-map Variant B, progress.md, retrospective.md, .astra-worktree.env) already exist from the delegated --scaffold-only call.
 else
   echo "🌿 Stage 4 fallback — invoking /sprint-init explicitly (sprint context was not auto-created)"
   # --scaffold-only: blueprint already exists from Stage 3; keeps prompt-map Variant B consistent.
   Skill('sprint-init', '{feature-slug} --scaffold-only')
   # Re-discover the path (do not trust cwd propagation from the Skill call):
-  # re-run the Stage 3.5 discovery snippet verbatim (in-place branch check first, then worktree list, then find fallback).
+  # re-run the Stage 3.5 discovery snippet verbatim (worktree list, then find fallback).
   WORKTREE_READY=1
 fi
 
@@ -295,11 +285,11 @@ astra_state_set ITER_DIR "docs/sprints/sprint-${SPRINT_N}-${FEATURE_SLUG}/iterat
 mkdir -p "docs/sprints/sprint-${SPRINT_N}-${FEATURE_SLUG}/iterations"
 ```
 
-> **v5.0+ important**: All Stage 5+ work happens inside the worktree — the autorun cwd must be `.astra-worktrees/sprint-<N>-<feature-slug>/` by the end of 4.2 (the explicit cd above guarantees this).
+> **v5.0+ important**: All Stage 5+ work happens inside the worktree — the autorun cwd must be `.worktrees/sprint-<N>-<feature-slug>/` by the end of 4.2 (the explicit cd above guarantees this). The main worktree stays on `dev`, untouched.
 
 ### 4.3 Success criteria + verify worktree state
 ```
-.astra-worktrees/sprint-{N}-{feature-slug}/
+.worktrees/sprint-{N}-{feature-slug}/
 ├── .astra-worktree.env          # port base
 └── docs/sprints/sprint-{N}-{feature-slug}/
     ├── prompt-map.md
@@ -309,7 +299,7 @@ mkdir -p "docs/sprints/sprint-${SPRINT_N}-${FEATURE_SLUG}/iterations"
 
 ```bash
 # Verify we landed inside the worktree
-if [[ "$(pwd)" != *"/.astra-worktrees/sprint-"* ]]; then
+if [[ "$(pwd)" != *"/.worktrees/sprint-"* ]]; then
   echo "ERROR: not inside a sprint worktree after Stage 4. cwd: $(pwd)" >&2
   exit 1
 fi
@@ -439,7 +429,7 @@ Enter this stage only when Stage 7.6 returned PASS (tests PASS ∧ score ≥ 90 
 Skill('pr-merge', '--auto')
 ```
 
-`/pr-merge --auto` auto-detects the isolation mode (v5.16+). **In-place sprint (default)**: `IN_PLACE_SPRINT=1` — single-phase in the main worktree (commit → PR → code review → fix Critical/High → `gh pr merge` → promotion → sprint-branch + env-file cleanup); no `cd` ever happens. **Worktree sprint (escalated)**: the two-phase workflow (v5.9+) end-to-end in one invocation — Sprint Phase inside the worktree → auto `cd` to the main worktree → Main Phase (merge → promotion → worktree removal). Either way, all steps are automatic **except** the Step 8.4.5 promotion-target choice.
+`/pr-merge --auto` runs the two-phase workflow (v5.9+) end-to-end in one invocation — Sprint Phase inside the worktree (commit → PR → code review → fix Critical/High) → auto `cd` to the main worktree → Main Phase (`gh pr merge` → promotion → worktree removal). All steps are automatic **except** the Step 8.4.5 promotion-target choice.
 
 ### 8.2 HITL trigger conditions
 

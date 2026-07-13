@@ -20,7 +20,7 @@ Read the prompt map from Step 2 and extract feature names from `## Feature {#}: 
 - **Sprint Number**: {N}
 - **Sprint Name**: {sprint-name}
 - **Sprint Branch**: feat/sprint-{N}-{sprint-name}
-- **Worktree**: .astra-worktrees/sprint-{N}-{sprint-name}/
+- **Worktree**: .worktrees/sprint-{N}-{sprint-name}/
 - **Port Base**: {PORT_BASE}
 - **Sprint Goal**: [copy from prompt map Sprint Goal section]
 - **Start Date**: {YYYY-MM-DD}

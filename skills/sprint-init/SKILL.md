@@ -1,15 +1,15 @@
 ---
 name: sprint-init
-description: "Initializes a new ASTRA sprint and (v5.16+) runs it to completion in one session: adaptive isolation (in-place sprint branch on the main worktree by default; auto-escalates to an isolated worktree when the main tree is occupied/dirty or --isolated is passed), port-isolated dev-server settings, prompt map / progress tracker / retrospective scaffolding, then continues into the /test-scenario → implementation → /test-run → adversarial verification gate (score ≥ 90 ∧ P0 == 0, max 5 iterations) → /pr-merge pipeline without stopping. --scaffold-stop stops after scaffolding (pre-v5.16 behavior); --scaffold-only is the /blueprint delegation mode; --auto runs the same pipeline unattended; --resume recovers a crashed run. Use when starting a new sprint or scaffolding sprint infrastructure."
-argument-hint: "[sprint-number] [sprint-name] [--auto] [--max-iter=N] [--resume] [--from-blueprint] [--scaffold-only] [--scaffold-stop] [--isolated]"
+description: "Initializes a new ASTRA sprint and (v5.16+) runs it to completion in one session: always creates an isolated sprint worktree (.worktrees/sprint-<N>-<name>/ — v5.19+; sprint work never touches the main worktree), port-isolated dev-server settings, prompt map / progress tracker / retrospective scaffolding, then continues into the /test-scenario → implementation → /test-run → adversarial verification gate (score ≥ 90 ∧ P0 == 0, max 5 iterations) → /pr-merge pipeline without stopping. --scaffold-stop stops after scaffolding (pre-v5.16 behavior); --scaffold-only is the /blueprint delegation mode; --auto runs the same pipeline unattended; --resume recovers a crashed run. Use when starting a new sprint or scaffolding sprint infrastructure."
+argument-hint: "[sprint-number] [sprint-name] [--auto] [--max-iter=N] [--resume] [--from-blueprint] [--scaffold-only] [--scaffold-stop]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Task, Agent, TodoWrite
 ---
 
-# ASTRA Sprint Initialization (v5.16+ — one-flow, adaptive isolation)
+# ASTRA Sprint Initialization (v5.16+ one-flow · v5.19+ worktree-always)
 
-Creates the sprint working context (in-place branch or isolated worktree — decided automatically), writes port-isolated env settings, generates prompt maps / progress trackers / retrospective templates, and **continues in the same session through implementation, the adversarial test loop, and `/pr-merge`** — the pipeline is the default, not an opt-in.
+Creates the sprint worktree, writes port-isolated env settings, generates prompt maps / progress trackers / retrospective templates, and **continues in the same session through implementation, the adversarial test loop, and `/pr-merge`** — the pipeline is the default, not an opt-in.
 
-> **v5.16+ isolation policy (adaptive)**: the sprint runs **in-place** on a `feat/sprint-<N>-<name>` branch checked out in the main worktree whenever the main worktree is free (on a shared branch, clean tree). It escalates to an isolated worktree (`.astra-worktrees/sprint-<N>-<name>/`, pre-v5.16 behavior) only when the main worktree is occupied by another in-place sprint (its current branch IS the occupancy signal — no marker file, crash-safe), the tree is dirty, or `--isolated` is passed. Either way: one PR per sprint, one continuous session, no user `cd` at any point.
+> **v5.19+ isolation policy (worktree-always)**: every sprint runs inside an isolated worktree at `.worktrees/sprint-<N>-<name>/` holding the `feat/sprint-<N>-<name>` branch. **Sprint work is never performed in the main worktree** — the main worktree stays on its shared branch (`dev`) for the whole sprint; the only main-worktree activity in the sprint lifecycle is `/blueprint`'s authoring + dev push, which happens *before* this skill creates the worktree. The v5.16 in-place mode (sprint branch checked out in the main worktree) is removed. Still: one PR per sprint, one continuous session, no user `cd` at any point (the skill performs the single `cd` into the worktree itself).
 
 ## Execution Procedure
 
@@ -51,11 +51,10 @@ Parse from `$ARGUMENTS`:
 - **Sprint name** (optional): The primary blueprint/feature name for this sprint.
 - **`--auto`** (optional flag): If present, set `AUTO_MODE=1` — the Step 5 pipeline runs **unattended** (`PIPELINE_MODE=auto`: merge confirmation auto-approved via `/pr-merge --auto`; promotion target stays HITL). **v5.16+ without this flag the pipeline still runs** — in `attended` mode (HITL at merge confirmation / promotion / Critical issues only).
 - **`--scaffold-stop`** (optional flag, v5.16+): stop after Step 4 (scaffolding + planning guide) without entering the pipeline — the pre-v5.16 default behavior, for teams that fill the prompt map collaboratively before implementation.
-- **`--isolated`** (optional flag, v5.16+): force `ISOLATION_MODE=worktree` even when the main worktree is free (e.g., you know a second session will need the main tree during this sprint).
 - **`--max-iter=N`** (optional): max self-improving iteration count for the test/verification loop (1 ≤ N ≤ 10). **Default 5 — never asked** (the Step 5.4.5 adversarial gate governs quality; the cap is a runaway bound).
 - **`--from-blueprint`** (optional flag, legacy): backward-compat alias for `--scaffold-only`. Set `FROM_BLUEPRINT=1`; treated identically to `SCAFFOLD_ONLY=1` at every read site.
-- **`--scaffold-only`** (optional flag, v5.10+): Indicates this invocation is from the context-first `/blueprint` flow (v5.16+: adaptive isolation) where the blueprint **has not been authored yet** — `/sprint-init` only creates the sprint context (in-place branch or worktree) + writes the port env file + scaffolds prompt-map / progress / retrospective, and then exits. Set `SCAFFOLD_ONLY=1` when present. **Read sites**:
-  - Step 2 below — when `SCAFFOLD_ONLY=1`, the prompt-map omits the Feature 1.1 (`/blueprint ...`) line entirely and renumbers the remaining steps (1.1=DB Design, 1.2=Test Cases, 1.3=Implementation). The blueprint is being authored *by the calling context* and will exist by the time the user runs Feature 1.1.
+- **`--scaffold-only`** (optional flag, v5.10+): Indicates this invocation is delegated from the `/blueprint` flow (v5.19+: the blueprint **has already been authored, committed to `dev`, and pushed** by the caller) — `/sprint-init` only creates the sprint worktree (branched from `origin/dev`, so it already contains the blueprint) + writes the port env file + scaffolds prompt-map / progress / retrospective, and then exits. Set `SCAFFOLD_ONLY=1` when present. **Read sites**:
+  - Step 2 below — when `SCAFFOLD_ONLY=1`, the prompt-map omits the Feature 1.1 (`/blueprint ...`) line entirely and renumbers the remaining steps (1.1=DB Design, 1.2=Test Cases, 1.3=Implementation). The blueprint already exists on `dev` (authored by the calling `/blueprint` flow) and is present in the worktree base.
   - Step 4 — same suppression as `--from-blueprint` (parent renders consolidated output).
   - Step 5 — `--scaffold-only` is **incompatible** with `--auto`. If both are present, abort with `"❌ --scaffold-only and --auto cannot be combined (no blueprint exists yet to drive the auto pipeline)"`.
 
@@ -65,31 +64,20 @@ If the sprint name is not provided in `$ARGUMENTS`, ask the user for the primary
 
 When scanning existing directories, extract the sprint number from directory names matching pattern `sprint-{N}-{name}` (e.g., `sprint-1-auth` → number `1`).
 
-### Step 1.4: Decide Isolation Mode (v5.16+)
+### Step 1.4: Main Worktree Branch Guard (v5.19+)
 
-Default is **in-place** (sprint branch in the main worktree — no worktree, no `cd`, single-phase merge). Escalate to **worktree** only when isolation is actually needed:
+Sprints always run in an isolated worktree, so the main worktree's branch is never checked out or dirtied by this skill. Still, guard against a non-standard starting state (v5.10+ policy):
 
 ```bash
-ISOLATION_MODE=inplace
-for arg in $ARGUMENTS; do [ "$arg" = "--isolated" ] && ISOLATION_MODE=worktree; done
-
 CUR_BRANCH=$(git branch --show-current)
 case "$CUR_BRANCH" in
-  dev|main|master|staging) : ;;                     # main tree free — in-place OK
-  feat/sprint-*)           ISOLATION_MODE=worktree  # another in-place sprint occupies the main tree
-                           echo "ℹ️  Main worktree is occupied by '$CUR_BRANCH' — escalating to worktree isolation." ;;
-  *)                       echo "❌ ERROR: main worktree is on non-standard branch '$CUR_BRANCH'. Checkout dev and re-run." >&2
-                           exit 1 ;;                # v5.10+ policy, unchanged
+  dev|main|master|staging) : ;;   # standard — proceed
+  *) echo "❌ ERROR: main worktree is on non-standard branch '$CUR_BRANCH'. Checkout dev and re-run." >&2
+     exit 1 ;;
 esac
-
-if [ -n "$(git status --porcelain)" ] && [ "$ISOLATION_MODE" = "inplace" ]; then
-  ISOLATION_MODE=worktree
-  echo "ℹ️  Main worktree has uncommitted changes — escalating to worktree isolation to protect them."
-fi
-echo "Isolation mode: $ISOLATION_MODE"
 ```
 
-> **Why the current branch is the occupancy signal**: an in-place sprint keeps the main worktree on its `feat/sprint-*` branch until `/pr-merge` Step 9 returns it to `dev`. A second concurrent sprint therefore *sees* the occupation directly from git state — no marker file, nothing to go stale after a crash. Crash recovery is likewise plain git: `git checkout dev` frees the tree (checkpoint commits from Step 5.1.5 preserve the work on the sprint branch).
+> **Why this still matters with worktree-always isolation**: the worktree is created from `origin/${SOURCE_BRANCH}` (checkout-free for the main tree), but a main worktree parked on a stray branch usually means an interrupted flow (e.g., a pre-v5.19 in-place sprint) — surfacing it early beats debugging a mis-based sprint later. A dirty main tree is NOT a blocker anymore: worktree creation never touches it.
 
 ### Step 1.5: Choose Source Branch and Sync
 
@@ -113,13 +101,13 @@ fi
 
 **`--auto` mode** — safe default: pick `dev` if present, else `main`/`master`/`staging` in that order. No prompt.
 
-**`--scaffold-only` / `--from-blueprint` mode** (called by `/blueprint`) — `/blueprint` Step 1.5 has already validated the user is on a standard branch (dev/main/master) in the main worktree and **has not changed cwd**, so reading the current branch directly is correct:
+**`--scaffold-only` / `--from-blueprint` mode** (called by `/blueprint`) — `/blueprint` Step 1 has already validated the user is on a standard branch (dev/main/master) in the main worktree, authored the blueprint there, and pushed it to that branch **without changing cwd**, so reading the current branch directly is correct:
 ```bash
 SOURCE_BRANCH=$(git branch --show-current)
 case "$SOURCE_BRANCH" in
   dev|main|master|staging) : ;;  # acceptable — /blueprint's guard passed
   "")
-    # detached HEAD — shouldn't happen since /blueprint Step 1.5 guards against it,
+    # detached HEAD — shouldn't happen since /blueprint Step 1 guards against it,
     # but defensive fallback: pick dev if present, else main, else master
     for fallback in dev main master; do
       git ls-remote --exit-code --heads origin "$fallback" >/dev/null 2>&1 && { SOURCE_BRANCH="$fallback"; break; }
@@ -176,36 +164,14 @@ The worktree base is always `origin/${SOURCE_BRANCH}` regardless of the local-re
 
 > **Main worktree post-state**: this step leaves the main worktree **on whatever branch it was already on** (no checkout). The sprint worktree is independent — feature work happens inside it on the sprint branch. `/pr-merge` Step 9 returns the main worktree to `dev` after merge.
 
-### Step 1.6: Create Sprint Working Context (mode-branching)
+### Step 1.6: Create the Sprint Worktree
 
-Both modes converge on the same two variables — `SPRINT_BRANCH` and `WT_PATH` — so every downstream step (and the shared pipeline) is mode-agnostic.
-
-#### Mode A: `ISOLATION_MODE=inplace` (default)
-
-Check out the sprint branch directly in the main worktree:
+Create a new isolated worktree at `.worktrees/sprint-{N}-{sprint-name}/` on the `feat/sprint-{N}-{sprint-name}` branch. Every downstream step (and the shared pipeline) uses the two variables set here — `SPRINT_BRANCH` and `WT_PATH`.
 
 ```bash
 SPRINT_N="{confirmed sprint number}"
 SPRINT_NAME="{confirmed sprint name}"
-SPRINT_BRANCH="feat/sprint-${SPRINT_N}-${SPRINT_NAME}"
 
-# Branch-name collision: append -2, -3, ... (same policy as the worktree helper)
-suffix=1; candidate="$SPRINT_BRANCH"
-while git show-ref --verify --quiet "refs/heads/$candidate" || git ls-remote --exit-code --heads origin "$candidate" >/dev/null 2>&1; do
-  suffix=$((suffix + 1)); candidate="${SPRINT_BRANCH}-${suffix}"
-done
-SPRINT_BRANCH="$candidate"
-
-git checkout -b "$SPRINT_BRANCH" "origin/${SOURCE_BRANCH}" || { echo "ERROR: branch creation failed" >&2; exit 1; }
-WT_PATH=$(git rev-parse --show-toplevel)
-echo "In-place sprint branch created from origin/${SOURCE_BRANCH}: $SPRINT_BRANCH (tree: $WT_PATH)"
-```
-
-#### Mode B: `ISOLATION_MODE=worktree` (escalation / `--isolated`)
-
-Create a new isolated worktree on the `feat/sprint-{N}-{sprint-name}` branch:
-
-```bash
 # Pass the user-chosen SOURCE_BRANCH from Step 1.5.2 as the base-ref (3rd arg).
 # astra_create_sprint_worktree prepends "origin/" automatically when missing.
 if ! out=$(astra_create_sprint_worktree "$SPRINT_N" "$SPRINT_NAME" "origin/${SOURCE_BRANCH}"); then
@@ -236,25 +202,19 @@ fi
 
 astra_write_worktree_env "$WT_PATH" "$SPRINT_N" "$SPRINT_NAME" "$PORT_BASE" || exit 1
 echo "Sprint port base: $PORT_BASE (offset=$((PORT_BASE - PORT_BASE_DEFAULT)))"
-
-# In-place mode: the env file now lives at the repo root — keep it out of git and out of the PR.
-if [ "$ISOLATION_MODE" = "inplace" ] && ! grep -qx '.astra-worktree.env' .gitignore 2>/dev/null; then
-  echo '.astra-worktree.env' >> .gitignore
-  git add .gitignore && git commit -m "chore: ignore .astra-worktree.env (in-place sprint)" --quiet
-fi
 ```
 
 The generated file contains per-framework values such as `ASTRA_PORT_BASE`, `PORT`, `VITE_PORT`, `SERVER_PORT`, `DJANGO_PORT`, `FASTAPI_PORT`. `/test-run` picks the value matching the detected stack to start the server.
 
-### Step 1.8: Anchor in the Sprint Working Context
+### Step 1.8: Anchor in the Sprint Worktree
 
-From here on, deliverable writing and progress tracking happen on the sprint branch:
+From here on, deliverable writing and progress tracking happen on the sprint branch, inside the worktree:
 
 ```bash
-cd "$WT_PATH"   # no-op under inplace mode (WT_PATH = main root); real transition under worktree mode
+cd "$WT_PATH"
 ```
 
-> From this point on, the "current working directory" is `$WT_PATH`, and every docs/sprints/* file is committed onto the sprint branch. This is the **only** directory change in the entire sprint lifecycle, and the skill performs it itself — the user is never asked to `cd`.
+> From this point on, the "current working directory" is `$WT_PATH`, and every docs/sprints/* file is committed onto the sprint branch. This is the **only** directory change in the entire sprint lifecycle, and the skill performs it itself — the user is never asked to `cd`. The main worktree is left untouched on its shared branch.
 
 ### Step 2: Create Sprint Prompt Map
 
@@ -307,9 +267,6 @@ Do not push to remote — the push is bundled with the first feature commit or w
 - docs/sprints/sprint-{N}-{sprint-name}/prompt-map.md (prompt map)
 - docs/sprints/sprint-{N}-{sprint-name}/progress.md (progress tracker)
 - docs/sprints/sprint-{N}-{sprint-name}/retrospective.md (retrospective template)
-
-### Isolation
-- Mode: {ISOLATION_MODE} {inplace ? "(sprint branch on the main worktree — no cd needed)" : "(isolated worktree)"}
 
 ### Next
 ▶︎ Continuing in this session: /test-scenario → implementation → /test-run
@@ -365,8 +322,8 @@ The full stage-by-stage procedure lives in [references/auto-pipeline.md](referen
 
 - Existing sprint files are not overwritten.
 - The prompt map is filled in collaboratively by VA and PE during the Planning meeting (`--scaffold-stop` exists for exactly this ritual).
-- **v5.16+ merge flow**: in-place sprints merge single-phase (`/pr-merge` runs entirely in the main worktree — no handoff). Worktree sprints get one HITL ("finalize now?") after the review loop, then `/pr-merge` performs the cross-worktree transition itself and removes the worktree. In no case is the user instructed to `cd`. If a worktree remains due to a conflict or interruption, the user resolves it and re-invokes `/pr-merge` in the same session.
-- The user must not edit `.astra-worktree.env` — `/test-run` sources it automatically (in-place mode writes it at the repo root, gitignored).
+- **v5.19+ merge flow**: every sprint is a worktree sprint. After the review loop, `/pr-merge` asks one HITL ("finalize now?"), then performs the cross-worktree transition itself and removes the worktree. The user is never instructed to `cd`. If a worktree remains due to a conflict or interruption, the user resolves it and re-invokes `/pr-merge` in the same session.
+- The user must not edit `.astra-worktree.env` — `/test-run` sources it automatically.
 - **Pipeline caveats**:
   - Blueprints must exist before Step 5 (author them via `/blueprint`, which runs this same pipeline afterwards).
   - When a failure is classified `SPEC_GAP` / `DESIGN_MISALIGN`, abort without merging — blueprint/UX fixes require user judgment.
