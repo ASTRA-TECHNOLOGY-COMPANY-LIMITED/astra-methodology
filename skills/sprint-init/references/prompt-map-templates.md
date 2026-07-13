@@ -20,7 +20,7 @@ Selection rule: `SCAFFOLD_ONLY=1` OR `FROM_BLUEPRINT=1` → Variant B; otherwise
 ## Sprint Goal
 [Describe the business value to achieve in this sprint]
 
-> **Isolation note (v5.16+)**: In the default **in-place** mode this sprint's `feat/sprint-{N}-{sprint-name}` branch is checked out directly in the main worktree — run every task from there, in this session, no `cd`. If this sprint was **escalated to worktree isolation**, every task instead runs inside `.astra-worktrees/sprint-{N}-{sprint-name}/` and new Claude Code sessions must be started from that path.
+> **Isolation note (v5.19+)**: every task in this sprint runs inside the isolated worktree `.worktrees/sprint-{N}-{sprint-name}/` — never in the main worktree. New Claude Code sessions for this sprint must be started from that path; the main worktree stays on `dev` (only `/blueprint` authoring + dev push happens there, before the worktree exists).
 
 ## Feature 1: {feature-name}
 
@@ -67,9 +67,9 @@ Specifically do NOT ask the user about: variable/function names, code formatting
 
 ---
 
-## Variant B — `SCAFFOLD_ONLY=1` OR `FROM_BLUEPRINT=1` (v5.16+ context-first flow, or legacy v5.8/5.9 delegation)
+## Variant B — `SCAFFOLD_ONLY=1` OR `FROM_BLUEPRINT=1` (v5.19+ /blueprint delegation, or legacy v5.8/5.9 delegation)
 
-The blueprint authoring step is omitted because `/blueprint` already wrote (or is about to write) the blueprint immediately after this skill returns. The user will start from "1.1 DB Design Reflection".
+The blueprint authoring step is omitted because `/blueprint` already authored, committed, and pushed the blueprint to `dev` before delegating here — the worktree (branched from `origin/dev`) contains it from birth. The user will start from "1.1 DB Design Reflection".
 
 ```markdown
 # Sprint {N} Prompt Map
@@ -77,9 +77,9 @@ The blueprint authoring step is omitted because `/blueprint` already wrote (or i
 ## Sprint Goal
 [Describe the business value to achieve in this sprint]
 
-> **Isolation note (v5.16+)**: In the default **in-place** mode this sprint's `feat/sprint-{N}-{sprint-name}` branch is checked out directly in the main worktree — run every task from there, in this session, no `cd`. If this sprint was **escalated to worktree isolation**, every task instead runs inside `.astra-worktrees/sprint-{N}-{sprint-name}/` and new Claude Code sessions must be started from that path.
+> **Isolation note (v5.19+)**: every task in this sprint runs inside the isolated worktree `.worktrees/sprint-{N}-{sprint-name}/` — never in the main worktree. New Claude Code sessions for this sprint must be started from that path; the main worktree stays on `dev` (only `/blueprint` authoring + dev push happens there, before the worktree exists).
 >
-> **Blueprint authoring note (v5.10+)**: The blueprint(s) for this sprint are authored by the `/blueprint` skill that created this sprint context. When this prompt-map is opened by the user, the blueprint already exists under `docs/blueprints/{NNN}-{feature-name}/blueprint.md` on the sprint branch. Start from 1.1 below.
+> **Blueprint authoring note (v5.19+)**: The blueprint(s) for this sprint were authored by the `/blueprint` skill on `dev` in the main worktree and pushed *before* this worktree was created. The blueprint already exists under `docs/blueprints/{NNN}-{feature-name}/blueprint.md` in this worktree (inherited from `origin/dev`). Start from 1.1 below.
 
 ## Feature 1: {feature-name}
 
@@ -129,12 +129,10 @@ Specifically do NOT ask the user about: variable/function names, code formatting
 > Boots the server using the sprint-specific ports in `.astra-worktree.env` and runs tests.
 > When the tests finish, the server processes on those ports are also cleaned up automatically.
 
-### Z.2 Merge (v5.16+ adaptive isolation)
+### Z.2 Merge (v5.19+ worktree sprint)
 /pr-merge
 
-> **In-place sprint (`ISOLATION_MODE=inplace`, the default)**: the `feat/sprint-{N}-{sprint-name}` branch is checked out in the main worktree, so `/pr-merge` completes **single-phase in this same session** — commit → push → PR → code review → fix loop → merge → promotion → sprint-branch cleanup. There is **no `cd`** and no second invocation.
+> Sprint Phase runs commit → push → PR → code review → fix loop inside this worktree, then asks one HITL ("finalize the merge now?") and performs the cross-worktree transition itself (v5.16+ — no user `cd`): Main Phase merges the PR into its integration branch (head=feat/sprint-*, base=feat/*|fix/*, with a legacy base=dev fallback for pre-v5.11 PRs), asks the promotion target, then removes this sprint worktree.
 >
-> **Worktree sprint (`ISOLATION_MODE=worktree`, escalated isolation)**: two-phase (v5.9+). Sprint Phase runs commit → push → PR → code review → fix loop inside this worktree, then stops. Follow the printed `cd` command to move to the main worktree and re-invoke `/pr-merge` — it auto-detects the pending sprint PR (head=feat/sprint-*, base=feat/*|fix/* integration branch, with a legacy base=dev fallback for pre-v5.11 PRs), finalizes the merge, then removes this sprint worktree.
->
-> Tip: `/pr-merge --auto` runs both modes end-to-end in one invocation (sprint-init's auto pipeline and /autorun do this automatically).
+> Tip: `/pr-merge --auto` runs end-to-end in one invocation with the merge confirmation auto-approved (sprint-init's auto pipeline and /autorun do this automatically; the promotion target stays HITL).
 ```

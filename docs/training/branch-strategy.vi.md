@@ -112,7 +112,7 @@ Mỗi nhánh công việc được tiến hành trong **thư mục riêng biệt
 ### 4 hành vi cốt lõi
 
 1. **Không gian làm việc chính chỉ dành cho nhánh chia sẻ** — Thư mục gốc của repository luôn duy trì một trong `dev`/`staging`/`main`. Promotion và đồng bộ hóa diễn ra ở đây.
-2. **Quy tắc tên thư mục** — Đổi `/` trong tên nhánh thành `-`: `feat/payment` → `.astra-worktrees/feat-payment/`
+2. **Quy tắc tên thư mục** — Đổi `/` trong tên nhánh thành `-`: `feat/payment` → `.worktrees/feat-payment/`
 3. **Tự động tạo·tự động dọn dẹp** — Khi tạo nhánh công việc, thư mục cũng được tạo cùng. Sau khi merge PR xong sẽ tự động xóa.
 4. **Bị gián đoạn thì vẫn giữ nguyên** — Nếu dừng do xung đột·chờ review, thư mục không bị mất. Sau này có thể tiếp tục ngay tại vị trí đó.
 
