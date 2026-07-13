@@ -183,7 +183,7 @@ Store the user's selection. If the user chose a design system (not "Implement la
 
 Create the directory structure matching the platform (Step 0.5) and, for mobile, the framework (Step 1-B).
 
-**Quick-start baseline (Web)**: run `scripts/init-project.sh` to scaffold the Web-baseline `docs/` + `src/styles/` skeleton and register `.astra-worktrees/` in `.gitignore` in one idempotent pass:
+**Quick-start baseline (Web)**: run `scripts/init-project.sh` to scaffold the Web-baseline `docs/` + `src/styles/` skeleton and register `.worktrees/` in `.gitignore` in one idempotent pass:
 
 ```bash
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"

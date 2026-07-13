@@ -31,8 +31,7 @@ Reference material for `/pr-merge` (extracted from SKILL.md — templates and ex
 ## Quick Run Examples
 
 ```
-/pr-merge                   # in-place sprint (main worktree on feat/sprint-*): single-phase — integration pick → PR → review → merge HITL → promotion HITL → dev
-cd .astra-worktrees/sprint-3-user-auth && /pr-merge   # worktree sprint: review loop → "finalize now?" HITL → self-transition → merge → promotion
+/pr-merge                   # inside .worktrees/sprint-3-user-auth/ (the pipeline invokes it there): review loop → "finalize now?" HITL → self-transition → merge → promotion
 cd "$(git rev-parse --git-common-dir)/.." && /pr-merge # Main Phase re-entry: auto-detect pending sprint PR → merge → promotion path prompt (staging/dev/skip)
 
 /pr-merge 5                 # up to 5 review iterations (Sprint Phase only)

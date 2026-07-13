@@ -62,14 +62,14 @@ done
 
 # Register ASTRA worktree directory in .gitignore (idempotent).
 # Isolated work branches (feat/*, fix/*, etc.) are checked out under
-# .astra-worktrees/<slug>/ by /pr-merge — these are ephemeral and must
+# .worktrees/<slug>/ by /pr-merge — these are ephemeral and must
 # never be committed back into the repo they belong to.
 gitignore="${PROJECT_ROOT}/.gitignore"
-worktree_pattern=".astra-worktrees/"
+worktree_pattern=".worktrees/"
 if [ -f "$gitignore" ]; then
     if ! grep -Fxq "$worktree_pattern" "$gitignore"; then
         printf '\n# ASTRA isolated worktrees (managed by /pr-merge)\n%s\n' "$worktree_pattern" >> "$gitignore"
-        echo "  [Updated] .gitignore (+ .astra-worktrees/)"
+        echo "  [Updated] .gitignore (+ .worktrees/)"
     fi
 else
     printf '# ASTRA isolated worktrees (managed by /pr-merge)\n%s\n' "$worktree_pattern" > "$gitignore"

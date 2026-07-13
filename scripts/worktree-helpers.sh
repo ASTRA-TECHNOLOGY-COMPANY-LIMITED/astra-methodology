@@ -2,13 +2,13 @@
 # ASTRA worktree helper functions.
 #
 # Source this file from skills/scripts that need to manage isolated work
-# branches in `.astra-worktrees/`. Functions are namespaced with `astra_`
+# branches in `.worktrees/`. Functions are namespaced with `astra_`
 # and intended to be safe to call multiple times.
 #
 # Policy:
 #   - Shared branches (main, master, staging, dev) live in the MAIN worktree.
 #   - All other branches (feat/*, fix/*, docs/*, refactor/*, chore/*, etc.)
-#     are checked out into `.astra-worktrees/<slug>/` under the repo root.
+#     are checked out into `.worktrees/<slug>/` under the repo root.
 #   - Worktrees are ephemeral: created on demand, removed when the task ends.
 #
 # Usage:
@@ -53,7 +53,7 @@ astra_worktree_path() {
   local slug="$1"
   local root
   root=$(astra_main_worktree_root) || return 1
-  printf '%s/.astra-worktrees/%s' "$root" "$slug"
+  printf '%s/.worktrees/%s' "$root" "$slug"
 }
 
 # --- worktree introspection ------------------------------------------------
@@ -84,7 +84,7 @@ astra_ensure_main_worktree() {
     local main_root
     main_root=$(astra_main_worktree_root) || main_root="(unknown)"
     echo "ERROR: This command can only run from the main worktree." >&2
-    echo "       Current location is an isolated worktree (.astra-worktrees/)." >&2
+    echo "       Current location is an isolated worktree (.worktrees/)." >&2
     echo "       Switch to the main worktree and try again:" >&2
     echo "         cd \"$main_root\"" >&2
     return 1
@@ -239,8 +239,8 @@ astra_merge_precheck() {
 astra_worktree_lock() {
   local root lock tries=0
   root=$(astra_main_worktree_root) || return 1
-  lock="$root/.astra-worktrees/.lock"
-  mkdir -p "$root/.astra-worktrees"
+  lock="$root/.worktrees/.lock"
+  mkdir -p "$root/.worktrees"
   while ! mkdir "$lock" 2>/dev/null; do
     tries=$((tries + 1))
     if [ "$tries" -ge 50 ]; then
@@ -257,7 +257,7 @@ astra_worktree_lock() {
 astra_worktree_unlock() {
   local root
   root=$(astra_main_worktree_root) || return 1
-  rmdir "$root/.astra-worktrees/.lock" 2>/dev/null || true
+  rmdir "$root/.worktrees/.lock" 2>/dev/null || true
 }
 
 # --- worktree lifecycle ----------------------------------------------------
@@ -268,12 +268,12 @@ astra_prune_worktrees() {
   git worktree prune 2>/dev/null || true
 }
 
-# Ensure the main worktree's .gitignore contains `.astra-worktrees/`. Idempotent.
+# Ensure the main worktree's .gitignore contains `.worktrees/`. Idempotent.
 # Called before any worktree is created so that worktree contents never appear
 # as untracked files in the main worktree (which would corrupt subsequent
 # `git stash --include-untracked` invocations).
 astra_ensure_gitignore_entry() {
-  local root pattern=".astra-worktrees/"
+  local root pattern=".worktrees/"
   root=$(astra_main_worktree_root) || return 1
   local gitignore="$root/.gitignore"
   if [ -f "$gitignore" ]; then
@@ -287,8 +287,8 @@ astra_ensure_gitignore_entry() {
 
 # Resolve a non-conflicting (branch, slug) pair. A pair is FREE when:
 #   - the local branch does NOT yet exist (no `refs/heads/<branch>`), AND
-#   - `.astra-worktrees/<slug>` is not a registered worktree, AND
-#   - `.astra-worktrees/<slug>` does not exist as a directory.
+#   - `.worktrees/<slug>` is not a registered worktree, AND
+#   - `.worktrees/<slug>` does not exist as a directory.
 # Suffixes `-2`, `-3`, ... are appended to BOTH branch and slug in lock-step
 # until a free pair is found. Echoes `<branch>\t<slug>` (tab-separated).
 astra_resolve_branch_and_slug() {
@@ -307,7 +307,7 @@ astra_resolve_branch_and_slug() {
   local cand_path registered
   while true; do
     # NOTE: never name this `path` — under zsh `path` is tied to $PATH.
-    cand_path="$root/.astra-worktrees/$slug"
+    cand_path="$root/.worktrees/$slug"
     registered=$(git worktree list --porcelain 2>/dev/null | awk -v p="$cand_path" '
       /^worktree / { wt=$2 }
       $0=="" { if (wt==p) { print "yes"; exit } }
@@ -399,7 +399,7 @@ astra_create_worktree_existing() {
   slug="$base_slug"
   while true; do
     # NOTE: never name this `path` — under zsh `path` is tied to $PATH.
-    local cand_path="$root/.astra-worktrees/$slug"
+    local cand_path="$root/.worktrees/$slug"
     if [ ! -e "$cand_path" ]; then
       break
     fi

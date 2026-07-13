@@ -5,12 +5,12 @@ Non-mainline detail extracted from `SKILL.md`. **v5.16+: this file is the shared
 | Caller | `PIPELINE_MODE` | Behavior |
 |--------|-----------------|----------|
 | `/sprint-init` (default, no flags) | `attended` | Continuous one-session run. HITL fires only at real judgment points: remaining Critical review issues, final merge confirmation, promotion target. No per-stage questions. |
-| `/blueprint` (default, after blueprint commit) | `attended` | Same as above — `/blueprint` drives Steps 5.0–5.7 itself after Step 6. |
+| `/blueprint` (default, after blueprint dev-push + worktree creation) | `attended` | Same as above — `/blueprint` drives Steps 5.0–5.7 itself after Step 6.5, inside the sprint worktree. |
 | `/sprint-init --auto`, `/autorun` | `auto` | Unattended. Merge confirmation auto-approved (`/pr-merge --auto`); promotion target stays HITL (v5.11.2+ policy). |
 
-Mode differences are confined to **Step 5.6** (pr-merge invocation) and abort wording — every other stage is identical. The mainline SKILL.md (Steps 0.B–4.6) covers isolation-mode decision, branch/worktree creation, port-isolated env, scaffolding, and flag handling; everything below is the self-improvement pipeline and its recovery path.
+Mode differences are confined to **Step 5.6** (pr-merge invocation) and abort wording — every other stage is identical. The mainline SKILL.md (Steps 0.B–4.6) covers worktree creation, port-isolated env, scaffolding, and flag handling; everything below is the self-improvement pipeline and its recovery path.
 
-> **Isolation modes (v5.16+)**: `ISOLATION_MODE=inplace` (default — sprint branch checked out in the main worktree, `WT_PATH` = main root) or `worktree` (isolated `.astra-worktrees/sprint-*` — auto-escalation or `--isolated`). The pipeline below is mode-agnostic: `WT_PATH` always points at the tree containing the sprint branch, and `cd "$WT_PATH"` is a no-op under `inplace`. Only Step 5.6/5.7 worktree-removal wording differs (nothing to remove under `inplace`; `/pr-merge` Step 9 does branch + env-file cleanup instead).
+> **Isolation (v5.19+, worktree-always)**: every sprint runs inside `.worktrees/sprint-<N>-<name>/` and `WT_PATH` always points at that worktree. Every pipeline stage below executes inside it — the main worktree stays untouched on `dev`. The v5.16 in-place mode is removed.
 
 ---
 
@@ -45,8 +45,7 @@ If `RESUME_MODE=1`:
    - `SPRINT_N`, `SPRINT_NAME`, `WT_PATH`, `MAX_ITER`, `CURRENT_ITER`
    - `progress.next_stage`, `progress.last_iteration_summary`, `files_to_patch_next`
    - Other per-stage deliverable paths
-4. **Skip all of Step 0~4 (context creation·scaffolding)** — they already exist.
-4.5. **In-place branch guard (v5.16+)**: when `sprint.isolation_mode: inplace`, the main worktree must be ON `sprint.branch` before any stage runs. If it isn't (e.g., the user checked out dev in between), re-anchor: verify the tree is clean, then `git checkout "{sprint.branch}"` — abort with guidance if dirty or the checkout fails. Never run pipeline stages while on a shared branch.
+4. **Skip all of Step 0~4 (worktree creation·scaffolding)** — they already exist.
 5. **Jump directly to `progress.next_stage`**. e.g., `next_stage: 5.4` → run Step 5.4 immediately.
 6. Startup notice:
    ```
@@ -122,8 +121,7 @@ At the end of each stage, update `$WT_PATH/docs/sprints/sprint-{N}-{sprint-name}
 sprint:
   number: {N}
   name: {sprint-name}
-  worktree_path: {WT_PATH}          # under inplace mode this is the MAIN worktree root
-  isolation_mode: inplace | worktree
+  worktree_path: {WT_PATH}          # always a .worktrees/sprint-* path (v5.19+)
   pipeline_mode: attended | auto
   branch: feat/sprint-{N}-{sprint-name}
   port_base: {PORT_BASE}
@@ -390,10 +388,10 @@ Persist the state one more time just before the merge. `/pr-merge --auto` itself
 
 ##### 5.6.B Invoke `/pr-merge` (mode-aware)
 
-- **`PIPELINE_MODE=attended`** → `Skill('pr-merge', '')`. Normal-mode pr-merge: commit → PR → review loop → **HITL final merge confirmation** → merge → **HITL promotion target** → cleanup. v5.16+ pr-merge never instructs a mid-flow `cd`: under `ISOLATION_MODE=inplace` it is a single-phase in-place merge; under `worktree` it asks one HITL ("finalize the merge now?") and performs the cross-worktree transition itself (Step 8.5).
+- **`PIPELINE_MODE=attended`** → `Skill('pr-merge', '')`. Normal-mode pr-merge: commit → PR → review loop → **HITL final merge confirmation** → merge → **HITL promotion target** → cleanup. pr-merge never instructs a mid-flow `cd`: it asks one HITL ("finalize the merge now?") and performs the cross-worktree transition itself (Step 8.5).
 - **`PIPELINE_MODE=auto`** → `Skill('pr-merge', '--auto')`. Same flow with the merge confirmation auto-approved; the promotion target stays HITL (v5.11.2+); halt on remaining Critical issues (true HITL).
 
-End state in both modes and both isolation modes: the PR is merged into its integration branch, the promotion decision is made, the sprint branch/worktree is cleaned up, and **the session continues in the main worktree on `dev`** — no user `cd` at any point.
+End state in both modes: the PR is merged into its integration branch, the promotion decision is made, the sprint branch and worktree are cleaned up, and **the session continues in the main worktree on `dev`** — no user `cd` at any point.
 
 ##### 5.6.C Record merge result in `auto-state.yaml`
 
@@ -413,13 +411,13 @@ The Step 5.7 report is generally lightweight on context, so no separate silent s
 
 ```
 ═══════════════════════════════════════════════════════
-{✅ / ❌ / ⚠️} Sprint {N} pipeline complete ({pipeline_mode} / {isolation_mode})
+{✅ / ❌ / ⚠️} Sprint {N} pipeline complete ({pipeline_mode})
 
 🔁 Iterations: {iteration.current_iter}/{iteration.max_iter}
 ✅ Tests: {last_test_result.passed}/{last_test_result.total}
 🎯 Verifier: {verifier.last_score}/100, P0 = {verifier.last_p0} (gate: ≥ 90 ∧ P0 == 0)
 📦 Sprint Branch: feat/sprint-{N}-{sprint-name}
-🌿 Isolation: {inplace ? "in-place (branch cleaned up, back on dev)" : (merge.worktree_removed ? "worktree removed" : "worktree preserved (kept due to failure)")}
+🌿 Worktree: {merge.worktree_removed ? "removed" : "preserved (kept due to failure)"}
 
 📁 Deliverables:
   - Blueprint: docs/blueprints/[NNN]-*/blueprint.md

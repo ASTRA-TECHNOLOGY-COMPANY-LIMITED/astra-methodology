@@ -34,7 +34,7 @@ SKILL.md Step 4 keeps the normal flow (inside a sprint worktree + work branch). 
   WT_PATH="$(pwd)"
   BRANCH_NAME="$CURRENT_BRANCH"
   STARTED_FROM_ISOLATED=0
-  STARTED_FROM_SPRINT=0   # ← compat case: in-place merge in Step 8.3
+  STARTED_FROM_SPRINT=0   # ← compat case: direct merge in Step 8.3
   for kv in WT_PATH BRANCH_NAME STARTED_FROM_ISOLATED STARTED_FROM_SPRINT; do
     eval "astra_state_set $kv \"\$$kv\""
   done
@@ -89,7 +89,7 @@ SKILL.md Step 4 keeps the normal flow (inside a sprint worktree + work branch). 
    ```
 5. From here on, all git operations (commit, push, post-merge cleanup) happen inside `$WT_PATH`. In subsequent steps of SKILL.md, "current branch" means `$BRANCH_NAME` checked out in the isolated worktree.
 6. `{branch-name}` refers to `$BRANCH_NAME` (the actual name decided by the helper); `{work-tree-path}` refers to `$WT_PATH`. A numeric suffix may have been appended, so subsequent steps use *the helper return value, not the intended name*.
-7. Set the `STARTED_FROM_ISOLATED=1` flag (used in Step 9 to decide worktree removal and local-branch deletion). Also set `STARTED_FROM_SPRINT=0` — this is a fallback temp worktree (not a real sprint worktree), so Step 8.3 must route to in-place merge, not to the Sprint→Main handoff. Persist `WT_PATH`, `BRANCH_NAME`, and both flags via `astra_state_set` (state protocol, Step 1).
+7. Set the `STARTED_FROM_ISOLATED=1` flag (used in Step 9 to decide worktree removal and local-branch deletion). Also set `STARTED_FROM_SPRINT=0` — this is a fallback temp worktree (not a real sprint worktree), so Step 8.3 must route to the direct merge, not to the Sprint→Main handoff. Persist `WT_PATH`, `BRANCH_NAME`, and both flags via `astra_state_set` (state protocol, Step 1).
 
 `TARGET_BRANCH="dev"` for this fallback (legacy one-shot behavior). Skip Step 4.5 and proceed to **Step 5** (skip the sync itself — the worktree was just created from `origin/dev`, so it is already in sync).
 

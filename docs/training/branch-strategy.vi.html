@@ -769,9 +769,9 @@
       <line x1="360" y1="75" x2="360" y2="105" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow4)"/>
       <text x="395" y="95" class="svg-text svg-text-sm">Tự tạo · tự dọn</text>
 
-      <!-- .astra-worktrees container -->
+      <!-- .worktrees container -->
       <rect x="180" y="110" width="360" height="220" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4 3"/>
-      <text x="360" y="130" text-anchor="middle" class="svg-text svg-text-bold" fill="#334155">.astra-worktrees/ ← Không gian cách ly</text>
+      <text x="360" y="130" text-anchor="middle" class="svg-text svg-text-bold" fill="#334155">.worktrees/ ← Không gian cách ly</text>
 
       <g>
         <rect x="220" y="145" width="280" height="50" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
@@ -805,7 +805,7 @@
   <h2 class="subhead">4 hành vi cốt lõi</h2>
   <ol>
     <li><strong>Không gian làm việc chính chỉ dành cho nhánh chia sẻ</strong> — Thư mục gốc của repository luôn duy trì một trong <code>dev</code> / <code>staging</code> / <code>main</code>. Promotion và đồng bộ hóa diễn ra ở đây.</li>
-    <li><strong>Quy tắc tên thư mục</strong> — Đổi <code>/</code> trong tên nhánh thành <code>-</code>: <code>feat/payment</code> → <code>.astra-worktrees/feat-payment/</code></li>
+    <li><strong>Quy tắc tên thư mục</strong> — Đổi <code>/</code> trong tên nhánh thành <code>-</code>: <code>feat/payment</code> → <code>.worktrees/feat-payment/</code></li>
     <li><strong>Tự động tạo · tự động dọn dẹp</strong> — Khi tạo nhánh công việc, thư mục cũng được tạo cùng. Sau khi merge PR xong sẽ tự động xóa.</li>
     <li><strong>Bị gián đoạn thì vẫn giữ nguyên</strong> — Nếu dừng do xung đột · chờ review, thư mục không bị mất. Sau này có thể tiếp tục ngay tại vị trí đó.</li>
   </ol>

@@ -1,32 +1,10 @@
-# Autorun — Stage 8 `/pr-merge --auto` Isolation Modes & HITL Triggers
+# Autorun — Stage 8 `/pr-merge --auto` Workflow & HITL Triggers
 
-Read this for the full Stage 8 detail: the per-mode workflow tables and the exhaustive HITL/blocker enumeration `/pr-merge --auto` surfaces. The mainline (invoke `Skill('pr-merge', '--auto')`, the always-on promotion HITL, the `MERGE_RESULT` value contract) stays in SKILL.md.
+Read this for the full Stage 8 detail: the two-phase workflow table and the exhaustive HITL/blocker enumeration `/pr-merge --auto` surfaces. The mainline (invoke `Skill('pr-merge', '--auto')`, the always-on promotion HITL, the `MERGE_RESULT` value contract) stays in SKILL.md.
 
-`/pr-merge --auto` auto-detects the sprint's isolation mode (v5.16+):
+## 8.1 Two-phase workflow (v5.19+ — every sprint is a worktree sprint; single invocation under `--auto`)
 
-- **In-place sprint (`IN_PLACE_SPRINT=1`, the default)** → single-phase in the main worktree, no `cd`, no worktree (§8.1a).
-- **Worktree sprint (escalated isolation)** → the v5.9+ two-phase Sprint → handoff → Main flow, single invocation under `--auto` (§8.1b).
-
-## 8.1a In-place single-phase workflow (v5.16+ default)
-
-The `feat/sprint-*` branch is already checked out in the main worktree, so there is nothing to hand off across — every step runs in one place:
-
-| Step | Handling |
-|---|---|
-| Commit uncommitted changes | auto (bypasses confirmation prompt) |
-| Cascade sync | **skipped** — the main worktree is occupied by the sprint branch (a `dev` checkout would displace it); the cascade runs at the next main-worktree invocation or during promotion |
-| Create PR | auto (ASTRA template) |
-| Code review (feature-dev:code-reviewer agent) | auto |
-| Fix Critical/High issues (up to 3 iterations) | auto (Surgical Changes principle) |
-| Final merge confirmation | auto-approve |
-| `gh pr merge` (sprint PR → integration branch) | auto |
-| **Step 8.4.5 promotion target (dev / staging / skip)** | **HITL — `AskUserQuestion` always fires, even under `--auto`** |
-| Promotion PR (only if user picked dev or staging) | auto (no fresh review — source sprint PR already passed) |
-| Cleanup: `git checkout dev`, delete merged sprint branch, remove root `.astra-worktree.env` | auto (no worktree to remove) |
-
-## 8.1b Two-phase workflow (escalated worktree sprint, single invocation under `--auto`)
-
-For an escalated worktree sprint, `/pr-merge --auto` runs Sprint Phase → handoff → Main Phase end-to-end:
+`/pr-merge --auto` runs Sprint Phase → handoff → Main Phase end-to-end:
 
 | Phase | Step | Handling |
 |---|---|---|

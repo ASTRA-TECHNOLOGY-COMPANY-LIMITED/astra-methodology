@@ -84,7 +84,7 @@ ASTRA solves this by placing **a separate OS-level directory** (git worktree) fo
 
 ```
 repo root/                            ← main worktree: always on dev/staging/main
-├── .astra-worktrees/                ← per-work-branch isolated directories
+├── .worktrees/                ← per-work-branch isolated directories
 │   ├── feat-payment/                ← Claude session A working here (feat/payment)
 │   └── fix-login-error/             ← Claude session B working here (fix/login-error)
 ├── src/
@@ -96,7 +96,7 @@ Each directory is an independent working tree, so while session A edits payment 
 **Four core behaviors**:
 
 1. **Main worktree holds only shared branches** — the repo root always stays on one of `dev`/`staging`/`main`/`master`. Cascade merges and promotions happen here.
-2. **Isolated directory naming rule** — replace `/` in the branch name with `-`. Example: `feat/payment` → `.astra-worktrees/feat-payment/`.
+2. **Isolated directory naming rule** — replace `/` in the branch name with `-`. Example: `feat/payment` → `.worktrees/feat-payment/`.
 3. **Auto-create, auto-clean** — when you start a new work branch, the worktree is also created; after a PR is merged it is automatically removed and the main worktree returns to `dev`.
 4. **Left intact if interrupted** — if the workflow is halted (conflicts, review pending), the worktree is not automatically cleaned and stays put so you can resume in the same place later.
 
@@ -107,7 +107,7 @@ Each directory is an independent working tree, so while session A edits payment 
 - ❌ Direct `git commit` to `main`/`staging`/`dev` — always via PR
 - ❌ `git checkout main` and coding there — branch off into a work branch first
 - ❌ Creating a PR directly on the GitHub web — go through the standard tool so cascade and verification are wired automatically
-- ❌ Creating or deleting `.astra-worktrees/` by hand — automatically managed
+- ❌ Creating or deleting `.worktrees/` by hand — automatically managed
 - ❌ Using Korean, uppercase, or underscores in branch names (forbidden: `feat/결제`, `feat/Payment_Module`)
 - ❌ Creating a branch with a `{feature-name}` different from the blueprint's — traceability is lost
 

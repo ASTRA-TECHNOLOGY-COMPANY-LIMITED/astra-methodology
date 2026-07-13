@@ -112,7 +112,7 @@ Each work branch runs in **a separate folder inside the repository** (git worktr
 ### 4 Core Behaviors
 
 1. **Main working area holds shared branches only** — the repo root always stays on one of `dev`/`staging`/`main`. Promotions and syncs happen here.
-2. **Folder naming rule** — `/` in the branch name becomes `-`: `feat/payment` → `.astra-worktrees/feat-payment/`
+2. **Folder naming rule** — `/` in the branch name becomes `-`: `feat/payment` → `.worktrees/feat-payment/`
 3. **Auto-create, auto-clean** — when a work branch is created the folder is created with it; after a PR merge it is auto-removed.
 4. **Left intact if halted** — if it's paused for conflicts or review, the folder does not disappear. Resume in place later.
 
