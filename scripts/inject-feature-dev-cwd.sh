@@ -6,7 +6,7 @@
 # not fall back to the main worktree where sprint files do not exist yet.
 #
 # Background: Sprint progress/prompt-map/retrospective files are written by
-# /sprint-init INSIDE the linked worktree (.astra-worktrees/sprint-N-name/).
+# /sprint-init INSIDE the linked worktree (.worktrees/sprint-N-name/).
 # They are unstaged at that point, so they only exist in that worktree's
 # working directory — never visible from the main worktree.
 #
@@ -43,7 +43,7 @@ esac
 # Only inject context when invoked from inside a sprint worktree.
 CWD=$(pwd)
 case "$CWD" in
-  */.astra-worktrees/sprint-*)
+  */.worktrees/sprint-*|*/.astra-worktrees/sprint-*)   # second pattern: pre-v5.19 legacy worktrees
     SPRINT_SLUG=$(basename "$CWD")
     SPRINT_DIR=""
     if [ -d "$CWD/docs/sprints/$SPRINT_SLUG" ]; then

@@ -77,14 +77,15 @@ Step R.3: Deployment & Handover
 Planning & design:
   /service-planner [feature]   Design Thinking planning → 6 markdown deliverables + design-system HTML mockups
   /blueprint [feature]         Blueprint (10 sections: data flow/schema/API/sequences/pseudocode/HITL Triggers).
-                               v5.16+ one-flow: authors on the sprint branch, then continues through
-                               implementation → test loop → /pr-merge in the same session (--design-only stops early).
+                               v5.19+ one-flow: authors + pushes on dev (main worktree), creates the sprint
+                               worktree from origin/dev, then continues through implementation → test loop
+                               → /pr-merge in the same session, inside the worktree (--design-only stops early).
   /handoff-publish [feature]   UX/UI/Dev/QA handoff package — 14 Screen-ID files ({feature}-handoff/)
 
 Sprint & pipeline:
   /project-init [info]         Sprint 0 project init (Web/Mobile; structure, CLAUDE.md, design + blueprint templates)
   /astra-setup                 Global dev-environment setup
-  /sprint-init [slug]          Start a sprint (adaptive isolation; --scaffold-only / --auto / --resume)
+  /sprint-init [slug]          Start a sprint (worktree-always isolation; --scaffold-only / --auto / --resume)
   /autorun [feature]           Mostly-unattended full pipeline: planning → blueprint → sprint → tests → /pr-merge
   /loop [target]               Target-driven convergence loop (evaluator-optimizer) for open-ended goals
   /pr-merge                    Commit → PR → code review → fix loop → merge → promotion (dev/staging/skip)
@@ -129,13 +130,14 @@ External (bundled plugins, not ASTRA):
   /commit · /commit-push-pr · /clean_gone   Git helpers
 ```
 
-Sprint isolation (v5.16+ adaptive):
+Sprint isolation (v5.19+ worktree-always):
 ```
-- Default is IN-PLACE: the feat/sprint-<N>-<slug> branch is checked out directly in the main
-  worktree — no separate worktree, no cd, and /pr-merge finalizes single-phase in the same session.
-- Escalates to a WORKTREE (.astra-worktrees/sprint-*) only when isolation is actually needed:
-  the main worktree is already occupied by another in-place sprint, the tree is dirty, or --isolated.
-  Worktree mode keeps the v5.9 two-phase merge (Sprint Phase → cd to main → Main Phase).
+- Every sprint runs inside an isolated worktree: .worktrees/sprint-<N>-<slug>/ on the
+  feat/sprint-<N>-<slug> branch. Sprint work NEVER touches the main worktree.
+- The only main-worktree step is /blueprint: author → review → commit → push on dev,
+  THEN the worktree is created from origin/dev (so it contains the blueprint from birth).
+- Merge: /pr-merge runs the review loop in the worktree, asks one "finalize now?" HITL,
+  then transitions to the main worktree itself, merges, and removes the worktree (no user cd).
 - One-flow: /blueprint (or /sprint-init) runs design → implementation → test loop → /pr-merge in a
   single session; HITL fires only at design decisions, remaining Critical issues, and merge/promotion.
 ```
