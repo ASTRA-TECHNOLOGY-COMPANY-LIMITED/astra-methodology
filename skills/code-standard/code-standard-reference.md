@@ -6,7 +6,7 @@
 ISO 3166-1 is an international standard for identifying countries and dependent territories.
 
 ### Data File
-`data/iso_3166_1_countries.json` — 249 entries
+`${CLAUDE_PLUGIN_ROOT}/data/iso_3166_1_countries.json` — 249 entries
 
 ### Schema
 ```json
@@ -64,7 +64,7 @@ ISO 3166-1 is an international standard for identifying countries and dependent 
 ISO 3166-2 is an international standard for identifying administrative divisions (cities/provinces/states/prefectures, etc.) within each country.
 
 ### Data File
-`data/iso_3166_2_regions.json` — 21 countries, 653 administrative divisions
+`${CLAUDE_PLUGIN_ROOT}/data/iso_3166_2_regions.json` — 21 countries, 653 administrative divisions
 
 ### Schema
 ```json
@@ -134,7 +134,7 @@ ISO 3166-2 is an international standard for identifying administrative divisions
 ITU-T E.164 is an international standard that defines the international public telecommunication numbering plan.
 
 ### Data File
-`data/country_calling_codes.json` — 245 entries
+`${CLAUDE_PLUGIN_ROOT}/data/country_calling_codes.json` — 245 entries
 
 ### Schema
 ```json

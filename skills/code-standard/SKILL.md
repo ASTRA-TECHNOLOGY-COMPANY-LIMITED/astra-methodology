@@ -23,9 +23,9 @@ Automatically applied when writing/modifying files that meet the following condi
 
 | File | Standard | Contents |
 |---|---|---|
-| `data/iso_3166_1_countries.json` | ISO 3166-1 | 249 countries — alpha-2, alpha-3, numeric, Korean name, English name, independence status |
-| `data/iso_3166_2_regions.json` | ISO 3166-2 | 21 countries, 653 administrative regions — region code, English name, local name, subdivision type |
-| `data/country_calling_codes.json` | ITU-T E.164 | 245 entries — international calling codes, ITU zone, shared code information |
+| `${CLAUDE_PLUGIN_ROOT}/data/iso_3166_1_countries.json` | ISO 3166-1 | 249 countries — alpha-2, alpha-3, numeric, Korean name, English name, independence status |
+| `${CLAUDE_PLUGIN_ROOT}/data/iso_3166_2_regions.json` | ISO 3166-2 | 21 countries, 653 administrative regions — region code, English name, local name, subdivision type |
+| `${CLAUDE_PLUGIN_ROOT}/data/country_calling_codes.json` | ITU-T E.164 | 245 entries — international calling codes, ITU zone, shared code information |
 
 ## Core Rules
 

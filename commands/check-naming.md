@@ -14,11 +14,11 @@ Check whether DB-related naming in $ARGUMENTS complies with standards.
 
 | File | Content | Purpose |
 |---|---|---|
-| `data/standard_terms.json` | 13,176 standard terms | Column name standard compliance check |
-| `data/standard_words.json` | 3,284 standard words | Forbidden word detection, word combination check |
-| `data/standard_domains.json` | 123 standard domains | Data type/length check |
+| `${CLAUDE_PLUGIN_ROOT}/data/standard_terms.json` | 13,176 standard terms | Column name standard compliance check |
+| `${CLAUDE_PLUGIN_ROOT}/data/standard_words.json` | 3,284 standard words | Forbidden word detection, word combination check |
+| `${CLAUDE_PLUGIN_ROOT}/data/standard_domains.json` | 123 standard domains | Data type/length check |
 
-Detailed guide: `skills/data-standard/data-standard-terminology-guide.md`
+Detailed guide: `${CLAUDE_PLUGIN_ROOT}/skills/data-standard/data-standard-terminology-guide.md`
 
 ## Check Targets
 
@@ -32,20 +32,20 @@ Detailed guide: `skills/data-standard/data-standard-terminology-guide.md`
 
 Do **not** rely on a rule list inlined here. The authoritative naming rules (standard-term compliance, suffix patterns, domain type/length, forbidden words, table-name prefixes, and abbreviation-formation rules) live in the `data-standard` skill and are backed by the reference JSON:
 
-- Read `skills/data-standard/data-standard-terminology-guide.md` for the full rule set and apply every rule it defines.
+- Read `${CLAUDE_PLUGIN_ROOT}/skills/data-standard/data-standard-terminology-guide.md` for the full rule set and apply every rule it defines.
 - Resolve each column/table against the dictionaries with targeted `jq` queries (the files are large — never load them whole):
 
 Rows live under `.data[]`, and Korean field names require bracket notation in jq (`.["..."]`). Look a column/table up by its **English abbreviation** — the abbreviation fields are the populated, indexable ones:
 
 ```bash
 # Is this column abbreviation a registered standard term? (returns domain + description)
-jq -r '.data[] | select(.["공통표준용어영문약어명"]=="RAFOS_NM") | {abbr:.["공통표준용어영문약어명"], domain:.["공통표준도메인명"], desc:.["공통표준용어설명"]}' data/standard_terms.json
+jq -r '.data[] | select(.["공통표준용어영문약어명"]=="RAFOS_NM") | {abbr:.["공통표준용어영문약어명"], domain:.["공통표준도메인명"], desc:.["공통표준용어설명"]}' "${CLAUDE_PLUGIN_ROOT}/data/standard_terms.json"
 
 # Standard word: abbreviation, forbidden words, synonyms (look up by the word's English abbreviation)
-jq -r '.data[] | select(.["공통표준단어영문약어명"]=="RAFOS") | {abbr:.["공통표준단어영문약어명"], forbidden:.["금칙어목록"], synonyms:.["이음동의어목록"]}' data/standard_words.json
+jq -r '.data[] | select(.["공통표준단어영문약어명"]=="RAFOS") | {abbr:.["공통표준단어영문약어명"], forbidden:.["금칙어목록"], synonyms:.["이음동의어목록"]}' "${CLAUDE_PLUGIN_ROOT}/data/standard_words.json"
 
 # Domain type/length definition (domains file keys the row on 도메인명, e.g. "명V100")
-jq -r '.data[] | select(.["도메인명"]=="명V100")' data/standard_domains.json
+jq -r '.data[] | select(.["도메인명"]=="명V100")' "${CLAUDE_PLUGIN_ROOT}/data/standard_domains.json"
 ```
 
 Table-prefix rules (`TB_`/`TC_`/`TH_`/`TL_`/`TR_`) and the standard suffixes (`_YMD`, `_DT`, `_AMT`, `_NM`, `_CD`, `_YN`, `_NO`, `_CN`, `_SN`, `_ADDR`, …) are defined in that guide — read it rather than restating them here, so this command stays a thin dispatcher over the one rule source. For a deeper, agent-driven pass over the same dictionaries, delegate to the `naming-validator` agent.
