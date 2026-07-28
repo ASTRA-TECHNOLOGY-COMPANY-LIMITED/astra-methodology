@@ -12,9 +12,9 @@ Look up the international standard code corresponding to "$ARGUMENTS".
 
 | Lookup Target | Data File | Search Fields |
 |---|---|---|
-| Country | `data/iso_3166_1_countries.json` | `koreanName`, `englishName`, `alpha2`, `alpha3` |
-| Region | `data/iso_3166_2_regions.json` | `code`, `nameEn`, `nameLocal` |
-| Calling code | `data/country_calling_codes.json` | `countryNameKo`, `countryNameEn`, `alpha2`, `callingCode` |
+| Country | `${CLAUDE_PLUGIN_ROOT}/data/iso_3166_1_countries.json` | `koreanName`, `englishName`, `alpha2`, `alpha3` |
+| Region | `${CLAUDE_PLUGIN_ROOT}/data/iso_3166_2_regions.json` | `code`, `nameEn`, `nameLocal` |
+| Calling code | `${CLAUDE_PLUGIN_ROOT}/data/country_calling_codes.json` | `countryNameKo`, `countryNameEn`, `alpha2`, `callingCode` |
 
 ## Lookup Procedure
 

@@ -20,11 +20,11 @@ Check coding convention compliance for $ARGUMENTS.
 
 | Extension | Language | Reference Document |
 |---|---|---|
-| `.java` | Java | `skills/coding-convention/java-coding-convention.md` |
-| `.ts`, `.tsx` | TypeScript | `skills/coding-convention/typescript-coding-convention.md` |
-| `.tsx`, `.ts` (RN project) | React Native | `skills/coding-convention/react-native-coding-convention.md` |
-| `.py` | Python | `skills/coding-convention/python-coding-convention.md` |
-| `.css`, `.scss`, `.sass` | CSS/SCSS | `skills/coding-convention/css-scss-coding-convention.md` |
+| `.java` | Java | `${CLAUDE_PLUGIN_ROOT}/skills/coding-convention/java-coding-convention.md` |
+| `.ts`, `.tsx` | TypeScript | `${CLAUDE_PLUGIN_ROOT}/skills/coding-convention/typescript-coding-convention.md` |
+| `.tsx`, `.ts` (RN project) | React Native | `${CLAUDE_PLUGIN_ROOT}/skills/coding-convention/react-native-coding-convention.md` |
+| `.py` | Python | `${CLAUDE_PLUGIN_ROOT}/skills/coding-convention/python-coding-convention.md` |
+| `.css`, `.scss`, `.sass` | CSS/SCSS | `${CLAUDE_PLUGIN_ROOT}/skills/coding-convention/css-scss-coding-convention.md` |
 
 > **React Native Detection**: If `package.json` contains `react-native` or `expo` in dependencies, apply React Native convention as a complementary layer on top of TypeScript convention for `.tsx`/`.ts` files.
 
@@ -34,11 +34,11 @@ Before checking, the corresponding language's reference document must be read to
 
 Do **not** rely on a rule list inlined here. For the file's detected language, load the matching per-language rule file and check the code against every rule it defines:
 
-- Java → `skills/coding-convention/java-coding-convention.md`
-- TypeScript → `skills/coding-convention/typescript-coding-convention.md`
-- React Native → `skills/coding-convention/react-native-coding-convention.md` (complementary layer on top of the TypeScript rule file)
-- Python → `skills/coding-convention/python-coding-convention.md`
-- CSS/SCSS → `skills/coding-convention/css-scss-coding-convention.md`
+- Java → `${CLAUDE_PLUGIN_ROOT}/skills/coding-convention/java-coding-convention.md`
+- TypeScript → `${CLAUDE_PLUGIN_ROOT}/skills/coding-convention/typescript-coding-convention.md`
+- React Native → `${CLAUDE_PLUGIN_ROOT}/skills/coding-convention/react-native-coding-convention.md` (complementary layer on top of the TypeScript rule file)
+- Python → `${CLAUDE_PLUGIN_ROOT}/skills/coding-convention/python-coding-convention.md`
+- CSS/SCSS → `${CLAUDE_PLUGIN_ROOT}/skills/coding-convention/css-scss-coding-convention.md`
 
 Each rule file is the authoritative, up-to-date checklist (prohibited patterns, naming, formatting, line-length, import order, etc.). Read it in full and apply its rules verbatim — restating them here would create a drifting copy. For a deeper, agent-driven pass over the same rule files, delegate to the `convention-validator` agent.
 

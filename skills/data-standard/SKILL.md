@@ -25,7 +25,7 @@ For the detailed guide, refer to data-standard-terminology-guide.md in this dire
 
 ### 1. Use standard terminology English abbreviations for column names
 
-Search for the Korean term name in the standard terminology dictionary (`data/standard_terms.json`) and use the English abbreviation.
+Search for the Korean term name in the standard terminology dictionary (`${CLAUDE_PLUGIN_ROOT}/data/standard_terms.json`) and use the English abbreviation.
 
 Key examples:
 | Korean Term | English Abbreviation (physical column name) | Domain |
@@ -111,23 +111,23 @@ Key examples:
 
 ### 5. Forbidden words must not be used
 
-Words in the `금칙어목록` (forbidden word list) field of the standard word dictionary (`data/standard_words.json`) are prohibited.
+Words in the `금칙어목록` (forbidden word list) field of the standard word dictionary (`${CLAUDE_PLUGIN_ROOT}/data/standard_words.json`) are prohibited.
 When found, replace them with the standard word from the `이음동의어목록` (synonym list).
 
 ### 6. How to look up terminology
 
 When DB-related naming is needed:
 
-1. Search `data/standard_terms.json` — the Korean name field (`공통표준용어명`) is **empty in the bundled dataset**, so match Korean input against `이음동의어목록` (synonyms) or `공통표준용어설명` (description), with rows under `.data[]` and Korean field names in jq bracket form (`.["이음동의어목록"]`)
+1. Search `${CLAUDE_PLUGIN_ROOT}/data/standard_terms.json` — the Korean name field (`공통표준용어명`) is **empty in the bundled dataset**, so match Korean input against `이음동의어목록` (synonyms) or `공통표준용어설명` (description), with rows under `.data[]` and Korean field names in jq bracket form (`.["이음동의어목록"]`)
 2. Use the `공통표준용어영문약어명` (common standard term English abbreviation) value as the column name
 3. Determine the data type and length from the `공통표준도메인명` (common standard domain name)
-4. If not found in the standard terms, combine individual word abbreviations from `공통표준단어영문약어명` in `data/standard_words.json`
+4. If not found in the standard terms, combine individual word abbreviations from `공통표준단어영문약어명` in `${CLAUDE_PLUGIN_ROOT}/data/standard_words.json`
 
 ### 7. Application-layer field naming (Entity/DTO/Interface)
 
 Physical DB column names use standard abbreviations (e.g., `CSTMR_NM`, `JOIN_YMD`), but **application-layer field names in entities, DTOs, VOs, and interfaces must use full English names**.
 
-Construct full field names by expanding each standard word's abbreviation to its full English name (`영문명` in `data/standard_words.json`).
+Construct full field names by expanding each standard word's abbreviation to its full English name (`영문명` in `${CLAUDE_PLUGIN_ROOT}/data/standard_words.json`).
 
 #### Suffix expansion rules
 
