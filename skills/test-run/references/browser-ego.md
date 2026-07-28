@@ -67,9 +67,11 @@ Rules for `BROWSER_MODE=ego`:
 ego-browser nodejs <<'EOF'
 const task = await useOrCreateTaskSpace('astra test-run sprint-{N}')
 await openOrReuseTab('{target-url}', { wait: true, timeout: 20 })
-// Clear the inherited session for this origin before login-flow scenarios
-await cdp('Network.clearBrowserCookies')
-await js(String.raw`(() => { localStorage.clear(); sessionStorage.clear(); return true })()`)
+// Clear the inherited session for THIS ORIGIN ONLY. Do not use
+// Network.clearBrowserCookies here — it takes no origin filter and would wipe
+// cookies browser-wide, signing the user out of unrelated sites.
+const origin = await js(String.raw`(() => location.origin)()`)
+await cdp('Storage.clearDataForOrigin', { origin, storageTypes: 'cookies,local_storage,session_storage' })
 await gotoAndWait('{target-url}', { timeout: 20, settle: 1 })
 cliLog('session cleared; starting state: ' + JSON.stringify(await pageInfo()))
 EOF
