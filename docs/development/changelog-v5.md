@@ -1,6 +1,8 @@
-# ASTRA v4.x → v5.19.1 Changelog
+# ASTRA v4.x → v5.19.2 Changelog
 
 Version-change rationale moved out of CLAUDE.md (which is loaded every session) to keep the session context lean. Newest first.
+
+> **v5.19.1 → v5.19.2 change (/check-naming missing Bash tool)**: follow-up to the v5.19.1 review's out-of-scope observation — `commands/check-naming.md` instructs running literal `jq` lookups against the standard dictionaries, but its frontmatter `allowed-tools` lacked `Bash`, so the command could not execute its own jq examples. `Bash` added to `allowed-tools`. No other command shares the defect (`/lookup-term` already declares Bash; `/check-convention`, `/generate-entity`, `/lookup-code` contain no executable shell blocks). SemVer: patch.
 
 > **v5.19.0 → v5.19.1 change (plugin-structure conformance — portable `${CLAUDE_PLUGIN_ROOT}` paths)**: audit against the official Claude Code plugin-structure guideline. Every plugin-internal resource reference that was written as a working-directory-relative path now uses `${CLAUDE_PLUGIN_ROOT}/…` — the `data/*.json` dictionary/ISO files and `skills/*/…` rule/guide files referenced from `/lookup-term`, `/lookup-code`, `/check-naming`, `/check-convention`, `/generate-entity`, and the `data-standard` / `code-standard` skills (these commands/skills run in the target project's cwd, where `data/standard_terms.json` etc. do not exist, so the previous relative paths — including the executable jq examples — could not resolve; the jq file arguments are now also double-quoted). `naming-validator` already resolved the data directory robustly via its `DATA="${CLAUDE_PLUGIN_ROOT:-…}"` preamble and is unchanged; descriptive filename mentions (e.g. `standard_words.json` field notes in blueprint/data-standard guide prose) are intentionally left bare. `plugin.json` additionally gains the recommended `homepage` metadata field. No behavior change beyond path resolution. SemVer: patch.
 
