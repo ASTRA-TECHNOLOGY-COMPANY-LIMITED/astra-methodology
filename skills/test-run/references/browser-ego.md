@@ -70,8 +70,11 @@ await openOrReuseTab('{target-url}', { wait: true, timeout: 20 })
 // Clear the inherited session for THIS ORIGIN ONLY. Do not use
 // Network.clearBrowserCookies here — it takes no origin filter and would wipe
 // cookies browser-wide, signing the user out of unrelated sites.
+// `session_storage` is NOT a valid Storage.StorageType value — clear it in-page
+// (Web Storage clearing is same-origin-scoped by the browser anyway).
 const origin = await js(String.raw`(() => location.origin)()`)
-await cdp('Storage.clearDataForOrigin', { origin, storageTypes: 'cookies,local_storage,session_storage' })
+await cdp('Storage.clearDataForOrigin', { origin, storageTypes: 'cookies,local_storage' })
+await js(String.raw`(() => { sessionStorage.clear(); return true })()`)
 await gotoAndWait('{target-url}', { timeout: 20, settle: 1 })
 cliLog('session cleared; starting state: ' + JSON.stringify(await pageInfo()))
 EOF
