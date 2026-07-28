@@ -1,7 +1,7 @@
 ---
 description: Checks whether DB-related code naming complies with the standard term dictionary
 argument-hint: "<file path or directory>"
-allowed-tools: Read, Glob, Grep
+allowed-tools: Read, Glob, Grep, Bash
 ---
 
 # Standard Naming Check
