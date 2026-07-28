@@ -179,7 +179,7 @@ Role-based mindset agents that bring senior-practitioner perspective. **Never au
 | `/sprint-init` | Sprint scaffolding + worktree-always isolation (`.worktrees/sprint-<N>-<name>/`, v5.19+) + the shared execution pipeline (see Sprint Isolation section above). `--scaffold-stop` / `--scaffold-only` / `--auto` / `--resume`. |
 | `/pr-merge` | Automated PR cycle — commit, push, PR, code review, fix loop, merge, integration-branch promotion (see Sprint Isolation section above). |
 | `/test-scenario` | Authors TDD test scenarios from the blueprint (Given/When/Then per §3 endpoint). |
-| `/test-run` | Single-pass integration test execution with port isolation and the `ASTRA_TEST_RESULT` machine gate line (retries are driven by the calling pipeline, not internally). |
+| `/test-run` | Single-pass integration test execution with port isolation and the `ASTRA_TEST_RESULT` machine gate line (retries are driven by the calling pipeline, not internally). Browser backends in detection order: `cmux` → `ego` (ego lite, macOS-only) → `chrome-mcp`. |
 | `/project-init` | Target-project bootstrap: directory structure, CLAUDE.md, DESIGN.md seed, `.gitignore` wiring. |
 | `/project-checklist` | Read-only Sprint 0 completeness verification of a target project (delegates mechanical checks to `scripts/verify-setup.sh` / `astra-validator`). |
 | `/astra-setup` | Global (user-level) ASTRA environment setup — one-time per machine. |
@@ -217,6 +217,7 @@ When the plugin initializes a target project, it creates a structured layout und
 - All plugin-internal documentation, skill instructions, and user-facing strings inside this repository are written in English. The runtime output language for end users is controlled by the `/select-language` command (Korean / Vietnamese / English) — translating this repository's documentation does not change the deliverable language for existing projects.
 - The `data/` JSON files are large (13K+ terms) — use targeted `jq` queries rather than loading entirely
 - **MCP servers (v5.18+)**: the plugin bundles only `fect-image` / `fect-gpt-image` in `plugin.json`. The `chrome-devtools` MCP server is **not bundled** — skills that drive a browser (`manual-generator`, `catalog-generator`, `user-test`, `uat-parallel`, `test-run`, …) require the user to register `chrome-devtools-mcp` themselves (this also avoids profile `SingletonLock` conflicts in multi-session setups — attach one shared instance via `--browser-url` instead of launching per session). The former `fect-slack` integration (`/slack-import`, `/extract-backlog`, Slack List status sync) was removed in v5.18.
+- **ego (lite) browser (optional, `/test-run` only)**: a third-party Chromium browser ([citrolabs/ego-lite](https://github.com/citrolabs/ego-lite), macOS-only) whose `ego-browser` skill drives it through Bash heredocs instead of MCP tool calls — isolated Task Spaces per agent (no `SingletonLock` contention) and inherited login state. `/test-run` auto-detects it as the **second** backend (`cmux` → `ego` → `chrome-mcp`); nothing else in the plugin depends on it, and it is never bundled. Procedures + caveats (login-state inheritance, blank-screenshot-on-scroll, no perf trace) live in `skills/test-run/references/browser-ego.md`.
 
 ## Behavioral Guardrails (LLM Coding 4 Principles)
 
