@@ -12,9 +12,9 @@ Generate standard-compliant entity code based on the Korean table/column definit
 
 | File | Purpose |
 |---|---|
-| `data/standard_terms.json` | Korean term -> English abbreviation, domain mapping |
-| `data/standard_words.json` | Individual word abbreviation, forbidden word check |
-| `data/standard_domains.json` | Data type/length mapping per domain |
+| `${CLAUDE_PLUGIN_ROOT}/data/standard_terms.json` | Korean term -> English abbreviation, domain mapping |
+| `${CLAUDE_PLUGIN_ROOT}/data/standard_words.json` | Individual word abbreviation, forbidden word check |
+| `${CLAUDE_PLUGIN_ROOT}/data/standard_domains.json` | Data type/length mapping per domain |
 
 ## Input Format Examples
 
@@ -26,9 +26,9 @@ Various input formats are supported:
 ## Generation Procedure
 
 ### Step 1: Term Mapping
-Search each Korean column name in `data/standard_terms.json`.
+Search each Korean column name in `${CLAUDE_PLUGIN_ROOT}/data/standard_terms.json`.
 If a standard term exists, retrieve the English abbreviation, domain, and data type.
-If no standard term exists, combine words from `data/standard_words.json`.
+If no standard term exists, combine words from `${CLAUDE_PLUGIN_ROOT}/data/standard_words.json`.
 
 ### Step 2: Mapping Table Output
 | Korean Column Name | DB Column (Abbreviation) | Full Field Name | Domain | Data Type | Source |
@@ -39,7 +39,7 @@ If no standard term exists, combine words from `data/standard_words.json`.
 Generate an entity class matching the project language.
 If the language is unclear, generate Java JPA by default and also provide TypeScript and Python.
 
-**Field naming rule**: Physical DB column names use standard abbreviations (`CSTMR_NM`), but entity/DTO/interface field names must use **full English names** (`customerName`). Expand each standard word abbreviation to its full English name from `data/standard_words.json`. Apply `lowerCamelCase` for Java/TypeScript, `snake_case` for Python.
+**Field naming rule**: Physical DB column names use standard abbreviations (`CSTMR_NM`), but entity/DTO/interface field names must use **full English names** (`customerName`). Expand each standard word abbreviation to its full English name from `${CLAUDE_PLUGIN_ROOT}/data/standard_words.json`. Apply `lowerCamelCase` for Java/TypeScript, `snake_case` for Python.
 
 **Boolean field rule**: `_YN` (yes/no flag) columns must use `BOOLEAN` type in both DDL and entity code. Field names use `is`/`has` prefix with a past participle or adjective (e.g., `USE_YN` → `isUsed`, `DEL_YN` → `isDeleted`).
 
@@ -50,20 +50,20 @@ If the language is unclear, generate Java JPA by default and also provide TypeSc
 - Java type mapping based on domain (BigDecimal, LocalDateTime, String, etc.)
 - **Field names use full English** (e.g., `private String customerName`, not `customerNm`)
 - **`_YN` fields use `boolean`** (e.g., `private boolean isUsed`, not `String useYn`)
-- Comply with Google Java Style Guide (ref: `skills/coding-convention/java-coding-convention.md`)
+- Comply with Google Java Style Guide (ref: `${CLAUDE_PLUGIN_ROOT}/skills/coding-convention/java-coding-convention.md`)
 
 #### TypeScript (TypeORM)
 - `@Entity()`, `@Column()` decorators
 - Type mapping based on standard suffixes
 - **Field names use full English** (e.g., `customerName: string`, not `customerNm`)
 - **`_YN` fields use `boolean`** (e.g., `isUsed: boolean`)
-- Comply with Google TypeScript Style Guide (ref: `skills/coding-convention/typescript-coding-convention.md`)
+- Comply with Google TypeScript Style Guide (ref: `${CLAUDE_PLUGIN_ROOT}/skills/coding-convention/typescript-coding-convention.md`)
 
 #### Python (SQLAlchemy)
 - `Column()`, `Table()` definitions
 - **Field names use full English snake_case** (e.g., `customer_name`, not `customer_nm`)
 - **`_YN` fields use `bool`** (e.g., `is_used: Mapped[bool]`)
-- Comply with PEP 8 (ref: `skills/coding-convention/python-coding-convention.md`)
+- Comply with PEP 8 (ref: `${CLAUDE_PLUGIN_ROOT}/skills/coding-convention/python-coding-convention.md`)
 
 ### Step 4: DDL Generation
 Also generate SQL DDL applying the standard table name rules (TB_ prefix).
@@ -83,4 +83,4 @@ CREATE TABLE TB_{TABLE_ABBR} (
 - If USE_YN (use status) column is specified, set BOOLEAN DEFAULT true
 - If DEL_YN (deletion status) column is specified, set BOOLEAN DEFAULT false
 - PK is auto-generated with table name_SN (sequence number) pattern (if not explicitly specified)
-- If a word matches the forbidden word dictionary (`금칙어목록` in `data/standard_words.json`), replace it with the standard term
+- If a word matches the forbidden word dictionary (`금칙어목록` in `${CLAUDE_PLUGIN_ROOT}/data/standard_words.json`), replace it with the standard term
