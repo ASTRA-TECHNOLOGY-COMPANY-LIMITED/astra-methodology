@@ -61,7 +61,7 @@ const [SESSION_DIR, TEMPLATE, RESULTS_DIR] = process.argv.slice(2);
 // - LANG drives {{LANG}} in the template and {{T_*}} placeholder substitution.
 // - /uat-parallel uses M_ISSUES_REPORT_TITLE_PARALLEL (with the "(parallel)" /
 //   "(병렬)" qualifier) instead of M_ISSUES_REPORT_TITLE, so a single glance at
-//   the header tells the reader whether the run was sequential (Chrome MCP) or
+//   the header tells the reader whether the run was sequential (ego / Chrome MCP) or
 //   parallel. M_DEV_HINT is intentionally not rendered here — the Playwright
 //   runner has no LLM in the loop to author per-failure hints.
 // If the map is empty (file/jq/key missing), T[key] falls back to the key name

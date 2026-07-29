@@ -1,6 +1,6 @@
 ---
 name: manual-generator
-description: "Automatically generates a professional online service manual or help center from a running service URL and project documents. Captures per-screen screenshots via Chrome MCP, extracts feature descriptions from blueprints / planner documents, and publishes step-by-step guides as a self-contained HTML package under docs/manual/{feature-name}/. Use when generating a manual, writing a user guide, producing help documentation, or building a help center landing page."
+description: "Automatically generates a professional online service manual or help center from a running service URL and project documents. Captures per-screen screenshots with a real browser (ego (lite) by default, Chrome MCP as fallback), extracts feature descriptions from blueprints / planner documents, and publishes step-by-step guides as a self-contained HTML package under docs/manual/{feature-name}/. Use when generating a manual, writing a user guide, producing help documentation, or building a help center landing page."
 argument-hint: "<service-url> <feature-name|all>"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Task, Agent, Skill, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__new_page, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__emulate, mcp__chrome-devtools__hover, mcp__chrome-devtools__fill_form, mcp__chrome-devtools__press_key
 ---
@@ -10,7 +10,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Task, Agent
 Analyzes a running service URL and project documents (blueprints, planner) and generates a **professional online service manual** as a self-contained HTML package.
 
 **Core principles**:
-- **Chrome MCP screenshot capture** — explores the actual service screens and captures step-by-step screenshots automatically
+- **Real-browser screenshot capture** — explores the actual service screens and captures step-by-step screenshots automatically (ego (lite) by default, Chrome MCP as fallback)
 - **Screenshot annotation automation** — CSS injection highlights UI elements + overlays step numbers
 - **Integration with the `/frontend-design` skill** — production-grade, refined and readable manual design
 - **Expert-level writing** — second-person polite form, plain language, step-by-step format
@@ -34,6 +34,7 @@ Analyzes a running service URL and project documents (blueprints, planner) and g
 - **CSS component templates**: see [references/manual-css-template.md](references/manual-css-template.md)
 - **HTML structure templates**: see [references/manual-html-templates.md](references/manual-html-templates.md) (chapter, index, FAQ, glossary)
 - **JS specs + screenshot annotation injection**: see [references/manual-shared-resources.md](references/manual-shared-resources.md)
+- **Browser backend + capture recipe**: see `$CLAUDE_PLUGIN_ROOT/docs/development/browser-backend-policy.md` — detection order, action mapping, ego operating rules, and the shared *Deliverable screenshot capture* sequence
 
 ---
 
@@ -75,12 +76,25 @@ Extract `{SERVICE_URL}` and `{TARGET_FEATURE}` from the input. Both are mandator
 > "Design tokens file not found. Please initialize the project first with `/project-init`."
 > Even if the file is missing, the default tokens at `$CLAUDE_PLUGIN_ROOT/skills/project-init/templates/design-tokens.css` can be used as a fallback.
 
-#### C. Verify URL accessibility
+#### C. Resolve the browser backend, then verify URL accessibility
+
+Resolve `CAPTURE_BACKEND` per the plugin-wide detection order — **ego (default) →
+Chrome MCP (fallback)**; `$ARGUMENTS` may name one explicitly. See the policy doc
+(*Detection order*).
+
+```bash
+command -v ego-browser >/dev/null 2>&1 && echo ego || echo ""
+```
+
+Empty output → `chrome-mcp` when the `mcp__chrome-devtools__*` tools are present.
+If neither is available, tell the user (install `ego-browser` or register
+`chrome-devtools-mcp`) and continue in document-only mode — a manual with no
+screenshots must be labeled as such, never shipped as complete.
 
 URL is **required** at the input layer (Step 0.A), but a runtime accessibility failure (network down, service not started) is allowed to fall back to document-only mode — this is a recovery path, not a user choice:
 
-1. Navigate to the URL via `mcp__chrome-devtools__navigate_page`
-2. Wait for the page to load via `mcp__chrome-devtools__wait_for` (up to 15s)
+1. Navigate to the URL (ego: `gotoAndWait` inside the Task Space `astra manual {feature-name}`; Chrome MCP: `navigate_page`)
+2. Wait for the page to load (up to 15s)
 3. On failure, notify the user and ask whether to:
    - **Retry** (user starts the service, then `/manual-generator` re-runs), or
    - **Proceed as document-only** (manual is generated from blueprints / planner / ux prototypes; Step 3 screenshot capture is skipped)
@@ -162,10 +176,10 @@ Analyze the documents collected in Step 0 to extract per feature:
 
 #### B. Explore the service (when URL is provided)
 
-When `{SERVICE_URL}` is provided, explore the actual service via Chrome MCP:
+When `{SERVICE_URL}` is provided, explore the actual service in the resolved backend:
 
-1. Navigate to the base URL via `mcp__chrome-devtools__navigate_page`
-2. Capture page structure via `mcp__chrome-devtools__take_snapshot`
+1. Navigate to the base URL (ego: `gotoAndWait`; Chrome MCP: `navigate_page`)
+2. Capture page structure (ego: `snapshotText()`; Chrome MCP: `take_snapshot`)
 3. Analyze the navigation menu / routes and cross-check against the documents' screen list
 4. If additional screens not present in documents are discovered, add them to the feature map
 
@@ -289,61 +303,39 @@ Generate `shared/nav.js`, `shared/search.js`, `shared/theme.js`. **Full per-file
 
 For each chapter in the approved TOC, capture the required screenshots.
 
+Follow the **Deliverable screenshot capture** recipe in the policy doc (navigate → wait → clean UI → annotate → scroll top → capture → remove injected nodes), using the `CAPTURE_BACKEND` column of its Action mapping table. In ego mode all six sub-steps of one screen go in a **single heredoc**, and paths passed to `captureScreenshot` must be **absolute**.
+
 #### A. Per-screen screenshot workflow
 
 For each screen:
 
-1. **Navigate**:
-   ```
-   mcp__chrome-devtools__navigate_page({ url: "{SERVICE_URL}/{route}" })
-   ```
-
-2. **Wait for content to load**:
-   ```
-   mcp__chrome-devtools__wait_for({ selector: "{main-content-selector}", timeout: 10000 })
-   ```
-
-3. **Inject highlight + step-number overlay** via `evaluate_script` — add a `.manual-highlight` outline to the target element and a numbered badge at its top-right. **Exact CSS/JS injection snippets and the hardcoding-exception note are in `references/manual-shared-resources.md` (§ Screenshot annotation injection)** — read it before this step.
-
-4. **Capture screenshot** — `take_screenshot()` → `screenshots/desktop/{chapter}-step-{N}.png`
-
+1. **Navigate** to `{SERVICE_URL}/{route}`.
+2. **Wait** for `{main-content-selector}` (10 s).
+3. **Inject highlight + step-number overlay** — add a `.manual-highlight` outline to the target element and a numbered badge at its top-right. **Exact CSS/JS injection snippets and the hardcoding-exception note are in `references/manual-shared-resources.md` (§ Screenshot annotation injection)** — read it before this step. Inject via `js(...)` (ego) or `evaluate_script` (Chrome MCP).
+4. **Capture screenshot** → `screenshots/desktop/{chapter}-step-{N}.png`
 5. **Remove injected elements** — per `references/manual-shared-resources.md` §3c (remove the class, the `.manual-step-badge`, and the style tag)
+6. **Verify the file is non-blank** before counting it done; re-take a blank frame (ego scroll caveat) rather than publishing it.
 
 #### B. Responsive screenshots (when RESPONSIVE_MODE >= 2)
 
-For each screen's main screenshot (first or representative):
+For each screen's main screenshot (first or representative) — ego uses
+`cdp('Emulation.setDeviceMetricsOverride', …)`, Chrome MCP uses `resize_page`:
 
-1. **Tablet** (RESPONSIVE_MODE >= 3):
-   ```
-   mcp__chrome-devtools__resize_page({ width: 768, height: 1024 })
-   ```
-   → capture → `screenshots/tablet/{chapter}-overview.png`
-
-2. **Mobile** (RESPONSIVE_MODE >= 2):
-   ```
-   mcp__chrome-devtools__resize_page({ width: 375, height: 812 })
-   ```
-   → capture → `screenshots/mobile/{chapter}-overview.png`
-
-3. **Restore to desktop**:
-   ```
-   mcp__chrome-devtools__resize_page({ width: 1280, height: 800 })
-   ```
+1. **Tablet** (RESPONSIVE_MODE >= 3): 768×1024 → `screenshots/tablet/{chapter}-overview.png`
+2. **Mobile** (RESPONSIVE_MODE >= 2): 375×812 → `screenshots/mobile/{chapter}-overview.png`
+3. **Restore to desktop**: 1280×800 (ego: `cdp('Emulation.clearDeviceMetricsOverride')`) — a missed restore silently mobile-sizes every later capture.
 
 #### C. Multi-step flow capture
 
 For chapters that include user flows (login, form submit, CRUD, etc.):
 
 1. Capture the starting screen (Step A workflow)
-2. Execute the interaction:
-   - Input: `mcp__chrome-devtools__fill({ selector: "{input}", value: "{test-data}" })`
-   - Click: `mcp__chrome-devtools__click({ selector: "{button}" })`
-   - Key press: `mcp__chrome-devtools__press_key({ key: "Enter" })`
-3. Wait for result: `mcp__chrome-devtools__wait_for({ selector: "{result-indicator}" })`
+2. Execute the interaction — fill / click / press per the Action mapping table
+3. Wait for `{result-indicator}`
 4. Capture the next step (repeat Step A workflow)
 5. Capture the final result screen
 
-> **Caution**: interact only with test data. Be careful not to modify real data. Capture read-only flows (view, search) first when possible; for write flows (create, update, delete), confirm with the user before proceeding.
+> **Caution**: interact only with test data. Be careful not to modify real data. Capture read-only flows (view, search) first when possible; for write flows (create, update, delete), confirm with the user before proceeding. **In ego mode the browser carries the user's real login session** — never drive a write flow against a production origin.
 
 #### D. Progress report
 
@@ -353,6 +345,10 @@ For chapters that include user flows (login, form submit, CRUD, etc.):
    - Chapter 02 {feature}: {N} done
    - ...
 ```
+
+**ego only** — once all captures are done, close the Task Space in a final heredoc:
+`completeTaskSpace('astra manual {feature-name}', { keep: false })`. Runs on every
+exit path, including an aborted run; an un-closed space leaves orphaned windows.
 
 ---
 

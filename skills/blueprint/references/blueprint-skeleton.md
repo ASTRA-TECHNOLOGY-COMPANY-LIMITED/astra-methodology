@@ -242,7 +242,7 @@ FUNCTION registerUser(userName, emailAddress):
 |-------|-------|------|
 | Unit | Pseudocode branches from Section 6 | JUnit / Vitest / pytest |
 | Integration | Section 4 API contract + Section 3 DB | Testcontainers |
-| E2E | Section 2.2 user scenario | Playwright / cmux browser |
+| E2E | Section 2.2 user scenario | Playwright / `/test-run` browser backend |
 
 ### 9.1 Required test cases (coverage priority)
 - [ ] {Section 5.1 happy path}

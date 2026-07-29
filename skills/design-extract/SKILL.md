@@ -88,7 +88,7 @@ From the WebFetch result:
 - Extract `font-family: ...` declarations
 - Back-infer color families from Tailwind classes like `bg-blue-600` / `text-zinc-900`
 
-If Chrome MCP is available, take screenshots and additionally apply Step 2A to improve accuracy.
+If a browser backend is available (ego (lite) or Chrome MCP), take screenshots and additionally apply Step 2A to improve accuracy.
 
 #### Step 2D: Directory extraction
 

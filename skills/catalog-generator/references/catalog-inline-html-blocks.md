@@ -8,7 +8,7 @@ Literal HTML skeletons instantiated during page generation. Substitute `{...}` p
 
 ## Product card HTML (Step 4.C)
 
-Enhanced with screenshot gallery and illustration break. The `.product-card__screenshot-gallery` block is only included for hero/premium tier products that have Chrome MCP screenshots — omit it entirely for products without screenshots. The `.illustration-break` is inserted between logical product groups (e.g., after every 3–4 products or between tier boundaries).
+Enhanced with screenshot gallery and illustration break. The `.product-card__screenshot-gallery` block is only included for hero/premium tier products that have browser screenshots — omit it entirely for products without screenshots. The `.illustration-break` is inserted between logical product groups (e.g., after every 3–4 products or between tier boundaries).
 
 ```html
 <article class="product-card product-card--{tier}" data-product-id="{id}">
