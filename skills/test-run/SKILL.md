@@ -1,15 +1,17 @@
 ---
 name: test-run
-description: "Launches the server and performs integration testing with a real browser. Supports cmux built-in browser (primary), ego (lite) browser (secondary), and Chrome MCP (fallback). Automatically conducts server log monitoring, page verification, API behavior checks, and performance measurement."
-argument-hint: "[target URL or scenario] [Chrome MCP | ego]"
+description: "Launches the server and performs integration testing with a real browser. Supports ego (lite) browser (default), Chrome MCP (fallback), and cmux built-in browser (legacy). Automatically conducts server log monitoring, page verification, API behavior checks, and performance measurement."
+argument-hint: "[target URL or scenario] [ego | Chrome MCP | cmux]"
 allowed-tools: Read, Write, Edit, Bash, BashOutput, KillShell, Glob, Grep, Skill, AskUserQuestion, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__fill_form, mcp__chrome-devtools__press_key, mcp__chrome-devtools__hover, mcp__chrome-devtools__list_console_messages, mcp__chrome-devtools__get_console_message, mcp__chrome-devtools__list_network_requests, mcp__chrome-devtools__get_network_request, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__emulate, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__new_page, mcp__chrome-devtools__handle_dialog, mcp__chrome-devtools__performance_start_trace, mcp__chrome-devtools__performance_stop_trace, mcp__chrome-devtools__performance_analyze_insight
 ---
 
 # ASTRA Integration Testing
 
 Launches the server and performs integration testing in a real browser. Supports
-three backends — **cmux** (primary), **ego (lite)** (secondary, macOS-only) and
-**Chrome MCP** (fallback); the LLM monitors server logs and verifies behavior.
+three backends — **ego (lite)** (default, macOS-only), **Chrome MCP** (fallback)
+and **cmux** (legacy); the LLM monitors server logs and verifies behavior. The
+detection order is plugin-wide policy, defined in
+`$CLAUDE_PLUGIN_ROOT/docs/development/browser-backend-policy.md`.
 
 ## Execution Procedure
 
@@ -55,56 +57,51 @@ echo "Port pre-flight OK — test branch ${CURRENT_BRANCH}, TEST_PORT=$TEST_PORT
 
 ### Step 1: Detect Browser Environment
 
-Set `BROWSER_MODE` by this order (first match wins):
+Set `BROWSER_MODE` per the plugin-wide detection order — **ego (default) →
+Chrome MCP (fallback) → cmux (legacy)**. The authoritative rules, the
+`$ARGUMENTS` keyword table, and the reason MCP availability is not shell-detected
+are in **`$CLAUDE_PLUGIN_ROOT/docs/development/browser-backend-policy.md`**
+(*Detection order*). Skill-specific addition: if the targets are API-only (server
+health, DB verification, log analysis, no page rendering/UI), set
+`BROWSER_MODE=none` and run Steps 2-4, 7, 9-13 only.
 
-1. **Necessity** — if the targets are API-only (server health, DB verification,
-   log analysis, no page rendering/UI), set `BROWSER_MODE=none` and skip browser
-   init (run Steps 2-4, 7, 9-13 only).
-2. **Explicit intent** — `$ARGUMENTS` contains "Chrome MCP"/"chrome-devtools" →
-   `chrome-mcp`; contains "ego"/"ego-browser"/"ego lite" → `ego`.
-3. **Auto-detect** — `which cmux >/dev/null 2>&1 && cmux ping >/dev/null 2>&1`
-   → `cmux`; else `which ego-browser >/dev/null 2>&1` → `ego`; else `chrome-mcp`.
+```bash
+# Shell-detectable backends only — prints: ego | cmux | (empty)
+command -v ego-browser >/dev/null 2>&1 && echo ego \
+  || { command -v cmux >/dev/null 2>&1 && cmux ping >/dev/null 2>&1 && echo cmux || echo ""; }
+```
+
+Empty output → `chrome-mcp` when the `mcp__chrome-devtools__*` tools are present
+in this session; `cmux` output → still prefer `chrome-mcp` if those tools are
+present. If no backend is available and browser scenarios are in scope, report
+the gap (install `ego-browser` or register `chrome-devtools-mcp`) and record
+those scenarios as `SKIP` — never as `PASS`.
 
 | Mode | Browser tool |
 |------|-------------|
-| `cmux` | cmux browser commands (Bash) |
 | `ego` | `ego-browser nodejs` heredoc scripts (Bash) — macOS-only |
 | `chrome-mcp` | Chrome DevTools MCP tools |
+| `cmux` | cmux browser commands (Bash) |
 | `none` | No browser launched |
 
 Display the detected mode:
-> **Browser environment detected**: {cmux browser / ego (lite) / Chrome MCP / no browser needed}
+> **Browser environment detected**: {ego (lite) / Chrome MCP / cmux browser / no browser needed}
 
 ---
 
 ### Step 1-A: Browser Command Reference
 
-Use this mapping table throughout all browser interaction steps. Choose the correct column based on `BROWSER_MODE`:
+The per-action command mapping for all three backends is the plugin-wide
+**Action mapping** table in
+`$CLAUDE_PLUGIN_ROOT/docs/development/browser-backend-policy.md` — read it once
+after resolving `BROWSER_MODE` and use the column for that mode throughout Steps
+5, 6 and 8. That document also carries the **ego operating rules** (one heredoc =
+one round, `cliLog` as the only output channel, seconds-not-milliseconds, `@N`
+ref expiry, blank-screenshot-on-scroll, handoff-is-a-hard-stop, login-state
+inheritance, mandatory `completeTaskSpace`) — all load-bearing under `ego`.
 
-| Action | cmux Browser (Bash) | ego (lite) — inside `ego-browser nodejs` heredoc | Chrome MCP Tool |
-|--------|---------------------|------------------------------------------------|-----------------|
-| **Open browser** | `cmux new-pane --type browser --url {url}` | `useOrCreateTaskSpace('{task}')` then `openOrReuseTab({url}, { wait: true })` | (auto-managed) |
-| **Navigate** | `cmux browser goto {url}` | `gotoAndWait({url}, { timeout: 20 })` | `navigate_page` |
-| **Snapshot (DOM)** | `cmux browser snapshot` | `snapshotText()` → `[ref=N, loc=…]` | `take_snapshot` |
-| **Screenshot** | `cmux browser screenshot` | `captureScreenshot()` (⚠️ scroll caveat — see ref) | `take_screenshot` |
-| **Click** | `cmux browser click '{selector}'` | `click('@N' / '{css}' / [x,y], { label })` | `click` |
-| **Fill input** | `cmux browser fill '{selector}' '{text}'` | `fillInput('{selector}', '{text}')` | `fill` |
-| **Press key** | `cmux browser press {key}` | `pressKey('{key}')` / `typeText('{text}')` | `press_key` |
-| **Hover** | `cmux browser hover '{selector}'` | `hover('{selector}')` | `hover` |
-| **Wait** | `cmux browser wait --selector '{css}' --timeout-ms {ms}` | `waitForElement('{css}')` / `wait({sec})` / `waitForNetworkIdle()` | `wait_for` |
-| **Console errors** | `cmux browser console list` | ⚠️ no helper — inject a collector via `js(...)` before navigating (see ref) | `list_console_messages` |
-| **JS evaluate** | `cmux browser eval '{script}'` | ``js(String.raw`(() => { … })()`)`` | `evaluate_script` |
-| **Dialog handle** | `cmux browser dialog accept` / `dismiss` | `cdp('Page.handleJavaScriptDialog', { accept: true })` | `handle_dialog` |
-| **Tab list / switch / new** | `cmux browser tab list` / `tab switch {i}` / `tab new` | `listTabs()` / `switchTab({id})` / `openOrReuseTab({url})` | `list_pages` / `select_page` / `new_page` |
-| **Read URL / text / visibility** | `cmux browser get url` / `get text '{sel}'` / `is visible '{sel}'` | `pageInfo()` / `snapshotText()` / `js(…)` | (via `evaluate_script` / `take_snapshot`) |
-| **Scroll** | `cmux browser scroll --dy {pixels}` | `scrollBy({px})` / `scrollToBottomUntil(fn)` | (via evaluate_script) |
-| **Resize viewport** | `cmux browser eval 'window.resizeTo({w},{h})'` | `cdp('Emulation.setDeviceMetricsOverride', {…})` | `resize_page` |
-| **Network requests** | `cmux browser eval 'performance.getEntriesByType("resource")'` | `drainEvents()` / `js('performance.getEntriesByType("resource")')` | `list_network_requests` |
-| **Performance trace** | ⚠️ Not available — fallback to Chrome MCP | ⚠️ Not available — fallback to Chrome MCP | `performance_start_trace` / `performance_stop_trace` |
-
-cmux commands run via the Bash tool (`--snapshot-after` auto-captures the DOM);
-ego actions are helper calls **inside one heredoc**, never standalone shell
-commands. Per-mode detail: `references/browser-{cmux,ego,chrome-mcp}.md`.
+Per-mode step-by-step procedures stay in this skill:
+`references/browser-{ego,chrome-mcp,cmux}.md`.
 
 ---
 
@@ -210,14 +207,16 @@ list to the user and get confirmation.
 
 If `BROWSER_MODE=none`, skip this step entirely.
 
-**cmux mode: open the browser pane first** (all later cmux commands target it):
-`cmux new-pane --type browser --url {target-url}`. **ego mode: every heredoc
-starts with `useOrCreateTaskSpace('astra test-run sprint-{N}')`**, and Step 10
-closes it. Chrome MCP auto-manages the browser — just call `navigate_page`.
+**ego mode: every heredoc starts with
+`useOrCreateTaskSpace('astra test-run sprint-{N}')`** (the Task Space name is
+fixed by the policy doc), and Step 10 closes it. Chrome MCP auto-manages the
+browser — just call `navigate_page`. **cmux mode: open the browser pane first**
+(all later cmux commands target it):
+`cmux new-pane --type browser --url {target-url}`.
 
 Then read **`references/browser-<mode>.md`** for the per-step commands of the
-detected mode — `browser-cmux.md`, `browser-ego.md`, or
-`browser-chrome-mcp.md`, Step 5 section:
+detected mode — `browser-ego.md`, `browser-chrome-mcp.md`, or
+`browser-cmux.md`, Step 5 section:
 page-load verification, console-error check, network-request verification, and
 responsive-layout verification for each page.
 
@@ -267,12 +266,13 @@ Periodically check server logs during testing:
 ### Step 8: Performance Measurement (optional)
 
 When the user requests performance measurement, or for key pages. A full trace
-(Core Web Vitals) requires the Chrome DevTools Protocol, so use Chrome MCP for
-this step regardless of `BROWSER_MODE`. Read **`references/browser-<mode>.md`**
-(Step 8 section) for the exact procedure; if `BROWSER_MODE` is `cmux`/`ego` and
-Chrome MCP is unavailable, follow the basic-metrics fallback in that reference
-and note "Performance trace unavailable ({mode} mode, Chrome MCP not connected)"
-in the report.
+(Core Web Vitals) has no ego/cmux equivalent, so this step **escalates to Chrome
+MCP regardless of `BROWSER_MODE`** — see *Escalation to Chrome MCP* in the policy
+doc. Read **`references/browser-<mode>.md`** (Step 8 section) for the exact
+procedure; if `BROWSER_MODE` is `ego`/`cmux` and Chrome MCP is unavailable,
+follow the basic-metrics fallback in that reference and note "Performance trace
+unavailable ({mode} mode, Chrome MCP not connected)" in the report. Escalation is
+per-step — the remaining steps stay on the detected backend.
 
 ### Step 9: Generate Test Result Report
 
@@ -288,7 +288,7 @@ must appear verbatim in the report:
 ## Test Environment
 - Date: {date}
 - Server: {tech stack + version}
-- Browser: {cmux built-in browser / ego (lite) / Chrome DevTools MCP / No browser (API-only)}
+- Browser: {ego (lite) / Chrome DevTools MCP / cmux built-in browser / No browser (API-only)}
 
 <!-- Machine-parseable gate line — values from captured command output only -->
 ASTRA_TEST_RESULT: {PASS|FAIL} passed={N} failed={N} total={N} skipped={N}

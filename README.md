@@ -55,11 +55,11 @@ claude plugin install astra-methodology@astra
 | `/sprint-init` | New sprint initialization — auto-generates prompt map, progress tracker, retrospective templates |
 | `/service-planner` | Design Thinking based planning automation — 6 markdown deliverables + design-system HTML mockups (index.html, styles.css, SCR-NNN.html) co-located in `docs/planner/{NNN}-{feature}/` |
 | `/handoff-publish` | UX/UI/Dev/QA Screen-ID based handoff package (HANDOFF_PROCESS_GUIDE v1.1) |
-| `/manual-generator` | Service manual auto-generator with Chrome MCP screenshots — self-contained HTML |
+| `/manual-generator` | Service manual auto-generator with real-browser screenshots (ego → Chrome MCP) — self-contained HTML |
 | `/catalog-generator` | Product promotional catalog auto-generator — self-contained HTML, AI imagery |
 | `/autorun` | Zero-interaction full pipeline (planning → testing) with up-to-N self-improvement loop |
 | `/pr-merge` | Commit → review → fix → merge full PR cycle (feature → dev → staging → main) |
-| `/test-run` | Chrome MCP-based E2E integration test — server startup, scenario execution, report generation |
+| `/test-run` | Real-browser E2E integration test (ego → Chrome MCP → cmux) — server startup, scenario execution, report generation |
 | `/test-scenario` | E2E test scenario generation — analyzes blueprints, DB design, routes, and API endpoints |
 | `/data-standard` | Korean public data standard term application guide |
 
@@ -170,7 +170,7 @@ All hooks are non-blocking (exit 0) — they display warnings only and do not in
 Gate 1 (Write-time)          Gate 2 (Review-time)         Gate 2.5 (Design)            Gate 3 (Release)
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │ - Forbidden word │    │ - Code review    │    │ - Design review  │    │ - /check-naming  │
-│   check          │    │ - PR review      │    │ - Chrome MCP     │    │ - Integration    │
+│   check          │    │ - PR review      │    │ - Browser check  │    │ - Integration    │
 │ - Naming valid.  │    │ - Manual + AI    │    │ - Responsive     │    │   test           │
 │ - Auto (Hook)    │    │                  │    │   validation     │    │ - Pre-deploy     │
 │                  │    │                  │    │                  │    │   verification   │
@@ -284,7 +284,7 @@ astra-methodology/
 │   ├── catalog-generator/         #   Product catalog auto-generator (/catalog-generator)
 │   ├── autorun/                   #   Zero-interaction full pipeline (/autorun)
 │   ├── pr-merge/                  #   Commit → review → merge full cycle (/pr-merge)
-│   ├── test-run/                  #   Chrome MCP integration test (/test-run)
+│   ├── test-run/                  #   Real-browser integration test (/test-run)
 │   ├── test-scenario/             #   E2E test scenario generation (/test-scenario)
 │   ├── data-standard/             #   Public data standard guide (/data-standard, auto-applied)
 │   ├── coding-convention/         #   Coding convention (auto-applied)

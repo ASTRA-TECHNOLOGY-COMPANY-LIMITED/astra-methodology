@@ -1,84 +1,41 @@
 # Browser Procedures — ego (lite) Mode
 
-Per-step browser procedures for `BROWSER_MODE=ego`. Return to `SKILL.md` for the
-overall flow, state-file handling, and the machine-anchored pass/fail gate. Every
-action here runs through the **Bash** tool as an `ego-browser nodejs` heredoc.
+Per-step browser procedures for `BROWSER_MODE=ego`, the **default backend**
+(v5.21.0+). Return to `SKILL.md` for the overall flow, state-file handling, and
+the machine-anchored pass/fail gate. Every action here runs through the **Bash**
+tool as an `ego-browser nodejs` heredoc.
+
+**Read first**: the *ego operating rules* in
+`$CLAUDE_PLUGIN_ROOT/docs/development/browser-backend-policy.md` — one heredoc =
+one round, `cliLog` as the only output channel, seconds-not-milliseconds, `@N`
+ref expiry, the blank-screenshot-on-scroll caveat, handoff-is-a-hard-stop,
+login-state inheritance (with the origin-scoped session-clearing snippet), and
+the mandatory `completeTaskSpace`. They are not repeated here.
 
 ## Contents
-- [General notes](#general-notes)
-- [Login-state inheritance — read before auth testing](#login-state-inheritance--read-before-auth-testing)
+- [test-run–specific rules](#test-runspecific-rules)
 - [Step 5 — Basic Page Verification](#step-5--basic-page-verification)
 - [Step 6 — Scenario-based Integration Testing](#step-6--scenario-based-integration-testing)
 - [Step 8 — Performance Measurement](#step-8--performance-measurement)
 
-## General notes
+## test-run–specific rules
 
-- **One heredoc = one round.** The Node runtime exits after each heredoc and
-  keeps no state, so every heredoc starts by re-selecting the space:
-  `const task = await useOrCreateTaskSpace('astra test-run sprint-{N}')`. Reuse
-  the *same* space name for the whole `/test-run` invocation.
-- **`cliLog(...)` is the only output channel.** A value that is merely returned
-  or `console.log`-ed never reaches the transcript — and a scenario whose result
-  you cannot read is a `SKIP`, not a `PASS` (SKILL.md Step 11 anti-fabrication
-  rule).
-- Waits and `timeout` values are in **seconds** (only `…Ms` parameters are
-  milliseconds).
-- `@N` refs are valid only for the most recent `snapshotText()`. For anything
-  referenced across rounds, use the `loc=…` value from the snapshot or a plain
-  CSS selector.
+- **Task Space**: `astra test-run sprint-{N}` — the same name for every heredoc
+  of one `/test-run` invocation; Step 10 closes it.
+- **Unreadable result = `SKIP`, never `PASS`.** A scenario whose outcome you did
+  not `cliLog` and read back is unverified (SKILL.md Step 11 anti-fabrication
+  rule). The same applies when a handoff interrupts the run: record the remaining
+  scenarios as `SKIP`, run the Step 10 cleanup, and report — `/test-run` is a
+  machine gate, so a human-assisted retry is the user's call, not the model's.
+- **Auth scenarios start dirty.** The space inherits the user's real session, so
+  a broken login flow can look like a `PASS` and test writes land in the real
+  account. Clear the session origin-scoped (policy doc snippet) before any
+  auth-flow scenario, or record it as `SKIP` with the reason.
 - `js()` runs in the page; navigation, waits and `cliLog` belong in the heredoc
   body. Wrap multi-step page logic in one self-invoking closure and return once.
   Use `String.raw` for regex-bearing sources.
-- **Handoff is a hard stop for automated testing.** If a helper fails with "user
-  is controlling" / "inactive space", do **not** retry and do **not** call
-  `takeOverTaskSpace` — record the remaining scenarios as `SKIP`, run the Step 10
-  cleanup, and report. `/test-run` is a machine gate; a human-assisted retry is
-  the user's call, not the model's.
-- **Known caveats (ego lite 0.4.5.5)** — `captureScreenshot()` can return a blank
-  frame when the page is scrolled (`scrollY != 0`); scroll back to the top
-  (`scrollBy(-999999)` or `js('window.scrollTo(0,0)')`) before capturing, and
-  discard/re-take a blank frame rather than filing it as evidence. There is no
-  performance-trace helper (see Step 8), and no console-message helper (see
-  Step 5-B).
 - Screenshots taken as evidence go under `docs/tests/test-reports/assets/`;
   pass an absolute path to `captureScreenshot(...)`.
-
-## Login-state inheritance — read before auth testing
-
-An ego task space **inherits the user's real login state** for the target
-origin. That is the mode's main advantage (no re-login on internal/staging
-systems behind SSO) and its main trap for `/test-run`:
-
-- An authentication scenario may start **already logged in as the real user**,
-  making a broken login flow look like a `PASS`.
-- Test data written during a scenario lands in the **real account**.
-
-Rules for `BROWSER_MODE=ego`:
-
-1. Before any auth-flow scenario, assert the starting state explicitly and log
-   it — never assume a clean session.
-2. If the target origin already carries a session and the scenario is about
-   *logging in*, clear it first (below) or record the scenario as `SKIP` with the
-   reason; do not report an inherited session as a login success.
-3. Never run destructive or write-heavy scenarios against a production origin in
-   this mode — switch to `chrome-mcp`/`cmux` with a dedicated test profile.
-
-```bash
-ego-browser nodejs <<'EOF'
-const task = await useOrCreateTaskSpace('astra test-run sprint-{N}')
-await openOrReuseTab('{target-url}', { wait: true, timeout: 20 })
-// Clear the inherited session for THIS ORIGIN ONLY. Do not use
-// Network.clearBrowserCookies here — it takes no origin filter and would wipe
-// cookies browser-wide, signing the user out of unrelated sites.
-// `session_storage` is NOT a valid Storage.StorageType value — clear it in-page
-// (Web Storage clearing is same-origin-scoped by the browser anyway).
-const origin = await js(String.raw`(() => location.origin)()`)
-await cdp('Storage.clearDataForOrigin', { origin, storageTypes: 'cookies,local_storage' })
-await js(String.raw`(() => { sessionStorage.clear(); return true })()`)
-await gotoAndWait('{target-url}', { timeout: 20, settle: 1 })
-cliLog('session cleared; starting state: ' + JSON.stringify(await pageInfo()))
-EOF
-```
 
 ## Step 5 — Basic Page Verification
 
@@ -119,8 +76,16 @@ cliLog(JSON.stringify(await drainEvents(), null, 2))
 EOF
 ```
 
-Cross-reference the entries with the server logs to classify backend vs.
-frontend errors. If `drainEvents()` returns no console entries for a page you
+Entries are CDP events (`{ method, params, sessionId }`) — console messages are
+`Runtime.consoleAPICalled` with `params.type` and `params.args[].value`.
+
+**Drop `chrome-extension://` entries before counting.** The Task Space inherits
+the user's real profile, so their extensions contribute console output and
+network requests that have nothing to do with the app; counting them turns a
+clean page into a failing one.
+
+Cross-reference the remaining entries with the server logs to classify backend
+vs. frontend errors. If `drainEvents()` returns no console entries for a page you
 know logs errors, fall back to an in-page collector installed via
 `js('window.addEventListener("error", …)')` before navigation, and note the
 limitation in the report rather than recording a silent "0 errors".
@@ -139,7 +104,9 @@ EOF
 
 `responseStatus` requires a same-origin or CORS-exposed Timing-Allow-Origin
 response; for anything it cannot see, verify the request in the server logs
-instead of assuming success.
+instead of assuming success. `drainEvents()` is the richer source when the CDP
+domains were enabled before navigation (`Network.responseReceived` →
+`params.response.url` / `.status`) — again minus `chrome-extension://` entries.
 
 ### D. Responsive Layout Verification
 
@@ -187,8 +154,8 @@ snapshot.
 
 ### Authentication Flow Testing
 
-Run the session-clearing block above first (see
-[Login-state inheritance](#login-state-inheritance--read-before-auth-testing)).
+Run the origin-scoped session-clearing block from the policy doc first
+(*ego operating rules* → login-state inheritance).
 
 ```bash
 ego-browser nodejs <<'EOF'

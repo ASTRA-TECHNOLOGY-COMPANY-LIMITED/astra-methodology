@@ -8,7 +8,7 @@ allowed-tools: AskUserQuestion, Skill
 
 Lightweight entry point that collects a service URL and a target feature, then delegates the full pipeline to the `/manual-generator` skill.
 
-The skill handles document analysis (blueprints / planner), Chrome MCP screenshot capture, design tone selection, and HTML package generation under `docs/manual/{feature-name}/`. For per-step details, see [skills/manual-generator/SKILL.md](../skills/manual-generator/SKILL.md).
+The skill handles document analysis (blueprints / planner), real-browser screenshot capture (ego → Chrome MCP), design tone selection, and HTML package generation under `docs/manual/{feature-name}/`. For per-step details, see [skills/manual-generator/SKILL.md](../skills/manual-generator/SKILL.md).
 
 ## Input
 
@@ -43,7 +43,7 @@ The skill itself handles:
 - Project context loading (`CLAUDE.md`, `docs/blueprints/`, `docs/planner/`, `src/styles/design-tokens.css`)
 - URL accessibility check + document-only fallback (Step 0.C)
 - TOC + design-tone confirmation via `AskUserQuestion`
-- Chrome MCP screenshot capture per chapter
+- Real-browser screenshot capture per chapter (ego (lite) by default, Chrome MCP as fallback)
 - HTML package generation (cover variant or Help Center variant)
 - Validation and final report
 

@@ -12,7 +12,7 @@ description: >
   + screenshots/) under docs/tests/uat-reports/. Use when the user asks
   to "run UAT in parallel", "speed up UAT", "test multi-user", "song song",
   "uat parallel", or runs /uat-parallel. Distinct from /user-test
-  (sequential Chrome MCP, supports interactive mode), /test-run
+  (sequential, ego → Chrome MCP, supports interactive mode), /test-run
   (developer integration tests), /test-scenario (scenario authoring).
 argument-hint: "[--workers N] [--from glob] [--priority critical|high|medium|low] [--feature name] [--timeout 30s] [--headed] [--browser chromium|firefox|webkit] [--lang vi|en|ko]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
@@ -26,7 +26,7 @@ This skill is the **parallel sibling** of `/user-test`. Use `/user-test` for int
 
 | Aspect | `/user-test` | `/uat-parallel` |
 |---|---|---|
-| Driver | Chrome MCP (in-Claude tool calls) | Playwright CLI (subprocess) |
+| Driver | ego / Chrome MCP (in-Claude tool calls) | Playwright CLI (subprocess) |
 | Concurrency | 1 page, sequential | N workers, parallel |
 | Browser state | Shared across cases | Isolated per worker |
 | Per-case timeout | None (Claude must self-abort) | Hard timeout enforced by Playwright |

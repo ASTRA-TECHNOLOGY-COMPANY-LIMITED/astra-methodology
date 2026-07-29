@@ -37,7 +37,11 @@ Examples:
 
 `{path}` may be exact (`/api/auth/login`) or use wildcards (`/api/users/*`).
 
-Verify via `mcp__chrome-devtools__list_network_requests`, then filter. Use the time window from action start until DOM is stable (~2s after action).
+Verify via the backend's network source — `drainEvents()` in ego mode,
+`mcp__chrome-devtools__list_network_requests` in Chrome MCP mode (see
+`browser-ego-uat.md` for the ego evidence table and its Performance-API
+fallback). Use the time window from action start until DOM is stable (~2s after
+action).
 
 Examples:
 ```
@@ -63,7 +67,7 @@ Examples:
 
 **Selector support:**
 - Standard CSS: `button.primary`, `input[type="email"]`, `#main h1`.
-- `:has-text("...")` is non-standard CSS — implement via `evaluate_script` scanning `textContent`.
+- `:has-text("...")` is non-standard CSS — implement it in the backend's in-page evaluation (`js(...)` in ego mode, `evaluate_script` in Chrome MCP mode) by scanning `textContent`.
 
 Examples:
 ```
@@ -80,7 +84,10 @@ Examples:
 | `console: no warning` | No `warning`-level messages |
 | `console: contains "{x}"` | Any message contains `{x}` |
 
-Verify via `mcp__chrome-devtools__list_console_messages`, filter by timestamp.
+Verify via the backend's console source — `drainEvents()` in ego mode (CDP
+collectors installed at session start),
+`mcp__chrome-devtools__list_console_messages` in Chrome MCP mode — filtered by
+timestamp.
 
 Note: pages may emit console errors from extensions or ad-blockers. If `console: no error` FAILs but the source is clearly not app code, still report — at severity LOW.
 

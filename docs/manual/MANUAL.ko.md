@@ -634,7 +634,7 @@ docs/database/database-design.md의 내용을 엄격히 준수해서
 "art deco 느낌의 고급스러운 상품 상세 페이지를 만들어줘"
 ```
 
-### 9.3 실시간 검증 (chrome-devtools MCP)
+### 9.3 실시간 검증 (브라우저 백엔드: ego → chrome-devtools MCP)
 
 ```
 # 레이아웃 확인
@@ -746,12 +746,12 @@ docs/database/database-design.md의 업데이트된 내용을 반영해서
 
 ## 11. 테스트 실행
 
-테스트 시나리오를 기반으로 실제 테스트를 수행합니다. `/test-run` 명령으로 서버 실행 + Chrome MCP 통합 테스트를 자동 수행합니다.
+테스트 시나리오를 기반으로 실제 테스트를 수행합니다. `/test-run` 명령으로 서버 실행 + 실제 브라우저 통합 테스트를 자동 수행합니다. 백엔드는 **ego (lite) → Chrome MCP → cmux** 순으로 자동 감지되며, ego가 기본값입니다(에이전트마다 격리된 Task Space를 사용하므로 여러 세션이 하나의 브라우저 프로파일을 두고 충돌하지 않습니다).
 
 ### 11.1 통합 테스트 실행
 
 ```
-# 서버 실행 + Chrome MCP 통합 테스트 자동 수행
+# 서버 실행 + 실제 브라우저 통합 테스트 자동 수행
 /test-run
 
 # → 서버 자동 실행 + 로그 모니터링
@@ -796,7 +796,7 @@ docs/database/database-design.md의 업데이트된 내용을 반영해서
 #### Step 1: 통합 테스트 자동 실행
 
 ```
-# 서버 실행 + Chrome MCP 통합 테스트 자동 수행
+# 서버 실행 + 실제 브라우저 통합 테스트 자동 수행
 /test-run
 
 # → 자동 실행 흐름:
@@ -1161,7 +1161,7 @@ DE와 이해관계자가 스테이징 환경에서 직접 테스트합니다.
 | 스프린트 초기화 | `/sprint-init [N]` | 프롬프트 맵, 진행 추적, 회고 템플릿 생성 |
 | 디자인씽킹 기반 기획 + HTML 기획화면 | `/service-planner` | markdown 6종(시장분석/페르소나 인터뷰/요구사항/유스케이스/IA·화면/기능정의) + 디자인 시스템 토큰 적용 HTML 기획화면(index.html, styles.css, SCR-NNN.html) 자동 생성 |
 | UX/UI/Dev/QA 핸드오프 패키지 | `/handoff-publish` | Screen ID 기반 협업 패키지 (HANDOFF_PROCESS_GUIDE v1.1) |
-| 서비스 매뉴얼 자동 생성 | `/manual-generator` | Chrome MCP 스크린샷 기반 HTML 매뉴얼 |
+| 서비스 매뉴얼 자동 생성 | `/manual-generator` | 실제 브라우저 스크린샷 기반 HTML 매뉴얼 |
 | 제품 카탈로그 자동 생성 | `/catalog-generator` | AI 이미지 포함 단일 HTML 카탈로그 |
 | 무인 풀 파이프라인 | `/autorun [기능 설명]` | 기획→테스트, 최대 N회 자가 개선 루프 |
 | 워크플로우 언어 선택 | `/select-language` | 한국어/베트남어/영어 |
@@ -1170,7 +1170,7 @@ DE와 이해관계자가 스테이징 환경에서 직접 테스트합니다.
 | 국제 코드 조회 | `/lookup-code [코드]` | ISO 3166-1/2, E.164 (국가/지역/전화번호) |
 | DB 엔티티 생성 | `/generate-entity [한글 정의]` | DB 설계 문서 기반, Java/TypeScript/SQL |
 | E2E 테스트 시나리오 생성 | `/test-scenario` | 블루프린트, DB, 라우트 기반 E2E 시나리오 |
-| 통합 테스트 실행 | `/test-run` | 서버 실행 + Chrome MCP 자동 검증 |
+| 통합 테스트 실행 | `/test-run` | 서버 실행 + 실제 브라우저 자동 검증 (ego → Chrome MCP) |
 | 코딩 표준 검사 | `/check-convention [대상]` | Java/TS/RN/Python/CSS/SCSS |
 | DB 네이밍 검사 | `/check-naming [대상]` | 표준 용어 사전 기반 |
 | 커밋 | `/commit` | 자동 메시지 생성 |
@@ -1180,7 +1180,7 @@ DE와 이해관계자가 스테이징 환경에서 직접 테스트합니다.
 | 훅 규칙 생성 | `/hookify [설명]` | 행동 방지 규칙 |
 | 훅 규칙 확인 | `/hookify:list` | 현재 규칙 목록 |
 | 최신 문서 조회 | `"use context7 - [질문]"` | 라이브러리 문서 |
-| 브라우저 확인 | `chrome-devtools` MCP | 스냅샷/스크린샷/성능 |
+| 브라우저 확인 | ego (lite) 또는 `chrome-devtools` MCP | 스냅샷/스크린샷/성능 |
 | DB 쿼리 | `postgres` MCP | 직접 쿼리 실행 |
 
 ### 부록 A-2: 에이전트 빠른 참조

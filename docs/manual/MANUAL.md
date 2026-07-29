@@ -632,7 +632,7 @@ When frontend work is requested, the `frontend-design` skill is automatically ac
 "Create an art deco, luxurious product detail page"
 ```
 
-### 9.3 Real-time Verification (chrome-devtools MCP)
+### 9.3 Real-time Verification (browser backend: ego -> chrome-devtools MCP)
 
 ```
 # Check layout
@@ -743,12 +743,12 @@ This is an example of creating test scenarios with the `/test-scenario` command 
 
 ## 11. Test Execution
 
-Execute actual tests based on test scenarios. The `/test-run` command automatically performs server startup + Chrome MCP integration testing.
+Execute actual tests based on test scenarios. The `/test-run` command automatically performs server startup + real-browser integration testing. The backend is auto-detected in the order **ego (lite) -> Chrome MCP -> cmux**; ego is the default because each agent gets an isolated Task Space, so concurrent sessions never fight over one browser profile.
 
 ### 11.1 Integration Test Execution
 
 ```
-# Automatic server startup + Chrome MCP integration testing
+# Automatic server startup + real-browser integration testing
 /test-run
 
 # -> Server auto-start + log monitoring
@@ -793,7 +793,7 @@ This is a complete flow example of performing actual tests after test scenarios 
 #### Step 1: Automated Integration Test Execution
 
 ```
-# Automatic server startup + Chrome MCP integration testing
+# Automatic server startup + real-browser integration testing
 /test-run
 
 # -> Automated execution flow:
@@ -1158,7 +1158,7 @@ Don't modify any code yet."
 | Sprint initialization | `/sprint-init [N]` | Generate prompt map, progress tracker, retrospective template |
 | Design Thinking based planning + HTML mockups | `/service-planner` | 6 markdown deliverables (market analysis, persona interview, requirements, use cases, IA/screen, feature definition) + design-system HTML mockups (index.html, styles.css, SCR-NNN.html) auto-generated alongside |
 | UX/UI/Dev/QA handoff package | `/handoff-publish` | Screen-ID based collaboration package (HANDOFF_PROCESS_GUIDE v1.1) |
-| Service manual generation | `/manual-generator` | Auto-generated HTML manual with Chrome MCP screenshots |
+| Service manual generation | `/manual-generator` | Auto-generated HTML manual with real-browser screenshots |
 | Product catalog generation | `/catalog-generator` | Self-contained HTML catalog with AI imagery |
 | Zero-interaction full pipeline | `/autorun [feature description]` | Planning → testing with up-to-N self-improvement loop |
 | Workflow language selection | `/select-language` | Korean/Vietnamese/English |
@@ -1167,7 +1167,7 @@ Don't modify any code yet."
 | International code lookup | `/lookup-code [code]` | ISO 3166-1/2, E.164 (country/region/phone) |
 | DB entity generation | `/generate-entity [Korean definition]` | Based on DB design doc, Java/TypeScript/SQL |
 | E2E test scenario generation | `/test-scenario` | E2E scenarios based on blueprints, DB, routes |
-| Integration test execution | `/test-run` | Server startup + Chrome MCP auto-verification |
+| Integration test execution | `/test-run` | Server startup + real-browser auto-verification (ego -> Chrome MCP) |
 | Coding standard check | `/check-convention [target]` | Java/TS/RN/Python/CSS/SCSS |
 | DB naming check | `/check-naming [target]` | Based on standard terminology dictionary |
 | Commit | `/commit` | Auto-generated message |
@@ -1177,7 +1177,7 @@ Don't modify any code yet."
 | Hook rule creation | `/hookify [description]` | Behavior prevention rules |
 | Hook rule list | `/hookify:list` | Current rule list |
 | Latest docs lookup | `"use context7 - [question]"` | Library documentation |
-| Browser check | `chrome-devtools` MCP | Snapshots/screenshots/performance |
+| Browser check | ego (lite) or `chrome-devtools` MCP | Snapshots/screenshots/performance |
 | DB query | `postgres` MCP | Direct query execution |
 
 ### Appendix A-2: Agents Quick Reference
@@ -1311,7 +1311,7 @@ claude plugin install astra-methodology@astra
 
 **Items automatically installed:**
 - 9 required plugins (claude-code-setup, code-review, code-simplifier, commit-commands, feature-dev, frontend-design, hookify, security-guidance, context7)
-- 3 MCP servers (chrome-devtools, postgres, context7)
+- 3 MCP servers (chrome-devtools — browser fallback, postgres, context7)
 - Global settings (Agent Teams, bypassPermissions, Always Thinking)
 
 #### Step 0.1: Vision & Backlog (Day 1-2)
