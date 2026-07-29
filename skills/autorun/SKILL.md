@@ -365,7 +365,7 @@ On unresolvable failure, **STOP** + request user intervention.
 
 | Decision point | Auto default |
 |---|---|
-| Test environment | **cmux browser** (if available), fallback: **Chrome MCP** |
+| Test environment | **ego (lite)** (if available), fallback: **Chrome MCP**, legacy: **cmux** |
 | On failure | `/test-run` is single-pass (it reports and stops) — retries are driven by autorun's own Stage 7.5 iteration loop (`MAX_ITER` budget), not by an inner test-run loop |
 | Proceed confirmation | **always Y** |
 

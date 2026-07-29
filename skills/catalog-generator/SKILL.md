@@ -16,7 +16,7 @@ Analyzes product data (CSV/JSON/text/URL) and produces a production-grade HTML c
 - **Professional copywriting techniques** — benefit-driven, sensory language, storytelling, social proof
 - **`/frontend-design` skill integration** — polished, production-grade design (prevents generic AI aesthetics)
 - **`fect-image` MCP integration** — auto-generates hero banners, lifestyle images, editorial illustrations, and category visuals
-- **Chrome MCP integration** — captures real product/service screenshots for "See it in action" showcases and UI demonstrations
+- **Real-browser integration** — captures real product/service screenshots for "See it in action" showcases and UI demonstrations (ego (lite) by default, Chrome MCP as fallback)
 - Responsive (mobile/tablet/desktop), dark mode, and print stylesheet support
 - Opens directly in browser with no build step required
 
@@ -38,7 +38,7 @@ Analyze `$ARGUMENTS` to determine the product data source:
 |---------------|--------|
 | CSV/JSON file path (e.g. `products.csv`) | Read file and extract product list |
 | Directory path (e.g. `data/products/`) | Collect all data files + images from directory |
-| URL (e.g. `https://example.com/products`) | Store as `{SERVICE_URL}` — Chrome MCP captures product screenshots from live site |
+| URL (e.g. `https://example.com/products`) | Store as `{SERVICE_URL}` — the resolved browser backend captures product screenshots from the live site |
 | Text description (e.g. `5 premium kitchen items`) | Structure product data from text input |
 | _(empty)_ | Auto-scan current directory for product data files (`*.csv`, `*.json`, `*.xlsx`, etc.) |
 
@@ -79,14 +79,15 @@ Store the determined tone as `{DESIGN_TONE}` and use it as the basis for all sub
 
 #### E. Service URL & Screenshot Planning
 
-If `{SERVICE_URL}` is available (URL argument provided), plan Chrome MCP screenshot capture:
+If `{SERVICE_URL}` is available (URL argument provided), plan the screenshot capture:
 
-1. **Navigate & Analyze**: Open `{SERVICE_URL}` via Chrome MCP and take a snapshot to understand the site structure
+0. **Resolve the backend** — `CAPTURE_BACKEND` per the plugin-wide detection order (**ego default → Chrome MCP fallback**; see `$CLAUDE_PLUGIN_ROOT/docs/development/browser-backend-policy.md`):
+   ```bash
+   command -v ego-browser >/dev/null 2>&1 && echo ego || echo ""
    ```
-   mcp__chrome-devtools__navigate_page({ url: "{SERVICE_URL}" })
-   mcp__chrome-devtools__wait_for({ selector: "body", timeout: 10000 })
-   mcp__chrome-devtools__take_snapshot()
-   ```
+   Empty output → `chrome-mcp` when the `mcp__chrome-devtools__*` tools are present. If neither exists, leave `{SCREENSHOT_PLAN}` empty and build the catalog from Track B imagery only, stating that in the final report.
+
+1. **Navigate & Analyze**: open `{SERVICE_URL}`, wait for `body` (10 s), and take a snapshot to understand the site structure — ego: `useOrCreateTaskSpace('astra catalog {catalog-name}')` → `openOrReuseTab` → `snapshotText()`; Chrome MCP: `navigate_page` → `wait_for` → `take_snapshot`.
 
 2. **Build Screenshot Plan** — Map product data to live pages/routes:
 
@@ -207,22 +208,24 @@ Reference the JS section of `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/refere
 ### Step 2: Visual Asset Production — Screenshots & AI Illustrations
 
 This step produces all visual assets that elevate the catalog from basic to premium quality. Two parallel tracks:
-- **Track A**: Chrome MCP screenshots (when `{SERVICE_URL}` available)
+- **Track A**: browser screenshots — ego (lite) by default, Chrome MCP as fallback (when `{SERVICE_URL}` available)
 - **Track B**: fect-image AI-generated illustrations (always)
 
-#### A. Chrome MCP Screenshot Capture (when `{SERVICE_URL}` available)
+#### A. Browser Screenshot Capture (when `{SERVICE_URL}` available)
 
 > Skip this section entirely if `{SCREENSHOT_PLAN}` is empty.
 
+Backend is `CAPTURE_BACKEND` from Step 1.E — **ego (default) → Chrome MCP
+(fallback)**. Follow the **Deliverable screenshot capture** recipe in
+`$CLAUDE_PLUGIN_ROOT/docs/development/browser-backend-policy.md` and use its
+Action mapping column for the resolved backend. In ego mode one screen = **one
+heredoc**, and `captureScreenshot` paths must be **absolute**.
+
 For each entry in `{SCREENSHOT_PLAN}`:
 
-1. **Navigate to target page**:
-   ```
-   mcp__chrome-devtools__navigate_page({ url: "{entry.url}" })
-   mcp__chrome-devtools__wait_for({ selector: "{entry.selector}", timeout: 10000 })
-   ```
+1. **Navigate** to `{entry.url}`, **wait** for `{entry.selector}` (10 s).
 
-2. **Clean up UI for catalog-quality capture** — inject CSS via `evaluate_script` to hide distracting elements:
+2. **Clean up UI for catalog-quality capture** — inject this stylesheet in-page (`js(...)` in ego, `evaluate_script` in Chrome MCP):
    ```javascript
    // Inject cleanup styles for catalog-quality screenshots
    var style = document.createElement('style');
@@ -233,6 +236,7 @@ For each entry in `{SCREENSHOT_PLAN}`:
      [class*="notification-bar"] { display: none !important; }
    `;
    document.head.appendChild(style);
+   window.scrollTo(0, 0);   // blank-frame guard (required in ego mode)
    ```
 
 3. **Optional: Highlight key product area** — for product detail pages, add a subtle focus effect:
@@ -245,40 +249,32 @@ For each entry in `{SCREENSHOT_PLAN}`:
    }
    ```
 
-4. **Desktop capture** (1280×800):
-   ```
-   mcp__chrome-devtools__resize_page({ width: 1280, height: 800 })
-   mcp__chrome-devtools__take_screenshot()
-   ```
-   → Save to `images/screenshots/desktop/{entry.category}-{N}.png`
+4. **Capture at three viewports** — set the viewport, capture, repeat. ego uses `cdp('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile })`; Chrome MCP uses `resize_page`:
 
-5. **Tablet capture** (768×1024):
-   ```
-   mcp__chrome-devtools__resize_page({ width: 768, height: 1024 })
-   mcp__chrome-devtools__take_screenshot()
-   ```
-   → Save to `images/screenshots/tablet/{entry.category}-{N}.png`
+   | Viewport | Size | Output |
+   |---|---|---|
+   | Desktop | 1280×800 | `images/screenshots/desktop/{entry.category}-{N}.png` |
+   | Tablet | 768×1024 | `images/screenshots/tablet/{entry.category}-{N}.png` |
+   | Mobile | 375×812 | `images/screenshots/mobile/{entry.category}-{N}.png` |
 
-6. **Mobile capture** (375×812):
-   ```
-   mcp__chrome-devtools__resize_page({ width: 375, height: 812 })
-   mcp__chrome-devtools__take_screenshot()
-   ```
-   → Save to `images/screenshots/mobile/{entry.category}-{N}.png`
+5. **Cleanup injected styles** — remove `#catalog-capture-style` and reset the inline styles from step 3, so they do not leak into the next entry.
 
-7. **Cleanup injected styles** — `evaluate_script` to remove `#catalog-capture-style` and reset inline styles
+6. **Restore the desktop viewport** — 1280×800; in ego mode `cdp('Emulation.clearDeviceMetricsOverride')`.
 
-8. **Restore desktop viewport**:
-   ```
-   mcp__chrome-devtools__resize_page({ width: 1280, height: 800 })
-   ```
+7. **Verify each file is non-blank** before using it in the catalog. A blank or missing capture is re-taken; if it still fails, that product falls back to Track B imagery and the final report says so — never present a catalog as screenshot-backed when the captures did not happen.
 
 **Multi-step flow capture** — For interactive product demos (configurators, dashboards, etc.):
 1. Capture initial state
-2. Interact: `mcp__chrome-devtools__click()`, `mcp__chrome-devtools__fill()`, `mcp__chrome-devtools__press_key()`
-3. `mcp__chrome-devtools__wait_for()` for result
+2. Interact — click / fill / press per the Action mapping table
+3. Wait for the result indicator
 4. Capture result state
 5. Label screenshots as `{category}-step-{N}.png` for sequential display
+
+> In ego mode the browser carries the user's real login session — keep demo
+> interactions read-only and never point a write flow at a production origin.
+
+Once every entry is captured, **ego only**: close the Task Space in a final
+heredoc — `completeTaskSpace('astra catalog {catalog-name}', { keep: false })`.
 
 #### B. Hero Banner Generation (fect-image)
 
@@ -302,9 +298,9 @@ Read `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-image-prom
 
 #### E. Lifestyle Shot Generation (fect-image)
 
-For products with no provided images and no Chrome MCP screenshots, generate lifestyle images using the "Lifestyle shot" prompt in `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-image-prompts.md`. Save the results to `images/lifestyle/`.
+For products with no provided images and no browser screenshots, generate lifestyle images using the "Lifestyle shot" prompt in `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-image-prompts.md`. Save the results to `images/lifestyle/`.
 
-> **Rule**: Generate only the minimum required images — prioritize Chrome MCP screenshots over AI generation. For products with both a service URL and AI images, use screenshots for "in action" views and AI images for aspirational lifestyle shots. Skip AI image generation for any product that already has user-provided images.
+> **Rule**: Generate only the minimum required images — prioritize browser screenshots over AI generation. For products with both a service URL and AI images, use screenshots for "in action" views and AI images for aspirational lifestyle shots. Skip AI image generation for any product that already has user-provided images.
 
 ---
 
@@ -388,12 +384,12 @@ Apply expert know-how for product placement:
 - **Bundle Proposal Box**: Dedicated highlight area when complementary product relationships are detected
 - **Badge System**: Auto-assign NEW (new arrival), BEST (popular), SALE (discounted), HOT (recommended)
 - **Editorial Illustration Breaks**: Insert mood separator illustrations (from Step 2.D) between product groups to create magazine-like visual rhythm
-- **Product Screenshot Gallery**: For hero/premium products with Chrome MCP screenshots, add a responsive screenshot tab component (desktop/tablet/mobile views) inside the product card
+- **Product Screenshot Gallery**: For hero/premium products with browser screenshots, add a responsive screenshot tab component (desktop/tablet/mobile views) inside the product card
 - **Detail Texture Backgrounds**: Apply detail texture illustrations as subtle background images for spec/comparison sections
 
 Read `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-inline-html-blocks.md` (section "Product card HTML") and instantiate the product-card skeleton per product.
 
-> **Note**: The `.product-card__screenshot-gallery` block is only included for hero/premium tier products that have Chrome MCP screenshots. Omit entirely for products without screenshots. The `.illustration-break` is inserted between logical product groups (e.g., after every 3–4 products or between tier boundaries).
+> **Note**: The `.product-card__screenshot-gallery` block is only included for hero/premium tier products that have browser screenshots. Omit entirely for products without screenshots. The `.illustration-break` is inserted between logical product groups (e.g., after every 3–4 products or between tier boundaries).
 
 #### D. Screenshot Showcase Page (`pages/{NN}-showcase.html`, when `{SERVICE_URL}` available)
 
@@ -476,7 +472,7 @@ If broken references are found, fix them immediately.
 ### Visual Assets
 | Type | Count | Source |
 |------|-------|--------|
-| Chrome MCP Screenshots | {N} (desktop: {N}, tablet: {N}, mobile: {N}) | Live service capture |
+| Browser Screenshots ({CAPTURE_BACKEND}) | {N} (desktop: {N}, tablet: {N}, mobile: {N}) | Live service capture |
 | Hero Banner | 1 | fect-image AI |
 | Category Visuals | {N} | fect-image AI |
 | Editorial Illustrations | {N} (mood: {N}, lifestyle: {N}, texture: {N}) | fect-image AI |

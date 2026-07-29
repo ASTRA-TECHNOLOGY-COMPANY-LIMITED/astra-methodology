@@ -636,7 +636,7 @@ Khi yêu cầu công việc frontend, skill `frontend-design` tự động kích
 "Tạo trang chi tiết sản phẩm sang trọng phong cách art deco"
 ```
 
-### 9.3 Xác minh thời gian thực (chrome-devtools MCP)
+### 9.3 Xác minh thời gian thực (backend trình duyệt: ego → chrome-devtools MCP)
 
 ```
 # Kiểm tra layout
@@ -749,12 +749,12 @@ Ví dụ viết kịch bản kiểm thử bằng lệnh `/test-scenario` sau khi
 
 ## 11. Thực thi kiểm thử
 
-Thực hiện kiểm thử thực tế dựa trên kịch bản kiểm thử. Lệnh `/test-run` tự động thực thi chạy server + kiểm thử tích hợp Chrome MCP.
+Thực hiện kiểm thử thực tế dựa trên kịch bản kiểm thử. Lệnh `/test-run` tự động thực thi chạy server + kiểm thử tích hợp trên trình duyệt thật. Backend được tự động phát hiện theo thứ tự **ego (lite) → Chrome MCP → cmux**; ego là mặc định vì mỗi agent có Task Space riêng biệt, nên nhiều phiên chạy song song không tranh chấp cùng một profile trình duyệt.
 
 ### 11.1 Thực thi kiểm thử tích hợp
 
 ```
-# Tự động thực thi chạy server + kiểm thử tích hợp Chrome MCP
+# Tự động thực thi chạy server + kiểm thử tích hợp trên trình duyệt thật
 /test-run
 
 # → Tự động chạy server + Giám sát log
@@ -799,7 +799,7 @@ Ví dụ toàn bộ luồng thực hiện kiểm thử thực tế sau khi kịc
 #### Step 1: Thực thi tự động kiểm thử tích hợp
 
 ```
-# Tự động thực thi chạy server + kiểm thử tích hợp Chrome MCP
+# Tự động thực thi chạy server + kiểm thử tích hợp trên trình duyệt thật
 /test-run
 
 # → Luồng thực thi tự động:
@@ -1164,7 +1164,7 @@ Chưa sửa code."
 | Khởi tạo Sprint | `/sprint-init [N]` | Tạo prompt map, theo dõi tiến độ, template hồi cứu |
 | Lập kế hoạch Design Thinking + màn hình HTML | `/service-planner` | 6 sản phẩm markdown (phân tích thị trường/phỏng vấn persona/yêu cầu/use case/IA·màn hình/định nghĩa tính năng) + màn hình HTML áp dụng design system (index.html, styles.css, SCR-NNN.html) tự động sinh kèm |
 | Gói handoff UX/UI/Dev/QA | `/handoff-publish` | Gói cộng tác dựa trên Screen ID (HANDOFF_PROCESS_GUIDE v1.1) |
-| Tạo cẩm nang dịch vụ tự động | `/manual-generator` | Cẩm nang HTML với ảnh chụp từ Chrome MCP |
+| Tạo cẩm nang dịch vụ tự động | `/manual-generator` | Cẩm nang HTML với ảnh chụp từ trình duyệt thật |
 | Tạo catalog sản phẩm tự động | `/catalog-generator` | Catalog HTML đơn lẻ với hình ảnh AI |
 | Pipeline tự động hoàn toàn | `/autorun [mô tả tính năng]` | Lập kế hoạch → kiểm thử với vòng lặp tự cải thiện tối đa N lần |
 | Chọn ngôn ngữ workflow | `/select-language` | Tiếng Hàn/Việt/Anh |
@@ -1173,7 +1173,7 @@ Chưa sửa code."
 | Tra cứu mã quốc tế | `/lookup-code [mã]` | ISO 3166-1/2, E.164 (quốc gia/vùng/số điện thoại) |
 | Tạo DB entity | `/generate-entity [định nghĩa tiếng Hàn]` | Dựa trên tài liệu thiết kế DB, Java/TypeScript/SQL |
 | Tạo kịch bản kiểm thử E2E | `/test-scenario` | Kịch bản E2E dựa trên blueprint, DB, route |
-| Thực thi kiểm thử tích hợp | `/test-run` | Chạy server + Xác minh tự động Chrome MCP |
+| Thực thi kiểm thử tích hợp | `/test-run` | Chạy server + Xác minh tự động trên trình duyệt (ego → Chrome MCP) |
 | Kiểm tra coding standard | `/check-convention [đối tượng]` | Java/TS/RN/Python/CSS/SCSS |
 | Kiểm tra naming DB | `/check-naming [đối tượng]` | Dựa trên từ điển thuật ngữ chuẩn |
 | Commit | `/commit` | Tự động tạo message |

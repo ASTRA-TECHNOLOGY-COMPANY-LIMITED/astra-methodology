@@ -54,7 +54,7 @@ Excerpt (see the JSON for the full ~39-key table):
 
 - **`M_ISSUES_REPORT_TITLE` vs. `M_ISSUES_REPORT_TITLE_PARALLEL`**: `/user-test` uses the base
   key; `/uat-parallel` uses the `_PARALLEL` variant so the report header instantly signals
-  whether the run was sequential (Chrome MCP) or parallel (Playwright workers).
+  whether the run was sequential (ego / Chrome MCP) or parallel (Playwright workers).
 - **`M_DEV_HINT`**: applies to `/user-test` interactive mode only — Claude authors the
   "Hint for developers" section from its own understanding of the failure. `/uat-parallel`'s
   Playwright runner has no LLM in the loop, so its `issues.md` omits this section by design.

@@ -1,8 +1,11 @@
 # Browser Procedures — Chrome DevTools MCP Mode
 
-Per-step browser procedures for `BROWSER_MODE=chrome-mcp`. Return to `SKILL.md`
-for the overall flow, state-file handling, and the machine-anchored pass/fail
-gate. All actions here use Chrome DevTools MCP tools (`mcp__chrome-devtools__*`).
+Per-step browser procedures for `BROWSER_MODE=chrome-mcp`, the **fallback
+backend** (v5.21.0+) — used when `ego-browser` is unavailable (non-macOS hosts,
+not installed), when the user names Chrome MCP explicitly, or for a single
+escalated step. Return to `SKILL.md` for the overall flow, state-file handling,
+and the machine-anchored pass/fail gate. All actions here use Chrome DevTools MCP
+tools (`mcp__chrome-devtools__*`).
 
 ## Contents
 - [General notes](#general-notes)
@@ -16,7 +19,12 @@ gate. All actions here use Chrome DevTools MCP tools (`mcp__chrome-devtools__*`)
   `navigate_page`.
 - Snapshots return element `uid`s used by `click` / `fill` / `hover`.
 - Chrome MCP is the only mode with a real performance trace
-  (`performance_start_trace` / `performance_stop_trace`).
+  (`performance_start_trace` / `performance_stop_trace`), so Step 8 escalates
+  here even when `BROWSER_MODE` is `ego`/`cmux`.
+- The MCP server is not bundled by the plugin — the user registers
+  `chrome-devtools-mcp` themselves. In multi-session setups, attach one shared
+  instance via `--browser-url` rather than launching per session (profile
+  `SingletonLock` contention).
 
 ## Step 5 — Basic Page Verification
 

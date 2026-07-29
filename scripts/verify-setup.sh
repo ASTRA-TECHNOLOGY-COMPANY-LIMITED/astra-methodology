@@ -64,7 +64,9 @@ check "Node.js installed" "command -v node"
 check "npx installed" "command -v npx"
 check "Git installed" "command -v git"
 check "GitHub CLI installed" "command -v gh"
-check_optional "MCP servers configured (chrome-devtools + context7)" \
+check_optional "ego (lite) browser installed (default browser backend, macOS)" \
+    "command -v ego-browser"
+check_optional "MCP servers configured (chrome-devtools fallback + context7)" \
     "[ -f ~/.claude/.mcp.json ] && grep -q chrome-devtools ~/.claude/.mcp.json && grep -q context7 ~/.claude/.mcp.json"
 echo ""
 

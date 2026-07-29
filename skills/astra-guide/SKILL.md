@@ -40,7 +40,7 @@ Friday:    Code Review + Sprint Review + Retrospective
 
 ```
 Design Review (1 hour - led by DSA):
-  30 min: DSA inspects AI-generated UI (chrome-devtools)
+  30 min: DSA inspects AI-generated UI (ego / chrome-devtools)
   30 min: Fix design issues (PE modifies prompts → AI regenerates)
 
 Code Review:
@@ -55,7 +55,7 @@ Code Review:
 
 ```
 Step R.1: System Integration Testing
-  /test-run                       Server launch + Chrome MCP integration testing
+  /test-run                       Server launch + real-browser integration testing
   - API integration testing
   - DB data consistency verification
   - Performance profiling
@@ -113,7 +113,7 @@ Data & code standards:
   (automatic)                  coding-convention / data-standard / code-standard auto-apply on write/edit
 
 Docs & content:
-  /manual-generator [feature]  Service URL + docs → self-contained HTML manual (Chrome MCP screenshots)
+  /manual-generator [feature]  Service URL + docs → self-contained HTML manual (browser screenshots)
   /generate-manual <url> <f>   Command wrapper that drives /manual-generator
   /catalog-generator           Product data → self-contained HTML catalog (AI imagery + sales strategy)
 
@@ -161,7 +161,7 @@ Gate 2.5: DESIGN-TIME (design inspection)
 Gate 3: BRIDGE-TIME (at release time)
   ├─ /check-convention src/
   ├─ /check-naming src/entity/
-  └─ chrome-devtools: UI/performance/network/console errors
+  └─ browser check (ego → chrome-devtools): UI/performance/network/console errors
 ```
 
 ### roles - Role Definitions

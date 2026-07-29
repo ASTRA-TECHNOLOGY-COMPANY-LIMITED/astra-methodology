@@ -10,7 +10,7 @@ Counts MUST come from the Step 11 machine-anchored parse, never memory. The
 ## Test Environment
 - Date: {date}
 - Server: {tech stack + version}
-- Browser: {cmux built-in browser / ego (lite) / Chrome DevTools MCP / No browser (API-only)}
+- Browser: {ego (lite) / Chrome DevTools MCP / cmux built-in browser / No browser (API-only)}
 
 <!-- Machine-parseable gate line — values from captured command output only -->
 ASTRA_TEST_RESULT: {PASS|FAIL} passed={N} failed={N} total={N} skipped={N}

@@ -1,9 +1,10 @@
 ---
 name: user-test
 description: >
-  Performs end-user UAT (User Acceptance Testing) by driving a real browser
-  through Chrome MCP with hard assertions (DOM / Network / URL / Console),
-  auto-assigned failure severity, and an HTML report + issues.md per session.
+  Performs end-user UAT (User Acceptance Testing) by driving a real browser —
+  ego (lite) by default, Chrome MCP as fallback — with hard assertions
+  (DOM / Network / URL / Console), auto-assigned failure severity, and an HTML
+  report + issues.md per session.
   Interactive mode (URL + natural-language flow) or --auto (batch-run
   docs/tests/uat-cases/). Use when the user asks for "UAT", "user acceptance
   test", "kiểm thử người dùng", "regression test", or runs /user-test or /uat.
@@ -15,7 +16,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, mcp__chrome
 
 # ASTRA /user-test — AI-assisted UAT
 
-Drives Chrome MCP to run end-user UAT flows. Claude executes each step, self-verifies with hard assertions, and writes a session folder containing an HTML report, `session.json`, and (when failures occur) `issues.md`. Output language follows the project's `/select-language` setting; default is Vietnamese (this skill was designed for Vietnamese-speaking teams).
+Drives a real browser to run end-user UAT flows. Claude executes each step, self-verifies with hard assertions, and writes a session folder containing an HTML report, `session.json`, and (when failures occur) `issues.md`. Output language follows the project's `/select-language` setting; default is Vietnamese (this skill was designed for Vietnamese-speaking teams).
 
 Difference from sibling skills:
 - `/test-run` — developer-authored technical integration tests (server launch + scenario verify).
@@ -23,6 +24,8 @@ Difference from sibling skills:
 - `/user-test` — UAT: input is natural-language Vietnamese or normalized UAT case files; output is a QA-readable report.
 
 Detailed references (load on demand):
+- `$CLAUDE_PLUGIN_ROOT/docs/development/browser-backend-policy.md` — plugin-wide backend detection order + action mapping + ego operating rules.
+- `references/browser-ego-uat.md` — ego step template, assertion evaluation, session start/end (read when `UAT_BACKEND=ego`).
 - `references/assertion-guide.md` — assertion syntax + severity rules.
 - `references/i18n-strings.json` — vi/en/ko translation table for HTML report + issues.md.
 - `assets/report-template.html` — HTML report template (uses `{{LANG}}` + `{{T_*}}` placeholders).
@@ -49,6 +52,27 @@ Detailed references (load on demand):
 Resolve `LANG_CODE` ∈ {`vi`, `en`, `ko`} exactly as specified in `references/language-selection.md` (shared with `/uat-parallel`): `--lang` flag → persisted `CLAUDE.md ## Language` → trilingual `AskUserQuestion` prompt, with the unattended `--auto` default of `vi`.
 
 Consume-side (this skill): once resolved, hold `LANG_CODE` in memory for all downstream steps and load `references/i18n-strings.json` to get the strings dictionary for that language.
+
+### Step 0-B — Browser backend
+
+Resolve `UAT_BACKEND` per the plugin-wide detection order — **ego (default) →
+Chrome MCP (fallback) → cmux is not supported by this skill** (its command set
+has no equivalent for the DOM/console probes UAT assertions require). Rules and
+the `$ARGUMENTS` keyword table: `$CLAUDE_PLUGIN_ROOT/docs/development/browser-backend-policy.md`.
+
+```bash
+command -v ego-browser >/dev/null 2>&1 && echo ego || echo ""
+```
+
+- `ego` → `UAT_BACKEND=ego`; read `references/browser-ego-uat.md` before Step 3.
+- empty **and** `mcp__chrome-devtools__*` tools present → `UAT_BACKEND=chrome-mcp`.
+- neither → stop and tell the user to install `ego-browser` or register
+  `chrome-devtools-mcp`. Do not write a session report for a run that never
+  executed a step.
+
+Record the resolved backend in `session.json` (`"backend"`) and in the HTML
+report's environment line, so a reader can tell which engine produced the
+evidence.
 
 ### Step 1 — Load input and prepare test cases
 
@@ -77,10 +101,15 @@ Create:
   {
     "session_id": "{SESSION_ID}",
     "mode": "interactive | auto",
+    "backend": "ego | chrome-mcp",
     "started_at": "{ISO}",
     "test_cases": []
   }
   ```
+
+**ego only**: open the Task Space (`astra user-test {SESSION_ID}`) and install
+the CDP collectors now — see `references/browser-ego-uat.md` (*Session start*).
+Collectors installed after the first navigation miss everything already emitted.
 
 ### Step 3 — Test loop (Claude executes + self-verifies)
 
@@ -88,33 +117,47 @@ For each test case → for each step:
 
 #### A. Execute action
 
-| Action syntax | Chrome MCP tool |
-|---|---|
-| `navigate {url}` | `mcp__chrome-devtools__navigate_page` |
-| `click {selector}` | `mcp__chrome-devtools__click` |
-| `fill {selector} value={value}` | `mcp__chrome-devtools__fill` |
-| `wait {ms}` or `wait {selector}` | `mcp__chrome-devtools__wait_for` |
-| `press {key}` | `mcp__chrome-devtools__press_key` |
-| `hover {selector}` | `mcp__chrome-devtools__hover` |
+| Action syntax | ego (`UAT_BACKEND=ego`) | Chrome MCP (`UAT_BACKEND=chrome-mcp`) |
+|---|---|---|
+| `navigate {url}` | `gotoAndWait('{url}', { timeout: 20, settle: 1 })` | `mcp__chrome-devtools__navigate_page` |
+| `click {selector}` | `click('{selector}', { label })` | `mcp__chrome-devtools__click` |
+| `fill {selector} value={value}` | `fillInput('{selector}', '{value}')` | `mcp__chrome-devtools__fill` |
+| `wait {ms}` or `wait {selector}` | `wait({seconds})` / `waitForElement('{selector}')` | `mcp__chrome-devtools__wait_for` |
+| `press {key}` | `pressKey('{key}')` | `mcp__chrome-devtools__press_key` |
+| `hover {selector}` | `hover('{selector}')` | `mcp__chrome-devtools__hover` |
 
 Replace literal `{timestamp}` in any value with `Date.now()` to avoid duplicate-data collisions.
 
-Before the very first `navigate`, ensure a page exists via `list_pages`; if none, call `new_page`.
+**ego**: the whole step (action + screenshot + assertion inputs) is **one
+heredoc** — use the template in `references/browser-ego-uat.md`. Open the Task
+Space and install the CDP collectors once at session start, before the first
+navigation; `wait {ms}` values from the case file must be converted to seconds.
+**Chrome MCP**: before the very first `navigate`, ensure a page exists via
+`list_pages`; if none, call `new_page`.
 
 #### B. Screenshot every step
 
-After each action, call `take_screenshot` into `{SESSION_DIR}/screenshots/step-{NN}-{slug}.png`. `{slug}` = step name lowercased, spaces → `-`, Vietnamese diacritics removed.
+Capture into `{SESSION_DIR}/screenshots/step-{NN}-{slug}.png` after each action. `{slug}` = step name lowercased, spaces → `-`, Vietnamese diacritics removed.
+
+- **ego**: `captureScreenshot('{ABS_SESSION_DIR}/screenshots/…')` — absolute path required, and scroll to the top first (blank-frame caveat). A blank capture is re-taken, not filed.
+- **Chrome MCP**: `take_screenshot`.
 
 #### C. Verify hard assertions
 
-Read the step's `expected` list and verify each. See `references/assertion-guide.md` for full syntax. Summary:
+Read the step's `expected` list and verify each. See `references/assertion-guide.md` for full syntax and severity rules. Evidence source per backend:
 
-- `url: equals|contains|matches {x}` → compare via `evaluate_script` (`window.location.href`).
-- `network: METHOD {path} → {status}` → `list_network_requests`, match method+path, check status.
-- `dom: {selector} exists|visible|contains "..."|has value matching {re}` → `take_snapshot` or `evaluate_script`.
-- `console: no error|no warning` → `list_console_messages`, filter by level.
+| Assertion | ego | Chrome MCP |
+|---|---|---|
+| `url: equals\|contains\|matches {x}` | `pageInfo()` → `url` | `evaluate_script` (`window.location.href`) |
+| `network: METHOD {path} → {status}` | `drainEvents()` → `Network.*` entries; Performance-API fallback | `list_network_requests`, match method+path |
+| `dom: {sel} exists\|visible\|contains\|has value matching {re}` | DOM probe via `js(...)` (see ref) | `take_snapshot` or `evaluate_script` |
+| `console: no error\|no warning` | `drainEvents()` → `Runtime.*` / `Log.entryAdded`, filter by level | `list_console_messages`, filter by level |
 
-**All assertions for a step must PASS for the step to PASS.**
+**All assertions for a step must PASS for the step to PASS.** An assertion whose
+evidence could not be read is a **FAIL** with the actual value recorded as
+unobservable — never a PASS. In ego mode this most often hits network status on
+cross-origin responses; `references/browser-ego-uat.md` gives the exact wording
+and the `chrome-mcp` re-run escape hatch.
 
 #### D. Record result
 
@@ -167,7 +210,12 @@ Write to `{SESSION_DIR}/index.html`.
 
 For `LANG_CODE = en`, replace every Markdown heading/label via `i18n-strings.json` (`# UAT Issues Report`, `**Test cases run**`, `**Total issues**`, `**Step**`, `### Reason for {SEVERITY}`, `### Hint for developers`). For `LANG_CODE = ko`, use the Korean column (`# UAT 이슈 리포트`, `**실행된 테스트 케이스**`, `**단계**`, `### {SEVERITY} 사유`, `### 개발자 가이드`). Severity badges (CRITICAL/HIGH/MEDIUM/LOW) stay untranslated.
 
-**C. Finalize `session.json`** with `finished_at`, `summary` (pass/fail counts), `lang` (the resolved `LANG_CODE`), and an `issues` array.
+**C. Finalize `session.json`** with `finished_at`, `summary` (pass/fail counts), `lang` (the resolved `LANG_CODE`), `backend` (the resolved `UAT_BACKEND`), and an `issues` array.
+
+**D. Close the browser session** — **ego only**: run the final heredoc with
+`completeTaskSpace('astra user-test {SESSION_ID}', { keep: false })`. This runs
+on **every** exit path, including an aborted or errored run; an un-closed space
+leaves orphaned browser windows behind.
 
 ### Step 5 — (Interactive only) Offer to save the test case
 
@@ -272,6 +320,8 @@ docs/tests/uat-cases/
 6. **`issues.md` always includes "Lý do gán severity"** — one sentence citing the rule, so devs can re-evaluate.
 7. **No GitHub Issue integration** (removed in v2): write only to local `issues.md`.
 8. **Hard assertions only**: do not assert on visual fidelity or human judgment. URL/Network/DOM/Console only.
+9. **Backend is resolved once, in Step 0-B** (ego default → Chrome MCP fallback) and recorded in `session.json` + the report. Never mix backends inside one session — a case that cannot be verified under ego is re-run as a whole under `chrome-mcp`, not step-by-step.
+10. **ego mode inherits the user's real login state**: clear the session origin-scoped before auth-flow cases, and never target a production `base_url` — UAT cases write data into the real account.
 
 ## 7. Anti-scope (do NOT use for)
 
