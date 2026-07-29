@@ -39,7 +39,11 @@ Verify that `~/.claude/settings.json` contains the following settings, and add a
 
 ### Step 3: Register MCP Servers
 
-Verify that the following 3 MCP servers are registered in `~/.claude/.mcp.json`:
+Verify that the following 3 MCP servers are registered in `~/.claude/.mcp.json`.
+`chrome-devtools` is the **fallback browser backend** (the default is the
+`ego-browser` CLI — see Step 4); register it so browser-driven skills still work
+on hosts without ego, and on multi-session setups attach one shared instance via
+`--browser-url` instead of launching per session (profile `SingletonLock`).
 
 ```json
 {
@@ -69,8 +73,18 @@ Verify that the following tools are installed:
 - npm/npx (`npx --version`)
 - Git (`git --version`)
 - GitHub CLI (`gh --version`)
+- **ego (lite) browser** (`ego-browser --version`) — *optional, macOS only*
 
-If any tools are missing, provide installation instructions.
+If any required tool is missing, provide installation instructions.
+
+**About ego (lite)**: it is the **default browser backend** for `/test-run`,
+`/user-test`, `/manual-generator`, and `/catalog-generator` (isolated Task Space
+per agent — no profile lock contention across concurrent sessions — and inherited
+login state). It is third-party and never bundled: install it from
+[citrolabs/ego-lite](https://github.com/citrolabs/ego-lite), which puts the
+`ego-browser` CLI on `PATH`. When it is absent the skills fall back to Chrome MCP
+automatically, so this is a recommendation, not a hard requirement. Backend
+policy SSoT: `$CLAUDE_PLUGIN_ROOT/docs/development/browser-backend-policy.md`.
 
 ### Step 5: Auto-install Required Plugins
 
@@ -103,8 +117,11 @@ claude plugin install context7@claude-plugins-official
 - [ ] Permission mode (bypassPermissions): {status}
 - [ ] Always Thinking: {status}
 
+### Browser backend
+- [ ] ego-browser (default, optional): {version or not installed → Chrome MCP fallback}
+
 ### MCP Servers (~/.claude/.mcp.json)
-- [ ] chrome-devtools: {status}
+- [ ] chrome-devtools (fallback backend): {status}
 - [ ] postgres: {status}
 - [ ] context7: {status}
 

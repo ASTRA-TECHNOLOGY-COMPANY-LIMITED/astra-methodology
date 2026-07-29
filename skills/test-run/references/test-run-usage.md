@@ -11,9 +11,13 @@ Each form analyzes the target → writes test cases → executes them:
 /test-run http://localhost:3000   # a specific URL
 /test-run login flow              # a specific scenario
 /test-run                         # full project integration test
-/test-run ego http://localhost:3000       # force the ego (lite) backend
 /test-run Chrome MCP http://localhost:3000 # force the Chrome MCP backend
+/test-run cmux http://localhost:3000       # force the cmux backend
 ```
+
+Without a backend keyword the detection order applies — **ego (default) → Chrome
+MCP (fallback) → cmux (legacy)**; see
+`$CLAUDE_PLUGIN_ROOT/docs/development/browser-backend-policy.md`.
 
 ## Notes
 

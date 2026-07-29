@@ -66,7 +66,7 @@ catalog/{catalog-name}/
 │   ├── lifestyle/          # Lifestyle shots (AI-generated)
 │   ├── illustrations/      # Editorial illustrations (AI-generated, mood/atmosphere)
 │   ├── categories/         # Category visuals (AI-generated)
-│   └── screenshots/        # Chrome MCP captured screenshots
+│   └── screenshots/        # Browser-captured screenshots
 │       ├── desktop/        # Desktop viewport (1280×800)
 │       ├── tablet/         # Tablet viewport (768×1024)
 │       └── mobile/         # Mobile viewport (375×812)

@@ -79,7 +79,7 @@ abstract artistic interpretation, premium quality, 2:1 wide
 
 ## Lifestyle shot (Step 2.E)
 
-For products with no provided images and no Chrome MCP screenshots:
+For products with no provided images and no browser screenshots:
 
 ```
 {product-name} in real-life premium setting, editorial product photography,

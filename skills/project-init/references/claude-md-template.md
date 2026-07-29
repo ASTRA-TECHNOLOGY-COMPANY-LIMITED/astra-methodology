@@ -50,7 +50,7 @@ This project follows the **ASTRA (AI-augmented Sprint Through Rapid Assembly)** 
 | Principle | Core | Realizing tools |
 |-----------|------|-----------------|
 | **V**ibe-driven Development | Do not write code — convey intent | `feature-dev`, `frontend-design` |
-| **I**nstant Feedback Loop | Shorten feedback cycles to the hour | `chrome-devtools` MCP, `code-review` |
+| **I**nstant Feedback Loop | Shorten feedback cycles to the hour | browser backend (ego → `chrome-devtools` MCP), `code-review` |
 | **P**lugin-powered Quality | Quality is embedded into code | `astra-methodology`, `security-guidance`, `hookify` |
 
 ### Sprint cycle
@@ -111,9 +111,9 @@ Blueprint authoring → DB design → Sprint authoring → Implementation → Te
 ### Gate 2.5: DESIGN-TIME (DSA design review)
 | Review item | Verification method |
 |-------------|---------------------|
-| Design token compliance | `chrome-devtools` + `design-token-validator` agent |
+| Design token compliance | browser backend + `design-token-validator` agent |
 | Component consistency | Per-screen comparison |
-| Responsive layout | `chrome-devtools` viewport switching |
+| Responsive layout | browser viewport switching (`/test-run`) |
 | Basic accessibility check | Color contrast, focus check |
 
 ### Gate 3: BRIDGE-TIME (final quality gate at release time)
@@ -183,7 +183,7 @@ Blueprint authoring → DB design → Sprint authoring → Implementation → Te
 - Test strategy: `docs/tests/test-strategy.md`
 - Test cases: `docs/tests/test-cases/sprint-N/` (managed per sprint)
 - Test reports: `docs/tests/test-reports/` (with coverage achievement)
-- Auto-generate E2E scenarios with `/test-scenario`; run Chrome MCP integration tests with `/test-run`
+- Auto-generate E2E scenarios with `/test-scenario`; run real-browser integration tests with `/test-run` (ego (lite) by default, Chrome MCP as fallback)
 {additional when Mobile project:}
 - React Native: component tests with Jest + React Native Testing Library; E2E with Detox/Maestro
 - Flutter: unit/widget tests with `flutter test`; integration tests under `integration_test/`

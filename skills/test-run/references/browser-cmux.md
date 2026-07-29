@@ -1,8 +1,11 @@
 # Browser Procedures — cmux Built-in Browser Mode
 
-Per-step browser commands for `BROWSER_MODE=cmux`. Return to `SKILL.md` for the
-overall flow, state-file handling, and the machine-anchored pass/fail gate.
-All cmux browser commands run via the **Bash** tool.
+Per-step browser commands for `BROWSER_MODE=cmux`, the **legacy backend**
+(v5.21.0+ detection order: ego → Chrome MCP → cmux). Reached only when neither
+`ego-browser` nor the Chrome DevTools MCP tools are available, or when the user
+names `cmux` explicitly. Return to `SKILL.md` for the overall flow, state-file
+handling, and the machine-anchored pass/fail gate. All cmux browser commands run
+via the **Bash** tool.
 
 ## Contents
 - [General notes](#general-notes)
