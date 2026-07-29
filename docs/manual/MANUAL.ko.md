@@ -1180,7 +1180,7 @@ DE와 이해관계자가 스테이징 환경에서 직접 테스트합니다.
 | 훅 규칙 생성 | `/hookify [설명]` | 행동 방지 규칙 |
 | 훅 규칙 확인 | `/hookify:list` | 현재 규칙 목록 |
 | 최신 문서 조회 | `"use context7 - [질문]"` | 라이브러리 문서 |
-| 브라우저 확인 | `chrome-devtools` MCP | 스냅샷/스크린샷/성능 |
+| 브라우저 확인 | ego (lite) 또는 `chrome-devtools` MCP | 스냅샷/스크린샷/성능 |
 | DB 쿼리 | `postgres` MCP | 직접 쿼리 실행 |
 
 ### 부록 A-2: 에이전트 빠른 참조

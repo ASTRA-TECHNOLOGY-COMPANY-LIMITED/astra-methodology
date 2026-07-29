@@ -215,7 +215,7 @@ This step produces all visual assets that elevate the catalog from basic to prem
 
 > Skip this section entirely if `{SCREENSHOT_PLAN}` is empty.
 
-Backend is `CAPTURE_BACKEND` from Step 1.E — **ego (default) → Chrome MCP
+Backend is `CAPTURE_BACKEND` from Step 0.E — **ego (default) → Chrome MCP
 (fallback)**. Follow the **Deliverable screenshot capture** recipe in
 `$CLAUDE_PLUGIN_ROOT/docs/development/browser-backend-policy.md` and use its
 Action mapping column for the resolved backend. In ego mode one screen = **one

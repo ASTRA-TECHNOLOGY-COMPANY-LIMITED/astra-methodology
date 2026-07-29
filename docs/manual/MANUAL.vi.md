@@ -1183,7 +1183,7 @@ Chưa sửa code."
 | Tạo quy tắc hook | `/hookify [mô tả]` | Quy tắc ngăn chặn hành vi |
 | Kiểm tra quy tắc hook | `/hookify:list` | Danh sách quy tắc hiện tại |
 | Tra cứu tài liệu mới nhất | `"use context7 - [câu hỏi]"` | Tài liệu thư viện |
-| Kiểm tra trình duyệt | `chrome-devtools` MCP | Snapshot/Screenshot/Hiệu suất |
+| Kiểm tra trình duyệt | ego (lite) hoặc `chrome-devtools` MCP | Snapshot/Screenshot/Hiệu suất |
 | Truy vấn DB | `postgres` MCP | Thực thi truy vấn trực tiếp |
 
 ### Phụ lục A-2: Tham chiếu nhanh Agent
