@@ -43,7 +43,7 @@ Search URL form: `https://www.pinterest.com/search/pins/?q={url-encoded query}`
 
 ## 2. Capture procedure — ego (default)
 
-Rules inherited from the browser backend policy (`docs/development/browser-backend-policy.md`): one screen = **one heredoc**, Task Space `astra landing {slug}`, absolute `captureScreenshot` paths, `window.scrollTo(0, 0)` before every capture (blank-frame guard), `completeTaskSpace` at the end of the step.
+Rules inherited from the browser backend policy (`docs/development/browser-backend-policy.md`): **one heredoc = one round** (rule 1) — note that a *single* reference capture takes **three or more rounds**, per the navigate / probe / capture split below, so never compress it into one heredoc. Also: Task Space `astra landing {slug}`, absolute `captureScreenshot` paths, `window.scrollTo(0, 0)` before every capture (blank-frame guard), `completeTaskSpace` at the end of the step.
 
 All helpers are **flat global functions** operating on the active tab (per the policy doc's Action mapping — there is no chainable tab object), and waits are in **seconds**.
 
