@@ -99,7 +99,7 @@ Empty output → `chrome-mcp` when `mcp__chrome-devtools__*` tools are present. 
 
 1. Build 4–5 Pinterest search queries from `{tone} + {industry} + medium` (recipes in the reference file).
 2. Per query: open `https://www.pinterest.com/search/pins/?q={query}`, dismiss overlay modals, `window.scrollTo(0, 0)` (ego blank-frame guard), capture the result grid, then open the top 1–2 pins and capture their detail views.
-3. ego mode: one screen = one heredoc; Task Space `astra landing {slug}`; `captureScreenshot` with **absolute** paths; close with `completeTaskSpace('astra landing {slug}', { keep: false })` when done.
+3. ego mode: one heredoc = one round, and **one capture takes three or more rounds** (navigate → readiness probe → sweep+capture; never compressed into one, or the capture comes out blank — see the reference file); Task Space `astra landing {slug}`; `captureScreenshot` with **absolute** paths; close with `completeTaskSpace('astra landing {slug}', { keep: false })` when done.
 4. Save captures to `landing/{slug}/design/references/ref-{NN}.png`. Pinterest unreachable (login wall persists / network block) → retry the same queries on the sibling galleries listed in the reference file; still nothing → capture fallback of Step 1.A.
 
 #### C. Vision Analysis → Reference Board
@@ -225,7 +225,7 @@ Implement per the reference file:
 | References | every `src`/`href` in HTML resolves to a real file; nothing references `design/` or `.work/` |
 | Video budget | sizes within Step 3.D gate |
 | Accessibility | pause control present; `prefers-reduced-motion` blocks in CSS **and** JS; `aria-hidden` on injected videos; scrim contrast tokens |
-| Responsive | mobile-first media queries at 768/1120; no horizontal overflow at 375 px |
+| Responsive | mobile-first media queries at 768/1120; no horizontal overflow at 390 px (the reference mobile width used throughout Step 5) |
 | Tokens | zero hardcoded colors/fonts/spacing in `landing.css` (spot-check with Grep) |
 | Distinctive elements | the ≥ 2 anti-AI elements from `direction.md` are actually implemented |
 
@@ -233,10 +233,20 @@ Fix everything found before proceeding.
 
 #### B. Browser Smoke Test
 
-With the Step 1 backend (skip only if no backend — then state so in the report): open `file://…/landing/{slug}/index.html`, wait for load, then
-1. verify the loop player engaged — evaluate `document.querySelectorAll('video').length >= 1 && document.querySelector('video').currentTime > 0` after ~3 s (video paths only);
-2. capture desktop (1280×800) and mobile (375×812) screenshots to `landing/{slug}/.work/qa/`, scrolled to top;
-3. confirm both screenshots are non-blank before citing them as evidence.
+Serve the page over **HTTP**, not `file://` (`python3 -m http.server <port> --bind 127.0.0.1` from `landing/{slug}/`), then open it with the Step 1 backend. Skip only if no backend exists — and say so in the report.
+
+**Two assertion classes — do not mix them:**
+
+| Class | Assertions | Where it runs |
+|-------|-----------|---------------|
+| **Structural** (always) | 2 `<video>` elements injected after load, each `muted` + `playsinline` + `aria-hidden="true"` + `loop === false`; poster `complete && naturalWidth > 0`; `--video-crossfade` set on the stage; pause control wired; **no horizontal overflow** at 390 px | any backend, including ego |
+| **Playback** (video paths only) | `readyState === 4`, `currentTime > 0`, the crossfade swap (both videos briefly playing with intermediate opacities), pause/resume actually freezing and resuming `currentTime` | **a visible tab only** — see the warning below |
+
+> **⚠️ ego cannot verify playback — and a failed playback assertion there means nothing.** ego agent Task Spaces are hidden background tabs: measured `document.visibilityState === "hidden"`, `document.hasFocus() === false`, and **`requestAnimationFrame` firing 0 times in 2 s**. Chromium therefore never decodes the media — the same page that reaches `readyState 4` / `currentTime 2.61` in a visible tab sits at `readyState 0`, `currentTime 0`, `duration 0` forever in ego, with no `video.error` and the mp4 already fetched (HTTP 200). Codec support is not the issue (`canPlayType('video/mp4; codecs="avc1.42E01E"')` → `"probably"`). **Never treat `currentTime === 0` under ego as a page defect** — it would send the loop into fixing a working player. To assert playback, escalate that step to Chrome MCP (the policy's documented escalation) or `handOffTaskSpace` to the user's visible window; if neither is available, record playback as *unverified* in the report rather than passed or failed.
+
+Then, on any backend:
+1. capture desktop (1280×800) and mobile (390×844) screenshots to `landing/{slug}/.work/qa/`, scrolled to top — CDP screenshots do work in hidden tabs;
+2. confirm both are non-blank by byte size (a blank full-viewport PNG is ~14 KB) *and* by reading them, before citing them as evidence.
 
 #### C. Adversarial Convergence
 
