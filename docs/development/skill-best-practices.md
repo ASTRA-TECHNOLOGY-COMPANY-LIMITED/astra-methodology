@@ -211,7 +211,7 @@ Persona agents are explicit-invocation only and must not be auto-triggered.
 
 The following *broad-deliverable producing skills* generate full-stack deliverables explicitly requested by the user, so they are not bound by the "Simplicity First" scope limit:
 
-- `/service-planner`, `/blueprint`, `/manual-generator`, `/catalog-generator`
+- `/service-planner`, `/blueprint`, `/manual-generator`, `/catalog-generator`, `/landing-page`
 - `/handoff-publish`, `/project-init`, `/sprint-init`, `/autorun`
 
 However, the *individual code* authored inside them still follows the ASTRA 4 principles (Think Before / Simplicity / Surgical / Goal-Driven).

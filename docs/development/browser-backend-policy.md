@@ -4,7 +4,7 @@
 document instead of restating the detection order or the ego helper API — a
 change here is a change everywhere.
 
-Consumers: `/test-run`, `/user-test`, `/manual-generator`, `/catalog-generator`.
+Consumers: `/test-run`, `/user-test`, `/manual-generator`, `/catalog-generator`, `/landing-page`.
 Not a consumer: `/uat-parallel` (drives Playwright as a subprocess and owns its
 own `BrowserContext` per worker — no MCP/ego backend involved).
 
@@ -251,6 +251,7 @@ One space per skill invocation, stable across all its heredocs, closed at the en
 | `/user-test` | `astra user-test {SESSION_ID}` |
 | `/manual-generator` | `astra manual {feature-name}` |
 | `/catalog-generator` | `astra catalog {catalog-name}` |
+| `/landing-page` | `astra landing {slug}` |
 
 Distinct names keep concurrent sprint sessions from sharing a space (the
 multi-session isolation that motivates the ego default in the first place).
