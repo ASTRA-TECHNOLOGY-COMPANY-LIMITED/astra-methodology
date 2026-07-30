@@ -105,17 +105,24 @@ Then make it loop by blending the tail into the head (output duration = D − F)
 ```bash
 W=landing/{slug}/.work
 D=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "$W/hero-raw.mp4")
+# xfade rejects non-CFR input, and trim+setpts drops the frame-rate metadata
+# (it reports 1/0) — so re-assert the source rate with fps= before the fade.
+FPS=$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=nw=1:nk=1 "$W/hero-raw.mp4")
 F=1.0   # crossfade length in seconds — 1.0 masks ambient-motion discontinuity well
 OFF=$(awk -v d="$D" -v f="$F" 'BEGIN{printf "%.3f", d - 2*f}')
 ffmpeg -y -i "$W/hero-raw.mp4" -filter_complex \
   "[0:v]split[a][b];\
-   [a]trim=start=${F},setpts=PTS-STARTPTS[main];\
-   [b]trim=duration=${F},setpts=PTS-STARTPTS[head];\
+   [a]trim=start=${F},setpts=PTS-STARTPTS,fps=${FPS}[main];\
+   [b]trim=duration=${F},setpts=PTS-STARTPTS,fps=${FPS}[head];\
    [main][head]xfade=transition=fade:duration=${F}:offset=${OFF}[v]" \
-  -map "[v]" -an "$W/hero-loop.mp4"
+  -map "[v]" -an -c:v libx264 -pix_fmt yuv420p "$W/hero-loop.mp4"
+# Verify before claiming a loop exists: exit code alone is not enough.
+ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "$W/hero-loop.mp4"   # expect D − F
 ```
 
 How it works: `main` = clip from t=F onward; `head` = the first F seconds; the crossfade lands the final frame on the exact frame where playback restarts. Path A skips this unless Seam QA fails.
+
+> **Verified by execution** (ffmpeg 7.1.1): without the `fps=` filters this command aborts with `The inputs needs to be a constant frame rate; current rate of 1/0 is invalid` and writes no output. With them it exits 0 and produces exactly D − F seconds at the source rate.
 
 Poster for Path B: `ffmpeg -y -i "$W/hero-loop.mp4" -frames:v 1 -q:v 3 "$W/hero-poster-src.png"`.
 
