@@ -1360,6 +1360,31 @@ A pattern that takes animation configuration from a CMS/API and applies it:
 
 ---
 
+## 18. AI-Generated Video Backgrounds & Seamless Loops
+
+Generative video models (Google Veo 3.1 via the `fect-mcp` server) turn the hero background from a CSS effect into a cinematic asset. Video backgrounds beat CSS animation when the design calls for *material* motion — fabric, liquid, atmosphere, light — that CSS cannot fake; CSS (§2, §7) remains the right tool for geometric/gradient motion and for every fallback path.
+
+### 18.1 Generation-side loop techniques
+
+- **Bookend loop (preferred)**: generate one art-directed still (matched to design tokens), then animate it with Veo's first-frame + last-frame interpolation using the **same image for both** — frame 0 and frame N are pixel-identical, so playback loops without a visible seam, and the still doubles as the poster/LCP image. Prompt for *cyclic ambient motion* that visibly returns to its start; forbid cuts, entering subjects, text, faces, and one-way motion.
+- **Self-crossfade loop (fallback)**: for clips without bookend frames, blend the final second over the opening second with ffmpeg `xfade` — output ends on the exact frame where playback restarts.
+- **Post-production is mandatory**: strip audio (`-an`), encode H.264 `yuv420p` + `+faststart`, produce a desktop (1920 w) and mobile (720 w) ladder, and verify a size budget before shipping.
+
+### 18.2 Integration-side loop technique (the "infinite loop script")
+
+Native `loop` still shows a decoder-restart hiccup. The fix is a **dual-`<video>` crossfade player**: two stacked elements alternate — as one approaches its end, the other starts from 0 and fades in on top, so the restart gap always happens beneath an already-playing layer. Combine with poster-first LCP (no `<video>` in initial HTML; inject after `window.load`), runtime source selection (viewport / `saveData`), pause on `visibilitychange` + IntersectionObserver, and an observable `play()` rejection path that falls back to the poster.
+
+### 18.3 Accessibility & performance rules
+
+- `prefers-reduced-motion: reduce` → never inject the videos (JS) *and* hide them (CSS backstop); the poster carries the design alone.
+- A visible pause/play control is required whenever auto-playing motion exceeds 5 s (WCAG 2.2.2).
+- Text over video needs a scrim guaranteeing ≥ 4.5:1 contrast against the *brightest* frame.
+- Budget like bundle size: desktop clip ≤ 4 MB, mobile ≤ 1.5 MB, poster ≤ 200 KB.
+
+Full operational recipes (prompt templates per design tone, tool-call parameters, ffmpeg commands, the complete player script): `skills/landing-page/references/veo-loop-video.md` and `skills/landing-page/references/video-integration.md`, orchestrated by the `/landing-page` skill.
+
+---
+
 ## References
 
 - [View Transitions API](https://developer.mozilla.org/en-US/docs/Web/API/View_Transitions_API)
