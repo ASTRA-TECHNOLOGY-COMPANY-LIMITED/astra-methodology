@@ -266,4 +266,19 @@ Enhance per tone with the animation guide's CSS-native techniques (aurora blobs 
 | JS total | ≤ 10 KB (no frameworks, no animation libraries by default) |
 | Fonts | ≤ 2 families, `woff2`, `font-display: swap` |
 
-Measurement during Step 5: `du -k` the asset tree; in the browser smoke test confirm `document.querySelector('.hero__poster')` renders before videos exist (readyState timing) and `video.currentTime > 0` after ~3 s. A Lighthouse pass (Chrome MCP `lighthouse_audit`) is the optional deep check — per the browser backend policy, performance auditing is a documented escalation from ego to Chrome MCP.
+Measurement during Step 5: `du -k` the asset tree; confirm the poster renders before any `<video>` exists, then assert playback **only in a visible tab**. A Lighthouse pass (Chrome MCP `lighthouse_audit`) is the optional deep check — per the browser backend policy, performance auditing is a documented escalation from ego to Chrome MCP.
+
+**Execution-verified reference values** (this exact player + a 3 s clip, served over HTTP, Chromium visible tab) — use them as the expected shape of a passing smoke test:
+
+| Assertion | Measured |
+|---|---|
+| Videos injected after `load` | 2, both `muted` · `playsinline` · `aria-hidden="true"` · `loop === false` |
+| Front/back state | front `opacity: 1`, back `opacity: 0`, back `paused: true` |
+| Playback engaged | `readyState: 4`, `duration: 3`, front `currentTime: 2.61` |
+| Crossfade mid-swap | both videos playing at `t = 2.69` / `0.03`, opacities `0.935` / `0.065`, `is-front` already flipped |
+| Pause control | revealed only after `play()` resolves; `127 × 44` px; click → both paused + `aria-pressed="true"` + labels swapped + `currentTime` frozen; second click resumes |
+| `prefers-reduced-motion: reduce` | **0 videos injected**, poster visible, control stays hidden, hero renders full-size |
+| Viewport 390 × 844 | `hero-mobile.mp4` selected for both elements, no horizontal overflow |
+| `--video-crossfade` | `0.5s`, set by the script (single SSoT with the CSS transition) |
+
+> **Do not run the playback assertions under ego.** Its agent Task Spaces are hidden tabs with a frozen paint loop (`visibilityState: "hidden"`, `requestAnimationFrame` firing 0×/2 s), so Chromium never decodes the media: the identical page reports `readyState: 0` / `currentTime: 0` / `duration: 0` indefinitely, with no `video.error` and the mp4 already fetched. That is an artifact of the harness, not a defect in the page — see SKILL.md Step 5.B for the escalation rule.

@@ -164,16 +164,43 @@ Load-bearing conventions — violating them produces silent no-ops, not errors.
    `completeTaskSpace('{space}', { keep: false })`; an un-closed space leaves
    orphaned browser windows behind. This must run on every exit path, including
    failure.
+12. **Agent Task Space tabs are hidden, with a frozen paint loop.** Measured on
+   ego lite 0.4.5.8: `document.visibilityState === "hidden"`,
+   `document.hasFocus() === false`, and `requestAnimationFrame` firing **0 times
+   in 2 seconds**. Two consequences, both of which silently corrupt assertions:
+   - **Media never decodes.** A `<video>` whose file was already fetched (HTTP
+     200) stays at `readyState 0` / `currentTime 0` / `duration 0` indefinitely,
+     with `video.error === null`. The same page in a visible tab reaches
+     `readyState 4` and plays. Codecs are fine (`canPlayType('video/mp4;
+     codecs="avc1.42E01E"')` → `"probably"`). So **autoplay / playback /
+     video-progress assertions cannot pass under ego** — treat them as
+     *unverified*, never as failures, and escalate (below) when they matter.
+     The same caution applies to anything gated on rAF (canvas/WebGL loops,
+     JS-driven animation progress, IntersectionObserver-triggered reveals).
+   - **A freshly navigated page can stay unpainted for over a minute**, while
+     `gotoAndWait`/`openOrReuseTab` resolve, `waitForElement` succeeds,
+     `document.readyState` reads `"complete"`, and `pageInfo()` returns the new
+     URL — none of which prove the page rendered. **An in-round `wait()` does not
+     help** (`wait(45)` changed nothing); progress appears only in a *later*
+     heredoc round. So: never navigate and capture in one round, and gate any
+     capture or DOM assertion on a content-readiness probe (`document.body
+     .innerText.length > 0` plus a domain-specific element count) that **retries
+     across rounds**, not inside one. A blank full-viewport PNG is ~14 KB — check
+     the byte size of every capture before treating it as evidence.
+   CDP screenshots themselves *do* work in these hidden tabs (they force a
+   paint), which is why deliverable capture is unaffected once the readiness
+   probe passes.
 
 ## Escalation to Chrome MCP
 
-Two capabilities have no ego equivalent. When the running mode is `ego` (or
+Three capabilities have no ego equivalent. When the running mode is `ego` (or
 `cmux`) and one of them is required:
 
 | Need | Rule |
 |---|---|
 | **Performance trace** (Core Web Vitals: LCP, CLS, …) | Use Chrome MCP for that step regardless of `BROWSER_MODE`. If the MCP server is not registered, capture basic metrics via `performance.getEntriesByType('navigation'\|'paint')` (TTFB / DCL / Load / FCP) and state the limitation verbatim in the report: "Full Core Web Vitals unavailable ({mode} mode, Chrome MCP not connected)". |
 | **Console message list** | Install the CDP collector *before* navigation (`Runtime.enable` + `Log.enable`, then `drainEvents()`). A collector installed after navigation misses everything already emitted. If it yields nothing for a page known to log errors, fall back to an in-page `window.addEventListener('error', …)` collector and note the limitation — never record a silent "0 errors". |
+| **Playback / rAF-dependent behavior** (video autoplay, animation progress) | Per rule 12, ego's hidden tab never decodes media and never runs rAF. Verify structure (elements, attributes, computed styles) under ego, and route the playback assertion to Chrome MCP for that step — or `handOffTaskSpace` to the user's visible window. With neither available, report the assertion as **unverified**; a `currentTime === 0` under ego is not evidence of a broken page. |
 
 Escalation is per-step, not per-session: the rest of the workflow stays on the
 detected backend.
