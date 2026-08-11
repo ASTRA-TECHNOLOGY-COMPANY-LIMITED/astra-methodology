@@ -235,6 +235,10 @@ python3 $CS --surface commit /tmp/commit-msg.txt
 grep -E '(//|#|\*|<!--)' src/api.ts | grep '[가-힣]' | python3 $CS --surface comment -
 ```
 
+훅이 보는 범위: `*.md`·`*.html` 은 `doc` 표면, 소스 파일은 **줄 단위로 표시된 주석**만
+`comment` 표면으로 검사한다. 블록 독스트링(`"""..."""`)은 줄 표지가 없어 걸리지 않고,
+문자열 리터럴 안의 한국어는 런타임 데이터라 일부러 대상에서 뺀다.
+
 Write/Edit 로 저장되는 한국어 문서·주석은 PostToolUse 훅(`check-korean-style.sh`)이
 자동으로 검사해 경고를 띄운다(비차단·exit 0). 대화로만 나가는 표면(answer·hitl·
 report)은 훅이 볼 수 없으므로 아래 "HITL 질문 작성 규칙"과 "답변·보고 원칙"을

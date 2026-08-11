@@ -759,9 +759,12 @@ def main(argv: list[str] | None = None) -> int:
     if not args.path or not args.surface:
         p.error("path 와 --surface 가 필요하다 (규칙 검증만 할 때는 --selftest)")
 
+    # UnicodeDecodeError 는 ValueError 계열이라 OSError 로는 안 잡힌다 — 레거시
+    # EUC-KR/CP949 소스에서 트레이스백 대신 실행 오류(3)로 나가야 exit 1(경고)과
+    # 구분된다.
     try:
         raw = sys.stdin.read() if args.path == "-" else open(args.path, encoding="utf-8").read()
-    except OSError as e:
+    except (OSError, UnicodeDecodeError) as e:
         print(f"check-style: 입력을 읽지 못했다 — {e}", file=sys.stderr)
         return 3
 

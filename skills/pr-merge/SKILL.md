@@ -260,14 +260,23 @@ Process uncommitted changes inside the isolated worktree:
        printf '%s\n' "$SENSITIVE" | while IFS= read -r f; do git restore --staged "$f"; done
      fi
      ```
-   - Analyze `git diff --staged`, check recent commit-message style via `git log`, write a commit message, `git commit`.
-   - Korean commit message? Style-gate it first (advisory). Shell state does not persist across Bash calls, so resolve the path inline and selftest-guard it (a broken/missing checker must read as "unverified", not as findings):
+   - Analyze `git diff --staged` and check recent commit-message style via `git log`, then **write the message to a file** and commit from it — the file is what the style gate below reads, so composing the message inline with `git commit -m` skips the gate entirely:
+     ```bash
+     MSG_FILE=$(mktemp -t astra-commit-msg)
+     cat > "$MSG_FILE" <<'MSGEOF'
+     {the commit message you composed}
+     MSGEOF
+     ```
+   - Korean commit message? Style-gate `$MSG_FILE` before committing (advisory). Shell state does not persist across Bash calls, so keep the write, the check, and the commit **in one Bash block**, and selftest-guard the checker (a broken/missing checker must read as "unverified", not as findings):
      ```bash
      CS_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
-     python3 "$CS_ROOT/scripts/check-style.py" --selftest >/dev/null 2>&1 \
-       && python3 "$CS_ROOT/scripts/check-style.py" --surface commit /tmp/commit-msg.txt
+     if grep -q '[가-힣]' "$MSG_FILE" \
+        && python3 "$CS_ROOT/scripts/check-style.py" --selftest >/dev/null 2>&1; then
+       python3 "$CS_ROOT/scripts/check-style.py" --surface commit "$MSG_FILE"   # exit 2 = S1 findings
+     fi
      ```
-     Fix exit-2 (S1) findings; proceed on warnings or when the selftest guard fails — never block the commit on style.
+     Rewrite the message file to clear exit-2 (S1) findings; proceed on warnings, on a non-Korean message, or when the selftest guard fails — never block the commit on style.
+   - Commit from the file: `git commit -F "$MSG_FILE"` (then `rm -f "$MSG_FILE"`).
 4. Push via `git push -u origin "$BRANCH_NAME"`.
 
 If there are no changes, skip this step.

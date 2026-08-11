@@ -39,7 +39,10 @@ grep -q -m1 '[가-힣]' "$FILE_PATH" 2>/dev/null || exit 0
 # Surface by file type. Unknown types are out of scope.
 EXT="${FILE_PATH##*.}"
 case "$EXT" in
-  md|markdown)
+  md|markdown|html|htm)
+    # HTML is the primary deliverable format for service-planner mockups,
+    # landing-page packages and manual/catalog output — its Korean copy is prose,
+    # so it goes through the doc surface like Markdown does.
     SURFACE="doc"
     ;;
   ts|tsx|js|jsx|mjs|py|java|kt|kts|swift|dart|go|rb|css|scss|sh|sql)
@@ -64,7 +67,11 @@ if [ "$SURFACE" = "doc" ]; then
 else
   # Feed only Korean-bearing comment-ish lines; Korean inside string literals
   # (log/UI text) is runtime data, not prose, and fixing it changes behavior.
-  LINES=$(grep -E '(//|#|/\*|^[[:space:]]*\*|<!--|^[[:space:]]*--)' "$FILE_PATH" 2>/dev/null | grep '[가-힣]' 2>/dev/null)
+  # Known coverage limits (advisory gate — deliberately not closed here): block
+  # docstrings (""" ... """) are not line-markable, and the excerpts the checker
+  # prints come from this filtered line set, so two non-adjacent comment lines can
+  # appear spliced in one excerpt. Line numbers in findings refer to that set.
+  LINES=$(grep -E '(//|#|/\*|^[[:space:]]*\*|<!--|^[[:space:]]*--|[[:space:]]--[[:space:]])' "$FILE_PATH" 2>/dev/null | grep '[가-힣]' 2>/dev/null)
   if [ -z "$LINES" ]; then
     exit 0
   fi
@@ -82,6 +89,9 @@ fi
 if [ "$RC" -eq 1 ] || [ "$RC" -eq 2 ]; then
   echo "⚠️  [korean-style] $(basename "$FILE_PATH") ($SURFACE) — Korean style findings, advisory only:"
   printf '%s\n' "$OUT" | head -20
+  if [ "$SURFACE" = "comment" ]; then
+    echo "   (comment surface: line numbers count only the Korean comment lines, not the source file)"
+  fi
   echo "   rules: \$CLAUDE_PLUGIN_ROOT/docs/development/korean-style.md (nothing is blocked)"
 fi
 
