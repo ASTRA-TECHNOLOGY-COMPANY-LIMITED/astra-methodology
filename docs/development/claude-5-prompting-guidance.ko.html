@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude 5 세대 프롬프팅 · 하네스 지침 정리 — 무엇을 빼고 무엇을 남기나</title>
+<style>
+  :root {
+    --bg: #f7f8fa; --surface: #ffffff; --ink: #1a2233; --sub: #5a6478;
+    --line: #dfe3ea; --accent: #2f6fed; --accent-soft: #e8f0fe;
+    --cut: #b3261e; --cut-soft: #fdecea;
+    --keep: #1e7f4f; --keep-soft: #e6f4ec;
+    --warn: #b3541e; --warn-soft: #fdf0e7;
+    --code-bg: #101623; --code-ink: #d7e0f0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1420; --surface: #161d2d; --ink: #e6ebf5; --sub: #9aa5bd;
+      --line: #2a3550; --accent: #6f9bff; --accent-soft: #1b2a4a;
+      --cut: #f28b82; --cut-soft: #3a1512;
+      --keep: #4cc38a; --keep-soft: #12301f;
+      --warn: #e8925a; --warn-soft: #3a2415;
+      --code-bg: #0b0f18; --code-ink: #cdd7ea;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+    line-height: 1.68; padding: 0 16px 80px;
+    -webkit-text-size-adjust: 100%;
+  }
+  main { max-width: 880px; margin: 0 auto; }
+
+  header.hero { padding: 56px 0 28px; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+  .hero .eyebrow { color: var(--accent); font-weight: 700; letter-spacing: .12em; font-size: .78rem; }
+  .hero h1 { font-size: 1.9rem; margin: 8px 0 12px; letter-spacing: -0.02em; line-height: 1.35; }
+  .hero p { color: var(--sub); max-width: 64ch; }
+  .hero .meta { margin-top: 16px; font-size: .8rem; color: var(--sub); }
+  .hero .meta b { color: var(--ink); font-weight: 600; }
+
+  h2 { font-size: 1.28rem; margin: 54px 0 8px; letter-spacing: -0.01em; }
+  h2 .no { color: var(--accent); font-variant-numeric: tabular-nums; margin-right: 9px; }
+  h3 { font-size: 1rem; margin: 28px 0 6px; }
+  section > p { margin: 12px 0; }
+  ul, ol { margin: 12px 0; padding-left: 22px; }
+  li { margin: 6px 0; }
+  a { color: var(--accent); }
+
+  code { font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; font-size: .88em; }
+  p code, li code, td code {
+    background: var(--accent-soft); color: var(--ink);
+    padding: 1px 6px; border-radius: 5px;
+  }
+
+  /* 원문 인용 */
+  blockquote.src {
+    background: var(--surface); border: 1px solid var(--line);
+    border-left: 4px solid var(--accent); border-radius: 0 10px 10px 0;
+    padding: 13px 17px; margin: 16px 0; font-size: .9rem;
+  }
+  blockquote.src p { margin: 0; font-style: normal; }
+  blockquote.src .en { color: var(--ink); }
+  blockquote.src cite {
+    display: block; margin-top: 7px; font-style: normal;
+    font-size: .76rem; color: var(--sub);
+  }
+
+  /* 두 축 대조 */
+  .axes { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 16px; margin: 24px 0 8px; }
+  .axis { background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .axis.cut { border-color: var(--cut); background: var(--cut-soft); }
+  .axis.keep { border-color: var(--keep); background: var(--keep-soft); }
+  .axis h3 { margin: 0 0 4px; font-size: 1.02rem; }
+  .axis.cut h3 { color: var(--cut); }
+  .axis.keep h3 { color: var(--keep); }
+  .axis .tag { font-size: .74rem; font-weight: 700; letter-spacing: .06em; opacity: .8; }
+  .axis ul { margin: 10px 0 0; padding-left: 18px; font-size: .9rem; }
+  .axis li { margin: 5px 0; }
+
+  /* 표 */
+  .tablewrap { overflow-x: auto; margin: 18px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .89rem; background: var(--surface); border-radius: 10px; overflow: hidden; }
+  th, td { border: 1px solid var(--line); padding: 10px 13px; text-align: left; vertical-align: top; }
+  th { background: var(--accent-soft); font-size: .83rem; white-space: nowrap; }
+  td.was { color: var(--cut); }
+  td.now { color: var(--keep); }
+
+  /* 노트 */
+  .note { border-left: 4px solid var(--accent); background: var(--surface); padding: 13px 17px; border-radius: 0 10px 10px 0; margin: 20px 0; font-size: .92rem; }
+  .note.warn { border-color: var(--warn); background: var(--warn-soft); }
+  .note.warn b { color: var(--warn); }
+  .note .h { display: block; font-weight: 700; margin-bottom: 4px; }
+
+  /* 출처 등급 */
+  .tier { display: inline-block; font-size: .7rem; font-weight: 700; border-radius: 999px; padding: 2px 9px; vertical-align: 2px; margin-left: 6px; }
+  .tier.a { background: var(--keep-soft); color: var(--keep); border: 1px solid var(--keep); }
+  .tier.b { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent); }
+  .tier.c { background: var(--warn-soft); color: var(--warn); border: 1px solid var(--warn); }
+
+  footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--sub); font-size: .82rem; }
+  footer h2 { margin-top: 0; font-size: 1.05rem; color: var(--ink); }
+  footer ol { padding-left: 20px; }
+  footer li { margin: 8px 0; }
+  footer .why { display: block; color: var(--sub); font-size: .78rem; }
+</style>
+</head>
+<body>
+<main>
+
+<header class="hero">
+  <div class="eyebrow">ASTRA METHODOLOGY · 개발 참고 문서</div>
+  <h1>Claude 5 세대 프롬프팅 · 하네스 지침 — 무엇을 빼고 무엇을 남기나</h1>
+  <p>"새 모델이 나왔으니 하네스를 다 걷어내라"는 말은 유통 과정에서 과장됐습니다.
+  Anthropic 공식 지침을 직접 읽으면 <b>빼라는 것</b>과 <b>오히려 더하라는 것</b>이 뚜렷하게 갈립니다.
+  이 문서는 그 경계를 정리하고, astra-methodology에 어떤 함의가 있는지까지 짚습니다.</p>
+  <div class="meta">
+    조사일 <b>2026-08-11</b> · 대상 모델 <b>Claude Opus 5 · Claude Fable 5</b> ·
+    1차 출처 <b>Anthropic 공식 프롬프팅 문서</b> (문서 하단 출처 목록 참조)
+  </div>
+</header>
+
+<!-- ============ 1 ============ -->
+<section>
+<h2><span class="no">1</span>결론 — 하나의 문장이 아니라 두 개의 축</h2>
+
+<p>지침은 "지워라" 한 줄이 아닙니다. 지우라는 대상과 만들라는 대상이 서로 다른 층에 있습니다.</p>
+
+<div class="axes">
+  <div class="axis cut">
+    <div class="tag">빼라 — 규범적 프롬프트 텍스트</div>
+    <h3>모델이 이미 하는 일을 시키는 문장</h3>
+    <ul>
+      <li>검증 지시 — "최종 검증 단계를 넣어라", "답하기 전에 다시 확인해라"</li>
+      <li>압박 언어 — <code>CRITICAL:</code>, <code>MUST</code>, "확신이 없으면 이 도구를 써라"</li>
+      <li>단계별 안무 — 판단이 필요한 일에 붙인 STEP 1 → STEP 2 스크립트</li>
+      <li>강제 진행보고 — "도구 3번 호출마다 요약해라"</li>
+      <li>시스템 프롬프트와 도구 설명에 중복된 같은 규칙</li>
+      <li>구세대용으로 붙인 회피책 — 서식 교정, 과잉 거부 완화 문구</li>
+    </ul>
+  </div>
+  <div class="axis keep">
+    <div class="tag">남기거나 더하라 — 구조적 하네스</div>
+    <h3>코드와 파일이 강제하는 장치</h3>
+    <ul>
+      <li>신선한 컨텍스트를 가진 <b>독립 검증자 서브에이전트</b></li>
+      <li>도구 결과에 대조하는 진행 보고 규약</li>
+      <li>메모리 시스템 — 세션을 넘겨 배운 것을 기록할 장소</li>
+      <li>경계 명시 — 무엇을 하면 안 되는지에 대한 실제 제약</li>
+      <li>루브릭 · 테스트 스위트 등 기계가 읽는 명세</li>
+      <li>도구 계약(파라미터 · 실패 모드) 설명 — 오히려 더 자세히</li>
+    </ul>
+  </div>
+</div>
+
+<p>혼선의 출처는 Opus 5 문서의 한 문장입니다. 검증 지시를 지우라고 한 직후에 이렇게 덧붙입니다.</p>
+
+<blockquote class="src">
+  <p class="en">Claude Opus 5 verifies its own work without being told to. If your prompt contains explicit verification instructions … remove them: instructions like these cause over-verification on Claude Opus 5, and removing them reduces wasted tokens with no loss in quality. <b>The same applies to legacy harness scaffolding that adds separate verification steps.</b></p>
+  <cite>Prompting Claude Opus 5 — Task scope and over-verification</cite>
+</blockquote>
+
+<p>이 마지막 문장만 잘려 나가 "하네스를 지우라"가 됐습니다. 문맥은 <b>검증을 중복시키는</b> 옛 보조 장치를 가리킵니다.</p>
+</section>
+
+<!-- ============ 2 ============ -->
+<section>
+<h2><span class="no">2</span>더하라고 명시된 하네스</h2>
+
+<p>Fable 5 문서의 마지막 절 제목이 아예 "Recommended <b>scaffolding</b> changes"입니다. 여기 있는 항목은 전부 빼기가 아니라 더하기입니다.</p>
+
+<blockquote class="src">
+  <p class="en"><b>Make self-verification explicit in long-run prompts.</b> Separate, fresh-context verifier subagents tend to outperform self-critique. For long-running tasks, instruct: <code>Establish a method for checking your own work at an interval of [X] as you build. Run this every [X interval], verifying your work with subagents against the specification.</code></p>
+  <cite>Prompting Claude Fable 5 — Recommended scaffolding changes</cite>
+</blockquote>
+
+<blockquote class="src">
+  <p class="en"><b>Ground progress claims during long runs.</b> Before reporting progress, audit each claim against a tool result from this session. Only report work you can point to evidence for; if something is not yet verified, say so explicitly. Report outcomes faithfully: if tests fail, say so with the output; if a step was skipped, say that.</p>
+  <cite>Prompting Claude Fable 5 — Ground progress claims during long runs</cite>
+</blockquote>
+
+<p>Anthropic 자체 테스트에서 이 지시가 "허위 상태 보고를 거의 없앴다"고 적혀 있습니다. 같은 문서에 메모리 시스템 구축(<i>Construct a memory system</i>), 경계 명시(<i>State the boundaries</i>), 사용자에게 원문 그대로 전달하는 <code>send_to_user</code> 도구 추가까지 나란히 들어 있습니다.</p>
+
+<p>도구 설명은 방향이 아예 반대입니다. Anthropic의 프롬프트 감사 플레이북은 도구 설명의 기준을 "간결함이 아니라 정확성과 계약 충실도"로 잡고, 가장 흔한 실패가 <b>과소 기술</b>이라고 못박습니다. 최소 3~4문장, 언제 쓰지 <em>말아야</em> 하는지까지 적으라는 쪽입니다.</p>
+</section>
+
+<!-- ============ 3 ============ -->
+<section>
+<h2><span class="no">3</span>검증자 이야기가 모순처럼 보이는 지점</h2>
+
+<p>두 문서가 반대로 읽힙니다. Opus 5는 "서브에이전트로 자기 작업을 검증하지 마라"고 하고, Fable 5는 "독립 검증자 서브에이전트가 자기 비평보다 낫다"고 합니다. 대상이 다릅니다.</p>
+
+<div class="tablewrap">
+<table>
+  <thead>
+    <tr><th></th><th>지우라는 쪽</th><th>권장하는 쪽</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>무엇</b></td>
+      <td class="was">모델이 재량으로 띄우는 검증 에이전트</td>
+      <td class="now">하네스가 정해진 시점에 호출하는 검증 게이트</td>
+    </tr>
+    <tr>
+      <td><b>누가 부르나</b></td>
+      <td class="was">프롬프트 문장을 읽은 모델</td>
+      <td class="now">스킬 · 파이프라인 코드</td>
+    </tr>
+    <tr>
+      <td><b>언제</b></td>
+      <td class="was">아무 때나 — 몇 번의 도구 호출로 끝날 일에도</td>
+      <td class="now">장기 작업의 정해진 마일스톤</td>
+    </tr>
+    <tr>
+      <td><b>문제 / 효과</b></td>
+      <td class="was">비용과 지연이 배로 늘어남</td>
+      <td class="now">신선한 컨텍스트라 자기 비평보다 결함을 잘 찾음</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>Opus 5는 예전 모델보다 서브에이전트를 훨씬 쉽게 띄웁니다. 그래서 프롬프트에 "검증용 서브에이전트를 써라"라고 적어두면 안 됩니다. 반대로 코드가 부르는 게이트는 그대로 두는 게 맞습니다.</p>
+
+<div class="note">
+  <span class="h">실무 판별 기준</span>
+  검증을 <b>문장으로 시키고 있다면</b> 지우기 후보, <b>코드가 호출하고 결과를 기계 판독으로 판정한다면</b> 유지 대상입니다.
+</div>
+</section>
+
+<!-- ============ 4 ============ -->
+<section>
+<h2><span class="no">4</span>"시스템 프롬프트 80% 삭제"의 실체</h2>
+
+<p>Anthropic 기술직원 Thariq Shihipar가 2026년 7월 말 공개한 내용입니다. Claude Code 시스템 프롬프트를 Opus 5 · Fable 5 대상으로 80% 이상 걷어냈고 자체 코딩 평가에서 측정 가능한 손실이 없었다는 것. 2차 소스가 보고한 수치는 약 <b>2,686단어 → 약 514단어</b>(메모리를 끈 상태)이고, 메모리를 켜면 약 830단어라 감소폭이 70%쯤으로 줄어듭니다.</p>
+
+<p class="note" style="border-color: var(--sub);">발표 형식과 귀속은 2차 소스마다 갈립니다 — X 포스트인지 AI Engineer World's Fair 발표인지, Thariq인지 Boris Cherny인지. 원문 링크 기준으로는 Thariq의 X 포스트입니다.</p>
+
+<h3>여섯 가지 전환</h3>
+<div class="tablewrap">
+<table>
+  <thead>
+    <tr><th>전환</th><th>지운 것</th><th>대신 둔 것</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><b>규칙 → 판단</b></td><td class="was">"여러 문단짜리 독스트링을 절대 쓰지 마라"</td><td class="now">"주변 코드처럼 써라 — 주석 밀도, 명명, 관용을 맞춰라"</td></tr>
+    <tr><td><b>예시 → 인터페이스 설계</b></td><td class="was">정확한 API 호출을 보여주는 도구 사용 예시</td><td class="now">표현력 있는 스키마 — 상태 열거형, 타입 지정 필드</td></tr>
+    <tr><td><b>사전 로딩 → 점진적 공개</b></td><td class="was">시스템 프롬프트에 박아둔 검증 절차 · 코드 리뷰 규칙</td><td class="now">스킬과 지연 로딩 도구로 필요할 때만</td></tr>
+    <tr><td><b>반복 → 통합</b></td><td class="was">시스템 프롬프트와 도구 설명의 중복 지시</td><td class="now">도구 설명이 단일 출처, 시스템 프롬프트는 참조만</td></tr>
+    <tr><td><b>수동 → 자동 메모리</b></td><td class="was">단축키와 CLAUDE.md 수기 관리</td><td class="now">자동 저장 — 메모리를 하네스 인프라로 취급</td></tr>
+    <tr><td><b>평문 명세 → 풍부한 참조</b></td><td class="was">계획과 명세를 담은 마크다운 파일</td><td class="now">HTML 산출물, 코드 명세, 테스트 스위트, <b>루브릭</b></td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>여섯 번째 항목을 눈여겨볼 만합니다. 루브릭 기반 검증은 격하가 아니라 오히려 격상됐습니다.</p>
+
+<div class="note warn">
+  <span class="h">삭제 진영이 스스로 붙인 경고</span>
+  <b>"손실 없음"은 Anthropic의 코딩 평가 기준</b>이지 당신 제품의 평가 기준이 아닙니다.
+  규제 환경(SOC 2 · HIPAA · PCI-DSS)의 프로덕션 에이전트는 제약을 줄이는 게 아니라 <b>늘려야</b> 하고,
+  결정론적 동작을 판단 기반 프롬프트로는 보장할 수 없습니다.
+  이 축소는 Opus 5 · Fable 5 전용이라 <b>구세대 모델은 기존 프롬프트를 그대로 씁니다</b> — 여러 모델을 지원하는 하네스라면 프로필이 둘 필요합니다.
+</div>
+
+<p style="font-size:.88rem; color:var(--sub);">참고로 "6개월마다 CLAUDE.md · 스킬 · 훅을 지워라"나 Vercel의 "도구 80% 제거로 성공률 80→100%" 같은 이야기는 검색 스니펫에만 있는 미검증 2차 주장입니다. 1차 확인 없이 인용하지 않는 편이 낫습니다.</p>
+</section>
+
+<!-- ============ 5 ============ -->
+<section>
+<h2><span class="no">5</span>지우면 안 되는 것 — Anthropic 자체 감사 규칙</h2>
+
+<p>Anthropic이 별도로 제공하는 프롬프트 감사 플레이북(<code>/claude-api prompt-audit</code>)에는 <b>keep list</b>가 명시돼 있습니다. 균형점을 가장 잘 보여주는 대목입니다.</p>
+
+<ul>
+  <li><b>맥락은 절대 군더더기가 아니다.</b> 대상 사용자, 제품, 환경 사실, 품질 기준, 그리고 제약의 <em>이유</em> — 작성자만 아는 것은 남긴다.</li>
+  <li><b>군더더기 ≠ 길이.</b> 글자 수만으로 삭제를 정당화하지 않는다. 해악은 분량이 아니라 특정 시대착오적 지시에서 나온다.</li>
+  <li><b>위험한 작업은 정확한 스크립트를 유지한다.</b> 파괴적 명령, 인증 흐름, 컴플라이언스 절차처럼 안전한 순서가 하나뿐인 곳.</li>
+  <li><b>현재 모델에서 실제로 재현되는 실패</b>를 막는 금지 규칙은 남긴다. 판별 기준은 "금지문처럼 생겼나"가 아니라 "그 실패가 지금도 나는가".</li>
+  <li><b>감사에서 아무것도 안 나왔으면 아무것도 바꾸지 않는다.</b> 빈 diff가 억지 diff보다 낫다.</li>
+  <li><b>재조정은 추가를 뜻하기도 한다.</b> 새 모델의 새로운 실패 모드에는 오히려 지침을 더해야 한다.</li>
+</ul>
+
+<p>플레이북은 검증 절차 자체도 규정합니다 — 삭제는 결론이 아니라 <b>가설</b>이라, 사본에서 행동 기반 검사를 전후로 돌려보고 판단하라는 것. 모델에게 "이 지시가 필요하냐"고 물어보는 건 측정이 아닙니다.</p>
+</section>
+
+<!-- ============ 6 ============ -->
+<section>
+<h2><span class="no">6</span>astra-methodology에 대한 함의</h2>
+
+<p>구조는 새 지침과 부딪히지 않습니다. <code>loop-verifier</code>와 <code>screen-verifier</code>는 스킬이 정해진 시점에 호출하는 신선한 컨텍스트 검증자이고, 고정 루브릭과 기계 판독 계약 라인(<code>ASTRA_TEST_RESULT:</code> 계열)은 여섯 번째 전환이 가리키는 "평문 명세 → 루브릭" 방향과 같습니다. verify-before-claim 규약의 근거(모델이 완료를 과신 — 예측 73% 대 실제 35%)는 Fable 5 문서의 "진행 보고 전에 각 주장을 이번 세션의 도구 결과에 대조하라"와 같은 문제의식입니다.</p>
+
+<p>감사 대상은 구조가 아니라 <b>SKILL.md 안의 산문</b>입니다.</p>
+<ul>
+  <li>판단이 필요한 구간에 붙은 단계별 안무 — 순서가 실제로 중요한 곳만 남기고 결과·제약·검증법 서술로 바꾼다</li>
+  <li><code>CRITICAL:</code> · <code>MUST</code> 같은 압박 언어 — 근거가 붙은 한두 개만 남긴다</li>
+  <li>시스템 프롬프트 격 문서와 도구/에이전트 설명 사이의 중복 지시</li>
+  <li>"완료 전에 다시 확인하라" 식 자기 점검 문장 — 모델이 이미 하는 일</li>
+</ul>
+
+<div class="note warn">
+  <span class="h">일괄 삭제가 아니라 평가 기반 감사</span>
+  이 플러그인을 쓰는 사람이 <b>구세대 모델을 돌릴 수 있습니다.</b>
+  Opus 5 · Fable 5 기준으로 걷어낸 문장이 Opus 4.x 사용자에게는 여전히 필요할 수 있으니,
+  삭제 전에 대상 모델을 정하고 자체 평가로 확인하는 절차가 필요합니다.
+</div>
+
+<p>바로 돌릴 수 있는 도구가 있습니다. <code>/claude-api prompt-audit</code>는 프롬프트 · 스킬 · 도구 설명을 훑어 <code>file:line</code> 단위 감사 보고서와 제안 diff를 내주고, 파일은 건드리지 않습니다. 명시적으로 적용을 요청하지 않는 한 읽기 전용입니다.</p>
+</section>
+
+<!-- ============ footer ============ -->
+<footer>
+  <h2>출처</h2>
+  <ol>
+    <li>
+      <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5">Prompting Claude Opus 5 — Claude Platform Docs</a>
+      <span class="tier a">1차</span>
+      <span class="why">검증 지시 제거, 서브에이전트 위임 제한, 범위 규율, 간결성 지시</span>
+    </li>
+    <li>
+      <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5">Prompting Claude Fable 5 — Claude Platform Docs</a>
+      <span class="tier a">1차</span>
+      <span class="why">권장 하네스 변경, 독립 검증자, 진행 보고 근거화, 메모리 시스템</span>
+    </li>
+    <li>
+      Anthropic <code>claude-api</code> 스킬 내 <code>shared/prompt-audit.md</code>
+      <span class="tier a">1차</span>
+      <span class="why">감사 절차와 keep list — 로컬 번들 문서라 URL 없음</span>
+    </li>
+    <li>
+      <a href="https://x.com/trq212/status/2080710971228918066">Thariq (@trq212) on X — Claude Code 시스템 프롬프트 ~80% 제거</a>
+      <span class="tier b">Anthropic 직원 발언</span>
+    </li>
+    <li>
+      <a href="https://dev.to/max_quimby/claude-code-cut-80-of-its-prompt-yours-should-too-13ci">Claude Code Cut 80% of Its Prompt. Yours Should Too. — DEV Community</a>
+      <span class="tier c">2차</span>
+      <span class="why">여섯 가지 전환의 세부, 단어 수, 규제 환경 경고</span>
+    </li>
+    <li>
+      <a href="https://explainx.ai/blog/claude-5-context-engineering-thariq-doctor-july-2026">Claude 5 Context Engineering — Thariq /doctor Guide (explainx.ai)</a>
+      <span class="tier c">2차</span>
+      <span class="why">CLAUDE.md · 스킬 작성 권고, 평가 재검증 경고</span>
+    </li>
+    <li>
+      <a href="https://finance.biggo.com/news/7df48019614f68c0">Boris Cherny: We Deleted 80% of Claude Code's System Prompts for Opus 5 — BigGo Finance</a>
+      <span class="tier c">2차</span>
+      <span class="why">귀속이 다른 보도 — 대조용</span>
+    </li>
+  </ol>
+  <p style="margin-top:18px;">
+    astra-methodology · <code>docs/development/claude-5-prompting-guidance.ko.html</code> · 조사일 2026-08-11<br>
+    2차 소스의 수치와 발표 귀속은 교차 확인되지 않았습니다. 1차 문서와 어긋나면 1차 문서를 따르십시오.
+  </p>
+</footer>
+
+</main>
+</body>
+</html>

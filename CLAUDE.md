@@ -112,7 +112,8 @@ The worktree mechanism (v5.0+) prevents code/port interference across sprints in
 3. **validate-naming.sh** — checks table name prefixes in SQL, Java (@Table), TypeScript (@Entity), Python (__tablename__)
 4. **track-sprint-progress.sh** — detects sprint-related file events and appends activity log entries to the sprint progress tracker
 5. **notify-design-md.sh** (v5.4.0+) — when UI source files (src/components/, *.tsx, *.css, etc.) are edited and `docs/design-system/DESIGN.md` exists, emits a one-time-per-session advisory pointing to the DESIGN.md SSoT and `/design-audit`. Throttled to once per hour via marker file under `.claude/.astra-hooks/`. Skips the design system docs themselves and generated `design-tokens.css`. Non-blocking.
-6. All PostToolUse hooks are non-blocking (exit 0) — they emit warnings only
+6. **check-korean-style.sh** (v5.23.0+) — runs the Korean style gate (`scripts/check-style.py`; rule SoT `docs/development/korean-style.md`) on Korean-bearing files written in target projects: `*.md` via the `doc` surface, source-code comment lines via the `comment` surface. Skips plugin-internal files, files without Hangul, and generated/data artifacts; selftest-guarded (a broken checker reports "unverified" instead of a verdict). Advisory only.
+7. All PostToolUse hooks are non-blocking (exit 0) — they emit warnings only
 
 **UserPromptSubmit hooks** (run when user submits a prompt):
 1. **inject-feature-dev-cwd.sh** — when `/feature-dev` is invoked from inside a sprint worktree (`.worktrees/sprint-*`; the pre-v5.19 `.astra-worktrees/` path is still matched for legacy worktrees), injects cwd-anchored sprint paths into the LLM context so the external feature-dev plugin does not fall back to the main worktree (where uncommitted sprint files are not visible). Non-blocking (exit 0). No output when the trigger does not match.
@@ -278,6 +279,12 @@ The LLM is configured so that editing a path under `skills/**/SKILL.md` triggers
 ./scripts/check-forbidden-words.sh   # stdin: JSON tool input
 ./scripts/validate-naming.sh         # stdin: JSON tool input
 ./scripts/track-sprint-progress.sh   # stdin: JSON tool input
+./scripts/check-korean-style.sh      # stdin: JSON tool input (Korean style gate wrapper)
+
+# Korean style gate — machine judge for Korean output.
+# Surfaces: answer|label|hitl|report|comment|doc|commit · exit 0 pass / 1 warn / 2 fail(S1) / 3 error.
+# Rule SoT: docs/development/korean-style.md (table and SURFACE_CFG must stay in sync).
+python3 ./scripts/check-style.py --selftest   # built-in fixtures — run after any rule change
 ```
 
 ## Conventions
@@ -295,3 +302,4 @@ The LLM is configured so that editing a path under `skills/**/SKILL.md` triggers
 - `standard_terms.json` fields: `공통표준용어명` (Korean term), `공통표준용어영문약어명` (English abbreviation), `공통표준도메인명` (domain)
 - `standard_words.json` fields: `공통표준단어명` (word), `공통표준단어영문약어명` (abbreviation), `금칙어목록` (forbidden words), `이음동의어목록` (synonyms)
 - **Dataset caveat (v5.17+)**: in the bundled datasets the Korean name fields (`공통표준용어명`, `공통표준단어명`) are **empty in every row** — match Korean input against `이음동의어목록`/descriptions instead. Rows live under `.data[]`, and Korean field names require jq bracket form (`.["금칙어목록"]` — bare `.금칙어목록` is a jq syntax error).
+- **Korean output style gate (v5.23.0+)**: `docs/development/korean-style.md` is the SoT for Korean-output style — translationese (T), AI idiom (D), structure/rhythm (C), assistant-voice (A) rules plus the HITL question rules and answer/report principles. `scripts/check-style.py` is its machine judge (surfaces `answer`/`label`/`hitl`/`report`/`comment`/`doc`/`commit`; quote exemption floors exit at 1 so an exemption is never a silent pass; ported from the social-flow project's gate). File-bound surfaces are enforced by the `check-korean-style.sh` PostToolUse hook (advisory); conversation surfaces apply the doc's rules at composition time via the per-skill "Korean output style" note. Plugin-internal English docs are out of scope.

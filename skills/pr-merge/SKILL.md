@@ -7,6 +7,8 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Task, Agent
 
 # ASTRA PR Review & Merge Workflow (v5.11+)
 
+> **Korean output style**: for Korean user-facing text (HITL questions, status reports, answers), apply `$CLAUDE_PLUGIN_ROOT/docs/development/korean-style.md` — §"HITL 질문 작성 규칙" and §"답변·보고 원칙". Korean files written to disk are style-checked automatically by the korean-style PostToolUse hook.
+
 Automates the entire cycle from commit through code review, issue fixes, integration-branch merge, promotion, and worktree removal. The review → fix → re-review loop runs automatically up to the max iteration count.
 
 **Branch strategy (v5.11+)**: `feat/sprint-<N>-<name>  →  feat/<name> | fix/<name>  (integration)  →  dev | staging  →  main`
@@ -259,6 +261,13 @@ Process uncommitted changes inside the isolated worktree:
      fi
      ```
    - Analyze `git diff --staged`, check recent commit-message style via `git log`, write a commit message, `git commit`.
+   - Korean commit message? Style-gate it first (advisory). Shell state does not persist across Bash calls, so resolve the path inline and selftest-guard it (a broken/missing checker must read as "unverified", not as findings):
+     ```bash
+     CS_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
+     python3 "$CS_ROOT/scripts/check-style.py" --selftest >/dev/null 2>&1 \
+       && python3 "$CS_ROOT/scripts/check-style.py" --surface commit /tmp/commit-msg.txt
+     ```
+     Fix exit-2 (S1) findings; proceed on warnings or when the selftest guard fails — never block the commit on style.
 4. Push via `git push -u origin "$BRANCH_NAME"`.
 
 If there are no changes, skip this step.
@@ -319,7 +328,7 @@ Spawn the `feature-dev:code-reviewer` agent:
 Agent tool (subagent_type: "feature-dev:code-reviewer")
 - Run a code review based on the PR's changes
 - Analyze bugs, logic errors, security vulnerabilities, code-quality issues
-- **Important**: do not suggest removing any file under the kubernetes/ directory
+- **Deployment-surface guard**: do not suggest deleting files under deployment/infrastructure directories (`kubernetes/`, `helm/`, `terraform/`, `.github/workflows/`) — an automated review must not shrink the deployment surface
 - **Required output contract**: the FINAL line of the report must be exactly
   `SEVERITY_COUNTS: critical=N high=N medium=N low=N` (integers, all four keys),
   where each N equals the number of issues listed in the report body at that severity.
@@ -350,7 +359,7 @@ Classify results into the 4 severity levels (Critical / High / Medium / Low — 
    - Read the relevant file, locate the issue. With Edit, **only modify the lines the review points out** — do not "improve" adjacent formatting / comments / naming.
    - Do not refactor unbroken code. Remove only imports/variables made unused by your own fix; leave pre-existing dead code. Follow the existing style.
    - **Test criterion**: every modified line must trace directly to an issue. Suggest splitting unrelated changes into a separate PR.
-   - **Forbidden rule**: never delete files under `kubernetes/` (edits allowed, removals ignored).
+   - **Deployment-surface guard**: never delete files under deployment/infrastructure directories (`kubernetes/`, `helm/`, `terraform/`, `.github/workflows/`) — an automated fix loop must not shrink the deployment surface (edits allowed, removal suggestions ignored).
 4. **Verifiable success criterion (Goal-Driven Execution)**: detect and run the project's test runner, capturing the exit code — never assess fixes by reading code alone.
 
    | Detection (first match wins) | Command |
@@ -513,7 +522,7 @@ See the invocation matrix in [references/review-severity-and-output.md](referenc
 - Final checkout location after merge: default mode ends on `dev`; promotion mode returns to `dev`.
 - If Critical issues remain, merging is blocked. On conflict, do not auto-resolve — instruct the user and abort.
 - Before commits and merges, user confirmation is required. After-review issue fixes proceed automatically without confirmation.
-- **kubernetes protection rule**: during review and fixes, do not delete files under `kubernetes/`.
+- **Deployment-surface guard**: during review and fixes, files under deployment/infrastructure directories (`kubernetes/`, `helm/`, `terraform/`, `.github/workflows/`) are never deleted.
 - **Remote-branch preservation policy**: after merging, remote work branches (`feat/*`, `fix/*`, `docs/*`, …) are not deleted from the remote (history/rollback/reuse). Only local sprint branches (`feat/sprint-*`, `fix/sprint-*`) are safely deleted with `git branch -d`. **Integration branches** (`feat/<name>`, `fix/<name>` without `sprint-`) are persistent on both local and remote — Step 9 protects them. Clean them up manually only after confirming no in-flight PRs target them.
 - **`--no-review` precedence**: when `--no-review` is set, Step 8 is skipped regardless of source type. The `PROMOTION_SOURCE_IS_INTEGRATION=1` skip is additive — either condition alone bypasses review.
 - **Surgical Changes principle**: during Step 8.2 fixes, change only the lines flagged by the review. Arbitrary refactoring / format / naming "improvements" on adjacent code are forbidden. Split unrelated improvements into a separate PR. (See: Behavioral Guardrails in the `coding-convention` skill.)

@@ -16,6 +16,8 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, mcp__chrome
 
 # ASTRA /user-test — AI-assisted UAT
 
+> **Korean output style**: for Korean user-facing text (HITL questions, status reports, answers), apply `$CLAUDE_PLUGIN_ROOT/docs/development/korean-style.md` — §"HITL 질문 작성 규칙" and §"답변·보고 원칙". Korean files written to disk are style-checked automatically by the korean-style PostToolUse hook.
+
 Drives a real browser to run end-user UAT flows. Claude executes each step, self-verifies with hard assertions, and writes a session folder containing an HTML report, `session.json`, and (when failures occur) `issues.md`. Output language follows the project's `/select-language` setting; default is Vietnamese (this skill was designed for Vietnamese-speaking teams).
 
 Difference from sibling skills:
