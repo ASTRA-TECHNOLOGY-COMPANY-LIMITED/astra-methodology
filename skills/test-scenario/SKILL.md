@@ -7,6 +7,8 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 
 # ASTRA E2E Test Scenario Generator
 
+> **Korean output style**: for Korean user-facing text (HITL questions, status reports, answers), apply `$CLAUDE_PLUGIN_ROOT/docs/development/korean-style.md` — §"HITL 질문 작성 규칙" and §"답변·보고 원칙". Korean files written to disk are style-checked automatically by the korean-style PostToolUse hook.
+
 Analyzes the project's existing work context (blueprints, DB design, routes, API endpoints, existing code) to generate comprehensive E2E test scenarios in `docs/tests/test-cases/sprint-{N}/`.
 
 Test scenarios are organized by sprint directory. Each sprint has its own subdirectory under `docs/tests/test-cases/`.
@@ -157,7 +159,7 @@ For each scenario, specify:
 
 ### Step 5.5: Worktree-Aware Branch Handling (v5.0+)
 
-Test scenario files are written directly to the current branch of the current worktree. The previous policy of forcing a switch to `dev` is no longer needed in the sprint worktree model.
+Test scenario files are written directly to the current branch of the current worktree.
 
 ```bash
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
@@ -172,9 +174,7 @@ CURRENT_BRANCH=$(git branch --show-current)
 Branches:
 - **Sprint worktree (`astra_is_isolated_worktree` true)**: Write directly to the current sprint branch (e.g., `feat/sprint-<N>-<name>`). Do not merge into dev — merging is `/pr-merge`'s responsibility.
 - **Main worktree + shared branch (dev/main/master/staging)**: Write directly to the current branch. Fallback for one-off work.
-- **Main worktree + work branch**: Pre-v4.1 compatibility case. Write directly to the current branch.
-
-> **Note**: In previous v4.x, there was a main-worktree guard and forced switch to `dev`. v5.0+ moved to the sprint worktree model and removed the guard.
+- **Main worktree + work branch**: Write directly to the current branch.
 
 ### Step 6: Generate Scenario Files
 

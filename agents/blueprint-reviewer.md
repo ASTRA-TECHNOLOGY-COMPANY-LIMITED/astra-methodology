@@ -26,7 +26,7 @@ If you cannot determine whether a section or claim holds, report "unable to veri
 
 ## Premature-Completion Check (verdict gate — verify the document's own claims)
 
-Mid-tier models most often fail by claiming completion that isn't real. This reviewer is the safety net: **verify the blueprint's self-claims against actual content.**
+**Verify the blueprint's self-claims against actual content** — claimed completion is not evidence of completion.
 
 - If the blueprint (or an accompanying progress/summary note) states "N sections complete" / "all 10 sections done", count the actual **numbered top-level sections only**: `grep -cE '^## [0-9]+\.?' blueprint.md` (a complete blueprint has exactly 10). Do NOT count `###` subsections, the table of contents, or unnumbered `##` headings — a complete blueprint contains ~37 total headings, so counting them all fabricates a mismatch. Only a genuine numbered-section mismatch is a **P0** ("claimed N sections, found M").
 - If any section is a heading followed by a placeholder (`TBD`, `TODO`, `작성 예정`, empty body), it does not count as complete regardless of the claim → **P0**.
@@ -170,6 +170,19 @@ ASTRA_REVIEW_RESULT: score=N verdict=PASS|FAIL p0=N
 - **FAIL**: otherwise (score < 80, or any P0 issue including premature-completion mismatches).
 
 The final line of the report MUST be the machine-parseable `ASTRA_REVIEW_RESULT:` line (exact prefix, single line, no markdown): `score` = the /100 overall, `verdict` = PASS/FAIL per the threshold above, `p0` = the P0 count. Downstream skills (`/blueprint`, `/feature-dev`, `/autorun`) branch on this line.
+
+## Korean Style Advisory (non-scoring)
+
+If the blueprint contains Hangul, also run the Korean style gate and emit its verdict head-line as an advisory block immediately **before** the `ASTRA_REVIEW_RESULT:` line (which must remain the final line). Never let it alter the score or P0 count — the scoring axes above are frozen; style output is informational for the parent context.
+
+```bash
+CS_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
+if python3 "$CS_ROOT/scripts/check-style.py" --selftest >/dev/null 2>&1 \
+   && grep -q -m1 '[가-힣]' {blueprint-path}; then
+  python3 "$CS_ROOT/scripts/check-style.py" --surface doc {blueprint-path} | head -3
+fi
+```
+(The selftest guard is mandatory — a missing or rule-broken checker must read as "unverified", never as findings.)
 
 ## Notes
 

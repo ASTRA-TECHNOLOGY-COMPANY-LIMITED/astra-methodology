@@ -7,6 +7,8 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill
 
 # ASTRA Handoff Package Auto-Generator
 
+> **Korean output style**: for Korean user-facing text (HITL questions, status reports, answers), apply `$CLAUDE_PLUGIN_ROOT/docs/development/korean-style.md` — §"HITL 질문 작성 규칙" and §"답변·보고 원칙". Korean files written to disk are style-checked automatically by the korean-style PostToolUse hook.
+
 Generates a **Screen-ID-centric collaboration package** based on HANDOFF_PROCESS_GUIDE v1.1.
 
 **Core principles (PDF §6)**:

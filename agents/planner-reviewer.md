@@ -26,7 +26,7 @@ If you cannot determine whether a document or claim holds, report "unable to ver
 
 ## Premature-Completion Check (verdict gate — verify the deliverables' own claims)
 
-Mid-tier models most often fail by claiming completion that isn't real; this reviewer is the safety net. **Verify self-claims against actual content:**
+**Verify self-claims against actual content** — claimed completion is not evidence of completion:
 
 - If any deliverable claims "all 6 documents complete" or "planning done", confirm each of the 6 files actually exists (`Glob`) and has substantive sections (not just headings/`TBD`/`작성 예정`). A missing or placeholder-only file that is claimed complete is a **P0**.
 - If `requirements-definition.md` claims a full traceability matrix, confirm the matrix rows actually reference pain points that exist in `interview-report.md` (not invented). Fabricated/dangling references are a **P0**.
@@ -184,6 +184,19 @@ The final line of the report MUST be the machine-parseable `ASTRA_REVIEW_RESULT:
 | 80-89 | Good | Minor improvements optional |
 | 60-79 | Needs Work | Revise flagged sections before handoff |
 | < 60 | Critical | Restart planning phase from earlier step |
+
+## Korean Style Advisory (non-scoring)
+
+If any reviewed planner document contains Hangul, also run the Korean style gate on it and emit the per-file verdict head-lines as an advisory block immediately **before** the `ASTRA_REVIEW_RESULT:` line (which must remain the final line). Never let it alter the score — the scoring axes above are frozen; style output is informational for the parent context.
+
+```bash
+CS_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
+if python3 "$CS_ROOT/scripts/check-style.py" --selftest >/dev/null 2>&1 \
+   && grep -q -m1 '[가-힣]' {doc-path}; then
+  python3 "$CS_ROOT/scripts/check-style.py" --surface doc {doc-path} | head -3
+fi
+```
+(The selftest guard is mandatory — a missing or rule-broken checker must read as "unverified", never as findings.)
 
 ## Notes
 

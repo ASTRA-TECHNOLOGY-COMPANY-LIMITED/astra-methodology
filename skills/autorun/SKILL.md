@@ -7,6 +7,8 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, Agent, TodoWrite, Skil
 
 # ASTRA Mostly-Autonomous Execution (`/autorun`)
 
+> **Korean output style**: for Korean user-facing text (HITL questions, status reports, answers), apply `$CLAUDE_PLUGIN_ROOT/docs/development/korean-style.md` — §"HITL 질문 작성 규칙" and §"답변·보고 원칙". Korean files written to disk are style-checked automatically by the korean-style PostToolUse hook.
+
 **Auto-executes** planning → design → blueprint → sprint plan → implementation → tests → adversarial verification without user input, then runs `/pr-merge --auto` until the moment it would block. One routine HITL pause near the end (Stage 8.2 promotion target: dev / staging / skip); beyond that, only true blockers stop execution.
 
 > **🌐 LANGUAGE RULE**: Before executing this skill, read the project's `CLAUDE.md` and check the `## Language` section. If the project language is NOT Korean (`ko`), translate ALL user-facing output and propagate the language preference to all sub-skills invoked.

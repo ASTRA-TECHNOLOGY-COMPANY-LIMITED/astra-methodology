@@ -119,7 +119,7 @@ For each finding:
 - **Basis**: The exact query output line that supports this finding (e.g., `MATCH: FRCS_RPRSV_NM [명V100] :: …` from Lookup 1)
 - **Match Level**: see rubric below
 
-## Match-Level Rubric (replaces the old confidence gate)
+## Match-Level Rubric
 
 Do not emit a numeric confidence. Classify every finding by which query produced it. This is the only permitted basis for a "Standard Value":
 

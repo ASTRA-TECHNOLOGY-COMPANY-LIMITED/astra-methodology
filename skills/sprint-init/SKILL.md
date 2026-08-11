@@ -7,6 +7,8 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Task
 
 # ASTRA Sprint Initialization (v5.16+ one-flow · v5.19+ worktree-always)
 
+> **Korean output style**: for Korean user-facing text (HITL questions, status reports, answers), apply `$CLAUDE_PLUGIN_ROOT/docs/development/korean-style.md` — §"HITL 질문 작성 규칙" and §"답변·보고 원칙". Korean files written to disk are style-checked automatically by the korean-style PostToolUse hook.
+
 Creates the sprint worktree, writes port-isolated env settings, generates prompt maps / progress trackers / retrospective templates, and **continues in the same session through implementation, the adversarial test loop, and `/pr-merge`** — the pipeline is the default, not an opt-in.
 
 > **v5.19+ isolation policy (worktree-always)**: every sprint runs inside an isolated worktree at `.worktrees/sprint-<N>-<name>/` holding the `feat/sprint-<N>-<name>` branch. **Sprint work is never performed in the main worktree** — the main worktree stays on its shared branch (`dev`) for the whole sprint; the only main-worktree activity in the sprint lifecycle is `/blueprint`'s authoring + dev push, which happens *before* this skill creates the worktree. The v5.16 in-place mode (sprint branch checked out in the main worktree) is removed. Still: one PR per sprint, one continuous session, no user `cd` at any point (the skill performs the single `cd` into the worktree itself).

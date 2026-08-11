@@ -21,6 +21,8 @@ allowed-tools: Read, Write, Edit, Bash, Grep, Glob, AskUserQuestion
 
 # Tool Author
 
+> **Korean output style**: for Korean user-facing text (HITL questions, status reports, answers), apply `$CLAUDE_PLUGIN_ROOT/docs/development/korean-style.md` — §"HITL 질문 작성 규칙" and §"답변·보고 원칙". Korean files written to disk are style-checked automatically by the korean-style PostToolUse hook.
+
 Writes a new LLM tool surface (description + input schema) or refactors an existing one to satisfy the **6 required attributes** documented in [`references/six-attributes.md`](references/six-attributes.md). The validator catches the **7 failure modes** in [`references/failure-modes.md`](references/failure-modes.md). For Python/TypeScript rendering, see [`references/python-pydantic.md`](references/python-pydantic.md) and [`references/typescript-zod.md`](references/typescript-zod.md).
 
 > **Scope**: this skill is for *runtime LLM tool surfaces* that the model invokes during a session — Anthropic `tools` array, MCP `server.tool()`, LangChain `@tool`, OpenAI function-calling schemas. It is **not** for authoring ASTRA `SKILL.md` files (use `/skill-author`).

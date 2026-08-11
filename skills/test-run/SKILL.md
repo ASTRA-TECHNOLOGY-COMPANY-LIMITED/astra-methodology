@@ -7,11 +7,11 @@ allowed-tools: Read, Write, Edit, Bash, BashOutput, KillShell, Glob, Grep, Skill
 
 # ASTRA Integration Testing
 
-Launches the server and performs integration testing in a real browser. Supports
-three backends — **ego (lite)** (default, macOS-only), **Chrome MCP** (fallback)
-and **cmux** (legacy); the LLM monitors server logs and verifies behavior. The
-detection order is plugin-wide policy, defined in
-`$CLAUDE_PLUGIN_ROOT/docs/development/browser-backend-policy.md`.
+> **Korean output style**: for Korean user-facing text (HITL questions, status reports, answers), apply `$CLAUDE_PLUGIN_ROOT/docs/development/korean-style.md` — §"HITL 질문 작성 규칙" and §"답변·보고 원칙". Korean files written to disk are style-checked automatically by the korean-style PostToolUse hook.
+
+Launches the server and tests in a real browser via three backends — **ego (lite)**
+(default, macOS-only), **Chrome MCP** (fallback), **cmux** (legacy); the LLM monitors
+server logs. Detection order: `$CLAUDE_PLUGIN_ROOT/docs/development/browser-backend-policy.md`.
 
 ## Execution Procedure
 
