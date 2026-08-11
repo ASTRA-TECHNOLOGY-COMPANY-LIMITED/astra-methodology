@@ -260,23 +260,28 @@ Process uncommitted changes inside the isolated worktree:
        printf '%s\n' "$SENSITIVE" | while IFS= read -r f; do git restore --staged "$f"; done
      fi
      ```
-   - Analyze `git diff --staged` and check recent commit-message style via `git log`, then **write the message to a file** and commit from it — the file is what the style gate below reads, so composing the message inline with `git commit -m` skips the gate entirely:
+   - Analyze `git diff --staged` and check recent commit-message style via `git log`, then **write the message to the message file** and commit from it — that file is what the style gate reads, so composing the message inline with `git commit -m` skips the gate entirely. Shell variables do not survive between Bash calls, so the path is never held in a variable across blocks: **every block below re-derives it with the same one-liner** (`git rev-parse --git-path` resolves per-worktree, so concurrent sprints never share a message file).
      ```bash
-     MSG_FILE=$(mktemp -t astra-commit-msg)
+     MSG_FILE=$(git rev-parse --git-path ASTRA_COMMIT_MSG)
      cat > "$MSG_FILE" <<'MSGEOF'
      {the commit message you composed}
      MSGEOF
      ```
-   - Korean commit message? Style-gate `$MSG_FILE` before committing (advisory). Shell state does not persist across Bash calls, so keep the write, the check, and the commit **in one Bash block**, and selftest-guard the checker (a broken/missing checker must read as "unverified", not as findings):
+   - Korean commit message? Style-gate it before committing (advisory). Selftest-guard the checker — a broken or missing checker must read as "unverified", not as findings:
      ```bash
+     MSG_FILE=$(git rev-parse --git-path ASTRA_COMMIT_MSG)
      CS_ROOT="${CLAUDE_PLUGIN_ROOT:-$(find ~/.claude/plugins/cache -maxdepth 3 -type d -path '*/astra-methodology/*' 2>/dev/null | sort -V | tail -1)}"
      if grep -q '[가-힣]' "$MSG_FILE" \
         && python3 "$CS_ROOT/scripts/check-style.py" --selftest >/dev/null 2>&1; then
        python3 "$CS_ROOT/scripts/check-style.py" --surface commit "$MSG_FILE"   # exit 2 = S1 findings
      fi
      ```
-     Rewrite the message file to clear exit-2 (S1) findings; proceed on warnings, on a non-Korean message, or when the selftest guard fails — never block the commit on style.
-   - Commit from the file: `git commit -F "$MSG_FILE"` (then `rm -f "$MSG_FILE"`).
+     On exit 2, rewrite the message file (re-deriving `MSG_FILE` the same way) and re-run this block — at most twice. Proceed to the commit on exit 0/1, on a non-Korean message, or when the selftest guard fails: style never blocks a commit.
+   - Commit from the file, then remove it:
+     ```bash
+     MSG_FILE=$(git rev-parse --git-path ASTRA_COMMIT_MSG)
+     git commit -F "$MSG_FILE" && rm -f "$MSG_FILE"
+     ```
 4. Push via `git push -u origin "$BRANCH_NAME"`.
 
 If there are no changes, skip this step.
