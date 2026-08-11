@@ -7,6 +7,8 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Task
 
 # Blueprint Skill — Blueprint-on-dev, Sprint-in-worktree (v5.19+)
 
+> **Korean output style**: for Korean user-facing text (HITL questions, status reports, answers), apply `$CLAUDE_PLUGIN_ROOT/docs/development/korean-style.md` — §"HITL 질문 작성 규칙" and §"답변·보고 원칙". Korean files written to disk are style-checked automatically by the korean-style PostToolUse hook.
+
 Taking the planning deliverables produced by `/service-planner` (or a direct user description) as input, this skill **authors a blueprint on the `dev` branch in the main worktree** focused on **data flow · schema definition · logic design** at `docs/blueprints/{NNN}-{feature-slug}/blueprint.md`, **commits and pushes it to `dev`**, then **creates the sprint worktree** (`.worktrees/sprint-<N>-<slug>/`, branched from `origin/dev` so it already contains the blueprint) — and continues in the same session through implementation, the adversarial test loop, and `/pr-merge`, **all inside the worktree**. The blueprint is the only sprint-lifecycle artifact ever written in the main worktree.
 
 ## Design Philosophy

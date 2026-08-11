@@ -20,6 +20,8 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 
 # ASTRA /uat-parallel — Playwright-powered Parallel UAT
 
+> **Korean output style**: for Korean user-facing text (HITL questions, status reports, answers), apply `$CLAUDE_PLUGIN_ROOT/docs/development/korean-style.md` — §"HITL 질문 작성 규칙" and §"답변·보고 원칙". Korean files written to disk are style-checked automatically by the korean-style PostToolUse hook.
+
 Runs UAT cases concurrently using Playwright Test workers. Each worker holds an isolated browser context, so authentication, cookies, and localStorage do not leak between cases. Cases that hang are killed by per-step / per-case timeouts and never block other workers.
 
 This skill is the **parallel sibling** of `/user-test`. Use `/user-test` for interactive ad-hoc testing or when you do not have Playwright installed; use `/uat-parallel` for batch regression runs.

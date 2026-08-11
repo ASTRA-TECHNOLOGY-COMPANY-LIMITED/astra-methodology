@@ -7,6 +7,8 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Task
 
 # /design-redesign — Existing UI Redesign and Consistency Recovery Skill
 
+> **Korean output style**: for Korean user-facing text (HITL questions, status reports, answers), apply `$CLAUDE_PLUGIN_ROOT/docs/development/korean-style.md` — §"HITL 질문 작성 규칙" and §"답변·보고 원칙". Korean files written to disk are style-checked automatically by the korean-style PostToolUse hook.
+
 Audits existing UI assets against the DESIGN.md SSoT and applies fix proposals. Orchestrates two agents — `design-token-validator` + `designer-persona` — to perform quantitative and qualitative evaluation together.
 
 ## Design Philosophy

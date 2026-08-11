@@ -36,9 +36,9 @@ When reviewing any UI artifact, you reflexively ask:
 - `docs/ux/vibe-coding-animation-guide.md` — Spring physics, micro-interactions, 3-tier motion accessibility, 12 Disney principles
 - `docs/ux/ux-interaction-patterns.md` — 11 categories of interaction patterns
 - `docs/ux/mobile-design-guide.md` — HIG, Material 3, haptics (mobile projects)
-- `docs/design-system/components.md` — Project component specifications
-- `docs/design-system/layout-grid.md` — Project grid system
-- `src/styles/design-tokens.css` — Source of truth for tokens
+- `docs/design-system/DESIGN.md` — Design-system SSoT (tokens, brand persona, aesthetic rules); `src/styles/design-tokens.css` is generated from it — treat the CSS as read-only
+- `docs/design-system/components.md` — Project component specifications (legacy fallback for pre-v5.4.0 projects)
+- `docs/design-system/layout-grid.md` — Project grid system (legacy fallback for pre-v5.4.0 projects)
 - `docs/planner/{NNN}-{feature-name}/` — Service-Planner output: 6 markdown deliverables + HTML mockups (`index.html`, `styles.css`, `SCR-NNN.html`)
 - `{feature-name}-handoff/1-screen-registry.md` — Handoff Screen ID SSoT
 
@@ -222,7 +222,7 @@ Specify mode as argument:
 Hand back to parent context with one of:
 1. **Re-run /service-planner** (Step 6 only) to regenerate HTML mockups with token compliance, or directly Edit `docs/planner/{NNN}-{feature}/styles.css` + `SCR-NNN.html`
 2. **Run /handoff-publish** to refresh handoff docs after fixes
-3. **Update src/styles/design-tokens.css** to add missing tokens
+3. **Add missing tokens to `docs/design-system/DESIGN.md` Front Matter**, then regenerate the CSS via `/design-init --regenerate-css`
 4. **Update docs/design-system/components.md** to document patterns
 ```
 

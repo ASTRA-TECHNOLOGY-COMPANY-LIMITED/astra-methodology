@@ -4,3 +4,4 @@
 # ASTRA isolated worktrees (managed by /pr-merge)
 .astra-worktrees/
 .worktrees/
+__pycache__/

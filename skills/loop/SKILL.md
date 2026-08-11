@@ -7,6 +7,8 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, Agent, TodoWrite, Skil
 
 # ASTRA Convergence Loop (`/loop`)
 
+> **Korean output style**: for Korean user-facing text (HITL questions, status reports, answers), apply `$CLAUDE_PLUGIN_ROOT/docs/development/korean-style.md` — §"HITL 질문 작성 규칙" and §"답변·보고 원칙". Korean files written to disk are style-checked automatically by the korean-style PostToolUse hook.
+
 Runs an **evaluator-optimizer loop**: the parent context (this skill) is the optimizer that does the work; the read-only `loop-verifier` agent is the adversarial evaluator that scores each iteration against a rubric frozen at loop start. The loop terminates on exactly three conditions — **target met** (score ≥ 90 AND p0 == 0), **max iterations reached**, or **stall** (user chooses to stop after 2 non-improving iterations).
 
 > **🌐 LANGUAGE RULE**: Before executing this skill, read the project's `CLAUDE.md` and check the `## Language` section. If the project language is NOT Korean (`ko`), translate ALL user-facing output accordingly.

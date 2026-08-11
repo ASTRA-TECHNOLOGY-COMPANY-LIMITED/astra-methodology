@@ -7,8 +7,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 
 # ASTRA Step 0.0: Global Development Environment Setup
 
-You are an expert in setting up the ASTRA methodology global development environment.
-You configure the global settings required for ASTRA on the developer's machine.
+> **Korean output style**: for Korean user-facing text (HITL questions, status reports, answers), apply `$CLAUDE_PLUGIN_ROOT/docs/development/korean-style.md` — §"HITL 질문 작성 규칙" and §"답변·보고 원칙". Korean files written to disk are style-checked automatically by the korean-style PostToolUse hook.
 
 ## Execution Procedure
 
