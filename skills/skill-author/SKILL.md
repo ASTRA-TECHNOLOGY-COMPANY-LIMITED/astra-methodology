@@ -13,6 +13,8 @@ allowed-tools: Read, Write, Edit, Bash, Grep, Glob, AskUserQuestion
 
 # Skill Author
 
+> **Korean output style**: for Korean user-facing text (HITL questions, status reports, answers), apply `$CLAUDE_PLUGIN_ROOT/docs/development/korean-style.md` — §"HITL 질문 작성 규칙" and §"답변·보고 원칙". Korean files written to disk are style-checked automatically by the korean-style PostToolUse hook.
+
 Writes a new SKILL.md or refactors an existing skill to comply with the ASTRA best practices. The SSoT is `docs/development/skill-best-practices.md` (hereafter BP); this skill *partially references* BP's 13 sections step-by-step — never load the whole file (BP §1 "Concise is key", §4 progressive disclosure).
 
 ## 0. Mode Decision

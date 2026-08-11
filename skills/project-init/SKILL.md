@@ -7,8 +7,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Task
 
 # ASTRA Sprint 0: Project Initial Setup
 
-You are an expert in Sprint 0 setup for the ASTRA (AI-augmented Sprint Through Rapid Assembly) methodology.
-You configure the initial setup tailored to the user's project.
+> **Korean output style**: for Korean user-facing text (HITL questions, status reports, answers), apply `$CLAUDE_PLUGIN_ROOT/docs/development/korean-style.md` — §"HITL 질문 작성 규칙" and §"답변·보고 원칙". Korean files written to disk are style-checked automatically by the korean-style PostToolUse hook.
 
 ## Execution Procedure
 
@@ -27,7 +26,7 @@ Parse the `## Selected Language` block from the command's output and extract:
 - **Language Code** (`ko` / `vi` / `en`) — used internally for template selection
 - **Locale** (`ko-KR` / `vi-VN` / `en-US`) — used for date/number formatting if needed
 
-Store the selection and apply it to **all subsequent steps**. Every user-facing text, template content, and output message must use the selected language throughout the entire setup process.
+Store the selection and apply it to **all subsequent steps**. Every user-facing text — AskUserQuestion options, template contents, prompts, section headers, and output messages — must be rendered in the selected language throughout the entire setup process. The option lists, templates, and output blocks below are written in English as authoring reference: translate them into the Step 0 language before presenting or writing them. Technical identifiers (tool names, file paths, command names, DB table/column names) stay untranslated.
 
 The selected language will be persisted in the target project's CLAUDE.md (see Step 4, `## Language` section) so that all team members sharing the repository automatically use the same language in every Claude Code session.
 
@@ -35,11 +34,9 @@ The selected language will be persisted in the target project's CLAUDE.md (see S
 
 ### Step 0.5: Select Platform Type
 
-> **MANDATORY**: This step MUST always be executed. You MUST use AskUserQuestion to ask the user and wait for their response before proceeding.
+> Always ask this via AskUserQuestion and wait for the user's response, even when `$ARGUMENTS` already hints at a platform — the selection gates the flow of every later step and must be user-confirmed.
 
 Use AskUserQuestion to ask the user which platform they are building for:
-
-> **IMPORTANT**: The option text below is in English as a reference. You MUST translate all option text into the language selected in Step 0 before presenting to the user.
 
 ```
 Select the project platform:
@@ -75,8 +72,6 @@ If the user selected **Mobile** in Step 0.5, gather:
 1. **Project name** (e.g., my-delivery-app)
 2. **Project description** (one-line summary)
 3. **Mobile framework**: Use AskUserQuestion with the following options:
-
-> **IMPORTANT**: The option text below is in English as a reference. You MUST translate all option text into the language selected in Step 0 before presenting to the user.
 
 ```
 Select the mobile framework:
@@ -115,11 +110,9 @@ Select the backend strategy:
 
 ### Step 2: Select Design System
 
-> **MANDATORY**: This step MUST always be executed. Do NOT skip this step under any circumstances. You MUST use AskUserQuestion to ask the user and wait for their response before proceeding.
+> Always ask this via AskUserQuestion and wait for the user's response, even when the tech stack seems to imply a default — the design-system choice drives Step 5's component generation and must be user-confirmed.
 
 After gathering project info, use AskUserQuestion to ask the user which design system to use. Present framework-appropriate options based on the frontend tech stack gathered in Step 1.
-
-> **IMPORTANT**: The option examples below are in English as a reference. You MUST translate all option text into the language selected in Step 0 before presenting to the user.
 
 **For React / Next.js projects:**
 
@@ -279,7 +272,7 @@ Based on the tech stack gathered in Step 1, create the basic project management 
 
 ### Step 4: Create CLAUDE.md
 
-> **IMPORTANT**: The template below is written in English as a reference. If the user selected Korean or Vietnamese in Step 0, you MUST translate ALL text in the template (section headers, table contents, descriptions, workflow diagrams, rules, guides) into the selected language BEFORE writing the file. Only technical identifiers (tool names, file paths, command names) remain untranslated.
+> Step 0 language rule recap — it covers this template's entire text (section headers, table contents, descriptions, workflow diagrams, rules, guides): translate before writing the file; technical identifiers stay untranslated.
 
 Read `references/claude-md-template.md` and instantiate the template with the project information, writing the result to `{project-root}/CLAUDE.md`. Include only the Web or Mobile conditional branches matching the Step 0.5 selection, and append the matching per-tech-stack custom rules block (also in that reference file).
 
@@ -325,8 +318,6 @@ Create the design token source file in the framework-appropriate location:
 
 If the user selected a design system in Step 2 (not "Implement later"), invoke the `/frontend-design` skill to implement the following **common base components**. Pass the selected design system, tech stack, and design tokens as context.
 
-> **IMPORTANT**: The prompt below is written in English as a reference. You MUST translate the entire prompt into the language selected in Step 0 BEFORE invoking the frontend-design skill.
-
 Read `references/component-implementation-prompts.md` and invoke `frontend-design` with the matching prompt: the "Web project prompt" for Web projects, or the "Mobile project prompt" for Mobile projects. Substitute the `{...}` placeholders and translate the prompt into the Step 0 language before invoking.
 
 > **Token file paths by framework:**
@@ -365,8 +356,6 @@ If the user chose to implement later, skip Step 5-B entirely. Only the design sy
 ### Step 11: Output Result Summary
 
 After all files are created, output the following summary.
-
-> **IMPORTANT**: The output block below is in English as a reference. You MUST translate it into the language selected in Step 0 before presenting to the user.
 
 ```
 ## ASTRA Sprint 0 Initial Setup Complete

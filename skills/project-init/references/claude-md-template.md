@@ -23,6 +23,12 @@ Customize this skeleton with the project information gathered in Steps 0–2 and
 - All Claude responses, generated documents, and template content must be written in the language above.
 - Technical identifiers (tool names, file paths, command names, code comments) remain in their original language.
 
+## Korean Output Style (Korean projects only — omit this section for vi/en)
+
+- Write user-facing Korean the way a capable colleague speaks — no translationese, no AI-cliché endings. The rule SoT is the ASTRA plugin's `docs/development/korean-style.md`; Korean files written to disk are auto-checked by the korean-style PostToolUse hook (advisory, never blocking).
+- HITL questions: labels state outcomes rather than internal jargon, each option carries a one-line consequence, first-use terms are unpacked in parentheses, the recommended option comes first with "(권장)", and irreversible choices say so.
+- Answers and reports: conclusion in the first sentence; tables only for genuinely grid-shaped data; keep only the numbers and file:line references that change the conclusion.
+
 ## Architecture
 
 **For Web projects (Step 0.5 = Web):**

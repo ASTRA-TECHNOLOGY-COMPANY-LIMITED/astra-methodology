@@ -7,6 +7,8 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Task, Agent
 
 # ASTRA Service Manual Auto-Generator
 
+> **Korean output style**: for Korean user-facing text (HITL questions, status reports, answers), apply `$CLAUDE_PLUGIN_ROOT/docs/development/korean-style.md` — §"HITL 질문 작성 규칙" and §"답변·보고 원칙". Korean files written to disk are style-checked automatically by the korean-style PostToolUse hook.
+
 Analyzes a running service URL and project documents (blueprints, planner) and generates a **professional online service manual** as a self-contained HTML package.
 
 **Core principles**:

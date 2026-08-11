@@ -2,7 +2,7 @@
 name: catalog-generator
 description: "Automatically generates a professional product promotional catalog as a self-contained HTML package from product data. Executes the full catalog production pipeline — planning, data normalization, design, copywriting, and validation — in a single pass without user feedback."
 argument-hint: "[product data file path, URL, or product description]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, Agent, Skill, mcp__fect-image__image_text2img, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__press_key, mcp__chrome-devtools__new_page, mcp__chrome-devtools__select_page, mcp__chrome-devtools__close_page
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, Agent, Skill, mcp__fect-image__nanobanana_text2img, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__press_key, mcp__chrome-devtools__new_page, mcp__chrome-devtools__select_page, mcp__chrome-devtools__close_page
 ---
 
 # Product Promotional Catalog Auto-Generator
@@ -278,7 +278,7 @@ heredoc — `completeTaskSpace('astra catalog {catalog-name}', { keep: false })`
 
 #### B. Hero Banner Generation (fect-image)
 
-Use `mcp__fect-image__image_text2img` to generate the cover hero image. Read `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-image-prompts.md` (section "Hero banner") for the prompt and save the result to `images/hero/`.
+Use `mcp__fect-image__nanobanana_text2img` to generate the cover hero image. Read `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-image-prompts.md` (section "Hero banner") for the prompt and save the result to `images/hero/`.
 
 #### C. Category Visual Generation (fect-image)
 

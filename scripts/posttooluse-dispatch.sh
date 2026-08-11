@@ -23,7 +23,8 @@ for script in \
   check-forbidden-words.sh \
   validate-naming.sh \
   track-sprint-progress.sh \
-  notify-design-md.sh; do
+  notify-design-md.sh \
+  check-korean-style.sh; do
   if [ -f "$SCRIPT_DIR/$script" ]; then
     printf '%s' "$INPUT" | bash "$SCRIPT_DIR/$script"
   fi

@@ -7,6 +7,8 @@ allowed-tools: Read, Write, Bash, Glob, Grep, WebFetch, AskUserQuestion, TodoWri
 
 # /design-extract — Reference-Based Design Token Extraction Skill
 
+> **Korean output style**: for Korean user-facing text (HITL questions, status reports, answers), apply `$CLAUDE_PLUGIN_ROOT/docs/development/korean-style.md` — §"HITL 질문 작성 규칙" and §"답변·보고 원칙". Korean files written to disk are style-checked automatically by the korean-style PostToolUse hook.
+
 Analyzes design references such as images, PDFs, and URLs to extract OKLCH colors, fonts, and spacing tokens, and converts them into a draft DESIGN.md Front Matter.
 
 ## Design Philosophy
@@ -34,7 +36,7 @@ classify_input() {
 Options:
 - `--auto`: handle all HITL with defaults
 
-> **This skill always generates the report only** (v5.4.0+ one-way policy). Merging into DESIGN.md only happens when the user explicitly invokes `/design-init --apply-extract=<report-path>` — to prevent a circular call (/design-extract ↔ /design-init).
+> **This skill always generates the report only.** Merging into DESIGN.md happens only when the user explicitly invokes `/design-init --apply-extract=<report-path>` — this prevents a circular call (/design-extract ↔ /design-init).
 
 ### Step 1: Environment check
 
@@ -233,8 +235,6 @@ tokens:
 3. To review only without merging, simply stop here.
 ```
 
-> **This skill ends here** — it does not auto-invoke `/design-init`. One-way single-call principle (incorporates advisor feedback, v5.4.0).
-
 ## Workflow checklist
 
 - [ ] Step 0: argument parsing + input classification (image/pdf/url/directory)
@@ -272,5 +272,5 @@ tokens:
 
 - **Think Before Coding**: In Step 1, when Vision MCP is missing, clearly notify the user and let them decide.
 - **Simplicity First**: After extraction, automatically align to the ASTRA standard 11-step curve. The user does not have to enter 50/100/200 one by one.
-- **Surgical Changes**: This skill never edits DESIGN.md directly. It stops at producing the report + invocation guidance for /design-init.
+- **Surgical Changes**: outputs are confined to the single report file — no other project file is touched.
 - **Goal-Driven Execution**: The contrast/aesthetic flags in the Step 6 report are the explicit PASS criteria. The user reviews the report and decides the next step.
