@@ -188,7 +188,7 @@ Role-based mindset agents that bring senior-practitioner perspective. **Never au
 | `/astra-guide` | User-facing quick reference for the methodology, skills, and commands. |
 | `/sprint-progress` (auto-trigger) | Sprint progress tracker updates on sprint-file events (paired with the `track-sprint-progress.sh` hook). |
 | `coding-convention` / `data-standard` / `code-standard` (auto-trigger) | Language conventions, Korean public data standard, ISO/ITU code standards — auto-applied on Write/Edit (see their sections above). |
-| `korean-style` (v5.24.0+, auto-trigger) | Korean writing guidance for the surfaces hooks can never see — HITL questions and session answers — plus a self-contained checker (`references/check-korean-style.py`, 26 rules over 6 surfaces, 60 self-test fixtures) run directly on Korean deliverables before handing them back. Its `references/` pair is byte-identical with the `proposal-specialist` plugin copy — fix both together and match the md5. Complements (does not replace) the `scripts/check-style.py` output gate. |
+| `korean-style` (v5.24.0+, auto-trigger) | Korean writing guidance for the surfaces hooks can never see — HITL questions and session answers — plus a self-contained checker (`references/check-korean-style.py`, 36 rules over 6 surfaces, 60 self-test fixtures) run directly on Korean deliverables before handing them back. Its `references/` pair is byte-identical with the `proposal-specialist` plugin copy — fix both together and match the md5. Complements (does not replace) the `scripts/check-style.py` output gate. |
 | `/tool-author` | Authors MCP tool definitions (TypeScript+Zod / Python+Pydantic templates). |
 
 ### Design System SSoT (v5.4.0+) — DESIGN.md as Single Source of Truth

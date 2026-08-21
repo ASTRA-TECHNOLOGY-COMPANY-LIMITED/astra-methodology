@@ -280,7 +280,7 @@ a model grading its own prose always passes.
 | Layer | What it does |
 | --- | --- |
 | `scripts/check-style.py` + `docs/development/korean-style.md` | The plugin's output gate — machine judge over 7 surfaces (`answer`/`label`/`hitl`/`report`/`comment`/`doc`/`commit`), wired into the `check-korean-style.sh` PostToolUse hook (advisory) and the `/pr-merge` commit-message check |
-| `skills/korean-style/` | The writing skill — compact rules for the surfaces hooks can never see (HITL questions, session answers) plus a self-contained checker (`references/check-korean-style.py`, 26 rules, 60 self-test fixtures) run directly on deliverables before handing them back. Its `references/` pair is byte-identical with the `proposal-specialist` plugin — fix both together |
+| `skills/korean-style/` | The writing skill — compact rules for the surfaces hooks can never see (HITL questions, session answers) plus a self-contained checker (`references/check-korean-style.py`, 36 rules, 60 self-test fixtures) run directly on deliverables before handing them back. Its `references/` pair is byte-identical with the `proposal-specialist` plugin — fix both together |
 | `scripts/sessionstart-notice.sh` | Injects the compact rule list at session start, because questions and answers never become files and no hook can see them |
 
 The rules cover five things. The last two carry the most signal: the comma separates Korean AI
