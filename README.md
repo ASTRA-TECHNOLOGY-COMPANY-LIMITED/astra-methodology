@@ -267,6 +267,34 @@ Fri  Release            → /test-run → Deploy
 | **DE** (Domain Expert) | Domain requirements definition, data standard verification, acceptance testing |
 | **DSA** (Design System Architect) | Design token management, UI consistency verification, responsive testing |
 
+## Korean Style Gate
+
+Every Korean sentence these skills produce — blueprints, planner deliverables, manuals, code
+comments, commit messages, PR bodies, the questions asked and the answers given — has to read
+like a person wrote it, not an LLM. The bar is one sentence:
+옆자리 동료에게 소리 내어 말했을 때 어색하면 고쳐 쓴다.
+
+Judgment is delegated to a deterministic checker rather than left to self-assessment, because
+a model grading its own prose always passes.
+
+| Layer | What it does |
+| --- | --- |
+| `scripts/check-style.py` + `docs/development/korean-style.md` | The plugin's output gate — machine judge over 7 surfaces (`answer`/`label`/`hitl`/`report`/`comment`/`doc`/`commit`), wired into the `check-korean-style.sh` PostToolUse hook (advisory) and the `/pr-merge` commit-message check |
+| `skills/korean-style/` | The writing skill — compact rules for the surfaces hooks can never see (HITL questions, session answers) plus a self-contained checker (`references/check-korean-style.py`, 26 rules, 60 self-test fixtures) run directly on deliverables before handing them back. Its `references/` pair is byte-identical with the `proposal-specialist` plugin — fix both together |
+| `scripts/sessionstart-notice.sh` | Injects the compact rule list at session start, because questions and answers never become files and no hook can see them |
+
+The rules cover five things. The last two carry the most signal: the comma separates Korean AI
+text more sharply than any other single feature, and prose with no long sentence anywhere in it
+reads like a machine reading aloud.
+
+```text
+translationese        ~에 대해 · ~에 있어서 · 이중 피동(되어진다)
+verb locked in noun   삭제 작업을 수행합니다  →  삭제합니다
+AI stock phrase       결론적으로 · 함께 알아볼까요 · 도움이 되셨길
+comma after ending    발전하지만, 조직은  →  발전하지만 조직은
+no long sentence      twenty sentences, all short
+```
+
 ## Repository Structure
 
 ```
