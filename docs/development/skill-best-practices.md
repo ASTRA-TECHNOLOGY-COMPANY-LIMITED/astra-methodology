@@ -165,7 +165,7 @@ A skill is a layer added on top of a model. Validate on each model you plan to u
 
 Align with the ASTRA model-selection convention:
 - `*-validator` → `haiku` (rule-based validation, fast)
-- `*-reviewer` / `*-analyzer` / `*-runner` / `*-persona` → `sonnet` (complex analysis, accurate)
+- `*-reviewer` / `*-analyzer` / `*-runner` / `*-verifier` → `sonnet` (complex analysis, accurate)
 
 ---
 
@@ -197,15 +197,9 @@ The most effective way to author skills is to use Claude itself:
 - The end user's runtime output language (Korean / Vietnamese / English) is controlled by `/select-language` — description language does not affect deliverable language
 - The pre-v5.13 policy of Korean descriptions for interactive domain skills is **retired**; do not reintroduce Korean descriptions
 
-### 12.2 Persona Agent Guard
+### 12.2 No Persona Agents (removed in v5.25.0)
 
-The persona agents (`tester-persona`, `designer-persona`, `developer-persona`) must include the following guard prefix as the first line of their description:
-
-```
-[EXPLICIT-INVOCATION-ONLY — DO NOT AUTO-MATCH]
-```
-
-Persona agents are explicit-invocation only and must not be auto-triggered.
+The former persona agents (`tester-persona`, `designer-persona`, `developer-persona`) were removed: on current models, a senior-perspective review run directly in the parent context ("테스터 관점에서 검토해줘") matches subagent quality without the delegation cost, and the parent context keeps the auto-applied skills active. Do not reintroduce `agents/*-persona.md` — encode senior-perspective review steps inline in the owning skill instead (see `/design-redesign` Step 3 for the pattern). `lint-skills.sh` Check 4 enforces this.
 
 ### 12.3 Broad Auto-Builder Exception
 
@@ -222,7 +216,7 @@ However, the *individual code* authored inside them still follows the ASTRA 4 pr
 - `*-reviewer` → deliverable quality review (sonnet, read-only)
 - `*-runner` → integrated execution (sonnet, read-only)
 - `*-analyzer` → pattern/metric analysis (sonnet, read-only)
-- `*-persona` → senior-perspective delegation (sonnet, read-only, explicit-invocation only)
+- `*-verifier` → adversarial loop-gate scoring against a frozen rubric (sonnet, read-only, invoked only by its owning skill)
 
 All agents are read-only via `disallowedTools: Write, Edit` — they analyze and report only, never modifying files.
 

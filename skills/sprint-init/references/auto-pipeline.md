@@ -315,7 +315,7 @@ Entry from Step 5.4 (`TEST_VERDICT=FAIL`) or Step 5.4.5 (`VERIFIER_FAIL` — in 
 
 `TEST_VERDICT=FAIL` + `CURRENT_ITER < MAX_ITER`:
 
-1. **Failure classification** (same pattern matching as autorun Stage 7.5.4 + `tester-persona` delegation as fallback):
+1. **Failure classification** (same pattern matching as autorun Stage 7.5.4 + in-context QA analysis as fallback):
    | Signal | Classification | Re-entry |
    |--------|----------------|----------|
    | TypeError, NullPointer, panic, `src/` in stack trace | `CODE_BUG` | Direct Patch (Edit src/ files, no sub-skill re-invocation) |

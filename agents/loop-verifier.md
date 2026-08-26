@@ -1,14 +1,11 @@
 ---
 name: loop-verifier
 description: >
-  Adversarial verifier for ASTRA convergence loops. Each iteration, the owning skill delegates the work products to this
-  agent together with a frozen evaluation rubric (decided at loop start, immutable mid-loop); the agent attempts to
-  REFUTE target achievement, scores additively from 0 (points awarded only with file:line evidence), and emits a
-  machine-parseable ASTRA_LOOP_RESULT tail line that the caller branches on (early exit at score ≥ 90 AND p0 == 0).
-  Never auto-triggers — invoked exclusively by its owning skills via Task(): the /loop skill (user-defined rubric,
-  presets A–E) and the sprint pipeline (auto-pipeline.md Step 5.4.5, reached from /sprint-init·/blueprint and
-  /autorun Stage 7.6) with the fixed SPRINT PRESET rubric: blueprint conformance 40 · test integrity 30 ·
-  convention & quality 30.
+  Adversarial verifier for ASTRA convergence loops. Attempts to REFUTE target achievement against a frozen
+  rubric, scores additively from 0 (points only with file:line evidence), and emits the machine-parseable
+  ASTRA_LOOP_RESULT tail line the caller branches on (exit at score ≥ 90 AND p0 == 0). Never auto-triggers —
+  invoked only via Task() by /loop (user rubric, presets A–E) and the sprint pipeline / autorun Stage 7.6
+  (fixed SPRINT PRESET rubric).
 tools: Read, Grep, Glob, Bash
 disallowedTools: Write, Edit
 model: sonnet

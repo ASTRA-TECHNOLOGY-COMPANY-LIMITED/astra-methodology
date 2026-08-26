@@ -13,7 +13,7 @@ This is NOT an application codebase — it is a Claude Code plugin consisting of
 ```
 astra-methodology/
 ├── skills/              # Claude Code skills (each subdir has SKILL.md with full details)
-├── agents/              # Specialized subagents (read-only, *-validator/*-reviewer/*-runner/*-analyzer/*-persona)
+├── agents/              # Specialized subagents (read-only, *-validator/*-reviewer/*-runner/*-analyzer/*-verifier)
 ├── commands/            # Slash commands (lighter than skills)
 ├── hooks/               # PostToolUse hooks (hooks.json)
 ├── scripts/             # Shell scripts for hooks and verification
@@ -118,9 +118,9 @@ The worktree mechanism (v5.0+) prevents code/port interference across sprints in
 **UserPromptSubmit hooks** (run when user submits a prompt):
 1. **inject-feature-dev-cwd.sh** — when `/feature-dev` is invoked from inside a sprint worktree (`.worktrees/sprint-*`; the pre-v5.19 `.astra-worktrees/` path is still matched for legacy worktrees), injects cwd-anchored sprint paths into the LLM context so the external feature-dev plugin does not fall back to the main worktree (where uncommitted sprint files are not visible). Non-blocking (exit 0). No output when the trigger does not match.
 
-### Hybrid Agent Architecture (Validators + Personas)
+### Agent Architecture (Validators + Verifiers)
 
-ASTRA uses a **hybrid agent strategy** that pairs workflow-driven skills with two distinct agent types:
+ASTRA pairs workflow-driven skills with read-only checker agents:
 
 #### Validator Agents (auto-triggerable, read-only)
 Stateless quality checkers that report violations without modifying files. Activated automatically by skills or quality gates.
@@ -141,22 +141,13 @@ Stateless quality checkers that report violations without modifying files. Activ
 
 > **Wiring note**: `sprint-analyzer` and `quality-gate-runner` are intentionally not invoked by any skill — they are user-invoked entry points (Daily Scrum / retrospective analysis, and Gate 3 release checks respectively; target projects reference `quality-gate-runner` from their generated CLAUDE.md). This unwired state is by design, not an omission.
 
-#### Persona Agents (explicit invocation only, read-only orchestrators)
-Role-based mindset agents that bring senior-practitioner perspective. **Never auto-trigger** — must be explicitly invoked by the user (e.g., "as a tester", "as a designer", or their Korean equivalents "테스터 관점에서" / "디자이너로서") or by orchestrating skills.
-
-| Persona | Model | When to Invoke | Hands back to |
-|---------|-------|----------------|---------------|
-| `tester-persona` | sonnet | Edge case discovery, scenario gap analysis, risk-based prioritization | `/test-scenario` or `/test-run` |
-| `designer-persona` | sonnet | Design system audit, Vibe Coding aesthetic critique, WCAG 2.1 AA review, Screen ID handoff audit | `/service-planner` or `/handoff-publish` |
-| `developer-persona` | sonnet | Architecture review, ASTRA 4-principle audit, code smell, OWASP security audit | `/pr-merge` or `/generate-entity` |
-
-**Architectural principle**: Persona agents are **orchestrators, not executors**. They analyze and recommend, but all file edits happen back in the parent context — this preserves auto-applied skills (`coding-convention`, `data-standard`, `code-standard`) which only trigger on parent-context Write/Edit operations.
+#### Senior-perspective review (in-context, v5.25.0+)
+The former persona agents (`tester-persona`, `designer-persona`, `developer-persona`) were removed in v5.25.0: on current models a senior-perspective pass run directly in the parent context matches subagent quality without the delegation cost, and the parent context keeps the auto-applied skills (`coding-convention`, `data-standard`, `code-standard`) active. When the user asks for a role perspective ("테스터 관점에서", "as a designer"), perform that review inline — read the artifacts, score/prioritize, and recommend — instead of delegating. Skills that need a structured qualitative pass encode it as an inline step (see `/design-redesign` Step 3).
 
 **When to use which**:
 - Stateful multi-turn workflow with user interaction → **Skill**
 - Stateless validation against rules → **Validator agent**
-- Senior-practitioner mindset on a specific artifact → **Persona agent**
-- Parallel role-based work → Multiple personas via `Task()` calls in parallel
+- Senior-practitioner mindset on a specific artifact → **in-context review** (no delegation)
 
 ### Skill Catalog (per-skill details in each SKILL.md)
 
@@ -173,7 +164,7 @@ Role-based mindset agents that bring senior-practitioner perspective. **Never au
 | `screen-quality-loop` (v5.15.0+, auto-trigger) | Adversarial convergence loop for **newly authored screens** (app pages/routes/views/`*-screen.tsx`, standalone HTML pages, planner `SCR-NNN.html` mockups). Auto-triggers after the initial implementation of a new screen batch; each iteration delegates the set to `screen-verifier` (fixed rubric: design-system application 35 · cross-screen layout consistency 30 · polish 35), branches on the `ASTRA_SCREEN_RESULT` tail line, applies the fix directives in the parent context, and repeats until **score ≥ 90 AND p0 == 0** or **5 iterations** (hard cap, zero HITL — safe inside `/autorun`). Reports: `{OUTPUT_DIR}/screen-quality/` (mockups) or `docs/design-system/screen-quality/{slug}/` (app). Skips edits to existing screens, manual/catalog/handoff deliverables, and `/design-redesign` runs. Never blocks the calling workflow — an unachieved outcome is reported with remaining P0s/directives. |
 | `/design-init` (v5.4.0+) | Create / update the design-system SSoT. Generates `docs/design-system/DESIGN.md` (YAML Front Matter + Markdown Body) and auto-regenerates `src/styles/design-tokens.css`. Modes: new / update / `--regenerate-css` / `--from-refs=...`. 4 core HITL questions (brand tone · primary color · typography · density). `--auto` proceeds with conservative defaults. |
 | `/design-extract` (v5.4.0+) | Extracts OKLCH tokens, fonts, and spacing from image / PDF / URL / screenshot references. Uses Vision MCP (fect-mcp) or WebFetch. Generates an extraction report (`docs/design-system/extract-report-{date}.md`) and feeds into `/design-init`. |
-| `/design-redesign` (v5.4.0+) | Audits and redesigns existing UI components / pages against DESIGN.md. Orchestrates `design-token-validator` (quantitative) + `designer-persona` (qualitative). P0 auto-applied; P1/P2 require user confirmation. `--apply` / `--pr` flags. |
+| `/design-redesign` (v5.4.0+) | Audits and redesigns existing UI components / pages against DESIGN.md. Combines `design-token-validator` (quantitative) with an in-context senior-designer review (qualitative). P0 auto-applied; P1/P2 require user confirmation. `--apply` / `--pr` flags. |
 | `/design-audit` (v5.4.0+) | Lightweight token-violation report against DESIGN.md (no modifications). For CI gates and PR pre-checks. A lightweight entry point to `/design-redesign`. |
 | `/skill-author` | Author a new SKILL.md or refactor an existing skill (based on the 13-item best-practices checklist). Modes: new / improve. Auto-writes frontmatter + auto-blocks anti-patterns + 500-line gate + Progressive Disclosure separation recommendations. Triggered on `paths: skills/**/SKILL.md` as a complementary trigger. |
 | `/uat-parallel` | Parallel sibling of `/user-test` driven by Playwright Test (`--workers N`). Reuses 100% of the `docs/tests/uat-cases/*.md` format and the `/user-test` HTML report template. Each worker holds an isolated `BrowserContext` (separate cookies / localStorage) so multi-user flows do not collide; per-step/per-case hard timeouts kill stuck cases without blocking other workers. Bootstraps `@playwright/test` + chromium on first run (one HITL confirmation). No interactive mode — auto-batch only. Output: `docs/tests/uat-reports/{SESSION_ID}/` (index.html + issues.md + session.json + screenshots + Playwright `traces/`). |
@@ -265,7 +256,7 @@ The LLM is configured so that editing a path under `skills/**/SKILL.md` triggers
 
 ```bash
 # Repo-level lint (run before pushing): frontmatter, 500-line gate, English descriptions,
-# persona guards, version sync, CLAUDE.md catalog drift, verifier/contract-line sync, zsh smells.
+# persona-agent absence, version sync, CLAUDE.md catalog drift, verifier/contract-line sync, zsh smells.
 # Tail line: ASTRA_LINT_RESULT: PASS|FAIL fail=N warn=N (non-zero exit on FAIL)
 ./scripts/lint-skills.sh
 
@@ -293,12 +284,11 @@ python3 ./scripts/check-style.py --selftest   # built-in fixtures — run after 
 - **Version bump required**: before pushing to the main branch, the `version` field in `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` must be updated. Follows SemVer — bug fixes are patch (x.x.+1), feature additions are minor (x.+1.0), and breaking changes are major (+1.0.0).
 - **Skill description language policy**: all skill `description` fields are written in **English** (auto-trigger accuracy is highest with English descriptions, and the project's authoring language is English). Both auto-trigger skills (e.g., `coding-convention`, `data-standard`, `code-standard`, `sprint-progress`) and interactive user-workflow skills (e.g., `service-planner`, `blueprint`, `handoff-publish`, `manual-generator`, `pr-merge`, `autorun`) use English. Runtime output language for end users is controlled separately by `/select-language`.
   - **frontmatter form**: auto-trigger skills use the `description: >` block form; explicitly-invoked skills use the single-line `description: "..."` form.
-- **Agent description guard**: persona agents (`tester-persona`, `designer-persona`, `developer-persona`) MUST keep the `[EXPLICIT-INVOCATION-ONLY — DO NOT AUTO-MATCH]` guard prefix on the first line of their description.
 - Skill SKILL.md files follow a strict procedural format (Step-by-step instructions)
 - Commands are simpler than skills — they define input/output format and delegate to data files
 - All agents are read-only (`disallowedTools: Write, Edit`) — they analyze and report but never modify files
 - Agent model selection: `haiku` for rule-based validation (fast), `sonnet` for complex analysis (accurate)
-- Agent naming convention: `*-validator` (haiku, rule validation), `*-reviewer` (sonnet, deliverable quality review), `*-runner` (sonnet, integrated execution), `*-analyzer` (sonnet, pattern/metrics), `*-persona` (sonnet, senior-perspective delegation — explicit-invocation only), `*-verifier` (sonnet, adversarial loop-gate scoring against a frozen rubric — invoked only by its owning skill, e.g. `loop-verifier` ← `/loop`, `screen-verifier` ← `screen-quality-loop` / `/service-planner` Step 6.F.6)
+- Agent naming convention: `*-validator` (haiku, rule validation), `*-reviewer` (sonnet, deliverable quality review), `*-runner` (sonnet, integrated execution), `*-analyzer` (sonnet, pattern/metrics), `*-verifier` (sonnet, adversarial loop-gate scoring against a frozen rubric — invoked only by its owning skill, e.g. `loop-verifier` ← `/loop`, `screen-verifier` ← `screen-quality-loop` / `/service-planner` Step 6.F.6). Persona agents (`*-persona`) were removed in v5.25.0 — senior-perspective review runs in-context.
 - Hook scripts must always `exit 0` to avoid blocking the user's workflow
 - `standard_terms.json` fields: `공통표준용어명` (Korean term), `공통표준용어영문약어명` (English abbreviation), `공통표준도메인명` (domain)
 - `standard_words.json` fields: `공통표준단어명` (word), `공통표준단어영문약어명` (abbreviation), `금칙어목록` (forbidden words), `이음동의어목록` (synonyms)

@@ -1196,15 +1196,9 @@ Don't modify any code yet."
 | `sprint-analyzer` | Sonnet | Daily/Retro | Sprint progress/retrospective auto-analysis |
 | `quality-gate-runner` | Sonnet | Gate 3 | Gate 1-3 integrated execution |
 
-#### Persona Agents (explicit invocation only)
+#### Senior-perspective review (in-context, v5.25.0+)
 
-> **Important**: Persona agents **never auto-trigger**. Invoke them explicitly (e.g., "테스터 관점에서 검토", "디자이너로서 평가") or via orchestrating skills. They are orchestrators that analyze and recommend — all file edits happen back in the parent context.
-
-| Agent | Model | When to Invoke | Returns |
-|-------|-------|----------------|---------|
-| `tester-persona` | Sonnet | Edge case discovery, scenario gap analysis, risk-based prioritization, production readiness | Prioritized findings + Given-When-Then test suggestions |
-| `designer-persona` | Sonnet | Design system audit, Vibe Coding aesthetic critique, WCAG 2.1 AA review, motion analysis, Screen-ID handoff audit | Prioritized findings + token/component suggestions |
-| `developer-persona` | Sonnet | Architecture review, ASTRA 4-principle audit, code smell, OWASP security audit, tech debt prioritization | Prioritized findings + ASTRA principle compliance |
+The former persona agents (`tester-persona`, `designer-persona`, `developer-persona`) were removed in v5.25.0. Ask for the perspective directly in the session instead — "테스터 관점에서 검토", "as a designer" — and Claude performs the review inline: edge-case discovery and Given-When-Then suggestions (tester), design-system / WCAG 2.1 AA / aesthetic critique (designer), architecture / OWASP / tech-debt review (developer). Running in the session keeps the auto-applied skills active while fixes are made.
 
 > All agents are **read-only** (Write/Edit disabled) -- they only perform analysis and reporting.
 

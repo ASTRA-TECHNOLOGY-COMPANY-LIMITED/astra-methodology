@@ -160,24 +160,16 @@ done
 row "English description" "$c3_status"
 
 # ---------------------------------------------------------------------------
-# Check 4 — Persona guard prefix
+# Check 4 — Persona-agent absence (personas removed in v5.25.0)
 # ---------------------------------------------------------------------------
-head_check 4 "Persona guard prefix on *-persona agents"
+head_check 4 "Persona agents stay removed (v5.25.0)"
 c4_status=PASS
-GUARD='[EXPLICIT-INVOCATION-ONLY — DO NOT AUTO-MATCH]'
-for p in tester designer developer; do
-  af="agents/${p}-persona.md"
-  if [ ! -f "$af" ]; then
-    echo "  FAIL  $af not found"; c4_status=FAIL; continue
-  fi
-  first="$(get_desc "$af" | awk 'NF{print; exit}')"
-  case "$first" in
-    *"$GUARD"*) : ;;
-    *) echo "  FAIL  $af first description line missing guard: $first"; c4_status=FAIL ;;
-  esac
+for af in agents/*-persona.md; do
+  [ -e "$af" ] || continue
+  echo "  FAIL  $af exists — persona agents were removed in v5.25.0 (senior-perspective review runs in the parent context)"; c4_status=FAIL
 done
-[ "$c4_status" = PASS ] && echo "  PASS  all persona agents carry the guard prefix"
-row "Persona guard prefix" "$c4_status"
+[ "$c4_status" = PASS ] && echo "  PASS  no persona agents present"
+row "Persona-agent absence" "$c4_status"
 
 # ---------------------------------------------------------------------------
 # Check 5 — Version sync

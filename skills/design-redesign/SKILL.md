@@ -1,6 +1,6 @@
 ---
 name: design-redesign
-description: "Audits UI components/pages/CSS against docs/design-system/DESIGN.md and fixes design-consistency violations (hardcoded colors/fonts/spacing, anti-AI aesthetic rules) via design-token-validator + designer-persona. Applies fixes with --apply or proposes a PR with --pr, then re-validates until PASS. Use when restoring design consistency or retrofitting the design system onto existing UI."
+description: "Audits UI components/pages/CSS against docs/design-system/DESIGN.md and fixes design-consistency violations (hardcoded colors/fonts/spacing, anti-AI aesthetic rules) via design-token-validator plus an in-context senior-designer qualitative review. Applies fixes with --apply or proposes a PR with --pr, then re-validates until PASS. Use when restoring design consistency or retrofitting the design system onto existing UI."
 argument-hint: "<target-path-or-glob> [--apply] [--pr] [--auto]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Task, Agent, TodoWrite
 ---
@@ -9,13 +9,13 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Task
 
 > **Korean output style**: for Korean user-facing text (HITL questions, status reports, answers), apply `$CLAUDE_PLUGIN_ROOT/docs/development/korean-style.md` — §"HITL 질문 작성 규칙" and §"답변·보고 원칙". Korean files written to disk are style-checked automatically by the korean-style PostToolUse hook.
 
-Audits existing UI assets against the DESIGN.md SSoT and applies fix proposals. Orchestrates two agents — `design-token-validator` + `designer-persona` — to perform quantitative and qualitative evaluation together.
+Audits existing UI assets against the DESIGN.md SSoT and applies fix proposals. Combines the `design-token-validator` agent (quantitative) with a senior-designer qualitative review performed directly in the parent context.
 
 ## Design Philosophy
 
 In ASTRA, design consistency breaks in two ways at once:
 1. **Quantitative violation**: hardcoded `#fff`, `12px`, `'Helvetica'` and other token bypasses — detected quickly by `design-token-validator` (haiku).
-2. **Qualitative violation**: tokens are all correct yet the result is a generic AI look, hover-only interaction, or ignores accessibility — detected by `designer-persona` (sonnet) from a senior perspective.
+2. **Qualitative violation**: tokens are all correct yet the result is a generic AI look, hover-only interaction, or ignores accessibility — detected by the Step 3 senior-designer review, performed directly in this session.
 
 These two results are merged into a prioritized fix patch, applied after user confirmation.
 
@@ -71,17 +71,18 @@ Task(
 
 Save the response to the `VIOLATIONS_QUANT` variable.
 
-### Step 3: Qualitative audit — invoke designer-persona
+### Step 3: Qualitative audit — senior-designer review (in-context)
 
-```
-Task(
-  subagent_type: "astra-methodology:designer-persona",
-  description: "Senior designer-perspective audit",
-  prompt: "Using the brand·aesthetic_rules·accessibility sections of docs/design-system/DESIGN.md as the baseline, review the following files from a senior designer's perspective:\n\nFile list:\n{TARGETS}\n\nReview items:\n1. Design system consistency (0-10): token usage, component variants, spacing consistency\n2. Component reusability (0-10): duplicated definitions, hardcoding, prop design\n3. WCAG 2.1 AA accessibility (0-10): contrast, focus ring, keyboard, aria\n4. Interaction patterns (0-10): hover-only reliance, touch target, feedback timing\n5. Motion appropriateness (0-10): over-eager spring, looping, missing prefers-reduced-motion\n6. Vibe Coding aesthetic (0-10): generic AI look, purple gradient cliché, emoji feature icons\n\nFor each item: score + 1-2 sentences on what would have to change to make it a 10 + priority (P0/P1/P2).\nOutput as a markdown table."
-)
-```
+Review the target files directly in this session from a senior designer's perspective, using the brand·aesthetic_rules·accessibility sections of docs/design-system/DESIGN.md as the baseline. Score each item 0–10, with 1–2 sentences on what would have to change to make it a 10, plus a priority (P0/P1/P2), output as a markdown table:
 
-Save the response to the `VIOLATIONS_QUAL` variable.
+1. **Design system consistency** (0-10): token usage, component variants, spacing consistency
+2. **Component reusability** (0-10): duplicated definitions, hardcoding, prop design
+3. **WCAG 2.1 AA accessibility** (0-10): contrast, focus ring, keyboard, aria
+4. **Interaction patterns** (0-10): hover-only reliance, touch target, feedback timing
+5. **Motion appropriateness** (0-10): over-eager spring, looping, missing prefers-reduced-motion
+6. **Vibe Coding aesthetic** (0-10): generic AI look, purple gradient cliché, emoji feature icons
+
+Read every target file before scoring — never score a file you did not open. Save the resulting table to the `VIOLATIONS_QUAL` variable.
 
 ### Step 4: Generate audit report
 
@@ -108,7 +109,7 @@ Write the following to `docs/design-system/audit-{YYYY-MM-DD-HHmm}.md`:
 |------|------|-----------|-------------------|----------|
 | ... | ... | `#fff` | `var(--surface-base)` | P0 |
 
-## Qualitative Findings (designer-persona)
+## Qualitative Findings (senior-designer review)
 {VIOLATIONS_QUAL quoted verbatim}
 
 ## Recommended Fix Plan
@@ -157,7 +158,7 @@ In `--auto` mode, apply P0 automatically; leave P1/P2 in the report only.
 
 #### Step 5.2: Structural fixes (semantic)
 
-For P0 items flagged by `designer-persona` that require code structure changes:
+For P0 items flagged by the Step 3 qualitative review that require code structure changes:
 - **Inline style → className**: `style={{color: '#fff'}}` → define a class and apply it
 - **Hardcoded variant → DESIGN.md-registered component**: ad-hoc card → unified `<Card variant="elevated">`
 - **Hover-only → equivalent focus handling**: apply the `:hover` effect equivalently to `:focus-visible`
@@ -210,7 +211,7 @@ Re-verification: PASS (0 remaining violations)
 - [ ] Step 0: argument parsing + target file identification
 - [ ] Step 1: verify DESIGN.md exists + load Front Matter
 - [ ] Step 2: design-token-validator quantitative audit
-- [ ] Step 3: designer-persona qualitative audit
+- [ ] Step 3: in-context senior-designer qualitative audit
 - [ ] Step 4: generate integrated audit report
 - [ ] Step 5: apply fixes (5.1 token substitution + 5.2 structural fixes)
 - [ ] Step 6: re-verification (confirm 0 remaining violations)
@@ -247,7 +248,7 @@ Re-verification: PASS (0 remaining violations)
 
 1. **New project (0 violations)**: All files use only DESIGN.md tokens → "no violations" report and immediate exit.
 2. **Legacy (mass violations)**: 100 violations. P0 auto-applied, then P1 batch-confirmed. Re-verification PASS in 1 attempt.
-3. **Qualitative-only violations (tokens all correct)**: hover-only / purple gradient cliché etc. detected only by designer-persona. Structural fixes confirmed one-by-one with the user.
+3. **Qualitative-only violations (tokens all correct)**: hover-only / purple gradient cliché etc. detected only by the Step 3 qualitative review. Structural fixes confirmed one-by-one with the user.
 
 ## Four-principles application
 

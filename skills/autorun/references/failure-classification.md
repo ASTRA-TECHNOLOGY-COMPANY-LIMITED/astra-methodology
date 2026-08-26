@@ -18,22 +18,20 @@ Analyze the last failure log of the `/test-run` output.
 | `ECONNREFUSED`, `port already in use`, `database connection`, `permission denied`, environment / infra errors | `ENV_ISSUE` | **abort** (user intervention required) |
 | None of the above OR mixed signals | `AMBIGUOUS` | go to 2nd classification |
 
-**Language-bias note**: the keywords above are skewed toward JS/TS/Java/Python. Go (`panic:`, `runtime error`) and Rust (`thread '...' panicked`) are partially included, but other languages/frameworks are likely to fall through to AMBIGUOUS and be delegated to the 2nd classification (tester-persona). This is intentional fall-through — accept the cost for correct classification.
+**Language-bias note**: the keywords above are skewed toward JS/TS/Java/Python. Go (`panic:`, `runtime error`) and Rust (`thread '...' panicked`) are partially included, but other languages/frameworks are likely to fall through to AMBIGUOUS and enter the 2nd classification. This is intentional fall-through — accept the cost for correct classification.
 
-### 2nd: tester-persona delegation (only when the 1st is ambiguous)
-```
-Task(tester-persona, "
-Analyze the following test failure log and decide the re-entry stage.
-- Log: {last 100 lines}
-- Blueprint path: {BLUEPRINT_PATH}
-- Test scenarios: {TEST_DIR}
-Output format:
+### 2nd: in-context QA analysis (only when the 1st is ambiguous)
+
+Analyze the failure directly in this session, from a QA engineer's perspective:
+- Read the last 100 lines of the failure log, the blueprint (`{BLUEPRINT_PATH}`), and the failing test scenarios (`{TEST_DIR}`).
+- Decide which artifact the failure actually contradicts: implementation code (`CODE_BUG`), the blueprint's stated contract (`SPEC_GAP`), the UX/design spec (`DESIGN_MISALIGN`), or the environment (`ENV_ISSUE`).
+- Record the decision in the iteration summary as:
+  ```
   classification: CODE_BUG | SPEC_GAP | DESIGN_MISALIGN | ENV_ISSUE
   target_stage: 1 | 2 | 3 | 6
   reason: <one sentence>
-")
-```
-- Adopt the result as-is. If `ENV_ISSUE`, abort + Stage 8.
+  ```
+- If `ENV_ISSUE`, abort + Stage 8.
 
 ## 7.5.5 Enter the next iteration — Direct Patch (no sub-skill re-invocation)
 

@@ -1,13 +1,11 @@
 ---
 name: screen-verifier
 description: >
-  Adversarial verifier for the screen-quality convergence loop. After a new UI screen (app page/route/view or
-  planner HTML mockup) is implemented, the screen-quality-loop skill (or /service-planner Step 6.F.6) delegates the
-  screen set to this agent; the agent attempts to REFUTE screen quality against the fixed three-axis rubric —
-  design-system application (35), cross-screen layout consistency (30), polish & sophistication (35) — scoring
-  additively from 0 with file:line evidence only, and emits a machine-parseable ASTRA_SCREEN_RESULT tail line that
-  the parent loop branches on (early exit at score ≥ 90 AND p0 == 0, hard cap 5 iterations).
-  Never auto-triggers — invoked exclusively by its owning skills via Task().
+  Adversarial verifier for the screen-quality convergence loop. Attempts to REFUTE new-screen quality against
+  the fixed rubric — design-system application (35) · cross-screen layout consistency (30) · polish (35) —
+  scoring additively with file:line evidence only, and emits the machine-parseable ASTRA_SCREEN_RESULT tail
+  line (exit at score ≥ 90 AND p0 == 0, hard cap 5 iterations). Never auto-triggers — invoked only by
+  screen-quality-loop and /service-planner Step 6.F.6 via Task().
 tools: Read, Grep, Glob, Bash
 disallowedTools: Write, Edit
 model: sonnet
