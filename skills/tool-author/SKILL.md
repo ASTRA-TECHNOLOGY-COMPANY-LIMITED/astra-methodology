@@ -1,14 +1,11 @@
 ---
 name: tool-author
 description: >
-  Authors and validates LLM tool descriptions and input schemas (Anthropic Tool
-  Use, MCP servers, LangChain @tool, Pydantic, Zod). Use when the user mentions
-  "tool description", "function calling", "MCP tool", "Pydantic schema", "Zod
-  schema", "@tool decorator", "input_schema", "tool spec", "툴 정의", "함수 호출
-  스키마", or when editing files that define LLM tool surfaces. Enforces the six
-  required attributes and blocks the seven known tool-failure modes (see
-  references/). For authoring ASTRA SKILL.md files use /skill-author instead —
-  this skill is for *runtime* LLM tool surfaces, not for skill files.
+  Authors and validates LLM tool descriptions and input schemas (Anthropic Tool Use, MCP servers, LangChain
+  @tool, Pydantic, Zod). Enforces the six required attributes and blocks the seven known tool-failure modes
+  (see references/). Use when the user mentions 'tool description', 'function calling', 'MCP tool',
+  'input_schema', '툴 정의', or edits files defining runtime LLM tool surfaces. For ASTRA SKILL.md files use
+  /skill-author instead.
 paths:
   - "tools/**/*.py"
   - "tools/**/*.ts"

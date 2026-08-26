@@ -126,7 +126,7 @@ public class Customer {
 
 ## Agents
 
-ASTRA uses a **hybrid agent strategy** — auto-triggerable validators paired with explicit-only persona agents.
+ASTRA ships read-only checker agents — auto-triggerable validators plus adversarial loop-gate verifiers. Senior-perspective (tester/designer/developer) review runs directly in the session since v5.25.0; there are no persona agents.
 
 ### Validator Agents (auto-triggerable, read-only)
 
@@ -141,16 +141,8 @@ ASTRA uses a **hybrid agent strategy** — auto-triggerable validators paired wi
 | `test-coverage-analyzer` | haiku | Test strategy & coverage analysis — Gate 2 |
 | `sprint-analyzer` | sonnet | Sprint progress & retrospective analysis (Daily/Retro) |
 | `quality-gate-runner` | sonnet | Integrated quality gate execution — Gate 3 |
-
-### Persona Agents (explicit invocation only)
-
-Role-based mindset agents — never auto-trigger; invoke explicitly (e.g., "테스터 관점에서 검토").
-
-| Agent | Model | Description |
-|----------|------|------|
-| `tester-persona` | sonnet | QA engineer perspective — edge case discovery, scenario gaps, risk-based prioritization |
-| `designer-persona` | sonnet | UX/UI designer perspective — design system audit, Vibe Coding aesthetic, WCAG 2.1 AA |
-| `developer-persona` | sonnet | Senior developer perspective — architecture review, ASTRA principle audit, OWASP, tech debt |
+| `loop-verifier` | sonnet | Adversarial loop-gate scoring against a frozen rubric — `/loop` + sprint pipeline |
+| `screen-verifier` | sonnet | Adversarial new-screen quality scoring — `screen-quality-loop` |
 
 ## Hooks (Automatic Quality Verification)
 
@@ -317,7 +309,7 @@ astra-methodology/
 │   ├── data-standard/             #   Public data standard guide (/data-standard, auto-applied)
 │   ├── coding-convention/         #   Coding convention (auto-applied)
 │   └── code-standard/             #   International code standards (auto-applied)
-├── agents/                        # 12 specialized agents (9 validators + 3 personas)
+├── agents/                        # 11 specialized agents (validators + reviewers + verifiers)
 │   ├── astra-validator.md         #   ASTRA project structure compliance
 │   ├── naming-validator.md        #   DB naming standard validation
 │   ├── convention-validator.md    #   Coding convention validation
@@ -327,9 +319,8 @@ astra-methodology/
 │   ├── test-coverage-analyzer.md  #   Test strategy & coverage analysis
 │   ├── sprint-analyzer.md         #   Sprint progress & retrospective analysis
 │   ├── quality-gate-runner.md     #   Integrated quality gate execution
-│   ├── tester-persona.md          #   QA engineer mindset (explicit only)
-│   ├── designer-persona.md        #   UX/UI designer mindset (explicit only)
-│   └── developer-persona.md       #   Senior developer mindset (explicit only)
+│   ├── loop-verifier.md           #   Adversarial loop-gate scoring (/loop + sprint pipeline)
+│   └── screen-verifier.md         #   Adversarial screen-quality scoring (screen-quality-loop)
 ├── commands/                      # 7 slash commands
 │   ├── generate-entity.md         #   /generate-entity
 │   ├── check-naming.md            #   /check-naming

@@ -48,7 +48,7 @@ Report this behavior to the user:
 ### Recommended follow-up workflow
 1. Pipeline complete → review `pipeline-report.md`
 2. Manually fix P0 issues
-3. Persona-agent review (`Task(developer-persona)`, `Task(tester-persona)`)
+3. Senior-perspective review in the session ("개발자 관점에서 검토해줘" / "테스터 관점에서 검토해줘")
 4. After passing review, run `/pr-merge`
 
 ## Relationship with other skills
@@ -61,7 +61,7 @@ Report this behavior to the user:
 | `/generate-entity` | Invoked in Stage 6 (generates entities from the blueprint's data model) |
 | `/test-scenario` | Invoked in Stage 5 (*before* implementation, TDD flow) |
 | `/test-run` | Invoked in Stage 7 (re-invoked each iteration, up to MAX_ITER times) |
-| `tester-persona` | Invoked only at Stage 7.5's *AMBIGUOUS* branch (failure classification) |
+| In-context QA analysis | Runs only at Stage 7.5's *AMBIGUOUS* branch (failure classification) — no agent delegation |
 | `/pr-merge` | **Auto-invoked in Stage 8 as `/pr-merge --auto`** (only when tests pass). Not invoked on unresolved failure. v5.19+ worktree-always: the v5.9+ two-phase flow runs end-to-end in one invocation — Sprint Phase (PR + review + fix) inside the worktree → auto-`cd` to the main worktree → Main Phase (merge → promotion) → worktree removal. Without `--auto`, Step 8.5 asks one "finalize now?" HITL after the review loop and then performs the same transition itself. |
 | `/check-naming`, `/check-convention` | Replaced by auto-applied skills + validation agents |
 

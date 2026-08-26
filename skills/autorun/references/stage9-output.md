@@ -88,18 +88,16 @@ Write the following to `$REPORT_DIR/pipeline-report.md`:
 
 **On successful merge**:
 1. Start the next sprint from the main worktree (dev).
-2. For further review, invoke persona analysis:
-   - Dev review: `Task(developer-persona)`
-   - Test review: `Task(tester-persona)`
+2. For further review, ask for a senior-perspective pass in the session:
+   - Dev review: "개발자 관점에서 검토해줘"
+   - Test review: "테스터 관점에서 검토해줘"
 
 **On unresolved failure**:
 1. Review the deliverables above (inside the preserved sprint worktree) and apply fixes.
 2. Fix inside the sprint worktree and re-run `/pr-merge` there.
-3. For related persona analysis, invoke:
+3. For related reviews:
    - Planning review: `Task(planner-reviewer)`
-   - Design review: `Task(designer-persona)`
-   - Dev review: `Task(developer-persona)`
-   - Test review: `Task(tester-persona)`
+   - Design / dev / test review: ask for a senior-perspective pass in the session ("디자이너/개발자/테스터 관점에서 검토해줘")
 ```
 
 **Completion Gate**: before printing 9.2, verify the file was actually written (`[ -f "$REPORT_DIR/pipeline-report.md" ]`) and that every ✅/❌ mark in it traces to a check executed in this session (test-result line, gh pr state, worktree list). Then clear pipeline state: `astra_state_clear`.
