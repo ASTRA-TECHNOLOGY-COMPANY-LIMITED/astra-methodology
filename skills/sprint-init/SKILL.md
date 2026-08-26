@@ -1,6 +1,6 @@
 ---
 name: sprint-init
-description: "Initializes a new ASTRA sprint and (v5.16+) runs it to completion in one session: always creates an isolated sprint worktree (.worktrees/sprint-<N>-<name>/ — v5.19+; sprint work never touches the main worktree), port-isolated dev-server settings, prompt map / progress tracker / retrospective scaffolding, then continues into the /test-scenario → implementation → /test-run → adversarial verification gate (score ≥ 90 ∧ P0 == 0, max 5 iterations) → /pr-merge pipeline without stopping. --scaffold-stop stops after scaffolding (pre-v5.16 behavior); --scaffold-only is the /blueprint delegation mode; --auto runs the same pipeline unattended; --resume recovers a crashed run. Use when starting a new sprint or scaffolding sprint infrastructure."
+description: "Initializes an ASTRA sprint in an isolated worktree (.worktrees/sprint-<N>-<name>/) with port isolation and scaffolding, then runs the pipeline to completion in the same session: /test-scenario → implementation → /test-run → adversarial verification gate (score ≥ 90 ∧ P0 == 0) → /pr-merge. Flags: --scaffold-stop, --scaffold-only (the /blueprint delegation mode), --auto, --resume. Use when starting a new sprint or scaffolding sprint infrastructure."
 argument-hint: "[sprint-number] [sprint-name] [--auto] [--max-iter=N] [--resume] [--from-blueprint] [--scaffold-only] [--scaffold-stop]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Skill, Task, Agent, TodoWrite
 ---

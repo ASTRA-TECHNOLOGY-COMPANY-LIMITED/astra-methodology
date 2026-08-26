@@ -1202,15 +1202,9 @@ Chưa sửa code."
 | `sprint-analyzer` | Sonnet | Daily/Retro | Phân tích tự động tiến độ/hồi cứu Sprint |
 | `quality-gate-runner` | Sonnet | Gate 3 | Thực thi tích hợp Gate 1~3 |
 
-#### Agent Persona (chỉ gọi rõ ràng)
+#### Đánh giá theo góc nhìn senior (trong phiên, v5.25.0+)
 
-> **Quan trọng**: Agent persona **không bao giờ tự kích hoạt**. Hãy gọi rõ ràng (ví dụ: "đánh giá theo góc nhìn QA", "với tư cách designer") hoặc thông qua các skill điều phối. Họ chỉ phân tích và đề xuất — mọi chỉnh sửa file được thực hiện ở context cha.
-
-| Agent | Model | Khi gọi | Trả về |
-|----------|------|---------|--------|
-| `tester-persona` | Sonnet | Tìm edge case, phân tích lỗ hổng kịch bản, ưu tiên theo rủi ro, kiểm tra mức sẵn sàng phát hành | Phát hiện được ưu tiên + đề xuất kiểm thử Given-When-Then |
-| `designer-persona` | Sonnet | Audit hệ thống thiết kế, phê bình thẩm mỹ Vibe Coding, kiểm tra WCAG 2.1 AA, phân tích chuyển động, audit handoff Screen ID | Phát hiện được ưu tiên + đề xuất token/component |
-| `developer-persona` | Sonnet | Đánh giá kiến trúc, audit 4 nguyên tắc ASTRA, code smell, audit bảo mật OWASP, ưu tiên nợ kỹ thuật | Phát hiện được ưu tiên + tuân thủ nguyên tắc ASTRA |
+Các agent persona (`tester-persona`, `designer-persona`, `developer-persona`) đã bị gỡ bỏ ở v5.25.0. Thay vào đó, hãy yêu cầu góc nhìn trực tiếp trong phiên — "đánh giá theo góc nhìn QA", "với tư cách designer" — và Claude thực hiện đánh giá ngay tại chỗ: tìm edge case và đề xuất Given-When-Then (tester), audit hệ thống thiết kế · WCAG 2.1 AA · phê bình thẩm mỹ (designer), đánh giá kiến trúc · OWASP · nợ kỹ thuật (developer). Thực hiện trong phiên giúp các skill tự động áp dụng vẫn hoạt động trong khi sửa.
 
 > Tất cả agent đều **chỉ đọc** (không thể Write/Edit) — chỉ thực hiện phân tích và báo cáo.
 

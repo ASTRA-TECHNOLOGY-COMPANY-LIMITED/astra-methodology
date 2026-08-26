@@ -74,7 +74,7 @@ Total violations: 3 (P0: 2 / P1: 1 / P2: 0)
 | Item | `/design-audit` | `/design-redesign` |
 |------|-----------------|--------------------|
 | Violation detection | ✅ | ✅ |
-| Qualitative audit (designer-persona) | ❌ | ✅ |
+| Qualitative audit (senior-designer review) | ❌ | ✅ |
 | Auto-fix | ❌ | ✅ (`--apply`) |
 | PR creation | ❌ | ✅ (`--pr`) |
 | Re-validation | ❌ | ✅ |

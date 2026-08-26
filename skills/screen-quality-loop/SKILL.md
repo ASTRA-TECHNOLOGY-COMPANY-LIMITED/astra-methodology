@@ -1,12 +1,11 @@
 ---
 name: screen-quality-loop
 description: >
-  Automatically runs an adversarial screen-quality convergence loop right after a NEW UI screen is implemented —
-  a new page, route, view, screen component (e.g., app/**/page.tsx, *-screen.tsx, src/pages/**, src/views/**),
-  standalone HTML page, or planner HTML mockup (SCR-NNN.html). Each iteration delegates the screen set to the
-  read-only screen-verifier agent, which adversarially scores design-system application, cross-screen layout
-  consistency, and polish/sophistication; the loop applies the fix directives and repeats until score ≥ 90 with
-  zero P0 defects, or 5 iterations (hard cap). Used when creating or implementing new screens, pages, or views.
+  Automatically runs an adversarial screen-quality convergence loop right after a NEW UI screen is implemented
+  — a new page, route, view, screen component (app/**/page.tsx, *-screen.tsx, src/pages/**, src/views/**),
+  standalone HTML page, or planner SCR-NNN.html mockup. Each iteration the read-only screen-verifier agent
+  scores the set and fix directives are applied, until score ≥ 90 with zero P0 defects or 5 iterations. Used
+  when creating or implementing new screens, pages, or views.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, Agent, TodoWrite
 ---
 

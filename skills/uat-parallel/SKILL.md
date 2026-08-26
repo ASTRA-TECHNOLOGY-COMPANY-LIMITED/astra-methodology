@@ -1,19 +1,11 @@
 ---
 name: uat-parallel
 description: >
-  Runs UAT (User Acceptance Testing) cases in TRUE PARALLEL using Playwright
-  Test runner with isolated browser contexts per worker (separate cookies,
-  localStorage, sessionStorage). Solves the two main limits of /user-test:
-  (1) sequential single-page execution that does not scale beyond a few
-  cases, and (2) one stuck case blocking the rest of the run. Reuses 100%
-  of the /user-test UAT case Markdown+YAML format under
-  docs/tests/uat-cases/, runs them via `npx playwright test --workers=N`,
-  and emits the same report layout (index.html + issues.md + session.json
-  + screenshots/) under docs/tests/uat-reports/. Use when the user asks
-  to "run UAT in parallel", "speed up UAT", "test multi-user", "song song",
-  "uat parallel", or runs /uat-parallel. Distinct from /user-test
-  (sequential, ego → Chrome MCP, supports interactive mode), /test-run
-  (developer integration tests), /test-scenario (scenario authoring).
+  Runs UAT cases in TRUE PARALLEL via the Playwright Test runner — one isolated browser context per worker,
+  per-case hard timeouts so a stuck case never blocks the run. Reuses the /user-test case format under
+  docs/tests/uat-cases/ and emits the same report layout under docs/tests/uat-reports/. Use when the user asks
+  to 'run UAT in parallel', 'speed up UAT', 'test multi-user', 'song song', or runs /uat-parallel. For
+  sequential or interactive UAT use /user-test.
 argument-hint: "[--workers N] [--from glob] [--priority critical|high|medium|low] [--feature name] [--timeout 30s] [--headed] [--browser chromium|firefox|webkit] [--lang vi|en|ko]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 ---

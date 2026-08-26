@@ -1,6 +1,6 @@
 ---
 name: pr-merge
-description: "Automated PR cycle — commit, push, PR creation, code review, fix loop, merge, and promotion, completed in one session with no user cd (v5.16+). Sprint PRs target an integration branch (feat/<name> or fix/<name>) picked or created interactively; after merge the user picks a promotion path (dev / staging / skip — always HITL, even under --auto). Sprints always run in an isolated worktree (v5.19+): after the review loop one 'finalize now?' HITL fires, then the skill transitions to the main worktree itself, merges, and removes the worktree. Use when creating or merging a PR, promoting with --staging/--main, or finishing a sprint."
+description: "Automated PR cycle — commit, push, PR creation, code review, fix loop, merge, and promotion, completed in one session with no user cd. Sprint PRs target an integration branch (feat/<name> or fix/<name>); after merge the promotion path (dev / staging / skip) is always HITL, even under --auto. Performs the sprint-worktree-to-main transition itself. Use when creating or merging a PR, promoting with --staging/--main, or finishing a sprint."
 argument-hint: "[max-iterations] [--no-review] [--draft] [--auto] [--patch|--minor|--major] [--staging] [--main]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, Task, Agent, TodoWrite
 ---
@@ -15,14 +15,12 @@ Automates the entire cycle from commit through code review, issue fixes, integra
 
 The integration branch is the unit of promotion: pick any sprint's integration branch and push it to `staging` directly (fast hotfix path) or queue it via `dev` (standard path). Multiple sprints may target the same integration branch to accumulate a larger feature before promotion.
 
-**Phase policy (v5.16+ one session, no user `cd`, ever · v5.19+ worktree-always)**:
+**Phase policy (one session, no user `cd`, ever)**:
 
-- **Sprint Phase / Main Phase** (sprint worktrees, `.worktrees/sprint-<N>-<name>/`) — the v5.9 two-phase split is retained *internally*, but the seam is no longer a stop: after the review loop converges, Step 8.5 asks **one HITL** ("finalize the merge from the main worktree now?") and on approval **the skill performs the cross-worktree transition itself** and continues into Main Phase. Declining preserves the pre-v5.16 behavior (worktree kept, PR pending; re-invoke `/pr-merge` later — same session preferred).
-- **`--auto` flag** — unattended variant: merge confirmation and the Step 8.5 transition are auto-approved. **The Step 8.4.5 promotion-target prompt is always HITL — even `--auto` fires it** (the promotion target changes the deployment surface; no safe unattended default).
+- **Sprint Phase / Main Phase** (sprint worktrees, `.worktrees/sprint-<N>-<name>/`) — the two-phase split is internal, not a stop: after the review loop converges, Step 8.5 asks **one HITL** ("finalize the merge from the main worktree now?") and on approval **the skill performs the cross-worktree transition itself** and continues into Main Phase. Declining keeps the worktree and the pending PR; re-invoke `/pr-merge` later.
+- **`--auto` flag** — unattended variant: merge confirmation and the Step 8.5 transition are auto-approved. The HITL points `--auto` never suppresses are listed once in Step 1.
 
-> **v5.19+**: the v5.16 in-place sprint mode (`IN_PLACE_SPRINT=1`, sprint branch checked out in the main worktree) is removed — sprint work never happens in the main worktree. A main worktree found on a `feat/sprint-*` branch is a pre-v5.19 leftover and routes through the Step 4 compat cases.
-
-**Worktree isolation policy (v5.0+)**: sprint-unit work happens inside the `/sprint-init`-created worktree; immediately after Main Phase merges into a shared branch, the worktree is auto-removed. The main worktree always stays on a shared branch. Source helpers from `$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh`.
+**Worktree isolation policy**: sprint work happens only inside the `/sprint-init`-created worktree; right after Main Phase merges into a shared branch, the worktree is auto-removed. The main worktree always stays on a shared branch — a main worktree found on a `feat/sprint-*` branch is a pre-v5.19 leftover and routes through the Step 4 compat cases. Source helpers from `$CLAUDE_PLUGIN_ROOT/scripts/worktree-helpers.sh`.
 
 > Legacy fallbacks, backward-compat PR detection, and version-history rationale: see [references/fallbacks-and-recovery.md](references/fallbacks-and-recovery.md).
 
@@ -207,9 +205,7 @@ CURRENT_BRANCH=$(git branch --show-current)
 
 ### Step 4.5: Determine integration target branch (Sprint Phase only)
 
-Run **only when `STARTED_FROM_SPRINT=1`**. For all skipped cases (Step 4.1 fallback, main-worktree compat, promotion mode) set `TARGET_BRANCH="dev"` and proceed to **Step 5**.
-
-Determine the integration branch in five sub-steps:
+Run **only when `STARTED_FROM_SPRINT=1`** (all skipped cases set `TARGET_BRANCH="dev"` and proceed to **Step 5**). Determine the integration branch in five sub-steps:
 1. **Infer classification (feat vs fix)** from commit prefixes + sprint slug keywords + blueprint context → `INFERRED_NAME`.
 2. **List existing integration branches** (`feat/*` / `fix/*`, excluding `sprint-*`) → `EXISTING_INTS`.
 3. **Pick existing or create new** — `--auto` reuses the inferred name (else creates from `origin/dev`); normal mode asks via AskUserQuestion when `EXISTING_INTS` is non-empty. Sets `TARGET_BRANCH`, `CREATE_NEW`.
@@ -450,9 +446,7 @@ git fetch origin "$TARGET_BRANCH" --quiet
 
 #### Step 8.4.5.1: Ask the promotion path
 
-**Always HITL** — **AskUserQuestion** fires for every invocation, including `--auto`. The promotion target materially changes the deployment surface (dev queue vs. staging deployment) and has no safe unattended default; `--auto` only suppresses low-risk confirmations (commit, final-merge approval).
-
-The 3 options (presented in every mode):
+**Always HITL** — **AskUserQuestion** fires for every invocation, including `--auto` (the deployment surface has no safe unattended default). The 3 options (presented in every mode):
 - `Promote to dev (standard path)` — queue for the next staging promotion. **Recommended (first option)**.
 - `Promote to staging (fast path)` — bypass dev, go directly to staging. For urgent hotfixes.
 - `Skip (keep integration branch as-is)` — don't promote now. The integration branch persists; the user can run `/pr-merge --staging` later and pick it as the source.
@@ -465,7 +459,7 @@ Create the promotion PR (`$TARGET_BRANCH` → `$PROMOTION_TARGET`, body lists th
 
 ### Step 8.5: Sprint Phase → Main Phase handoff
 
-The review loop converged inside a sprint worktree. The merge runs from the main worktree (so the cascade, dev sync, and worktree removal happen in a stable location). **v5.16+: in both modes the skill performs the transition itself — the user is never instructed to `cd` or re-invoke.** Branch on the flag:
+The review loop converged inside a sprint worktree. The merge runs from the main worktree (so the cascade, dev sync, and worktree removal happen in a stable location). **In both modes the skill performs the transition itself — the user is never instructed to `cd` or re-invoke.** Branch on the flag:
 
 - **Normal mode**: print the Sprint Phase summary, then ask **one HITL** via `AskUserQuestion`:
 
@@ -524,14 +518,11 @@ Promotes code between branches: `--staging` (source `dev` or an integration bran
 
 ---
 
-## Quick Run Examples
-
-See the invocation matrix in [references/review-severity-and-output.md](references/review-severity-and-output.md) (worktree sprint / Main-Phase re-entry / iteration-count / `--no-review` / `--draft` / `--auto` / promotion variants).
-
 ## Notes
 
-- **Branch strategy / phase policy / worktree policy**: defined once in the intro above (Branch strategy v5.11+, Phase policy v5.16+, Worktree isolation policy v5.0+) — not restated here. One addition: on a cascade/merge conflict the worktree remains — after resolving, re-run `/pr-merge` (Step 3.5 auto-detects the pending sprint PR).
-- **Default mode (v5.11+)**: the merge target is an integration branch chosen in Step 4.5 — pick existing or create from a user-chosen base (default `origin/dev`). Classification (feat vs fix) and slug are auto-inferred (see [references/integration-branch-inference.md](references/integration-branch-inference.md)). Under `--auto`, the inferred name is reused if it exists, else auto-created from `origin/dev`.
+- **Invocation matrix** (worktree sprint / Main-Phase re-entry / iteration-count / `--no-review` / `--draft` / `--auto` / promotion variants): [references/review-severity-and-output.md](references/review-severity-and-output.md).
+- On a cascade/merge conflict the worktree remains — after resolving, re-run `/pr-merge` (Step 3.5 auto-detects the pending sprint PR).
+- **Default mode**: the merge target is an integration branch chosen in Step 4.5 — pick existing or create from a user-chosen base (default `origin/dev`). Classification (feat vs fix) and slug are auto-inferred (see [references/integration-branch-inference.md](references/integration-branch-inference.md)). Under `--auto`, the inferred name is reused if it exists, else auto-created from `origin/dev`.
 - **Promotion / fallback details**: promotion modes (`--staging`/`--main`) → [references/promotion-modes.md](references/promotion-modes.md); one-shot temp-worktree fallback, pre-v5.11 PR detection, compat cases → [references/fallbacks-and-recovery.md](references/fallbacks-and-recovery.md).
 - Final checkout location after merge: default mode ends on `dev`; promotion mode returns to `dev`.
 - If Critical issues remain, merging is blocked. On conflict, do not auto-resolve — instruct the user and abort.

@@ -49,7 +49,7 @@ If still empty, abort and ask the user for an explicit path.
 | 9 | Side-effect risk → `disable-model-invocation: true` | **Semi-auto** | If body contains `git push`, `gh pr`, `npm publish`, `rm`, `deploy`, `merge` keywords AND frontmatter lacks `disable-model-invocation: true` → WARN with user confirmation prompt |
 | 10 | Background-knowledge skill → `user-invocable: false` | **Semi-auto** | If body lacks `AskUserQuestion`, `ExitPlanMode`, and any interactive question phrasing AND frontmatter lacks `user-invocable: false` → WARN. Inverse: if `user-invocable: false` is set but interactive elements exist → also WARN |
 | 11 | 4 principles (Think Before / Simplicity / Surgical / Goal-Driven) | **Manual** | Qualitative flag only — emit a section listing potential violations for human review (e.g., body adds abstractions without clear trigger, scope creep beyond declared purpose) |
-| 12 | Persona agent guard prefix (agents only — N/A for skills) | **Auto** | Skip for SKILL.md targets. If target is `agents/*-persona.md`, require `[EXPLICIT-INVOCATION-ONLY — DO NOT AUTO-MATCH]` as the first description line — absent = FAIL |
+| 12 | No persona agents (removed in v5.25.0) | **Auto** | If target matches `agents/*-persona.md` → FAIL (persona agents were removed; senior-perspective review runs in the parent context) |
 | 13 | ≥3 evaluation scenarios | **Auto** | `[ -f references/evals.md ]` AND count `## Scenario` headings ≥ 3 — absent or fewer = WARN |
 
 ## Output Format
@@ -80,7 +80,7 @@ If any **FAIL** remains, recommend invoking `/skill-author` in refactor mode:
 
 ## Severity Criteria
 
-- **FAIL** (Error): Hard violations of explicit BP rules (Windows paths, 1st-person description, missing `allowed-tools`, persona guard missing)
+- **FAIL** (Error): Hard violations of explicit BP rules (Windows paths, 1st-person description, missing `allowed-tools`, reintroduced persona agent)
 - **WARN** (Warning): Soft violations needing user judgment (500-line overage, side-effect signals, missing evals)
 - **MANUAL** (Info): Qualitative items that require human review (4 principles, terminology consistency without `--terms` arg)
 - **PASS**: No issues detected

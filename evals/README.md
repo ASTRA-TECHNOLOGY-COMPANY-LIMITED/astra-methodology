@@ -17,7 +17,6 @@ claude plugin eval --threshold 0.8 --json .          # CI gate
 | Case | Verifies |
 |------|----------|
 | `trigger-coding-convention/` | `coding-convention` auto-skill fires when editing a TypeScript file (Gate 1 write-time enforcement) |
-| `trigger-persona-no-autofire/` | Persona agents (`tester-persona` etc.) do NOT auto-fire on topical keywords — only on explicit invocation phrases |
 | `trigger-blueprint-invocation/` | A feature-design request routes to the `/blueprint` skill (not ad-hoc authoring) |
 
 Each case directory contains `prompt.md` (the user turn) and `graders/*.md`

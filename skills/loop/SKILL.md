@@ -1,6 +1,6 @@
 ---
 name: loop
-description: "Target-driven convergence loop (evaluator-optimizer pattern): iterates work until the adversarial loop-verifier scores ≥ 90/100 with zero P0 defects, or the HITL-confirmed max iteration count is reached (always asked; --max-iter=N only pre-selects). Rubric is frozen at start; each iteration runs work → objective test gate → fresh-context adversarial scoring. Use for open-ended convergence targets ('get Z to zero warnings', 'make X conform to Y') that don't fit the fixed /autorun pipeline."
+description: "Target-driven convergence loop (evaluator-optimizer): iterates work → objective test gate → fresh-context adversarial loop-verifier scoring until score ≥ 90 with zero P0 defects or the HITL-confirmed max iterations. The rubric is frozen at start. Use for open-ended convergence targets ('get Z to zero warnings', 'make X conform to Y') that don't fit the fixed /autorun pipeline."
 argument-hint: "[target description] [--max-iter=N] (N only pre-selects an option in the mandatory HITL prompt — the question always fires)"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, Agent, TodoWrite, Skill, AskUserQuestion
 ---

@@ -1,7 +1,7 @@
 {
   "name": "astra-methodology",
-  "version": "5.24.0",
-  "description": "ASTRA (AI-augmented Sprint Through Rapid Assembly) methodology plugin for Korean enterprise software development. Covers the full sprint lifecycle — Design Thinking planning, blueprint authoring, isolated sprint worktrees, TDD scenarios and test runs with adversarial verification loops, automated PR merge, and a mostly-unattended pipeline — plus deliverable generators (HTML manuals, catalogs, landing pages, UX handoff packages, design-system SSoT) and quality enforcement: Java/TypeScript/React Native/Python/CSS/SCSS coding conventions, the Korean public data standard dictionary, ISO 3166-1/2 and ITU-T E.164 code standards, and read-only validator/reviewer/verifier/persona agents behind quality gates. Per-version change rationale: docs/development/changelog-v5.md.",
+  "version": "5.25.0",
+  "description": "ASTRA (AI-augmented Sprint Through Rapid Assembly) methodology plugin for Korean enterprise software development. Covers the full sprint lifecycle — Design Thinking planning, blueprint authoring, isolated sprint worktrees, TDD scenarios and test runs with adversarial verification loops, automated PR merge, and a mostly-unattended pipeline — plus deliverable generators (HTML manuals, catalogs, landing pages, UX handoff packages, design-system SSoT) and quality enforcement: Java/TypeScript/React Native/Python/CSS/SCSS coding conventions, the Korean public data standard dictionary, ISO 3166-1/2 and ITU-T E.164 code standards, and read-only validator/reviewer/verifier agents behind quality gates. Per-version change rationale: docs/development/changelog-v5.md.",
   "author": {
     "name": "Zeans.L",
     "email": "zeans@astravision.co.kr"
@@ -64,9 +64,6 @@
     "screen-id",
     "ux-ui-dev-collab",
     "design-handoff",
-    "persona-agent",
-    "role-based-delegation",
-    "hybrid-architecture",
     "autorun",
     "auto-pipeline",
     "zero-interaction",

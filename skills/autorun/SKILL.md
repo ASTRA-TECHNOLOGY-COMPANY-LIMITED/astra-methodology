@@ -1,6 +1,6 @@
 ---
 name: autorun
-description: "Mostly-unattended ASTRA pipeline: /service-planner → /blueprint → /sprint-init → /test-scenario → implementation → /test-run → adversarial verification gate (loop-verifier: tests PASS ∧ score ≥ 90 ∧ P0 == 0) → /pr-merge --auto → cleanup, self-iterating up to N times until the gate passes. HITL pauses only for the max-iteration count (start), the promotion target (dev/staging/skip), and true blockers (gh auth, merge conflicts, Critical review issues). Use when a single command should drive a feature end-to-end from planning to merged PR."
+description: "Mostly-unattended ASTRA pipeline from planning to merged PR: /service-planner → /blueprint → /sprint-init → /test-scenario → implementation → /test-run → adversarial verification gate (tests PASS ∧ score ≥ 90 ∧ P0 == 0) → /pr-merge --auto → cleanup, self-iterating until the gate passes. HITL only for the max-iteration count, the promotion target, and true blockers. Use when a single command should drive a feature end-to-end from planning to merged PR."
 argument-hint: "[feature description] [--max-iter=N] (default 3 if N omitted; 1 means single pass)"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, Agent, TodoWrite, Skill, AskUserQuestion
 ---
@@ -403,8 +403,8 @@ On **tests PASS**:
 
 ### 7.5.4 Failure classification + Direct-Patch re-entry (FAIL, `CURRENT_ITER < MAX_ITER`)
 
-Only run when **FAIL** and `CURRENT_ITER < MAX_ITER`. Classify the failure (pattern-match table → tester-persona for AMBIGUOUS) into `CODE_BUG`/`SPEC_GAP`/`DESIGN_MISALIGN`/`ENV_ISSUE`, map to a re-entry stage (6/3/2/abort), then `CURRENT_ITER += 1` and **patch the target files in place** (no sub-skill re-invocation in iteration ≥ 2; `/test-run` is re-invoked idempotently). `ENV_ISSUE` → abort → Stage 9 report (never Stage 8 — nothing unverified merges).
-The classification signal table, the tie/AMBIGUOUS rule, the tester-persona delegation prompt, the per-stage Direct-Patch procedure, and the `/test-scenario` re-invocation exception: see [references/failure-classification.md](references/failure-classification.md). Read it whenever an iteration FAILs and you must decide the re-entry stage.
+Only run when **FAIL** and `CURRENT_ITER < MAX_ITER`. Classify the failure (pattern-match table → in-context QA analysis for AMBIGUOUS) into `CODE_BUG`/`SPEC_GAP`/`DESIGN_MISALIGN`/`ENV_ISSUE`, map to a re-entry stage (6/3/2/abort), then `CURRENT_ITER += 1` and **patch the target files in place** (no sub-skill re-invocation in iteration ≥ 2; `/test-run` is re-invoked idempotently). `ENV_ISSUE` → abort → Stage 9 report (never Stage 8 — nothing unverified merges).
+The classification signal table, the tie/AMBIGUOUS rule, the in-context QA analysis procedure, the per-stage Direct-Patch procedure, and the `/test-scenario` re-invocation exception: see [references/failure-classification.md](references/failure-classification.md). Read it whenever an iteration FAILs and you must decide the re-entry stage.
 
 ## Stage 7.6: Adversarial verification gate (same gate as the sprint pipeline)
 
