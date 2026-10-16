@@ -1,13 +1,13 @@
 {
   "mcpServers": {
-    "fect-image": {
+    "gemini-image": {
       "command": "npx",
       "args": ["-y", "-p", "@astra-group/fect-mcp-server", "fect-image"],
       "env": {
         "GOOGLE_API_KEY": "${GOOGLE_API_KEY}"
       }
     },
-    "fect-gpt-image": {
+    "gpt-image": {
       "command": "npx",
       "args": ["-y", "-p", "@astra-group/fect-mcp-server", "fect-gpt-image"],
       "env": {

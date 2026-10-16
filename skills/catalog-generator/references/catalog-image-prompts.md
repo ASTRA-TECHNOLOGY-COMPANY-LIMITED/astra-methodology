@@ -1,6 +1,6 @@
-# Catalog Image-Generation Prompts (Step 2, fect-image)
+# Catalog Image-Generation Prompts (Step 2, gemini-image)
 
-Literal `mcp__fect-image__nanobanana_text2img` prompt templates. Substitute the `{...}` placeholders with product/brand/tone data. Use rich, art-directed prompts for premium quality.
+Literal `mcp__gemini-image__nanobanana_text2img` prompt templates. Substitute the `{...}` placeholders with product/brand/tone data. Use rich, art-directed prompts for premium quality.
 
 ## Prompts in this file
 - Hero banner (Step 2.B) → `images/hero/`

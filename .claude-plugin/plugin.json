@@ -10,7 +10,7 @@
   "repository": "https://github.com/ASTRA-TECHNOLOGY-COMPANY-LIMITED/astra-methodology.git",
   "license": "MIT",
   "mcpServers": {
-    "fect-image": {
+    "gemini-image": {
       "command": "npx",
       "args": [
         "-y",
@@ -22,7 +22,7 @@
         "GOOGLE_API_KEY": "${GOOGLE_API_KEY}"
       }
     },
-    "fect-gpt-image": {
+    "gpt-image": {
       "command": "npx",
       "args": [
         "-y",
