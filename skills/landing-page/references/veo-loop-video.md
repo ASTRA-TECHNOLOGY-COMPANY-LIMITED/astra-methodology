@@ -19,7 +19,7 @@ Operational reference for `/landing-page` Step 3. All tool names carry their ser
 
 | Available | Path | Loop mechanism |
 |-----------|------|----------------|
-| Veo + fect-image | **A** | first frame == last frame (bookend) |
+| Veo + gemini-image | **A** | first frame == last frame (bookend) |
 | Veo only | **B** | ffmpeg self-crossfade |
 | neither / `--no-video` | **C** | CSS animated hero (`video-integration.md` §7) |
 
@@ -29,7 +29,7 @@ Default generation budget: **1 still + 1 clip**. A failed Seam QA allows exactly
 
 ## 2. First-frame art direction (nanobanana still)
 
-`mcp__fect-image__nanobanana_text2img` → save to `landing/{slug}/.work/hero-frame.png`.
+`mcp__gemini-image__nanobanana_text2img` → save to `landing/{slug}/.work/hero-frame.png`.
 
 Prompt skeleton (fill from `direction.md` tokens):
 

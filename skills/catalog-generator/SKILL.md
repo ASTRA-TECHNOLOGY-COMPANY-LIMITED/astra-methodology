@@ -2,7 +2,7 @@
 name: catalog-generator
 description: "Automatically generates a professional product promotional catalog as a self-contained HTML package from product data. Executes the full catalog production pipeline — planning, data normalization, design, copywriting, and validation — in a single pass without user feedback."
 argument-hint: "[product data file path, URL, or product description]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, Agent, Skill, mcp__fect-image__nanobanana_text2img, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__press_key, mcp__chrome-devtools__new_page, mcp__chrome-devtools__select_page, mcp__chrome-devtools__close_page
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task, Agent, Skill, mcp__gemini-image__nanobanana_text2img, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__press_key, mcp__chrome-devtools__new_page, mcp__chrome-devtools__select_page, mcp__chrome-devtools__close_page
 ---
 
 # Product Promotional Catalog Auto-Generator
@@ -15,7 +15,7 @@ Analyzes product data (CSV/JSON/text/URL) and produces a production-grade HTML c
 - **Built-in sales strategies** — cross-selling, upselling, price anchoring, and CTA placement applied automatically
 - **Professional copywriting techniques** — benefit-driven, sensory language, storytelling, social proof
 - **`/frontend-design` skill integration** — polished, production-grade design (prevents generic AI aesthetics)
-- **`fect-image` MCP integration** — auto-generates hero banners, lifestyle images, editorial illustrations, and category visuals
+- **`gemini-image` MCP integration** — auto-generates hero banners, lifestyle images, editorial illustrations, and category visuals
 - **Real-browser integration** — captures real product/service screenshots for "See it in action" showcases and UI demonstrations (ego (lite) by default, Chrome MCP as fallback)
 - Responsive (mobile/tablet/desktop), dark mode, and print stylesheet support
 - Opens directly in browser with no build step required
@@ -48,7 +48,7 @@ Normalize collected data into the internal standard structure defined in `$CLAUD
 
 **Data Enrichment Rules**:
 - If price is missing, replace pricing area with `Contact Us` label
-- If images are missing, auto-generate via `fect-image` MCP based on product description
+- If images are missing, auto-generate via `gemini-image` MCP based on product description
 - If categories are not specified, auto-group by product characteristics
 - `crossSell` field auto-maps IDs of same-category or complementary products
 - `tier` auto-classifies based on price distribution (top 20% → premium, bottom 20% → budget)
@@ -101,7 +101,7 @@ If `{SERVICE_URL}` is available (URL argument provided), plan the screenshot cap
 
 3. **Store as `{SCREENSHOT_PLAN}`** — Array of `{ url, selector, description, category, viewport }` entries
 
-If no `{SERVICE_URL}` is provided, set `{SCREENSHOT_PLAN}` to empty — all visuals will come from fect-image AI generation.
+If no `{SERVICE_URL}` is provided, set `{SCREENSHOT_PLAN}` to empty — all visuals will come from gemini-image AI generation.
 
 #### F. Auto-Design Catalog Structure
 
@@ -132,7 +132,7 @@ Additional visual sections (auto-included when applicable):
 | Component | Rule |
 |-----------|------|
 | **Screenshot Showcase** | Included when `{SERVICE_URL}` provided — "See it in action" section with browser-chrome frames |
-| **Editorial Illustrations** | Always included — fect-image generates mood/atmosphere illustrations between categories |
+| **Editorial Illustrations** | Always included — gemini-image generates mood/atmosphere illustrations between categories |
 | **Product Gallery** | Included for hero/premium tier products — multi-angle screenshots + lifestyle shots |
 
 #### G. Switch to dev Branch
@@ -209,7 +209,7 @@ Reference the JS section of `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/refere
 
 This step produces all visual assets that elevate the catalog from basic to premium quality. Two parallel tracks:
 - **Track A**: browser screenshots — ego (lite) by default, Chrome MCP as fallback (when `{SERVICE_URL}` available)
-- **Track B**: fect-image AI-generated illustrations (always)
+- **Track B**: gemini-image AI-generated illustrations (always)
 
 #### A. Browser Screenshot Capture (when `{SERVICE_URL}` available)
 
@@ -276,15 +276,15 @@ For each entry in `{SCREENSHOT_PLAN}`:
 Once every entry is captured, **ego only**: close the Task Space in a final
 heredoc — `completeTaskSpace('astra catalog {catalog-name}', { keep: false })`.
 
-#### B. Hero Banner Generation (fect-image)
+#### B. Hero Banner Generation (gemini-image)
 
-Use `mcp__fect-image__nanobanana_text2img` to generate the cover hero image. Read `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-image-prompts.md` (section "Hero banner") for the prompt and save the result to `images/hero/`.
+Use `mcp__gemini-image__nanobanana_text2img` to generate the cover hero image. Read `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-image-prompts.md` (section "Hero banner") for the prompt and save the result to `images/hero/`.
 
-#### C. Category Visual Generation (fect-image)
+#### C. Category Visual Generation (gemini-image)
 
 If there are 2+ categories, generate a divider image for each category. Use the "Category visual" prompt in `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-image-prompts.md` and save the results to `images/categories/`.
 
-#### D. Editorial Illustration Generation (fect-image)
+#### D. Editorial Illustration Generation (gemini-image)
 
 Generate mood/atmosphere illustrations placed between categories and in feature sections. These elevate the catalog from a simple product list to an editorial experience.
 
@@ -296,7 +296,7 @@ Read `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-image-prom
 - Infographic base: 1 if comparison tables exist
 - Brand atmosphere: 1 for brand story page (if included)
 
-#### E. Lifestyle Shot Generation (fect-image)
+#### E. Lifestyle Shot Generation (gemini-image)
 
 For products with no provided images and no browser screenshots, generate lifestyle images using the "Lifestyle shot" prompt in `$CLAUDE_PLUGIN_ROOT/skills/catalog-generator/references/catalog-image-prompts.md`. Save the results to `images/lifestyle/`.
 
@@ -473,10 +473,10 @@ If broken references are found, fix them immediately.
 | Type | Count | Source |
 |------|-------|--------|
 | Browser Screenshots ({CAPTURE_BACKEND}) | {N} (desktop: {N}, tablet: {N}, mobile: {N}) | Live service capture |
-| Hero Banner | 1 | fect-image AI |
-| Category Visuals | {N} | fect-image AI |
-| Editorial Illustrations | {N} (mood: {N}, lifestyle: {N}, texture: {N}) | fect-image AI |
-| Lifestyle Shots | {N} | fect-image AI |
+| Hero Banner | 1 | gemini-image AI |
+| Category Visuals | {N} | gemini-image AI |
+| Editorial Illustrations | {N} (mood: {N}, lifestyle: {N}, texture: {N}) | gemini-image AI |
+| Lifestyle Shots | {N} | gemini-image AI |
 | User-Provided Images | {N} | Original data |
 
 ### Applied Sales Strategies

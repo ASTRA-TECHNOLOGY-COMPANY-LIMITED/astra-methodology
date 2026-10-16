@@ -2,7 +2,7 @@
 name: landing-page
 description: "Builds a premium, reference-driven marketing landing page as a self-contained HTML package — real-browser Pinterest reference capture, a reference-anchored design direction, a seamless-loop Veo 3.1 hero video (CSS animated fallback), and a responsive mobile-first implementation with a screen-quality convergence pass. Use when the user asks to 'build a landing page', 'make a marketing or promotional page', or wants an animated or video hero background."
 argument-hint: "[product/brand brief, service URL, or docs/planner path] [--auto] [--no-video] [--refs=<dir>] [--slug=<name>]"
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill, AskUserQuestion, WebSearch, WebFetch, mcp__fect-mcp__veo_text2video, mcp__fect-mcp__veo_img2video, mcp__fect-mcp__veo_extension, mcp__fect-mcp__vision_analyze, mcp__fect-mcp__vision_compare, mcp__fect-image__nanobanana_text2img, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__new_page, mcp__chrome-devtools__select_page, mcp__chrome-devtools__close_page
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill, AskUserQuestion, WebSearch, WebFetch, mcp__fect-mcp__veo_text2video, mcp__fect-mcp__veo_img2video, mcp__fect-mcp__veo_extension, mcp__fect-mcp__vision_analyze, mcp__fect-mcp__vision_compare, mcp__gemini-image__nanobanana_text2img, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__resize_page, mcp__chrome-devtools__new_page, mcp__chrome-devtools__select_page, mcp__chrome-devtools__close_page
 ---
 
 # Reference-Driven Premium Landing Page Builder
@@ -136,8 +136,8 @@ Read `$CLAUDE_PLUGIN_ROOT/skills/landing-page/references/veo-loop-video.md` BEFO
 
 | Condition | Path |
 |-----------|------|
-| `mcp__fect-mcp__veo_*` present **and** `mcp__fect-image__nanobanana_text2img` present | **A — Bookend loop** (default) |
-| `mcp__fect-mcp__veo_*` present, fect-image absent | **B — text2video + crossfade loop** |
+| `mcp__fect-mcp__veo_*` present **and** `mcp__gemini-image__nanobanana_text2img` present | **A — Bookend loop** (default) |
+| `mcp__fect-mcp__veo_*` present, gemini-image absent | **B — text2video + crossfade loop** |
 | Veo tools absent, or `--no-video` | **C — CSS animated hero** (no video; template in `references/video-integration.md`) |
 
 Tool presence is determined from the session's available tools (the `fect-mcp` server is user-level and not bundled — absence is normal, not an error). Record the chosen path; the final report must state it and, for B/C, why.
@@ -146,7 +146,7 @@ Tool presence is determined from the session's available tools (the `fect-mcp` s
 
 The seamless-loop trick: generate one art-directed still, then have Veo animate it **from that frame back to that frame** — `veo_img2video` with `lastImagePath` set to the *same file* as `sourceImagePath`. The clip's first and last frames are pixel-identical, so it loops without a visible seam, and the still doubles as the LCP poster.
 
-1. **Still**: `mcp__fect-image__nanobanana_text2img` → `landing/{slug}/.work/hero-frame.png` — 16:9, token-matched palette, calm negative space where the headline will sit, **no text, no logos, no faces** (prompt template per tone in the reference file).
+1. **Still**: `mcp__gemini-image__nanobanana_text2img` → `landing/{slug}/.work/hero-frame.png` — 16:9, token-matched palette, calm negative space where the headline will sit, **no text, no logos, no faces** (prompt template per tone in the reference file).
 2. **Clip**: `mcp__fect-mcp__veo_img2video` — `sourceImagePath` = `lastImagePath` = `hero-frame.png`, `durationSeconds: 8`, `resolution: "1080p"` (1080p requires 8 s), `aspectRatio: "16:9"`, default model (`veo-3.1-lite` — raise to `fast`/full only if the lite output fails Seam QA twice). Prompt = **cyclic ambient motion** that visibly returns to its start (recipes per tone in the reference file; no cuts, no new subjects, no text).
 3. **Verify (never claim without it)**: `[ -f ]` the mp4 + `ffprobe` duration ≥ 7 s. Missing/short → regenerate once; still failing → Path B; Veo erroring entirely → Path C.
 4. **Seam QA**: extract first + last frames, compare with `mcp__fect-mcp__vision_compare` (or `Read` both). A visible jump → apply the ffmpeg crossfade loop from the reference file on top.

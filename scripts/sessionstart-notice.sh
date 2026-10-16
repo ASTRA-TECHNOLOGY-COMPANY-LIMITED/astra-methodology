@@ -47,8 +47,8 @@ else
 fi
 
 if [ "$show_status" -eq 1 ]; then
-  [ -z "$GOOGLE_API_KEY" ] && echo '[ASTRA] GOOGLE_API_KEY is not set. Set this environment variable to use the fect-image (Gemini) MCP.'
-  [ -z "$OPENAI_API_KEY" ] && echo '[ASTRA] OPENAI_API_KEY is not set. Set this environment variable to use the fect-gpt-image MCP.'
+  [ -z "$GOOGLE_API_KEY" ] && echo '[ASTRA] GOOGLE_API_KEY is not set. Set this environment variable to use the gemini-image (Gemini) MCP.'
+  [ -z "$OPENAI_API_KEY" ] && echo '[ASTRA] OPENAI_API_KEY is not set. Set this environment variable to use the gpt-image MCP.'
   mkdir -p "$MARKER_DIR" 2>/dev/null
   touch "$MARKER" 2>/dev/null
 fi

@@ -43,7 +43,7 @@ When the plugin initializes a target project (via `/project-init`, `/sprint-init
 │   └── {catalog-name}/               # Per-catalog package
 │       ├── index.html                 # Catalog main page
 │       ├── assets/                    # CSS, JS, fonts
-│       └── images/                    # Product & lifestyle images (fect-image)
+│       └── images/                    # Product & lifestyle images (gemini-image)
 └── src/
     └── styles/
         └── design-tokens.css         # AUTO-GENERATED from docs/design-system/DESIGN.md — regenerate via /design-init --regenerate-css. 3-tier tokens (OKLCH, Geist+Pretendard, fluid typography, spring animations).
